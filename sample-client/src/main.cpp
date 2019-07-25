@@ -71,11 +71,14 @@ int main(int argc, char** argv)
     {
         string cmd;
         cout << "Please enter command: ";
-        cin >> cmd;
+        getline(std::cin, cmd);
 
         string replyString;
 
-        if (cmd == ".quit")
+        if (cmd.empty())
+        {
+        }
+        else if (cmd == ".quit")
         {
             return EXIT_SUCCESS;
         }
