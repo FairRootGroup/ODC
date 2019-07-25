@@ -14,11 +14,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Find Protobuf installation
 find_package(Protobuf REQUIRED)
-message(STATUS "Using protobuf ${protobuf_VERSION}")
+message(STATUS "Using protobuf ${Protobuf_VERSION}")
 
 # Find gRPC installation
 find_package(gRPC REQUIRED)
-message(STATUS "Using gRPC ${gRPC_VERSION}")
+message(STATUS "Using gRPC ${GRPC_VERSION}")
 
 # Find DDS installation
 find_package(DDS CONFIG REQUIRED)
@@ -27,7 +27,6 @@ message(STATUS "Using DDS ${DDS_VERSION}")
 # Find Boost installation
 set(Boost_Components log log_setup thread program_options filesystem system regex)
 find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
-#find_package(Boost 1.67 REQUIRED)
 
 # Find FairMQ
 find_package(FairMQ REQUIRED COMPONENTS sdk)
@@ -83,8 +82,8 @@ set(dc_server_srcs
 )
 set(dc_server_exec dds-control-server)
 add_executable(${dc_server_exec} ${dc_server_srcs} ${dc_proto_srcs} ${dc_grpc_srcs})
-target_link_libraries(${dc_server_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" "${Protobuf_LIBRARIES}" DDS::dds_topology_lib DDS::dds_intercom_lib DDS::dds_tools_lib Boost::boost Boost::program_options FairMQ::SDK)
-target_include_directories(${dc_server_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${Protobuf_INCLUDE_DIRS}" "${GRPC_INCLUDE_DIR}")
+target_link_libraries(${dc_server_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" protobuf::libprotobuf DDS::dds_topology_lib DDS::dds_intercom_lib DDS::dds_tools_lib Boost::boost Boost::program_options FairMQ::SDK)
+target_include_directories(${dc_server_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${GRPC_INCLUDE_DIR}")
 
 # sample-client executable
 set(dc_client_srcs 
@@ -95,8 +94,8 @@ set(dc_client_srcs
 set(dc_client_exec sample-client)
 add_executable(${dc_client_exec} ${dc_client_srcs} ${dc_proto_srcs} ${dc_grpc_srcs})
 target_link_directories(${dc_client_exec} PUBLIC "${Boost_LIBRARY_DIRS}")
-target_link_libraries(${dc_client_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" ${Protobuf_LIBRARIES} Boost::program_options)
-target_include_directories(${dc_client_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${Protobuf_INCLUDE_DIRS}" "${GRPC_INCLUDE_DIR}")
+target_link_libraries(${dc_client_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" protobuf::libprotobuf Boost::boost Boost::program_options)
+target_include_directories(${dc_client_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${GRPC_INCLUDE_DIR}")
 
 #add_subdirectory(dds-control-server)
 #add_subdirectory(sample-client)
