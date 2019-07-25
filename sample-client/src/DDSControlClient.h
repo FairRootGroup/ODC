@@ -21,6 +21,10 @@ class DDSControlClient
     std::string RequestStart();
     std::string RequestStop();
     std::string RequestTerminate();
+    std::string RequestShutdown();
+
+  public:
+    void setTopo(const std::string& _topo);
 
   private:
     template <typename Reply_t>
@@ -28,4 +32,5 @@ class DDSControlClient
 
   private:
     std::unique_ptr<ddscontrol::DDSControl::Stub> m_stub;
+    std::string m_topo;
 };

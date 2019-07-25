@@ -14,6 +14,8 @@ service DDSControl {
     rpc Stop (StopRequest) returns (GeneralReply) {}
     // Terminate
     rpc Terminate (TerminateRequest) returns (GeneralReply) {}
+    // Shutdown
+    rpc Shutdown (ShutdownRequest) returns (GeneralReply) {}
 }
 
 // Request status
@@ -38,8 +40,7 @@ message GeneralReply {
 
 // Initialize request
 message InitializeRequest {
-    int32 numWorkers = 1;
-    string topoFile = 2;
+    string topology = 1;
 }
 
 // Configure run request
@@ -59,5 +60,10 @@ message StopRequest {
 
 // Terminate request
 message TerminateRequest {
+    // TODO: Add request parameters here
+}
+
+// Shutdown request
+message ShutdownRequest {
     // TODO: Add request parameters here
 }

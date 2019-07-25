@@ -4,10 +4,6 @@
 
 #include "DDSControlClient.h"
 
-// STD
-#include <chrono>
-#include <thread>
-
 // BOOST
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -25,18 +21,21 @@ void printDescription()
          << ".config - Configure run request." << endl
          << ".start - Start request." << endl
          << ".stop - Stop request." << endl
-         << ".term - Terminate request." << endl;
+         << ".term - Terminate request." << endl
+         << ".down - Shutdown request." << endl;
 }
 
 int main(int argc, char** argv)
 {
     string host;
+    string topo;
 
     // Generic options
     bpo::options_description options("dds-sample-client options");
     options.add_options()("help,h", "Produce help message");
     options.add_options()(
         "host", bpo::value<std::string>(&host), "DDS control connection string, e.g. \"localhost:50051\"");
+    options.add_options()("topo", bpo::value<std::string>(&topo), "Topology filepath");
 
     // Parsing command-line
     bpo::variables_map vm;
@@ -56,7 +55,15 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
+    if (!vm.count("topo"))
+    {
+        cout << "Topology filepath is not provided" << endl;
+        cout << options;
+        return EXIT_FAILURE;
+    }
+
     DDSControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
+    control.setTopo(topo);
 
     printDescription();
 
@@ -96,6 +103,11 @@ int main(int argc, char** argv)
         {
             cout << "Sending terminate request..." << endl;
             replyString = control.RequestTerminate();
+        }
+        else if (cmd == ".down")
+        {
+            cout << "Sending shutdown request..." << endl;
+            replyString = control.RequestShutdown();
         }
         else
         {

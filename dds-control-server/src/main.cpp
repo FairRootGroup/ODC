@@ -43,7 +43,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    DDSControlServer server;
+    ddscontrol::DDSControlServer server;
     server.Run(host);
 
     return EXIT_SUCCESS;

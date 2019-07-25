@@ -4,49 +4,72 @@
 
 // DDS
 #include "DDSControlService.h"
+// FairMQ
+#include <fairmq/sdk/Topology.h>
 
+using namespace ddscontrol;
 using namespace std;
 using namespace dds;
 using namespace dds::tools_api;
+using namespace dds::topology_api;
 
-// grpc::Status DDSControlService::Initialize(grpc::ServerContext* context, const ddscontrol::InitializeRequest*
-// request, ddscontrol::GeneralReply* reply) override
-//{
-//    m_DDSCustomCmd.send(std::to_string(request->state()), "");
-//
-//    std::unique_lock<std::mutex> lock(m_changeStateMutex);
-//    std::cv_status waitStatus = m_changeStateCondition.wait_for(lock, std::chrono::seconds(10));
-//
-//    if (waitStatus == std::cv_status::timeout)
-//    {
-//        std::cout << "Timout waiting for reply" << std::endl;
-//
-//        reply->set_state(ddscontrol::State::UNKNOWN);
-//        // reply->set_allocated_error()
-//    }
-//    else
-//    {
-//        std::cout << "Got reply" << std::endl;
-//        reply->set_state(request->state());
-//    }
-//
-//    return Status::OK;
-//}
+DDSControlService::DDSControlService()
+    : m_topo(nullptr)
+    , m_session(make_shared<CSession>())
+    , m_fairmqTopo(nullptr)
+    , m_timeout(10.)
+{
+}
 
 grpc::Status DDSControlService::Initialize(grpc::ServerContext* context,
                                            const ddscontrol::InitializeRequest* request,
                                            ddscontrol::GeneralReply* response)
 {
-    size_t numAgents = request->numworkers();
-    string topologyFile = request->topofile();
+    bool success(true);
 
-    createDDSSession();
-    submitDDSAgents(numAgents);
-    activateDDSTopology(topologyFile);
+    string topologyFile = request->topology();
+    size_t numAgents(0);
+    try
+    {
+        m_topo = make_shared<CTopology>(topologyFile);
+        numAgents = m_topo->getRequiredNofAgents();
+    }
+    catch (exception& _e)
+    {
+        success = false;
+        cerr << "Failed to initialize topology: " << _e.what() << endl;
+    }
 
-    response->set_status(ddscontrol::ReplyStatus::SUCCESS);
-    response->set_msg("Initialize finished");
+    if (success)
+    {
+        // Shut down DDS session if it is running already
+        // Create new DDS session
+        // Submit agents
+        // Activate the topology
+        success = shutdownDDSSession() && createDDSSession() && submitDDSAgents(numAgents) &&
+                  activateDDSTopology(topologyFile);
+    }
 
+    if (success)
+    {
+        try
+        {
+            m_fairmqTopo = make_shared<fair::mq::sdk::Topology>(*m_topo, m_session);
+        }
+        catch (exception& _e)
+        {
+            success = false;
+            cerr << "Failed to initialize FairMQ topology: " << _e.what() << endl;
+        }
+    }
+
+    // Shutdown DDS session if operation failed
+    if (!success)
+    {
+        shutdownDDSSession();
+    }
+
+    setupGeneralReply(response, success, "Initialize done", "Initialize failed");
     return grpc::Status::OK;
 }
 
@@ -54,8 +77,19 @@ grpc::Status DDSControlService::ConfigureRun(grpc::ServerContext* context,
                                              const ddscontrol::ConfigureRunRequest* request,
                                              ddscontrol::GeneralReply* response)
 {
-    response->set_status(ddscontrol::ReplyStatus::SUCCESS);
-    response->set_msg("ConfigureRun finished");
+    cout << "DEBUG: InitDevice" << endl;
+    bool success = changeState(fair::mq::sdk::TopologyTransition::InitDevice);
+    cout << "DEBUG: CompleteInit" << endl;
+    success = changeState(fair::mq::sdk::TopologyTransition::CompleteInit);
+    cout << "DEBUG: Bind" << endl;
+    success = changeState(fair::mq::sdk::TopologyTransition::Bind);
+    cout << "DEBUG: Connect" << endl;
+    success = changeState(fair::mq::sdk::TopologyTransition::Connect);
+    cout << "DEBUG: InitTask" << endl;
+    success = changeState(fair::mq::sdk::TopologyTransition::InitTask);
+
+    setupGeneralReply(response, success, "ConfigureRun done", "ConfigureRun failed");
+
     return grpc::Status::OK;
 }
 
@@ -63,8 +97,8 @@ grpc::Status DDSControlService::Start(grpc::ServerContext* context,
                                       const ddscontrol::StartRequest* request,
                                       ddscontrol::GeneralReply* response)
 {
-    response->set_status(ddscontrol::ReplyStatus::SUCCESS);
-    response->set_msg("Start finished");
+    bool success = changeState(fair::mq::sdk::TopologyTransition::Run);
+    setupGeneralReply(response, success, "Start done", "Start failed");
     return grpc::Status::OK;
 }
 
@@ -72,8 +106,8 @@ grpc::Status DDSControlService::Stop(grpc::ServerContext* context,
                                      const ddscontrol::StopRequest* request,
                                      ddscontrol::GeneralReply* response)
 {
-    response->set_status(ddscontrol::ReplyStatus::SUCCESS);
-    response->set_msg("Stop finished");
+    bool success = changeState(fair::mq::sdk::TopologyTransition::Stop);
+    setupGeneralReply(response, success, "Stop done", "Stop failed");
     return grpc::Status::OK;
 }
 
@@ -81,38 +115,61 @@ grpc::Status DDSControlService::Terminate(grpc::ServerContext* context,
                                           const ddscontrol::TerminateRequest* request,
                                           ddscontrol::GeneralReply* response)
 {
-    shutdownDDSSession();
-
-    response->set_status(ddscontrol::ReplyStatus::SUCCESS);
-    response->set_msg("Terminate finished");
+    bool success = changeState(fair::mq::sdk::TopologyTransition::ResetTask) &&
+                   changeState(fair::mq::sdk::TopologyTransition::ResetDevice) &&
+                   changeState(fair::mq::sdk::TopologyTransition::End);
+    setupGeneralReply(response, success, "Terminate done", "Terminate failed");
     return grpc::Status::OK;
 }
 
-void DDSControlService::createDDSSession()
+grpc::Status DDSControlService::Shutdown(grpc::ServerContext* context,
+                                         const ddscontrol::ShutdownRequest* request,
+                                         ddscontrol::GeneralReply* response)
 {
-    boost::uuids::uuid sessionID = m_session.create();
+    bool success = shutdownDDSSession();
+    setupGeneralReply(response, success, "Shutdown done", "Shutdown failed");
+    return grpc::Status::OK;
 }
 
-void DDSControlService::submitDDSAgents(size_t _numAgents)
+bool DDSControlService::createDDSSession()
 {
-    std::condition_variable cv;
-    std::mutex mtx;
+    bool success(true);
+    try
+    {
+        boost::uuids::uuid sessionID = m_session->create();
+        cout << "DDS session created with session ID: " << to_string(sessionID) << endl;
+    }
+    catch (exception& _e)
+    {
+        success = false;
+        cerr << "Failed to create DDS session: " << _e.what() << endl;
+    }
+    return success;
+}
+
+bool DDSControlService::submitDDSAgents(size_t _numAgents)
+{
+    bool success(true);
 
     SSubmitRequest::request_t requestInfo;
     requestInfo.m_config = "";
     requestInfo.m_rms = "localhost";
     requestInfo.m_instances = _numAgents;
     requestInfo.m_pluginPath = "";
+
+    std::condition_variable cv;
+
     SSubmitRequest::ptr_t requestPtr = SSubmitRequest::makeRequest(requestInfo);
 
-    requestPtr->setMessageCallback([](const SMessageResponseData& _message) {
+    requestPtr->setMessageCallback([&success](const SMessageResponseData& _message) {
         if (_message.m_severity == dds::intercom_api::EMsgSeverity::error)
         {
+            success = false;
             cerr << "Server reports error: " << _message.m_msg << endl;
         }
         else
         {
-            cout << "Server reports: " << _message.m_msg;
+            cout << "Server reports: " << _message.m_msg << endl;
         }
     });
 
@@ -121,42 +178,46 @@ void DDSControlService::submitDDSAgents(size_t _numAgents)
         cv.notify_all();
     });
 
-    m_session.sendRequest<SSubmitRequest>(requestPtr);
+    m_session->sendRequest<SSubmitRequest>(requestPtr);
 
+    std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(10));
+    std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(m_timeout));
 
     if (waitStatus == std::cv_status::timeout)
     {
-        // TODO: FIXME: error reply
+        success = false;
+        cerr << "Timed out waiting for agent submission" << endl;
     }
     else
     {
-        // TODO: FIXME: success reply
+        cout << "Agent submission done successfully" << endl;
     }
+    return success;
 }
 
-void DDSControlService::activateDDSTopology(const string& _topologyFile)
+bool DDSControlService::activateDDSTopology(const string& _topologyFile)
 {
-    std::condition_variable cv;
-    std::mutex mtx;
+    bool success(true);
 
     STopologyRequest::request_t topoInfo;
-
     topoInfo.m_topologyFile = _topologyFile;
-    topoInfo.m_disableValidation = false;
+    topoInfo.m_disableValidation = true;
     topoInfo.m_updateType = STopologyRequest::request_t::EUpdateType::ACTIVATE;
+
+    std::condition_variable cv;
 
     STopologyRequest::ptr_t requestPtr = STopologyRequest::makeRequest(topoInfo);
 
-    requestPtr->setMessageCallback([](const SMessageResponseData& _message) {
+    requestPtr->setMessageCallback([&success](const SMessageResponseData& _message) {
         if (_message.m_severity == dds::intercom_api::EMsgSeverity::error)
         {
+            success = false;
             cerr << "Server reports error: " << _message.m_msg << endl;
         }
         else
         {
-            cout << "Server reports: " << _message.m_msg;
+            cout << "Server reports: " << _message.m_msg << endl;
         }
     });
 
@@ -174,22 +235,113 @@ void DDSControlService::activateDDSTopology(const string& _topologyFile)
         cv.notify_all();
     });
 
-    m_session.sendRequest<STopologyRequest>(requestPtr);
+    m_session->sendRequest<STopologyRequest>(requestPtr);
 
+    std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(10));
+    std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(m_timeout));
 
     if (waitStatus == std::cv_status::timeout)
     {
-        // TODO: FIXME: error reply
+        success = false;
+        cerr << "Timed out waiting for agent submission" << endl;
     }
     else
     {
-        // TODO: FIXME: success reply
+        cout << "Topology activation done successfully" << endl;
+    }
+    return success;
+}
+
+bool DDSControlService::shutdownDDSSession()
+{
+    bool success(true);
+    if (m_session->IsRunning())
+    {
+        m_session->shutdown();
+        if (m_session->getSessionID() == boost::uuids::nil_uuid())
+        {
+            cout << "DDS session shutted down" << endl;
+        }
+        else
+        {
+            cerr << "Failed to shut down DDS session" << endl;
+            success = false;
+        }
+    }
+    return success;
+}
+
+void DDSControlService::setupGeneralReply(ddscontrol::GeneralReply* _response,
+                                          bool _success,
+                                          const std::string& _msg,
+                                          const std::string& _errMsg)
+{
+    if (_success)
+    {
+        _response->set_status(ddscontrol::ReplyStatus::SUCCESS);
+        _response->set_msg(_msg);
+    }
+    else
+    {
+        _response->set_status(ddscontrol::ReplyStatus::ERROR);
+        //_response->set_msg("");
+        // protobuf will take care of deleting the object
+        ddscontrol::Error* error = new ddscontrol::Error();
+        error->set_code(123);
+        error->set_msg(_errMsg);
+        _response->set_allocated_error(error);
     }
 }
 
-void DDSControlService::shutdownDDSSession()
+bool DDSControlService::changeState(fair::mq::sdk::TopologyTransition _transition)
 {
-    m_session.shutdown();
+    if (m_fairmqTopo == nullptr)
+        return false;
+
+    bool success(true);
+
+    try
+    {
+        fair::mq::sdk::DeviceState deviceState(fair::mq::sdk::DeviceState::Ok);
+        std::condition_variable cv;
+
+        m_fairmqTopo->ChangeState(_transition,
+                                  [&cv, &success, &deviceState](fair::mq::sdk::Topology::ChangeStateResult result) {
+                                      cout << "Change transition result: " << result << endl;
+                                      success = result.rc == fair::mq::AsyncOpResultCode::Ok;
+                                      try
+                                      {
+                                          deviceState = fair::mq::sdk::AggregateState(result.state);
+                                      }
+                                      catch (exception& _e)
+                                      {
+                                          success = false;
+                                          cerr << "Change state failed: " << _e.what() << endl;
+                                      }
+                                      cv.notify_all();
+                                  },
+                                  std::chrono::seconds(m_timeout));
+
+        std::mutex mtx;
+        std::unique_lock<std::mutex> lock(mtx);
+        std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(m_timeout));
+
+        if (waitStatus == std::cv_status::timeout)
+        {
+            success = false;
+            cerr << "Timed out waiting for change state " << _transition << endl;
+        }
+        else
+        {
+            cout << "Change state done successfully " << _transition << endl;
+        }
+    }
+    catch (exception& _e)
+    {
+        success = false;
+        cerr << "Change state failed: " << _e.what() << endl;
+    }
+
+    return success;
 }

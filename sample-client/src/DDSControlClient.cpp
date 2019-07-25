@@ -9,20 +9,26 @@ using ddscontrol::DDSControl;
 using ddscontrol::GeneralReply;
 using ddscontrol::InitializeRequest;
 using ddscontrol::ReplyStatus;
+using ddscontrol::ShutdownRequest;
 using ddscontrol::StartRequest;
 using ddscontrol::StopRequest;
 using ddscontrol::TerminateRequest;
 
 DDSControlClient::DDSControlClient(std::shared_ptr<grpc::Channel> channel)
     : m_stub(DDSControl::NewStub(channel))
+    , m_topo()
 {
+}
+
+void DDSControlClient::setTopo(const std::string& _topo)
+{
+    m_topo = _topo;
 }
 
 std::string DDSControlClient::RequestInitialize()
 {
     InitializeRequest request;
-    request.set_numworkers(10);
-    request.set_topofile("~/DDS-control/test/sample_topo.xml");
+    request.set_topology(m_topo);
     GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Initialize(&context, request, &reply);
@@ -62,6 +68,15 @@ std::string DDSControlClient::RequestTerminate()
     GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Terminate(&context, request, &reply);
+    return GetReplyString(status, reply);
+}
+
+std::string DDSControlClient::RequestShutdown()
+{
+    ShutdownRequest request;
+    GeneralReply reply;
+    grpc::ClientContext context;
+    grpc::Status status = m_stub->Shutdown(&context, request, &reply);
     return GetReplyString(status, reply);
 }
 

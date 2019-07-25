@@ -4,8 +4,11 @@
 
 #include <string>
 
-class DDSControlServer final
+namespace ddscontrol
 {
-  public:
-    void Run(const std::string& _host);
-};
+    class DDSControlServer final
+    {
+      public:
+        void Run(const std::string& _host);
+    };
+} // namespace ddscontrol

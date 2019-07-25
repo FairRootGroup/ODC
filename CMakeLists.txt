@@ -5,6 +5,8 @@ project(DDS-control)
 
 cmake_minimum_required( VERSION 3.11.0 FATAL_ERROR )
 
+set(BUILD_SHARED_LIBS ON)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 # Cmake find modules
@@ -23,9 +25,22 @@ find_package(DDS CONFIG REQUIRED)
 message(STATUS "Using DDS ${DDS_VERSION}")
 
 # Find Boost installation
-#set(Boost_Components log log_setup thread program_options filesystem system regex)
-#find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
-find_package(Boost 1.67 REQUIRED)
+set(Boost_Components log log_setup thread program_options filesystem system regex)
+find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
+#find_package(Boost 1.67 REQUIRED)
+
+# Find FairMQ
+find_package(FairMQ REQUIRED COMPONENTS sdk)
+message(STATUS "Using FairMQ ${FairMQ_VERSION}" ${FairMQ_GIT_VERSION})
+
+# Find FairLogger
+find_package(FairLogger REQUIRED)
+message(STATUS "Using FairLogger ${FairLogger_VERSION}")
+
+# Install directory
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+set (CMAKE_INSTALL_PREFIX "$ENV{HOME}/DDS-control" CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
+endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 # Source Code Formatting using clang-format
 add_custom_target(format-code
@@ -68,9 +83,8 @@ set(dc_server_srcs
 )
 set(dc_server_exec dds-control-server)
 add_executable(${dc_server_exec} ${dc_server_srcs} ${dc_proto_srcs} ${dc_grpc_srcs})
-target_link_directories(${dc_server_exec} PUBLIC "${DDS_LIBDIR}" "${Boost_LIBRARY_DIRS}")
-target_link_libraries(${dc_server_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" "${Protobuf_LIBRARIES}" dds_intercom_lib dds_tools_lib boost_program_options)
-target_include_directories(${dc_server_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${Protobuf_INCLUDE_DIRS}" "${GRPC_INCLUDE_DIR}" "${DDS_INCDIR}" "${Boost_INCLUDE_DIRS}")
+target_link_libraries(${dc_server_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" "${Protobuf_LIBRARIES}" DDS::dds_topology_lib DDS::dds_intercom_lib DDS::dds_tools_lib Boost::boost Boost::program_options FairMQ::SDK)
+target_include_directories(${dc_server_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${Protobuf_INCLUDE_DIRS}" "${GRPC_INCLUDE_DIR}")
 
 # sample-client executable
 set(dc_client_srcs 
@@ -81,23 +95,15 @@ set(dc_client_srcs
 set(dc_client_exec sample-client)
 add_executable(${dc_client_exec} ${dc_client_srcs} ${dc_proto_srcs} ${dc_grpc_srcs})
 target_link_directories(${dc_client_exec} PUBLIC "${Boost_LIBRARY_DIRS}")
-target_link_libraries(${dc_client_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" ${Protobuf_LIBRARIES} boost_program_options)
-target_include_directories(${dc_client_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${Protobuf_INCLUDE_DIRS}" "${GRPC_INCLUDE_DIR}" "${DDS_INCDIR}" "${Boost_INCLUDE_DIRS}")
+target_link_libraries(${dc_client_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" ${Protobuf_LIBRARIES} Boost::program_options)
+target_include_directories(${dc_client_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${Protobuf_INCLUDE_DIRS}" "${GRPC_INCLUDE_DIR}")
 
 #add_subdirectory(dds-control-server)
 #add_subdirectory(sample-client)
-add_subdirectory(sample-task)
 
 #
 # Install
 #
-
-# Install directory
-#if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set (CMAKE_INSTALL_PREFIX "$ENV{HOME}/DDS-control" CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
-#endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-
 install(TARGETS "${dc_server_exec}" RUNTIME DESTINATION bin)
 install(TARGETS "${dc_client_exec}" RUNTIME DESTINATION bin)
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/test/sample_topo.xml" DESTINATION test)
 

@@ -9,6 +9,8 @@
 #include "ddscontrol.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
+using namespace ddscontrol;
+
 void DDSControlServer::Run(const std::string& _host)
 {
     DDSControlService service;
