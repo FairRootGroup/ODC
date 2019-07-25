@@ -1,6 +1,38 @@
 # DDS-control
 
-## 3rd-party dependency
+## 3-rd party dependencies
+
+  * [Boost](https://www.boost.org/)
+  * [DDS](http://dds.gsi.de)
+  * [Protobuf](https://developers.google.com/protocol-buffers/)
+  * [gRPC](https://grpc.io/)
+  * [FairMQ](https://github.com/FairRootGroup/FairMQ)
+  * [FairLogger](https://github.com/FairRootGroup/FairLogger)
+
+## Installation form source
+
+```bash
+git clone https://github.com/FairRootGroup/DDS-control
+cd DDS-control
+mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=[INSTALL_DIR] ..
+make install
+```
+
+If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `BOOST`, `DDS`, `Protobuf`, `gRPC`, `FairMQ`, `FairLogger` (`*_ROOT` variables can also be environment variables).
+
+## Usage
+Start the server:
+```bash
+./dds-control-server --host "localhost:50051"
+```
+
+Start the sample client in a different terminal:
+```bash
+./sample-client --host "localhost:50051" --topo [FAIRMQ_INSTALL_DIR]/share/fairmq/ex-dds-topology.xml 
+```
+
+## 3rd-party installation
 
 ### gRPC
 
