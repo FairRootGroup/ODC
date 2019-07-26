@@ -52,37 +52,13 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 set (CMAKE_INSTALL_PREFIX "$ENV{HOME}/DDS-control" CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
 endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-# Source Code Formatting using clang-format
-add_custom_target(format-code
-       COMMAND ${CMAKE_SOURCE_DIR}/utils/update_format.sh ${CMAKE_SOURCE_DIR}
-       COMMENT "Updating source code formatting.")
+# Source Code Formatting using clang-format ??? DONT write to source directory...
+# add_custom_target(format-code
+       # COMMAND ${CMAKE_SOURCE_DIR}/utils/update_format.sh ${CMAKE_SOURCE_DIR}
+       # COMMENT "Updating source code formatting.")
 
-# Proto file
-get_filename_component(dc_proto "${CMAKE_SOURCE_DIR}/proto/ddscontrol.proto" ABSOLUTE)
-get_filename_component(dc_proto_path "${dc_proto}" PATH)
-
-# Generated sources
-set(dc_proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/ddscontrol.pb.cc")
-set(dc_proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/ddscontrol.pb.h")
-set(dc_grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/ddscontrol.grpc.pb.cc")
-set(dc_grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/ddscontrol.grpc.pb.h")
-
-add_custom_command(
-    OUTPUT "${dc_proto_srcs}" "${dc_proto_hdrs}" "${dc_grpc_srcs}" "${dc_grpc_hdrs}"
-    COMMAND ${Protobuf_PROTOC_EXECUTABLE}
-    ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
-         --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-         -I "${dc_proto_path}"
-         --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN}
-         "${dc_proto}"
-    DEPENDS "${dc_proto}"
-    COMMENT "Generating gRPC and Protobuf C++ files."
-    VERBATIM
-)
-
-# Include generated *.pb.h files
-#include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${Protobuf_INCLUDE_DIRS}" "${GRPC_INCLUDE_DIR}" "${DDS_INCDIR}")
-
+# Targets
+add_subdirectory(proto)
 add_subdirectory(dds-control-server)
 add_subdirectory(sample-client)
 
