@@ -31,7 +31,7 @@ make install
 If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `BOOST`, `DDS`, `Protobuf`, `gRPC`, `FairMQ`, `FairLogger` (`*_ROOT` variables can also be environment variables).
 
 ## Usage
-Before starting the server we need to source DDS_env.sh script
+Before starting the server one needs to source DDS_env.sh script:
 ```bash
 cd [DDS_INSTALL_DIR]
 source DDS_env.sh
