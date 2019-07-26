@@ -22,7 +22,7 @@ find_package(gRPC REQUIRED)
 message(STATUS "Using gRPC ${GRPC_VERSION}")
 
 # Find DDS installation
-find_package(DDS CONFIG REQUIRED)
+find_package(DDS 2.5.22 CONFIG REQUIRED)
 message(STATUS "Using DDS ${DDS_VERSION}")
 
 # Find Boost installation
