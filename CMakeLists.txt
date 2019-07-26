@@ -30,7 +30,7 @@ set(Boost_Components log log_setup thread program_options filesystem system rege
 find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
 
 # Find FairMQ
-find_package(FairMQ REQUIRED COMPONENTS sdk)
+find_package(FairMQ 1.4.6 REQUIRED COMPONENTS sdk)
 message(STATUS "Using FairMQ ${FairMQ_GIT_VERSION}")
 
 # Find FairLogger
