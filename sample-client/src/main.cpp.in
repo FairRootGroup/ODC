@@ -34,8 +34,12 @@ int main(int argc, char** argv)
     bpo::options_description options("dds-sample-client options");
     options.add_options()("help,h", "Produce help message");
     options.add_options()(
-        "host", bpo::value<std::string>(&host), "DDS control connection string, e.g. \"localhost:50051\"");
-    options.add_options()("topo", bpo::value<std::string>(&topo), "Topology filepath");
+        "host", bpo::value<std::string>(&host)->default_value("localhost:50051"),
+        "DDS control connection string (default \"localhost:50051\")");
+    string default_topo("@FairMQ_DATADIR@/ex-dds-topology-infinite.xml");
+    options.add_options()("topo",
+                          bpo::value<std::string>(&topo)->default_value(default_topo),
+                          (string("Topology filepath (default ") + default_topo + string(")")).c_str());
 
     // Parsing command-line
     bpo::variables_map vm;

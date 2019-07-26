@@ -6,12 +6,16 @@
 #include "DDSControlServer.h"
 
 // STD
+#include <cstdlib>
 #include <iostream>
 
 // BOOST
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+
+// FairMQ SDK
+#include <fairmq/sdk/DDSEnvironment.h>
 
 using namespace std;
 namespace bpo = boost::program_options;
@@ -23,7 +27,8 @@ int main(int argc, char** argv)
     // Generic options
     bpo::options_description options("dds-control-server options");
     options.add_options()("help,h", "Produce help message");
-    options.add_options()("host", bpo::value<std::string>(&host), "Server address e.g. \"localhost:50051\"");
+    options.add_options()("host", bpo::value<std::string>(&host)->default_value("localhost:50051"),
+                          "Server address (defaul \"localhost:50051\")");
 
     // Parsing command-line
     bpo::variables_map vm;
@@ -42,6 +47,24 @@ int main(int argc, char** argv)
         cout << options;
         return EXIT_FAILURE;
     }
+
+    {
+        // Equivalent to calling source DDS_env.sh
+        fair::mq::sdk::DDSEnv env;
+    }
+
+    // Prepend FairMQ bin dir to the path
+    auto current_path(std::getenv("PATH"));
+    string new_path;
+    if (current_path != nullptr)
+    {
+        new_path = string("@FairMQ_BINDIR@") + string(":") + string(current_path);
+    }
+    else
+    {
+        new_path = string("@FairMQ_BINDIR@");
+    }
+    setenv("PATH", new_path.c_str(), 1);
 
     ddscontrol::DDSControlServer server;
     server.Run(host);

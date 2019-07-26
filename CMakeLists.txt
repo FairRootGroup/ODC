@@ -31,11 +31,21 @@ find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
 
 # Find FairMQ
 find_package(FairMQ REQUIRED COMPONENTS sdk)
-message(STATUS "Using FairMQ ${FairMQ_VERSION}" ${FairMQ_GIT_VERSION})
+message(STATUS "Using FairMQ ${FairMQ_GIT_VERSION}")
 
 # Find FairLogger
 find_package(FairLogger REQUIRED)
 message(STATUS "Using FairLogger ${FairLogger_VERSION}")
+
+# https://cmake.org/Wiki/CMake_RPATH_handling
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-Wl,--enable-new-dtags")
+    set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--enable-new-dtags")
+  endif()
+endif()
 
 # Install directory
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -73,37 +83,10 @@ add_custom_command(
 # Include generated *.pb.h files
 #include_directories("${CMAKE_CURRENT_BINARY_DIR}" "${Protobuf_INCLUDE_DIRS}" "${GRPC_INCLUDE_DIR}" "${DDS_INCDIR}")
 
-# dds-control executable
-set(dc_server_srcs 
-    "dds-control-server/src/main.cpp" 
-    "dds-control-server/src/DDSControlServer.h" 
-    "dds-control-server/src/DDSControlServer.cpp"
-    "dds-control-server/src/DDSControlService.h" 
-    "dds-control-server/src/DDSControlService.cpp"
-)
-set(dc_server_exec dds-control-server)
-add_executable(${dc_server_exec} ${dc_server_srcs} ${dc_proto_srcs} ${dc_grpc_srcs})
-target_link_libraries(${dc_server_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" protobuf::libprotobuf DDS::dds_topology_lib DDS::dds_intercom_lib DDS::dds_tools_lib Boost::boost Boost::program_options FairMQ::SDK)
-target_include_directories(${dc_server_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${GRPC_INCLUDE_DIR}")
-
-# sample-client executable
-set(dc_client_srcs 
-    "sample-client/src/main.cpp"
-    "sample-client/src/DDSControlClient.h"
-    "sample-client/src/DDSControlClient.cpp"
-)
-set(dc_client_exec sample-client)
-add_executable(${dc_client_exec} ${dc_client_srcs} ${dc_proto_srcs} ${dc_grpc_srcs})
-target_link_directories(${dc_client_exec} PUBLIC "${Boost_LIBRARY_DIRS}")
-target_link_libraries(${dc_client_exec} "${GRPC_GRPC++_LIBRARY}" "${GRPC_LIBRARY}" protobuf::libprotobuf Boost::boost Boost::program_options)
-target_include_directories(${dc_client_exec} PUBLIC "${CMAKE_CURRENT_BINARY_DIR}" "${GRPC_INCLUDE_DIR}")
-
-#add_subdirectory(dds-control-server)
-#add_subdirectory(sample-client)
+add_subdirectory(dds-control-server)
+add_subdirectory(sample-client)
 
 #
 # Install
 #
-install(TARGETS "${dc_server_exec}" RUNTIME DESTINATION bin)
-install(TARGETS "${dc_client_exec}" RUNTIME DESTINATION bin)
-
+install(TARGETS dds-control-server sample-client RUNTIME DESTINATION bin)
