@@ -77,16 +77,11 @@ grpc::Status DDSControlService::ConfigureRun(grpc::ServerContext* context,
                                              const ddscontrol::ConfigureRunRequest* request,
                                              ddscontrol::GeneralReply* response)
 {
-    cout << "DEBUG: InitDevice" << endl;
-    bool success = changeState(fair::mq::sdk::TopologyTransition::InitDevice);
-    cout << "DEBUG: CompleteInit" << endl;
-    success = changeState(fair::mq::sdk::TopologyTransition::CompleteInit);
-    cout << "DEBUG: Bind" << endl;
-    success = changeState(fair::mq::sdk::TopologyTransition::Bind);
-    cout << "DEBUG: Connect" << endl;
-    success = changeState(fair::mq::sdk::TopologyTransition::Connect);
-    cout << "DEBUG: InitTask" << endl;
-    success = changeState(fair::mq::sdk::TopologyTransition::InitTask);
+    bool success = changeState(fair::mq::sdk::TopologyTransition::InitDevice) &&
+                   changeState(fair::mq::sdk::TopologyTransition::CompleteInit) &&
+                   changeState(fair::mq::sdk::TopologyTransition::Bind) &&
+                   changeState(fair::mq::sdk::TopologyTransition::Connect) &&
+                   changeState(fair::mq::sdk::TopologyTransition::InitTask);
 
     setupGeneralReply(response, success, "ConfigureRun done", "ConfigureRun failed");
 
