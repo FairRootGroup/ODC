@@ -52,10 +52,10 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 set (CMAKE_INSTALL_PREFIX "$ENV{HOME}/DDS-control" CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
 endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
-# Source Code Formatting using clang-format ??? DONT write to source directory...
-# add_custom_target(format-code
-       # COMMAND ${CMAKE_SOURCE_DIR}/utils/update_format.sh ${CMAKE_SOURCE_DIR}
-       # COMMENT "Updating source code formatting.")
+# Source Code Formatting using clang-format
+add_custom_target(format-code
+       COMMAND ${CMAKE_SOURCE_DIR}/utils/update_format.sh ${CMAKE_SOURCE_DIR}
+       COMMENT "Updating source code formatting.")
 
 # Targets
 add_subdirectory(proto)
