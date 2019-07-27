@@ -68,3 +68,21 @@ add_subdirectory(sample-client)
 # Install
 #
 install(TARGETS dds-control-server sample-client RUNTIME DESTINATION bin)
+
+# Daemon config
+if(APPLE)
+    configure_file(utils/launchd/de.gsi.dds-control.plist de.gsi.dds-control.plist @ONLY)
+    set(daemon_file "${CMAKE_BINARY_DIR}/de.gsi.dds-control.plist")
+    set(daemon_destination "$ENV{HOME}/Library/LaunchAgents")
+else()
+    configure_file(utils/systemd/dds-control.service.in dds-control.service @ONLY)
+    set(daemon_file "${CMAKE_BINARY_DIR}/dds-control.service")
+    if(NOT ENV{XDG_CONFIG_HOME})
+      set(config_home "$ENV{HOME}/.config")
+    else()
+      set(config_home "$ENV{XDG_CONFIG_HOME}")
+    endif()
+    set(daemon_destination "${config_home}/systemd/user")
+endif()
+
+install(FILES ${daemon_file} DESTINATION ${daemon_destination})
