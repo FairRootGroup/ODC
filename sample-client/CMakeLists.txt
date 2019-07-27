@@ -21,3 +21,7 @@ target_include_directories(sample-client PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
     "${GRPC_INCLUDE_DIR}"
 )
+if(readline_FOUND)
+    target_compile_definitions(sample-client PUBLIC READLINE_AVAIL)
+    target_link_libraries(sample-client readline::readline)
+endif()

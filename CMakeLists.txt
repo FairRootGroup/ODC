@@ -37,6 +37,8 @@ message(STATUS "Using FairMQ ${FairMQ_GIT_VERSION}")
 find_package(FairLogger REQUIRED)
 message(STATUS "Using FairLogger ${FairLogger_VERSION}")
 
+find_package(readline)
+
 # https://cmake.org/Wiki/CMake_RPATH_handling
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}" isSystemDir)
