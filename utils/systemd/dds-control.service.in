@@ -1,0 +1,9 @@
+[Unit]
+Description=DDS control server
+
+[Service]
+Type=simple
+ExecStart=@CMAKE_INSTALL_PREFIX@/bin/dds-control-server
+
+[Install]
+WantedBy=multi-user.target

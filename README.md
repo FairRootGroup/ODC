@@ -31,22 +31,40 @@ make install
 If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `BOOST`, `DDS`, `Protobuf`, `gRPC`, `FairMQ`, `FairLogger` (`*_ROOT` variables can also be environment variables).
 
 ## Usage
-Before starting the server one needs to source DDS_env.sh script:
+Start the server in foreground:
 ```bash
-cd [DDS_INSTALL_DIR]
-source DDS_env.sh
-```
-
-Start the server:
-```bash
-cd [DDS-control_INSTALL_DIR]
-./dds-control-server --host "localhost:50051"
+export PATH=[INSTALL_DIR]/bin:$PATH
+dds-control-server
 ```
 
 Start the sample client in a different terminal:
 ```bash
-./sample-client --host "localhost:50051" --topo [FAIRMQ_INSTALL_DIR]/share/fairmq/ex-dds-topology.xml 
+export PATH=[INSTALL_DIR]/bin:$PATH
+sample-client
 ```
+
+Alternatively, start the server as a background daemon (in your user session):
+
+Linux:
+```bash
+# After installation, execute once
+systemctl --user daemon-reload
+# Then control dds-control-server via
+systemctl --user start/stop/status dds-control
+# View server logs
+journalctl --user-unit dds-control [-f]
+```
+
+MacOS:
+```bash
+# TODO Someone on a mac verify this or correct, and find out where logs end up
+# See https://www.launchd.info/. Also, I guess there are GUIs on Mac to do this too?
+launchctl load/unload ~/Library/LaunchAgents/de.gsi.dds-control.plist
+launchctl start/stop de.gsi.dds-control
+```
+
+Find more details on the usage of the `systemctl`/`launchctl` commands in the manpages
+of your system.
 
 ## 3rd-party installation
 
