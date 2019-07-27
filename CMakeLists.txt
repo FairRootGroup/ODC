@@ -70,7 +70,7 @@ install(TARGETS dds-control-server sample-client RUNTIME DESTINATION bin)
 
 # Daemon config
 if(APPLE)
-    configure_file(utils/launchd/de.gsi.dds-control.plist de.gsi.dds-control.plist @ONLY)
+    configure_file(utils/launchd/de.gsi.dds-control.plist.in de.gsi.dds-control.plist @ONLY)
     set(daemon_file "${CMAKE_BINARY_DIR}/de.gsi.dds-control.plist")
     set(daemon_destination "$ENV{HOME}/Library/LaunchAgents")
 else()

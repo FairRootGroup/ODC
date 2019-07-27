@@ -3,8 +3,12 @@
 <plist version="1.0">
 	<dict>
 		<key>Label</key>
-		<string>de.gsi.dds-control</string>
+		<string>de.gsi.dds-control-server</string>
 		<key>Program</key>
 		<string>@CMAKE_INSTALL_PREFIX@/bin/dds-control-server</string>
+		<key>StandardOutPath</key>
+		<string>/tmp/dds-control-server_out.log</string>
+		<key>StandardErrorPath</key>
+		<string>/tmp/dds-control-server_err.log</string>
 	</dict>
-</plist><Paste>
+</plist>
