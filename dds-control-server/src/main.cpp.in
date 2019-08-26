@@ -4,6 +4,7 @@
 
 // DDS
 #include "DDSControlServer.h"
+#include "DDSControlService.h"
 
 // STD
 #include <cstdlib>
@@ -23,12 +24,19 @@ namespace bpo = boost::program_options;
 int main(int argc, char** argv)
 {
     std::string host("");
+	ddscontrol::DDSControlService::SConfigParams params;
 
     // Generic options
     bpo::options_description options("dds-control-server options");
     options.add_options()("help,h", "Produce help message");
     options.add_options()("host", bpo::value<std::string>(&host)->default_value("localhost:50051"),
                           "Server address (defaul \"localhost:50051\")");
+	options.add_options()("rms,r",
+					      bpo::value<std::string>(&params.m_rmsPlugin)->default_value("localhost"),
+					      "Defines a destination resource management system plug-in.");
+	options.add_options()("config,c",
+					       bpo::value<std::string>(&params.m_configFile)->default_value(""),
+					       "A plug-in's configuration file. It can be used to provide additional RMS options");
 
     // Parsing command-line
     bpo::variables_map vm;
@@ -67,7 +75,7 @@ int main(int argc, char** argv)
     setenv("PATH", new_path.c_str(), 1);
 
     ddscontrol::DDSControlServer server;
-    server.Run(host);
+    server.Run(host, params);
 
     return EXIT_SUCCESS;
 }

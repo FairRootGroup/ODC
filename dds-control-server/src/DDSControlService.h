@@ -2,6 +2,9 @@
 //
 //
 
+#ifndef __DDSControl__DDSControlService__
+#define __DDSControl__DDSControlService__
+
 // STD
 #include <string>
 
@@ -21,7 +24,14 @@ namespace ddscontrol
     class DDSControlService final : public ddscontrol::DDSControl::Service
     {
       public:
-        DDSControlService();
+        struct SConfigParams
+        {
+            std::string m_rmsPlugin = "";
+            std::string m_configFile = "";
+        };
+
+      public:
+        DDSControlService(const SConfigParams& _params);
 
       private:
         grpc::Status Initialize(grpc::ServerContext* context,
@@ -47,6 +57,7 @@ namespace ddscontrol
         bool createDDSSession();
         bool submitDDSAgents(size_t _numAgents);
         bool activateDDSTopology(const std::string& _topologyFile);
+        bool waitForNumActiveAgents(size_t _numAgents);
         bool shutdownDDSSession();
         void setupGeneralReply(ddscontrol::GeneralReply* _response,
                                bool _success,
@@ -59,5 +70,8 @@ namespace ddscontrol
         std::shared_ptr<dds::tools_api::CSession> m_session;
         std::shared_ptr<fair::mq::sdk::Topology> m_fairmqTopo;
         const size_t m_timeout; ///< Request timeout in sec
+        SConfigParams m_configParams;
     };
 } // namespace ddscontrol
+
+#endif /* defined(__DDSControl__DDSControlService__) */

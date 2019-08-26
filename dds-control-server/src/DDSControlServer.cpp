@@ -4,16 +4,15 @@
 
 // DDS
 #include "DDSControlServer.h"
-#include "DDSControlService.h"
 // GRPC
 #include "ddscontrol.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
 using namespace ddscontrol;
 
-void DDSControlServer::Run(const std::string& _host)
+void DDSControlServer::Run(const std::string& _host, const DDSControlService::SConfigParams& _params)
 {
-    DDSControlService service;
+    DDSControlService service(_params);
 
     grpc::ServerBuilder builder;
     builder.AddListeningPort(_host, grpc::InsecureServerCredentials());

@@ -13,11 +13,12 @@ using namespace dds;
 using namespace dds::tools_api;
 using namespace dds::topology_api;
 
-DDSControlService::DDSControlService()
+DDSControlService::DDSControlService(const SConfigParams& _params)
     : m_topo(nullptr)
     , m_session(make_shared<CSession>())
     , m_fairmqTopo(nullptr)
     , m_timeout(10.)
+    , m_configParams(_params)
 {
 }
 
@@ -47,7 +48,7 @@ grpc::Status DDSControlService::Initialize(grpc::ServerContext* context,
         // Submit agents
         // Activate the topology
         success = shutdownDDSSession() && createDDSSession() && submitDDSAgents(numAgents) &&
-                  activateDDSTopology(topologyFile);
+                  waitForNumActiveAgents(numAgents) && activateDDSTopology(topologyFile);
     }
 
     if (success)
@@ -147,10 +148,15 @@ bool DDSControlService::submitDDSAgents(size_t _numAgents)
     bool success(true);
 
     SSubmitRequest::request_t requestInfo;
-    requestInfo.m_config = "";
-    requestInfo.m_rms = "localhost";
-    requestInfo.m_instances = _numAgents;
-    requestInfo.m_pluginPath = "";
+    requestInfo.m_rms = m_configParams.m_rmsPlugin;
+    if (m_configParams.m_rmsPlugin == "localhost")
+    {
+        requestInfo.m_instances = _numAgents;
+    }
+    else
+    {
+        requestInfo.m_config = m_configParams.m_configFile;
+    }
 
     std::condition_variable cv;
 
@@ -189,6 +195,21 @@ bool DDSControlService::submitDDSAgents(size_t _numAgents)
         cout << "Agent submission done successfully" << endl;
     }
     return success;
+}
+
+bool DDSControlService::waitForNumActiveAgents(size_t _numAgents)
+{
+    try
+    {
+        m_session->waitForNumAgents<CSession::EAgentState::active>(
+            _numAgents, std::chrono::seconds(m_timeout), std::chrono::milliseconds(500), 60, &std::cout);
+    }
+    catch (std::exception& _e)
+    {
+        cerr << "Timeout waiting for DDS agents: " << _e.what() << endl;
+        return false;
+    }
+    return true;
 }
 
 bool DDSControlService::activateDDSTopology(const string& _topologyFile)

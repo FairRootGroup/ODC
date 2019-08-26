@@ -2,6 +2,9 @@
 //
 //
 
+#ifndef __DDSControl__DDSControlClient__
+#define __DDSControl__DDSControlClient__
+
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -34,3 +37,5 @@ class DDSControlClient
     std::unique_ptr<ddscontrol::DDSControl::Stub> m_stub;
     std::string m_topo;
 };
+
+#endif /* defined(__DDSControl__DDSControlClient__) */
