@@ -17,6 +17,11 @@ Communication between server and client is done via [gRPC](https://grpc.io/). Th
   * [gRPC](https://grpc.io/)
   * [FairMQ](https://github.com/FairRootGroup/FairMQ)
   * [FairLogger](https://github.com/FairRootGroup/FairLogger)
+  
+For macOS we recommend to install gRPC via `brew` which also installs `Protobuf` and other dependencies:
+```bash
+brew install grpc
+```
 
 ## Installation form source
 
