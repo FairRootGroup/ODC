@@ -51,7 +51,7 @@ grpc::Status DDSControlService::Initialize(grpc::ServerContext* context,
                   waitForNumActiveAgents(numAgents) && activateDDSTopology(topologyFile);
     }
 
-    if (success)
+    if (m_fairmqTopo == nullptr && success)
     {
         try
         {
