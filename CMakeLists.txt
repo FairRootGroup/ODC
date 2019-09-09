@@ -33,6 +33,9 @@ find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
 # Find FairMQ
 find_package(FairMQ 1.4.6 REQUIRED COMPONENTS sdk)
 message(STATUS "Using FairMQ ${FairMQ_GIT_VERSION}")
+if(FairMQ_CXX_STANDARD VERSION_GREATER CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD ${FairMQ_CXX_STANDARD})
+endif()
 
 # Find FairLogger
 find_package(FairLogger REQUIRED)

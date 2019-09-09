@@ -10,8 +10,6 @@ add_executable(sample-client
     "src/DDSControlClient.cpp"
 )
 target_link_libraries(sample-client
-    gRPC::grpc++
-    protobuf::libprotobuf
     Boost::boost
     Boost::program_options
     dc-grpc

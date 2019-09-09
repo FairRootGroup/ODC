@@ -55,7 +55,13 @@ grpc::Status DDSControlService::Initialize(grpc::ServerContext* context,
     {
         try
         {
-            m_fairmqTopo = make_shared<fair::mq::sdk::Topology>(*m_topo, m_session);
+            fair::mq::sdk::DDSEnv env;
+            fair::mq::sdk::DDSTopo topo(*m_topo, env);
+            fair::mq::sdk::DDSSession session(m_session, env);
+            m_fairmqTopo = make_shared<fair::mq::sdk::Topology>(std::move(topo), std::move(session));
+
+            // TODO Use this instead of the above once FairMQ repaired the move ctor of sdk::Topology
+            // m_fairmqTopo = make_shared<fair::mq::sdk::Topology>(fair::mq::sdk::MakeTopology(*m_topo, m_session));
         }
         catch (exception& _e)
         {
@@ -319,25 +325,26 @@ bool DDSControlService::changeState(fair::mq::sdk::TopologyTransition _transitio
 
     try
     {
-        fair::mq::sdk::DeviceState deviceState(fair::mq::sdk::DeviceState::Ok);
+        fair::mq::sdk::DeviceState targetState;
         std::condition_variable cv;
 
-        m_fairmqTopo->ChangeState(_transition,
-                                  [&cv, &success, &deviceState](fair::mq::sdk::Topology::ChangeStateResult result) {
-                                      cout << "Change transition result: " << result << endl;
-                                      success = result.rc == fair::mq::AsyncOpResultCode::Ok;
-                                      try
-                                      {
-                                          deviceState = fair::mq::sdk::AggregateState(result.state);
-                                      }
-                                      catch (exception& _e)
-                                      {
-                                          success = false;
-                                          cerr << "Change state failed: " << _e.what() << endl;
-                                      }
-                                      cv.notify_all();
-                                  },
-                                  std::chrono::seconds(m_timeout));
+        m_fairmqTopo->AsyncChangeState(
+            _transition,
+            std::chrono::seconds(m_timeout),
+            [&cv, &success, &targetState](std::error_code _ec, fair::mq::sdk::TopologyState _state) {
+                cout << "Change transition result: " << _ec.message() << endl;
+                success = !_ec;
+                try
+                {
+                    targetState = fair::mq::sdk::AggregateState(_state);
+                }
+                catch (exception& _e)
+                {
+                    success = false;
+                    cerr << "Change state failed: " << _e.what() << endl;
+                }
+                cv.notify_all();
+            });
 
         std::mutex mtx;
         std::unique_lock<std::mutex> lock(mtx);

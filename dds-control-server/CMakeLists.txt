@@ -12,8 +12,6 @@ add_executable(dds-control-server
     "src/DDSControlService.cpp"
 )
 target_link_libraries(dds-control-server
-  gRPC::grpc++
-  protobuf::libprotobuf
   DDS::dds_topology_lib
   DDS::dds_intercom_lib
   DDS::dds_tools_lib
