@@ -36,6 +36,7 @@ message GeneralReply {
     string msg = 1;
     ReplyStatus status = 2;
     Error error = 3;
+    int32 exectime = 4; // Execution time in ms
 }
 
 // Initialize request

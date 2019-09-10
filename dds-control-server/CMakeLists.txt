@@ -10,6 +10,7 @@ add_executable(dds-control-server
     "src/DDSControlServer.cpp"
     "src/DDSControlService.h"
     "src/DDSControlService.cpp"
+    "src/TimeMeasure.h"
 )
 target_link_libraries(dds-control-server
   DDS::dds_topology_lib

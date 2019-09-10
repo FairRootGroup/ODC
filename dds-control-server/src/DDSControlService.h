@@ -62,7 +62,8 @@ namespace ddscontrol
         void setupGeneralReply(ddscontrol::GeneralReply* _response,
                                bool _success,
                                const std::string& _msg,
-                               const std::string& _errMsg);
+                               const std::string& _errMsg,
+                               size_t _execTime);
         bool changeState(fair::mq::sdk::TopologyTransition _transition);
 
       private:
