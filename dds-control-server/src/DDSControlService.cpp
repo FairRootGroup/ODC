@@ -173,6 +173,8 @@ bool DDSControlService::submitDDSAgents(size_t _numAgents, size_t _numSlots)
     }
     else
     {
+        requestInfo.m_instances = _numAgents;
+        requestInfo.m_slots = _numSlots;
         requestInfo.m_config = m_configParams.m_configFile;
     }
 
