@@ -55,7 +55,7 @@ namespace ddscontrol
 
       private:
         bool createDDSSession();
-        bool submitDDSAgents(size_t _numAgents);
+        bool submitDDSAgents(size_t _numAgents, size_t _numSlots);
         bool activateDDSTopology(const std::string& _topologyFile);
         bool waitForNumActiveAgents(size_t _numAgents);
         bool shutdownDDSSession();

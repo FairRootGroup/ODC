@@ -33,11 +33,11 @@ grpc::Status DDSControlService::Initialize(grpc::ServerContext* context,
     bool success(true);
 
     string topologyFile = request->topology();
-    size_t numAgents(0);
+    std::pair<size_t, size_t> numAgents;
     try
     {
         m_topo = make_shared<CTopology>(topologyFile);
-        numAgents = m_topo->getRequiredNofAgents();
+        numAgents = m_topo->getRequiredNofAgents(12);
     }
     catch (exception& _e)
     {
@@ -51,8 +51,9 @@ grpc::Status DDSControlService::Initialize(grpc::ServerContext* context,
         // Create new DDS session
         // Submit agents
         // Activate the topology
-        success = shutdownDDSSession() && createDDSSession() && submitDDSAgents(numAgents) &&
-                  waitForNumActiveAgents(numAgents) && activateDDSTopology(topologyFile);
+        size_t allCount = numAgents.first * numAgents.second;
+        success = shutdownDDSSession() && createDDSSession() && submitDDSAgents(numAgents.first, numAgents.second) &&
+                  waitForNumActiveAgents(allCount) && activateDDSTopology(topologyFile);
     }
 
     if (m_fairmqTopo == nullptr && success)
@@ -159,7 +160,7 @@ bool DDSControlService::createDDSSession()
     return success;
 }
 
-bool DDSControlService::submitDDSAgents(size_t _numAgents)
+bool DDSControlService::submitDDSAgents(size_t _numAgents, size_t _numSlots)
 {
     bool success(true);
 
@@ -168,6 +169,7 @@ bool DDSControlService::submitDDSAgents(size_t _numAgents)
     if (m_configParams.m_rmsPlugin == "localhost")
     {
         requestInfo.m_instances = _numAgents;
+        requestInfo.m_slots = _numSlots;
     }
     else
     {
