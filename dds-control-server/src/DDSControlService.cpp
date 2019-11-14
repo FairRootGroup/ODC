@@ -19,7 +19,7 @@ DDSControlService::DDSControlService(const SConfigParams& _params)
     : m_topo(nullptr)
     , m_session(make_shared<CSession>())
     , m_fairmqTopo(nullptr)
-    , m_timeout(10.)
+    , m_timeout(1800.)
     , m_configParams(_params)
 {
 }
@@ -222,7 +222,7 @@ bool DDSControlService::waitForNumActiveAgents(size_t _numAgents)
     try
     {
         m_session->waitForNumAgents<CSession::EAgentState::active>(
-            _numAgents, std::chrono::seconds(m_timeout), std::chrono::milliseconds(500), 60, &std::cout);
+            _numAgents, std::chrono::seconds(m_timeout), std::chrono::milliseconds(500), 360, &std::cout);
     }
     catch (std::exception& _e)
     {
