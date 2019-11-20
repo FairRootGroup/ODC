@@ -292,18 +292,26 @@ bool DDSControlService::activateDDSTopology(const string& _topologyFile)
 bool DDSControlService::shutdownDDSSession()
 {
     bool success(true);
-    if (m_session->IsRunning())
+    try
     {
-        m_session->shutdown();
-        if (m_session->getSessionID() == boost::uuids::nil_uuid())
+        if (m_session->IsRunning())
         {
-            cout << "DDS session shutted down" << endl;
+            m_session->shutdown();
+            if (m_session->getSessionID() == boost::uuids::nil_uuid())
+            {
+                cout << "DDS session shutted down" << endl;
+            }
+            else
+            {
+                cerr << "Failed to shut down DDS session" << endl;
+                success = false;
+            }
         }
-        else
-        {
-            cerr << "Failed to shut down DDS session" << endl;
-            success = false;
-        }
+    }
+    catch (exception& _e)
+    {
+        success = false;
+        cerr << "Shutdown failed: " << _e.what() << endl;
     }
     return success;
 }
