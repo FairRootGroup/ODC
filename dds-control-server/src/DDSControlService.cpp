@@ -222,7 +222,7 @@ bool DDSControlService::waitForNumActiveAgents(size_t _numAgents)
     try
     {
         m_session->waitForNumAgents<CSession::EAgentState::active>(
-            _numAgents, std::chrono::seconds(m_timeout), std::chrono::milliseconds(500), 360, &std::cout);
+            _numAgents, std::chrono::seconds(m_timeout), std::chrono::milliseconds(500), 3600, &std::cout);
     }
     catch (std::exception& _e)
     {
