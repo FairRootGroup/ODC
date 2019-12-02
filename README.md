@@ -1,9 +1,9 @@
-# DDS-control
+# Online Device Control
 
 ## Introduction
-DDS-control project is an example of how to control/communicate with a system backed by [DDS](http://dds.gsi.de) and [FairMQ](https://github.com/FairRootGroup/FairMQ).
+The Online Device Control project control/communicate with a graph (topology) of [FairMQ](https://github.com/FairRootGroup/FairMQ) devices using [DDS](http://dds.gsi.de) or PMIx (under development) 
 
-The project containes two main executables:
+For now The project containes two main executables:
   * The DDS-control server: `dds-control-server`
   * The sample client: `sample-client`
 
