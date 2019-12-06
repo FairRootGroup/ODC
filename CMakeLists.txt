@@ -1,7 +1,7 @@
 # Copyright 2019 GSI, Inc. All rights reserved.
 #
 #
-project(DDS-control)
+project(ODC)
 
 cmake_minimum_required( VERSION 3.12.0 FATAL_ERROR )
 cmake_policy(VERSION 3.12...3.14)
@@ -53,7 +53,7 @@ endif()
 
 # Install directory
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-set (CMAKE_INSTALL_PREFIX "$ENV{HOME}/DDS-control" CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
+set (CMAKE_INSTALL_PREFIX "$ENV{HOME}/ODC" CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
 endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 # Source Code Formatting using clang-format
@@ -73,12 +73,12 @@ install(TARGETS dds-control-server sample-client RUNTIME DESTINATION bin)
 
 # Daemon config
 if(APPLE)
-    configure_file(utils/launchd/de.gsi.dds-control.plist.in de.gsi.dds-control.plist @ONLY)
-    set(daemon_file "${CMAKE_BINARY_DIR}/de.gsi.dds-control.plist")
+    configure_file(utils/launchd/de.gsi.odc.plist.in de.gsi.odc.plist @ONLY)
+    set(daemon_file "${CMAKE_BINARY_DIR}/de.gsi.odc.plist")
     set(daemon_destination "$ENV{HOME}/Library/LaunchAgents")
 else()
-    configure_file(utils/systemd/dds-control.service.in dds-control.service @ONLY)
-    set(daemon_file "${CMAKE_BINARY_DIR}/dds-control.service")
+    configure_file(utils/systemd/odc.service.in odc.service @ONLY)
+    set(daemon_file "${CMAKE_BINARY_DIR}/odc.service")
     if(NOT ENV{XDG_CONFIG_HOME})
       set(config_home "$ENV{HOME}/.config")
     else()

@@ -5,7 +5,7 @@
 // DDS
 #include "DDSControlServer.h"
 // GRPC
-#include "ddscontrol.grpc.pb.h"
+#include "odc.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 
 using namespace ddscontrol;

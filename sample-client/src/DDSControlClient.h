@@ -12,7 +12,7 @@
 
 #include <grpcpp/grpcpp.h>
 
-#include "ddscontrol.grpc.pb.h"
+#include "odc.grpc.pb.h"
 
 class DDSControlClient
 {

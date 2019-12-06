@@ -2,7 +2,7 @@
 #
 #
 
-# dds-control executable
+# dds-control-server executable
 configure_file(src/main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/src/main.cpp @ONLY)
 add_executable(dds-control-server
     "${CMAKE_CURRENT_BINARY_DIR}/src/main.cpp"

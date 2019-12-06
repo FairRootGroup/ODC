@@ -3,7 +3,7 @@
 #
 
 # Proto file
-set(dc_proto "ddscontrol.proto")
+set(dc_proto "odc.proto")
 
 # Generated sources
 protobuf_generate_cpp(dc_proto_srcs dc_proto_hdrs ${CMAKE_CURRENT_BINARY_DIR} ${dc_proto})
