@@ -2,30 +2,30 @@
 //
 //
 
-#include "DDSControlClient.h"
+#include "GrpcControlClient.h"
 
-using ddscontrol::ConfigureRunRequest;
-using ddscontrol::DDSControl;
-using ddscontrol::GeneralReply;
-using ddscontrol::InitializeRequest;
-using ddscontrol::ReplyStatus;
-using ddscontrol::ShutdownRequest;
-using ddscontrol::StartRequest;
-using ddscontrol::StopRequest;
-using ddscontrol::TerminateRequest;
+using odc::ConfigureRunRequest;
+using odc::GeneralReply;
+using odc::InitializeRequest;
+using odc::ODC;
+using odc::ReplyStatus;
+using odc::ShutdownRequest;
+using odc::StartRequest;
+using odc::StopRequest;
+using odc::TerminateRequest;
 
-DDSControlClient::DDSControlClient(std::shared_ptr<grpc::Channel> channel)
-    : m_stub(DDSControl::NewStub(channel))
+GrpcControlClient::GrpcControlClient(std::shared_ptr<grpc::Channel> channel)
+    : m_stub(ODC::NewStub(channel))
     , m_topo()
 {
 }
 
-void DDSControlClient::setTopo(const std::string& _topo)
+void GrpcControlClient::setTopo(const std::string& _topo)
 {
     m_topo = _topo;
 }
 
-std::string DDSControlClient::RequestInitialize()
+std::string GrpcControlClient::RequestInitialize()
 {
     InitializeRequest request;
     request.set_topology(m_topo);
@@ -35,7 +35,7 @@ std::string DDSControlClient::RequestInitialize()
     return GetReplyString(status, reply);
 }
 
-std::string DDSControlClient::RequestConfigureRun()
+std::string GrpcControlClient::RequestConfigureRun()
 {
     ConfigureRunRequest request;
     GeneralReply reply;
@@ -44,7 +44,7 @@ std::string DDSControlClient::RequestConfigureRun()
     return GetReplyString(status, reply);
 }
 
-std::string DDSControlClient::RequestStart()
+std::string GrpcControlClient::RequestStart()
 {
     StartRequest request;
     GeneralReply reply;
@@ -53,7 +53,7 @@ std::string DDSControlClient::RequestStart()
     return GetReplyString(status, reply);
 }
 
-std::string DDSControlClient::RequestStop()
+std::string GrpcControlClient::RequestStop()
 {
     StopRequest request;
     GeneralReply reply;
@@ -62,7 +62,7 @@ std::string DDSControlClient::RequestStop()
     return GetReplyString(status, reply);
 }
 
-std::string DDSControlClient::RequestTerminate()
+std::string GrpcControlClient::RequestTerminate()
 {
     TerminateRequest request;
     GeneralReply reply;
@@ -71,7 +71,7 @@ std::string DDSControlClient::RequestTerminate()
     return GetReplyString(status, reply);
 }
 
-std::string DDSControlClient::RequestShutdown()
+std::string GrpcControlClient::RequestShutdown()
 {
     ShutdownRequest request;
     GeneralReply reply;
@@ -81,7 +81,7 @@ std::string DDSControlClient::RequestShutdown()
 }
 
 template <typename Reply_t>
-std::string DDSControlClient::GetReplyString(const grpc::Status& _status, const Reply_t& _reply)
+std::string GrpcControlClient::GetReplyString(const grpc::Status& _status, const Reply_t& _reply)
 {
     if (_status.ok())
     {

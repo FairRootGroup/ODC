@@ -5,7 +5,7 @@ The Online Device Control project control/communicate with a graph (topology) of
 
 For now The project containes two main executables:
   * The DDS-control server: `dds-control-server`
-  * The sample client: `sample-client`
+  * The sample client: `grpc-sample-client`
 
 Communication between server and client is done via [gRPC](https://grpc.io/). The interface of the DDS-control server is described in the [ddscontrol.proto](proto/ddscontrol.proto) file.
 
@@ -45,7 +45,7 @@ dds-control-server
 Start the sample client in a different terminal:
 ```bash
 export PATH=[INSTALL_DIR]/bin:$PATH
-sample-client
+grpc-sample-client
 ```
 
 Alternatively, start the server as a background daemon (in your user session):

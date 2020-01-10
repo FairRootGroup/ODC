@@ -2,7 +2,7 @@
 //
 //
 
-#include "DDSControlClient.h"
+#include "GrpcControlClient.h"
 
 // BOOST
 #include <boost/program_options/options_description.hpp>
@@ -31,7 +31,7 @@ int main(int argc, char** argv)
     string topo;
 
     // Generic options
-    bpo::options_description options("dds-sample-client options");
+    bpo::options_description options("grpc-sample-client options");
     options.add_options()("help,h", "Produce help message");
     options.add_options()(
         "host", bpo::value<std::string>(&host)->default_value("localhost:50051"),
@@ -66,7 +66,7 @@ int main(int argc, char** argv)
         return EXIT_FAILURE;
     }
 
-    DDSControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
+    GrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
     control.setTopo(topo);
 
     printDescription();

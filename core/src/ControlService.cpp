@@ -3,19 +3,20 @@
 //
 
 // DDS
-#include "DDSControlService.h"
+#include "ControlService.h"
 // FairMQ
 #include <fairmq/sdk/Topology.h>
 // DDS control
 #include "TimeMeasure.h"
 
-using namespace ddscontrol;
+using namespace odc;
+using namespace odc::core;
 using namespace std;
 using namespace dds;
 using namespace dds::tools_api;
 using namespace dds::topology_api;
 
-DDSControlService::DDSControlService(const SConfigParams& _params)
+ControlService::ControlService(const SConfigParams& _params)
     : m_topo(nullptr)
     , m_session(make_shared<CSession>())
     , m_fairmqTopo(nullptr)
@@ -24,15 +25,13 @@ DDSControlService::DDSControlService(const SConfigParams& _params)
 {
 }
 
-grpc::Status DDSControlService::Initialize(grpc::ServerContext* context,
-                                           const ddscontrol::InitializeRequest* request,
-                                           ddscontrol::GeneralReply* response)
+SReturnValue ControlService::Initialize()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
 
     bool success(true);
 
-    string topologyFile = request->topology();
+    string topologyFile = m_configParams.m_topologyFile;
     std::pair<size_t, size_t> numAgents;
     try
     {
@@ -75,19 +74,10 @@ grpc::Status DDSControlService::Initialize(grpc::ServerContext* context,
         }
     }
 
-    // Shutdown DDS session if operation failed
-    if (!success)
-    {
-        shutdownDDSSession();
-    }
-
-    setupGeneralReply(response, success, "Initialize done", "Initialize failed", measure.duration());
-    return grpc::Status::OK;
+    return createReturnValue(success, "Initialize done", "Initialize failed", measure.duration());
 }
 
-grpc::Status DDSControlService::ConfigureRun(grpc::ServerContext* context,
-                                             const ddscontrol::ConfigureRunRequest* request,
-                                             ddscontrol::GeneralReply* response)
+SReturnValue ControlService::ConfigureRun()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
 
@@ -97,54 +87,52 @@ grpc::Status DDSControlService::ConfigureRun(grpc::ServerContext* context,
                    changeState(fair::mq::sdk::TopologyTransition::Connect) &&
                    changeState(fair::mq::sdk::TopologyTransition::InitTask);
 
-    setupGeneralReply(response, success, "ConfigureRun done", "ConfigureRun failed", measure.duration());
-
-    return grpc::Status::OK;
+    return createReturnValue(success, "ConfigureRun done", "ConfigureRun failed", measure.duration());
 }
 
-grpc::Status DDSControlService::Start(grpc::ServerContext* context,
-                                      const ddscontrol::StartRequest* request,
-                                      ddscontrol::GeneralReply* response)
+SReturnValue ControlService::Start()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = changeState(fair::mq::sdk::TopologyTransition::Run);
-    setupGeneralReply(response, success, "Start done", "Start failed", measure.duration());
-    return grpc::Status::OK;
+    return createReturnValue(success, "Start done", "Start failed", measure.duration());
 }
 
-grpc::Status DDSControlService::Stop(grpc::ServerContext* context,
-                                     const ddscontrol::StopRequest* request,
-                                     ddscontrol::GeneralReply* response)
+SReturnValue ControlService::Stop()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = changeState(fair::mq::sdk::TopologyTransition::Stop);
-    setupGeneralReply(response, success, "Stop done", "Stop failed", measure.duration());
-    return grpc::Status::OK;
+    return createReturnValue(success, "Stop done", "Stop failed", measure.duration());
 }
 
-grpc::Status DDSControlService::Terminate(grpc::ServerContext* context,
-                                          const ddscontrol::TerminateRequest* request,
-                                          ddscontrol::GeneralReply* response)
+SReturnValue ControlService::Terminate()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = changeState(fair::mq::sdk::TopologyTransition::ResetTask) &&
                    changeState(fair::mq::sdk::TopologyTransition::ResetDevice) &&
                    changeState(fair::mq::sdk::TopologyTransition::End);
-    setupGeneralReply(response, success, "Terminate done", "Terminate failed", measure.duration());
-    return grpc::Status::OK;
+    return createReturnValue(success, "Terminate done", "Terminate failed", measure.duration());
 }
 
-grpc::Status DDSControlService::Shutdown(grpc::ServerContext* context,
-                                         const ddscontrol::ShutdownRequest* request,
-                                         ddscontrol::GeneralReply* response)
+SReturnValue ControlService::Shutdown()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = shutdownDDSSession();
-    setupGeneralReply(response, success, "Shutdown done", "Shutdown failed", measure.duration());
-    return grpc::Status::OK;
+    return createReturnValue(success, "Shutdown done", "Shutdown failed", measure.duration());
 }
 
-bool DDSControlService::createDDSSession()
+SReturnValue ControlService::createReturnValue(bool _success,
+                                               const std::string& _msg,
+                                               const std::string& _errMsg,
+                                               size_t _execTime)
+{
+    if (_success)
+    {
+        return SReturnValue(EStatusCode::ok, _msg, _execTime, SError());
+    }
+    return SReturnValue(EStatusCode::error, "", _execTime, SError(123, _errMsg));
+}
+
+bool ControlService::createDDSSession()
 {
     bool success(true);
     try
@@ -160,7 +148,7 @@ bool DDSControlService::createDDSSession()
     return success;
 }
 
-bool DDSControlService::submitDDSAgents(size_t _numAgents, size_t _numSlots)
+bool ControlService::submitDDSAgents(size_t _numAgents, size_t _numSlots)
 {
     bool success(true);
 
@@ -217,7 +205,7 @@ bool DDSControlService::submitDDSAgents(size_t _numAgents, size_t _numSlots)
     return success;
 }
 
-bool DDSControlService::waitForNumActiveAgents(size_t _numAgents)
+bool ControlService::waitForNumActiveAgents(size_t _numAgents)
 {
     try
     {
@@ -232,7 +220,7 @@ bool DDSControlService::waitForNumActiveAgents(size_t _numAgents)
     return true;
 }
 
-bool DDSControlService::activateDDSTopology(const string& _topologyFile)
+bool ControlService::activateDDSTopology(const string& _topologyFile)
 {
     bool success(true);
 
@@ -289,7 +277,7 @@ bool DDSControlService::activateDDSTopology(const string& _topologyFile)
     return success;
 }
 
-bool DDSControlService::shutdownDDSSession()
+bool ControlService::shutdownDDSSession()
 {
     bool success(true);
     try
@@ -316,31 +304,7 @@ bool DDSControlService::shutdownDDSSession()
     return success;
 }
 
-void DDSControlService::setupGeneralReply(ddscontrol::GeneralReply* _response,
-                                          bool _success,
-                                          const std::string& _msg,
-                                          const std::string& _errMsg,
-                                          size_t _execTime)
-{
-    if (_success)
-    {
-        _response->set_status(ddscontrol::ReplyStatus::SUCCESS);
-        _response->set_msg(_msg);
-    }
-    else
-    {
-        _response->set_status(ddscontrol::ReplyStatus::ERROR);
-        //_response->set_msg("");
-        // protobuf will take care of deleting the object
-        ddscontrol::Error* error = new ddscontrol::Error();
-        error->set_code(123);
-        error->set_msg(_errMsg);
-        _response->set_allocated_error(error);
-    }
-    _response->set_exectime(_execTime);
-}
-
-bool DDSControlService::changeState(fair::mq::sdk::TopologyTransition _transition)
+bool ControlService::changeState(fair::mq::sdk::TopologyTransition _transition)
 {
     if (m_fairmqTopo == nullptr)
         return false;

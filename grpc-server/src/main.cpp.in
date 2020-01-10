@@ -3,8 +3,8 @@
 //
 
 // DDS
-#include "DDSControlServer.h"
-#include "DDSControlService.h"
+#include "GrpcControlServer.h"
+#include "GrpcControlService.h"
 
 // STD
 #include <cstdlib>
@@ -24,7 +24,7 @@ namespace bpo = boost::program_options;
 int main(int argc, char** argv)
 {
     std::string host("");
-	ddscontrol::DDSControlService::SConfigParams params;
+	odc::core::ControlService::SConfigParams params;
 
     // Generic options
     bpo::options_description options("dds-control-server options");
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
     }
     setenv("PATH", new_path.c_str(), 1);
 
-    ddscontrol::DDSControlServer server;
+    odc::grpc::GrpcControlServer server;
     server.Run(host, params);
 
     return EXIT_SUCCESS;

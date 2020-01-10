@@ -3,12 +3,12 @@
 <plist version="1.0">
 	<dict>
 		<key>Label</key>
-		<string>de.gsi.dds-control-server</string>
+		<string>de.gsi.odc-grpc-server</string>
 		<key>Program</key>
-		<string>@CMAKE_INSTALL_PREFIX@/bin/dds-control-server</string>
+		<string>@CMAKE_INSTALL_PREFIX@/bin/odc-grpc-server</string>
 		<key>StandardOutPath</key>
-		<string>/tmp/dds-control-server_out.log</string>
+		<string>/tmp/odc-grpc-server_out.log</string>
 		<key>StandardErrorPath</key>
-		<string>/tmp/dds-control-server_err.log</string>
+		<string>/tmp/odc-grpc-server_err.log</string>
 	</dict>
 </plist>

@@ -62,14 +62,16 @@ add_custom_target(format-code
        COMMENT "Updating source code formatting.")
 
 # Targets
-add_subdirectory(proto)
-add_subdirectory(dds-control-server)
-add_subdirectory(sample-client)
+add_subdirectory(core)
+add_subdirectory(grpc-proto)
+add_subdirectory(grpc-server)
+add_subdirectory(grpc-client)
 
 #
 # Install
 #
-install(TARGETS dds-control-server sample-client RUNTIME DESTINATION bin)
+install(TARGETS odc-grpc-server odc-grpc-client RUNTIME DESTINATION bin)
+install(TARGETS odc_core_lib RUNTIME DESTINATION lib)
 
 # Daemon config
 if(APPLE)

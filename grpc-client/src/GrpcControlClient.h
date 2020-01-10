@@ -2,8 +2,8 @@
 //
 //
 
-#ifndef __DDSControl__DDSControlClient__
-#define __DDSControl__DDSControlClient__
+#ifndef __ODC__GrpcControlClient__
+#define __ODC__GrpcControlClient__
 
 #include <iostream>
 #include <memory>
@@ -14,10 +14,10 @@
 
 #include "odc.grpc.pb.h"
 
-class DDSControlClient
+class GrpcControlClient
 {
   public:
-    DDSControlClient(std::shared_ptr<grpc::Channel> channel);
+    GrpcControlClient(std::shared_ptr<grpc::Channel> channel);
 
     std::string RequestInitialize();
     std::string RequestConfigureRun();
@@ -34,8 +34,8 @@ class DDSControlClient
     std::string GetReplyString(const grpc::Status& _status, const Reply_t& _reply);
 
   private:
-    std::unique_ptr<ddscontrol::DDSControl::Stub> m_stub;
+    std::unique_ptr<odc::ODC::Stub> m_stub;
     std::string m_topo;
 };
 
-#endif /* defined(__DDSControl__DDSControlClient__) */
+#endif /* defined(__ODC__GrpcControlClient__) */

@@ -1,9 +1,9 @@
 [Unit]
-Description=DDS control server
+Description=ODC server
 
 [Service]
 Type=simple
-ExecStart=@CMAKE_INSTALL_PREFIX@/bin/dds-control-server
+ExecStart=@CMAKE_INSTALL_PREFIX@/bin/odc-grpc-server
 
 [Install]
 WantedBy=multi-user.target

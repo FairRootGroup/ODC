@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package ddscontrol;
+package odc;
 
-// The DDS control service definition.
-service DDSControl {
+// The ODC service definition.
+service ODC {
     // Initialize
     rpc Initialize (InitializeRequest) returns (GeneralReply) {}
     // Configure run
