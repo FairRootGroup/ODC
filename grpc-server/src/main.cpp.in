@@ -23,8 +23,9 @@ namespace bpo = boost::program_options;
 
 int main(int argc, char** argv)
 {
-    std::string host("");
-	odc::core::ControlService::SConfigParams params;
+    string host;
+	string rmsPlugin;
+	string configFile;
 
     // Generic options
     bpo::options_description options("dds-control-server options");
@@ -32,10 +33,10 @@ int main(int argc, char** argv)
     options.add_options()("host", bpo::value<std::string>(&host)->default_value("localhost:50051"),
                           "Server address (defaul \"localhost:50051\")");
 	options.add_options()("rms,r",
-					      bpo::value<std::string>(&params.m_rmsPlugin)->default_value("localhost"),
+					      bpo::value<std::string>(&rmsPlugin)->default_value("localhost"),
 					      "Defines a destination resource management system plug-in.");
 	options.add_options()("config,c",
-					       bpo::value<std::string>(&params.m_configFile)->default_value(""),
+					       bpo::value<std::string>(&configFile)->default_value(""),
 					       "A plug-in's configuration file. It can be used to provide additional RMS options");
 
     // Parsing command-line
@@ -74,8 +75,8 @@ int main(int argc, char** argv)
     }
     setenv("PATH", new_path.c_str(), 1);
 
-    odc::grpc::GrpcControlServer server;
-    server.Run(host, params);
+    odc::grpc::CGrpcControlServer server;
+    server.Run(host, rmsPlugin, configFile);
 
     return EXIT_SUCCESS;
 }

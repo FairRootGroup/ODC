@@ -10,66 +10,69 @@ using namespace odc::core;
 using namespace odc::grpc;
 using namespace std;
 
-GrpcControlService::GrpcControlService(const odc::core::ControlService::SConfigParams& _params)
-    : m_service(make_shared<ControlService>(_params))
+CGrpcControlService::CGrpcControlService(const std::string& _rmsPlugin, const std::string& _configFile)
+    : m_service(make_shared<CControlService>())
+    , m_rmsPlugin(_rmsPlugin)
+    , m_configFile(_configFile)
 {
 }
 
-::grpc::Status GrpcControlService::Initialize(::grpc::ServerContext* context,
-                                              const odc::InitializeRequest* request,
-                                              odc::GeneralReply* response)
+::grpc::Status CGrpcControlService::Initialize(::grpc::ServerContext* context,
+                                               const odc::InitializeRequest* request,
+                                               odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->Initialize();
+    SInitializeParams params{ request->topology(), m_rmsPlugin, m_configFile };
+    SReturnValue value = m_service->Initialize(params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status GrpcControlService::ConfigureRun(::grpc::ServerContext* context,
-                                                const odc::ConfigureRunRequest* request,
-                                                odc::GeneralReply* response)
+::grpc::Status CGrpcControlService::ConfigureRun(::grpc::ServerContext* context,
+                                                 const odc::ConfigureRunRequest* request,
+                                                 odc::GeneralReply* response)
 {
     SReturnValue value = m_service->ConfigureRun();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status GrpcControlService::Start(::grpc::ServerContext* context,
-                                         const odc::StartRequest* request,
-                                         odc::GeneralReply* response)
+::grpc::Status CGrpcControlService::Start(::grpc::ServerContext* context,
+                                          const odc::StartRequest* request,
+                                          odc::GeneralReply* response)
 {
     SReturnValue value = m_service->Start();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status GrpcControlService::Stop(::grpc::ServerContext* context,
-                                        const odc::StopRequest* request,
-                                        odc::GeneralReply* response)
+::grpc::Status CGrpcControlService::Stop(::grpc::ServerContext* context,
+                                         const odc::StopRequest* request,
+                                         odc::GeneralReply* response)
 {
     SReturnValue value = m_service->Stop();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status GrpcControlService::Terminate(::grpc::ServerContext* context,
-                                             const odc::TerminateRequest* request,
-                                             odc::GeneralReply* response)
+::grpc::Status CGrpcControlService::Terminate(::grpc::ServerContext* context,
+                                              const odc::TerminateRequest* request,
+                                              odc::GeneralReply* response)
 {
     SReturnValue value = m_service->Terminate();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status GrpcControlService::Shutdown(::grpc::ServerContext* context,
-                                            const odc::ShutdownRequest* request,
-                                            odc::GeneralReply* response)
+::grpc::Status CGrpcControlService::Shutdown(::grpc::ServerContext* context,
+                                             const odc::ShutdownRequest* request,
+                                             odc::GeneralReply* response)
 {
     SReturnValue value = m_service->Shutdown();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
 
-void GrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const SReturnValue& _value)
+void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const SReturnValue& _value)
 {
     if (_value.m_statusCode == EStatusCode::ok)
     {

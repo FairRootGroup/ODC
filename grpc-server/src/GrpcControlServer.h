@@ -15,10 +15,10 @@ namespace odc
 {
     namespace grpc
     {
-        class GrpcControlServer final
+        class CGrpcControlServer final
         {
           public:
-            void Run(const std::string& _host, const odc::core::ControlService::SConfigParams& _params);
+            void Run(const std::string& _host, const std::string& _rmsPlugin, const std::string& _configFile);
         };
     } // namespace grpc
 } // namespace odc

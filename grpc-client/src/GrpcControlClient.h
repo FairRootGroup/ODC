@@ -14,10 +14,10 @@
 
 #include "odc.grpc.pb.h"
 
-class GrpcControlClient
+class CGrpcControlClient
 {
   public:
-    GrpcControlClient(std::shared_ptr<grpc::Channel> channel);
+    CGrpcControlClient(std::shared_ptr<grpc::Channel> channel);
 
     std::string RequestInitialize();
     std::string RequestConfigureRun();

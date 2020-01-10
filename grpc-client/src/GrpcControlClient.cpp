@@ -14,18 +14,18 @@ using odc::StartRequest;
 using odc::StopRequest;
 using odc::TerminateRequest;
 
-GrpcControlClient::GrpcControlClient(std::shared_ptr<grpc::Channel> channel)
+CGrpcControlClient::CGrpcControlClient(std::shared_ptr<grpc::Channel> channel)
     : m_stub(ODC::NewStub(channel))
     , m_topo()
 {
 }
 
-void GrpcControlClient::setTopo(const std::string& _topo)
+void CGrpcControlClient::setTopo(const std::string& _topo)
 {
     m_topo = _topo;
 }
 
-std::string GrpcControlClient::RequestInitialize()
+std::string CGrpcControlClient::RequestInitialize()
 {
     InitializeRequest request;
     request.set_topology(m_topo);
@@ -35,7 +35,7 @@ std::string GrpcControlClient::RequestInitialize()
     return GetReplyString(status, reply);
 }
 
-std::string GrpcControlClient::RequestConfigureRun()
+std::string CGrpcControlClient::RequestConfigureRun()
 {
     ConfigureRunRequest request;
     GeneralReply reply;
@@ -44,7 +44,7 @@ std::string GrpcControlClient::RequestConfigureRun()
     return GetReplyString(status, reply);
 }
 
-std::string GrpcControlClient::RequestStart()
+std::string CGrpcControlClient::RequestStart()
 {
     StartRequest request;
     GeneralReply reply;
@@ -53,7 +53,7 @@ std::string GrpcControlClient::RequestStart()
     return GetReplyString(status, reply);
 }
 
-std::string GrpcControlClient::RequestStop()
+std::string CGrpcControlClient::RequestStop()
 {
     StopRequest request;
     GeneralReply reply;
@@ -62,7 +62,7 @@ std::string GrpcControlClient::RequestStop()
     return GetReplyString(status, reply);
 }
 
-std::string GrpcControlClient::RequestTerminate()
+std::string CGrpcControlClient::RequestTerminate()
 {
     TerminateRequest request;
     GeneralReply reply;
@@ -71,7 +71,7 @@ std::string GrpcControlClient::RequestTerminate()
     return GetReplyString(status, reply);
 }
 
-std::string GrpcControlClient::RequestShutdown()
+std::string CGrpcControlClient::RequestShutdown()
 {
     ShutdownRequest request;
     GeneralReply reply;
@@ -81,7 +81,7 @@ std::string GrpcControlClient::RequestShutdown()
 }
 
 template <typename Reply_t>
-std::string GrpcControlClient::GetReplyString(const grpc::Status& _status, const Reply_t& _reply)
+std::string CGrpcControlClient::GetReplyString(const grpc::Status& _status, const Reply_t& _reply)
 {
     if (_status.ok())
     {

@@ -16,11 +16,11 @@ namespace odc
 {
     namespace grpc
     {
-        class GrpcControlService final : public odc::ODC::Service
+        class CGrpcControlService final : public odc::ODC::Service
         {
 
           public:
-            GrpcControlService(const odc::core::ControlService::SConfigParams& _params);
+            CGrpcControlService(const std::string& _rmsPlugin, const std::string& _configFile);
 
           private:
             ::grpc::Status Initialize(::grpc::ServerContext* context,
@@ -46,7 +46,9 @@ namespace odc
             void setupGeneralReply(odc::GeneralReply* _response, const odc::core::SReturnValue& _value);
 
           private:
-            std::shared_ptr<odc::core::ControlService> m_service;
+            std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
+            std::string m_rmsPlugin;                               ///< RMS plugin used for DDS
+            std::string m_configFile;                              ///< Configuration file for RMS plugin
         };
     } // namespace grpc
 } // namespace odc

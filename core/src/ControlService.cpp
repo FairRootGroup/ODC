@@ -16,22 +16,21 @@ using namespace dds;
 using namespace dds::tools_api;
 using namespace dds::topology_api;
 
-ControlService::ControlService(const SConfigParams& _params)
+CControlService::CControlService()
     : m_topo(nullptr)
     , m_session(make_shared<CSession>())
     , m_fairmqTopo(nullptr)
     , m_timeout(1800.)
-    , m_configParams(_params)
 {
 }
 
-SReturnValue ControlService::Initialize()
+SReturnValue CControlService::Initialize(const SInitializeParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
 
     bool success(true);
 
-    string topologyFile = m_configParams.m_topologyFile;
+    string topologyFile = _params.m_topologyFile;
     std::pair<size_t, size_t> numAgents;
     try
     {
@@ -51,7 +50,8 @@ SReturnValue ControlService::Initialize()
         // Submit agents
         // Activate the topology
         size_t allCount = numAgents.first * numAgents.second;
-        success = shutdownDDSSession() && createDDSSession() && submitDDSAgents(numAgents.first, numAgents.second) &&
+        success = shutdownDDSSession() && createDDSSession() &&
+                  submitDDSAgents(_params.m_rmsPlugin, _params.m_configFile, numAgents.first, numAgents.second) &&
                   waitForNumActiveAgents(allCount) && activateDDSTopology(topologyFile);
     }
 
@@ -77,7 +77,7 @@ SReturnValue ControlService::Initialize()
     return createReturnValue(success, "Initialize done", "Initialize failed", measure.duration());
 }
 
-SReturnValue ControlService::ConfigureRun()
+SReturnValue CControlService::ConfigureRun()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
 
@@ -90,21 +90,21 @@ SReturnValue ControlService::ConfigureRun()
     return createReturnValue(success, "ConfigureRun done", "ConfigureRun failed", measure.duration());
 }
 
-SReturnValue ControlService::Start()
+SReturnValue CControlService::Start()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = changeState(fair::mq::sdk::TopologyTransition::Run);
     return createReturnValue(success, "Start done", "Start failed", measure.duration());
 }
 
-SReturnValue ControlService::Stop()
+SReturnValue CControlService::Stop()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = changeState(fair::mq::sdk::TopologyTransition::Stop);
     return createReturnValue(success, "Stop done", "Stop failed", measure.duration());
 }
 
-SReturnValue ControlService::Terminate()
+SReturnValue CControlService::Terminate()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = changeState(fair::mq::sdk::TopologyTransition::ResetTask) &&
@@ -113,17 +113,17 @@ SReturnValue ControlService::Terminate()
     return createReturnValue(success, "Terminate done", "Terminate failed", measure.duration());
 }
 
-SReturnValue ControlService::Shutdown()
+SReturnValue CControlService::Shutdown()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = shutdownDDSSession();
     return createReturnValue(success, "Shutdown done", "Shutdown failed", measure.duration());
 }
 
-SReturnValue ControlService::createReturnValue(bool _success,
-                                               const std::string& _msg,
-                                               const std::string& _errMsg,
-                                               size_t _execTime)
+SReturnValue CControlService::createReturnValue(bool _success,
+                                                const std::string& _msg,
+                                                const std::string& _errMsg,
+                                                size_t _execTime)
 {
     if (_success)
     {
@@ -132,7 +132,7 @@ SReturnValue ControlService::createReturnValue(bool _success,
     return SReturnValue(EStatusCode::error, "", _execTime, SError(123, _errMsg));
 }
 
-bool ControlService::createDDSSession()
+bool CControlService::createDDSSession()
 {
     bool success(true);
     try
@@ -148,13 +148,16 @@ bool ControlService::createDDSSession()
     return success;
 }
 
-bool ControlService::submitDDSAgents(size_t _numAgents, size_t _numSlots)
+bool CControlService::submitDDSAgents(const string& _rmsPlugin,
+                                      const string& _configFile,
+                                      size_t _numAgents,
+                                      size_t _numSlots)
 {
     bool success(true);
 
     SSubmitRequest::request_t requestInfo;
-    requestInfo.m_rms = m_configParams.m_rmsPlugin;
-    if (m_configParams.m_rmsPlugin == "localhost")
+    requestInfo.m_rms = _rmsPlugin;
+    if (_rmsPlugin == "localhost")
     {
         requestInfo.m_instances = _numAgents;
         requestInfo.m_slots = _numSlots;
@@ -163,7 +166,7 @@ bool ControlService::submitDDSAgents(size_t _numAgents, size_t _numSlots)
     {
         requestInfo.m_instances = _numAgents;
         requestInfo.m_slots = _numSlots;
-        requestInfo.m_config = m_configParams.m_configFile;
+        requestInfo.m_config = _configFile;
     }
 
     std::condition_variable cv;
@@ -205,7 +208,7 @@ bool ControlService::submitDDSAgents(size_t _numAgents, size_t _numSlots)
     return success;
 }
 
-bool ControlService::waitForNumActiveAgents(size_t _numAgents)
+bool CControlService::waitForNumActiveAgents(size_t _numAgents)
 {
     try
     {
@@ -220,7 +223,7 @@ bool ControlService::waitForNumActiveAgents(size_t _numAgents)
     return true;
 }
 
-bool ControlService::activateDDSTopology(const string& _topologyFile)
+bool CControlService::activateDDSTopology(const string& _topologyFile)
 {
     bool success(true);
 
@@ -277,7 +280,7 @@ bool ControlService::activateDDSTopology(const string& _topologyFile)
     return success;
 }
 
-bool ControlService::shutdownDDSSession()
+bool CControlService::shutdownDDSSession()
 {
     bool success(true);
     try
@@ -304,7 +307,7 @@ bool ControlService::shutdownDDSSession()
     return success;
 }
 
-bool ControlService::changeState(fair::mq::sdk::TopologyTransition _transition)
+bool CControlService::changeState(fair::mq::sdk::TopologyTransition _transition)
 {
     if (m_fairmqTopo == nullptr)
         return false;
