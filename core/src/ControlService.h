@@ -9,8 +9,8 @@
 #include <string>
 
 // DDS
-#include <DDS/Tools.h>
-#include <DDS/Topology.h>
+#include <dds/Tools.h>
+#include <dds/Topology.h>
 
 // FairMQ
 #include <fairmq/SDK.h>
