@@ -73,8 +73,11 @@ add_subdirectory(cli-server)
 #
 # Install
 #
-install(TARGETS odc-grpc-server odc-grpc-client RUNTIME DESTINATION bin)
+if(gRPC_FOUND)
+   install(TARGETS odc-grpc-server odc-grpc-client RUNTIME DESTINATION bin)
+endif()
 install(TARGETS odc_core_lib RUNTIME DESTINATION lib)
+install(TARGETS odc-cli-server RUNTIME DESTINATION bin)
 
 # Daemon config
 if(APPLE)
