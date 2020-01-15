@@ -2,12 +2,20 @@
 //
 //
 
-#include "GrpcControlClient.h"
+// DDS
+#include "CliControlService.h"
+
+// STD
+#include <cstdlib>
+#include <iostream>
 
 // BOOST
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+
+// FairMQ SDK
+#include <fairmq/sdk/DDSEnvironment.h>
 
 using namespace std;
 namespace bpo = boost::program_options;
@@ -27,18 +35,22 @@ void printDescription()
 
 int main(int argc, char** argv)
 {
-    string host;
-    string topo;
+	string rmsPlugin;
+	string configFile;
+	string topologyFile;
 
     // Generic options
-    bpo::options_description options("grpc-sample-client options");
+    bpo::options_description options("odc-cli-server options");
     options.add_options()("help,h", "Produce help message");
-    options.add_options()(
-        "host", bpo::value<std::string>(&host)->default_value("localhost:50051"),
-        "DDS control connection string (default \"localhost:50051\")");
-    string defaultTopo("@FairMQ_DATADIR@/ex-dds-topology-infinite.xml");
+	options.add_options()("rms,r",
+					      bpo::value<std::string>(&rmsPlugin)->default_value("localhost"),
+					      "Defines a destination resource management system plug-in.");
+	options.add_options()("config,c",
+					       bpo::value<std::string>(&configFile)->default_value(""),
+					       "A plug-in's configuration file. It can be used to provide additional RMS options.");
+	string defaultTopo("@FairMQ_DATADIR@/ex-dds-topology-infinite.xml");
     options.add_options()("topo",
-                          bpo::value<std::string>(&topo)->default_value(defaultTopo),
+                          bpo::value<std::string>(&topologyFile)->default_value(defaultTopo),
                           (string("Topology filepath (default ") + defaultTopo + string(")")).c_str());
 
     // Parsing command-line
@@ -52,22 +64,25 @@ int main(int argc, char** argv)
         return EXIT_SUCCESS;
     }
 
-    if (!vm.count("host"))
     {
-        cout << "DDS control server address is not provided" << endl;
-        cout << options;
-        return EXIT_FAILURE;
+        // Equivalent to calling source DDS_env.sh
+        fair::mq::sdk::DDSEnv env;
     }
 
-    if (!vm.count("topo"))
+    // Prepend FairMQ bin dir to the path
+    auto current_path(std::getenv("PATH"));
+    string new_path;
+    if (current_path != nullptr)
     {
-        cout << "Topology filepath is not provided" << endl;
-        cout << options;
-        return EXIT_FAILURE;
+        new_path = string("@FairMQ_BINDIR@") + string(":") + string(current_path);
     }
+    else
+    {
+        new_path = string("@FairMQ_BINDIR@");
+    }
+    setenv("PATH", new_path.c_str(), 1);
 
-    CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
-    control.setTopo(topo);
+    odc::cli::CCliControlService control(rmsPlugin, configFile, topologyFile);
 
 	// TODO: FIXME: Think of a better design on how to avoid code dublication.
     printDescription();
@@ -77,8 +92,6 @@ int main(int argc, char** argv)
         string cmd;
         cout << "Please enter command: ";
         getline(std::cin, cmd);
-
-        string replyString;
 
         if (cmd.empty())
         {
@@ -90,41 +103,36 @@ int main(int argc, char** argv)
         else if (cmd == ".init")
         {
             cout << "Sending initialization request..." << endl;
-            replyString = control.RequestInitialize();
+            control.Initialize();
         }
         else if (cmd == ".config")
         {
             cout << "Sending configure run request..." << endl;
-            replyString = control.RequestConfigureRun();
+            control.ConfigureRun();
         }
         else if (cmd == ".start")
         {
             cout << "Sending start request..." << endl;
-            replyString = control.RequestStart();
+            control.Start();
         }
         else if (cmd == ".stop")
         {
             cout << "Sending stop request..." << endl;
-            replyString = control.RequestStop();
+            control.Stop();
         }
         else if (cmd == ".term")
         {
             cout << "Sending terminate request..." << endl;
-            replyString = control.RequestTerminate();
+            control.Terminate();
         }
         else if (cmd == ".down")
         {
             cout << "Sending shutdown request..." << endl;
-            replyString = control.RequestShutdown();
+            control.Shutdown();
         }
         else
         {
             cout << "Unknown command " << cmd << endl;
-        }
-
-        if (!replyString.empty())
-        {
-            cout << "Reply: " << replyString << endl;
         }
     }
 

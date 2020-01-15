@@ -15,15 +15,15 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Find Protobuf installation
-find_package(Protobuf REQUIRED)
+find_package(Protobuf)
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 
 # Find gRPC installation
-find_package(gRPC REQUIRED)
+find_package(gRPC)
 message(STATUS "Using gRPC ${GRPC_VERSION}")
 
 # Find DDS installation
-find_package(DDS 2.5.22 CONFIG REQUIRED)
+find_package(DDS 3.0 CONFIG REQUIRED)
 message(STATUS "Using DDS ${DDS_VERSION}")
 
 # Find Boost installation
@@ -63,9 +63,12 @@ add_custom_target(format-code
 
 # Targets
 add_subdirectory(core)
-add_subdirectory(grpc-proto)
-add_subdirectory(grpc-server)
-add_subdirectory(grpc-client)
+if(gRPC_FOUND)
+   add_subdirectory(grpc-proto)
+   add_subdirectory(grpc-server)
+   add_subdirectory(grpc-client)
+endif()
+add_subdirectory(cli-server)
 
 #
 # Install
