@@ -72,6 +72,16 @@ CGrpcControlService::CGrpcControlService(const std::string& _rmsPlugin, const st
     return ::grpc::Status::OK;
 }
 
+::grpc::Status CGrpcControlService::UpdateTopology(::grpc::ServerContext* context,
+                                             const odc::UpdateTopologyRequest* request,
+                                             odc::GeneralReply* response)
+{
+    SUpdateTopologyParams params{ request->topology() };
+    SReturnValue value = m_service->UpdateTopology(params);
+    setupGeneralReply(response, value);
+    return ::grpc::Status::OK;
+}
+
 void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const SReturnValue& _value)
 {
     if (_value.m_statusCode == EStatusCode::ok)

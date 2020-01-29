@@ -19,15 +19,13 @@ class CGrpcControlClient
   public:
     CGrpcControlClient(std::shared_ptr<grpc::Channel> channel);
 
-    std::string RequestInitialize();
+    std::string RequestInitialize(const std::string& _topo);
     std::string RequestConfigureRun();
     std::string RequestStart();
     std::string RequestStop();
     std::string RequestTerminate();
     std::string RequestShutdown();
-
-  public:
-    void setTopo(const std::string& _topo);
+    std::string RequestUpdateTopology(const std::string& _topo);
 
   private:
     template <typename Reply_t>
@@ -35,7 +33,6 @@ class CGrpcControlClient
 
   private:
     std::unique_ptr<odc::ODC::Stub> m_stub;
-    std::string m_topo;
 };
 
 #endif /* defined(__ODC__GrpcControlClient__) */

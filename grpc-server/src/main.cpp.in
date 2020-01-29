@@ -24,20 +24,21 @@ namespace bpo = boost::program_options;
 int main(int argc, char** argv)
 {
     string host;
-	string rmsPlugin;
-	string configFile;
+    string rmsPlugin;
+    string configFile;
 
     // Generic options
     bpo::options_description options("dds-control-server options");
     options.add_options()("help,h", "Produce help message");
-    options.add_options()("host", bpo::value<std::string>(&host)->default_value("localhost:50051"),
+    options.add_options()("host",
+                          bpo::value<std::string>(&host)->default_value("localhost:50051"),
                           "Server address (defaul \"localhost:50051\")");
-	options.add_options()("rms,r",
-					      bpo::value<std::string>(&rmsPlugin)->default_value("localhost"),
-					      "Defines a destination resource management system plug-in.");
-	options.add_options()("config,c",
-					       bpo::value<std::string>(&configFile)->default_value(""),
-					       "A plug-in's configuration file. It can be used to provide additional RMS options");
+    options.add_options()("rms,r",
+                          bpo::value<std::string>(&rmsPlugin)->default_value("localhost"),
+                          "Defines a destination resource management system plug-in.");
+    options.add_options()("config,c",
+                          bpo::value<std::string>(&configFile)->default_value(""),
+                          "A plug-in's configuration file. It can be used to provide additional RMS options");
 
     // Parsing command-line
     bpo::variables_map vm;
@@ -48,13 +49,6 @@ int main(int argc, char** argv)
     {
         cout << options;
         return EXIT_SUCCESS;
-    }
-
-    if (!vm.count("host"))
-    {
-        cout << "DDS control server address is not provided" << endl;
-        cout << options;
-        return EXIT_FAILURE;
     }
 
     {

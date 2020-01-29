@@ -16,6 +16,8 @@ service ODC {
     rpc Terminate (TerminateRequest) returns (GeneralReply) {}
     // Shutdown
     rpc Shutdown (ShutdownRequest) returns (GeneralReply) {}
+    // Update topology
+    rpc UpdateTopology (UpdateTopologyRequest) returns (GeneralReply) {}
 }
 
 // Request status
@@ -67,4 +69,9 @@ message TerminateRequest {
 // Shutdown request
 message ShutdownRequest {
     // TODO: Add request parameters here
+}
+
+// Update topology request
+message UpdateTopologyRequest {
+    string topology = 1;
 }

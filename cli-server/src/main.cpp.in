@@ -30,28 +30,33 @@ void printDescription()
          << ".start - Start request." << endl
          << ".stop - Stop request." << endl
          << ".term - Terminate request." << endl
-         << ".down - Shutdown request." << endl;
+         << ".down - Shutdown request." << endl
+         << ".update - Update topology request." << endl;
 }
 
 int main(int argc, char** argv)
 {
-	string rmsPlugin;
-	string configFile;
-	string topologyFile;
+    string rmsPlugin;
+    string configFile;
+    string topologyFile;
+    string updatedTopologyFile;
 
     // Generic options
     bpo::options_description options("odc-cli-server options");
     options.add_options()("help,h", "Produce help message");
-	options.add_options()("rms,r",
-					      bpo::value<std::string>(&rmsPlugin)->default_value("localhost"),
-					      "Defines a destination resource management system plug-in.");
-	options.add_options()("config,c",
-					       bpo::value<std::string>(&configFile)->default_value(""),
-					       "A plug-in's configuration file. It can be used to provide additional RMS options.");
-	string defaultTopo("@FairMQ_DATADIR@/ex-dds-topology-infinite.xml");
+    options.add_options()("rms,r",
+                          bpo::value<std::string>(&rmsPlugin)->default_value("localhost"),
+                          "Defines a destination resource management system plug-in.");
+    options.add_options()("config,c",
+                          bpo::value<std::string>(&configFile)->default_value(""),
+                          "A plug-in's configuration file. It can be used to provide additional RMS options.");
+    string defaultTopo("@FairMQ_DATADIR@/ex-dds-topology-infinite.xml");
     options.add_options()("topo",
                           bpo::value<std::string>(&topologyFile)->default_value(defaultTopo),
                           (string("Topology filepath (default ") + defaultTopo + string(")")).c_str());
+    options.add_options()("utopo",
+                          bpo::value<std::string>(&updatedTopologyFile)->default_value(defaultTopo),
+                          (string("Updated topology filepath (default ") + defaultTopo + string(")")).c_str());
 
     // Parsing command-line
     bpo::variables_map vm;
@@ -82,9 +87,9 @@ int main(int argc, char** argv)
     }
     setenv("PATH", new_path.c_str(), 1);
 
-    odc::cli::CCliControlService control(rmsPlugin, configFile, topologyFile);
+    odc::cli::CCliControlService control;
 
-	// TODO: FIXME: Think of a better design on how to avoid code dublication.
+    // TODO: FIXME: Think of a better design on how to avoid code dublication.
     printDescription();
 
     while (true)
@@ -103,7 +108,7 @@ int main(int argc, char** argv)
         else if (cmd == ".init")
         {
             cout << "Sending initialization request..." << endl;
-            control.Initialize();
+            control.Initialize(rmsPlugin, configFile, topologyFile);
         }
         else if (cmd == ".config")
         {
@@ -129,6 +134,11 @@ int main(int argc, char** argv)
         {
             cout << "Sending shutdown request..." << endl;
             control.Shutdown();
+        }
+        else if (cmd == ".update")
+        {
+            cout << "Sending update topology request..." << endl;
+            control.UpdateTopology(updatedTopologyFile);
         }
         else
         {

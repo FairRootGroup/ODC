@@ -13,22 +13,17 @@ using odc::ShutdownRequest;
 using odc::StartRequest;
 using odc::StopRequest;
 using odc::TerminateRequest;
+using odc::UpdateTopologyRequest;
 
 CGrpcControlClient::CGrpcControlClient(std::shared_ptr<grpc::Channel> channel)
     : m_stub(ODC::NewStub(channel))
-    , m_topo()
 {
 }
 
-void CGrpcControlClient::setTopo(const std::string& _topo)
-{
-    m_topo = _topo;
-}
-
-std::string CGrpcControlClient::RequestInitialize()
+std::string CGrpcControlClient::RequestInitialize(const std::string& _topo)
 {
     InitializeRequest request;
-    request.set_topology(m_topo);
+    request.set_topology(_topo);
     GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Initialize(&context, request, &reply);
@@ -77,6 +72,16 @@ std::string CGrpcControlClient::RequestShutdown()
     GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Shutdown(&context, request, &reply);
+    return GetReplyString(status, reply);
+}
+
+std::string CGrpcControlClient::RequestUpdateTopology(const std::string& _topo)
+{
+    UpdateTopologyRequest request;
+    request.set_topology(_topo);
+    GeneralReply reply;
+    grpc::ClientContext context;
+    grpc::Status status = m_stub->UpdateTopology(&context, request, &reply);
     return GetReplyString(status, reply);
 }
 

@@ -10,17 +10,14 @@ using namespace odc::core;
 using namespace odc::cli;
 using namespace std;
 
-CCliControlService::CCliControlService(const string& _rmsPlugin, const string& _configFile, const string& _topologyFile)
+CCliControlService::CCliControlService()
     : m_service(make_shared<CControlService>())
-    , m_rmsPlugin(_rmsPlugin)
-    , m_configFile(_configFile)
-    , m_topologyFile(_topologyFile)
 {
 }
 
-void CCliControlService::Initialize()
+void CCliControlService::Initialize(const string& _rmsPlugin, const string& _configFile, const string& _topologyFile)
 {
-    SInitializeParams params{ m_topologyFile, m_rmsPlugin, m_configFile };
+    SInitializeParams params{ _topologyFile, _rmsPlugin, _configFile };
     SReturnValue value = m_service->Initialize(params);
     printGeneralReply(value);
 }
@@ -52,6 +49,13 @@ void CCliControlService::Terminate()
 void CCliControlService::Shutdown()
 {
     SReturnValue value = m_service->Shutdown();
+    printGeneralReply(value);
+}
+
+ void CCliControlService::UpdateTopology(const std::string& _topologyFile)
+{
+    SUpdateTopologyParams params{ _topologyFile };
+    SReturnValue value = m_service->UpdateTopology(params);
     printGeneralReply(value);
 }
 

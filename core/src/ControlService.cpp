@@ -120,6 +120,13 @@ SReturnValue CControlService::Shutdown()
     return createReturnValue(success, "Shutdown done", "Shutdown failed", measure.duration());
 }
 
+SReturnValue CControlService::UpdateTopology(const SUpdateTopologyParams& _params)
+{
+    STimeMeasure<std::chrono::milliseconds> measure;
+    bool success = true; //shutdownDDSSession();
+    return createReturnValue(success, "Update topology done", "Update topology failed", measure.duration());
+}
+
 SReturnValue CControlService::createReturnValue(bool _success,
                                                 const std::string& _msg,
                                                 const std::string& _errMsg,

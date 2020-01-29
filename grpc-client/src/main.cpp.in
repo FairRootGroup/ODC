@@ -22,24 +22,29 @@ void printDescription()
          << ".start - Start request." << endl
          << ".stop - Stop request." << endl
          << ".term - Terminate request." << endl
-         << ".down - Shutdown request." << endl;
+         << ".down - Shutdown request." << endl
+         << ".update - Update topology request." << endl;
 }
 
 int main(int argc, char** argv)
 {
     string host;
     string topo;
+    string updatedTopo;
 
     // Generic options
     bpo::options_description options("grpc-sample-client options");
     options.add_options()("help,h", "Produce help message");
-    options.add_options()(
-        "host", bpo::value<std::string>(&host)->default_value("localhost:50051"),
-        "DDS control connection string (default \"localhost:50051\")");
+    options.add_options()("host",
+                          bpo::value<std::string>(&host)->default_value("localhost:50051"),
+                          "DDS control connection string (default \"localhost:50051\")");
     string defaultTopo("@FairMQ_DATADIR@/ex-dds-topology-infinite.xml");
     options.add_options()("topo",
                           bpo::value<std::string>(&topo)->default_value(defaultTopo),
                           (string("Topology filepath (default ") + defaultTopo + string(")")).c_str());
+    options.add_options()("utopo",
+                          bpo::value<std::string>(&updatedTopo)->default_value(defaultTopo),
+                          (string("Updated topology filepath (default ") + defaultTopo + string(")")).c_str());
 
     // Parsing command-line
     bpo::variables_map vm;
@@ -52,24 +57,9 @@ int main(int argc, char** argv)
         return EXIT_SUCCESS;
     }
 
-    if (!vm.count("host"))
-    {
-        cout << "DDS control server address is not provided" << endl;
-        cout << options;
-        return EXIT_FAILURE;
-    }
-
-    if (!vm.count("topo"))
-    {
-        cout << "Topology filepath is not provided" << endl;
-        cout << options;
-        return EXIT_FAILURE;
-    }
-
     CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
-    control.setTopo(topo);
 
-	// TODO: FIXME: Think of a better design on how to avoid code dublication.
+    // TODO: FIXME: Think of a better design on how to avoid code dublication.
     printDescription();
 
     while (true)
@@ -90,7 +80,7 @@ int main(int argc, char** argv)
         else if (cmd == ".init")
         {
             cout << "Sending initialization request..." << endl;
-            replyString = control.RequestInitialize();
+            replyString = control.RequestInitialize(topo);
         }
         else if (cmd == ".config")
         {
@@ -116,6 +106,11 @@ int main(int argc, char** argv)
         {
             cout << "Sending shutdown request..." << endl;
             replyString = control.RequestShutdown();
+        }
+        else if (cmd == ".update")
+        {
+            cout << "Sending update topology request..." << endl;
+            replyString = control.RequestUpdateTopology(updatedTopo);
         }
         else
         {

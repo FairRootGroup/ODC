@@ -16,26 +16,24 @@ namespace odc
         {
 
           public:
-            CCliControlService(const std::string& _rmsPlugin,
-                               const std::string& _configFile,
-                               const std::string& _topologyFile);
+            CCliControlService();
 
           public:
-            void Initialize();
+            void Initialize(const std::string& _rmsPlugin,
+                            const std::string& _configFile,
+                            const std::string& _topologyFile);
             void ConfigureRun();
             void Start();
             void Stop();
             void Terminate();
             void Shutdown();
+            void UpdateTopology(const std::string& _topologyFile);
 
           private:
             void printGeneralReply(const odc::core::SReturnValue& _value);
 
           private:
             std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
-            std::string m_rmsPlugin;                               ///< RMS plugin used for DDS
-            std::string m_configFile;                              ///< Configuration file for RMS plugin
-            std::string m_topologyFile;                            ///< Topology file
         };
     } // namespace cli
 } // namespace odc

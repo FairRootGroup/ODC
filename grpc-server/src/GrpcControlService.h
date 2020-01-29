@@ -41,6 +41,9 @@ namespace odc
             ::grpc::Status Shutdown(::grpc::ServerContext* context,
                                     const odc::ShutdownRequest* request,
                                     odc::GeneralReply* response) override;
+            ::grpc::Status UpdateTopology(::grpc::ServerContext* context,
+                                          const odc::UpdateTopologyRequest* request,
+                                          odc::GeneralReply* response) override;
 
           private:
             void setupGeneralReply(odc::GeneralReply* _response, const odc::core::SReturnValue& _value);

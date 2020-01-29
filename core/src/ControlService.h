@@ -85,6 +85,20 @@ namespace odc
             std::string m_configFile;
         };
 
+        /// \brief Structure holds parameters of the update topology request
+        struct SUpdateTopologyParams
+        {
+            SUpdateTopologyParams()
+            {
+            }
+
+            SUpdateTopologyParams(const std::string& _topologyFile)
+                : m_topologyFile(_topologyFile)
+            {
+            }
+            std::string m_topologyFile;
+        };
+
         class CControlService
         {
           public:
@@ -97,6 +111,7 @@ namespace odc
             SReturnValue Stop();
             SReturnValue Terminate();
             SReturnValue Shutdown();
+            SReturnValue UpdateTopology(const SUpdateTopologyParams& _params);
 
           private:
             SReturnValue createReturnValue(bool _success,
