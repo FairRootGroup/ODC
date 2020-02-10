@@ -101,6 +101,10 @@ namespace odc
 
         class CControlService
         {
+            using DDSTopoPtr_t = std::shared_ptr<dds::topology_api::CTopology>;
+            using DDSSessionPtr_t = std::shared_ptr<dds::tools_api::CSession>;
+            using FairMQTopoPtr_t = std::shared_ptr<fair::mq::sdk::Topology>;
+
           public:
             CControlService();
 
@@ -123,16 +127,19 @@ namespace odc
                                  const std::string& _configFile,
                                  size_t _numAgents,
                                  size_t _numSlots);
-            bool activateDDSTopology(const std::string& _topologyFile);
+            bool activateDDSTopology(const std::string& _topologyFile,
+                                     dds::tools_api::STopologyRequest::request_t::EUpdateType _updateType);
             bool waitForNumActiveAgents(size_t _numAgents);
             bool shutdownDDSSession();
+            DDSTopoPtr_t createDDSTopo(const std::string& _topologyFile) const;
+            void createFairMQTopo(const DDSTopoPtr_t& _topo);
             bool changeState(fair::mq::sdk::TopologyTransition _transition);
 
           private:
-            std::shared_ptr<dds::topology_api::CTopology> m_topo;  ///< DDS topology
-            std::shared_ptr<dds::tools_api::CSession> m_session;   ///< DDS session
-            std::shared_ptr<fair::mq::sdk::Topology> m_fairmqTopo; ///< FairMQ topology
-            const size_t m_timeout;                                ///< Request timeout in sec
+            DDSTopoPtr_t m_topo;          ///< DDS topology
+            DDSSessionPtr_t m_session;    ///< DDS session
+            FairMQTopoPtr_t m_fairmqTopo; ///< FairMQ topology
+            const size_t m_timeout;       ///< Request timeout in sec
         };
     } // namespace core
 } // namespace odc

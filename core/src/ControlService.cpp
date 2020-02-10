@@ -22,6 +22,7 @@ CControlService::CControlService()
     , m_fairmqTopo(nullptr)
     , m_timeout(1800.)
 {
+//    fair::Logger::SetConsoleSeverity("debug");
 }
 
 SReturnValue CControlService::Initialize(const SInitializeParams& _params)
@@ -31,17 +32,8 @@ SReturnValue CControlService::Initialize(const SInitializeParams& _params)
     bool success(true);
 
     string topologyFile = _params.m_topologyFile;
-    std::pair<size_t, size_t> numAgents;
-    try
-    {
-        m_topo = make_shared<CTopology>(topologyFile);
-        numAgents = m_topo->getRequiredNofAgents(12);
-    }
-    catch (exception& _e)
-    {
-        success = false;
-        cerr << "Failed to initialize topology: " << _e.what() << endl;
-    }
+    m_topo = createDDSTopo(topologyFile);
+    success = m_topo != nullptr;
 
     if (success)
     {
@@ -49,29 +41,17 @@ SReturnValue CControlService::Initialize(const SInitializeParams& _params)
         // Create new DDS session
         // Submit agents
         // Activate the topology
+        std::pair<size_t, size_t> numAgents(m_topo->getRequiredNofAgents(12));
         size_t allCount = numAgents.first * numAgents.second;
         success = shutdownDDSSession() && createDDSSession() &&
                   submitDDSAgents(_params.m_rmsPlugin, _params.m_configFile, numAgents.first, numAgents.second) &&
-                  waitForNumActiveAgents(allCount) && activateDDSTopology(topologyFile);
+                  waitForNumActiveAgents(allCount) && activateDDSTopology(topologyFile, STopologyRequest::request_t::EUpdateType::ACTIVATE);
     }
 
-    if (m_fairmqTopo == nullptr && success)
+    if (success)
     {
-        try
-        {
-            fair::mq::sdk::DDSEnv env;
-            fair::mq::sdk::DDSTopo topo(*m_topo, env);
-            fair::mq::sdk::DDSSession session(m_session, env);
-            m_fairmqTopo = make_shared<fair::mq::sdk::Topology>(std::move(topo), std::move(session));
-
-            // TODO Use this instead of the above once FairMQ repaired the move ctor of sdk::Topology
-            // m_fairmqTopo = make_shared<fair::mq::sdk::Topology>(fair::mq::sdk::MakeTopology(*m_topo, m_session));
-        }
-        catch (exception& _e)
-        {
-            success = false;
-            cerr << "Failed to initialize FairMQ topology: " << _e.what() << endl;
-        }
+        createFairMQTopo(m_topo);
+        success = m_fairmqTopo != nullptr;
     }
 
     return createReturnValue(success, "Initialize done", "Initialize failed", measure.duration());
@@ -123,7 +103,39 @@ SReturnValue CControlService::Shutdown()
 SReturnValue CControlService::UpdateTopology(const SUpdateTopologyParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    bool success = true; //shutdownDDSSession();
+    // Change state of all devices to Stop
+    bool success = changeState(fair::mq::sdk::TopologyTransition::Stop) &&
+                   changeState(fair::mq::sdk::TopologyTransition::ResetTask) &&
+                   changeState(fair::mq::sdk::TopologyTransition::ResetDevice);
+    // New DDS topology object
+    string topologyFile = _params.m_topologyFile;
+    if (success) {
+        cout << "Creating new DDS topology" << endl;
+        m_topo = createDDSTopo(topologyFile);
+        success = m_topo != nullptr;
+    }
+    // New FairMQ topology object
+    if (success)
+    {
+        cout << "Creating new FairMQ topology" << endl;
+        createFairMQTopo(m_topo);
+        success = m_fairmqTopo != nullptr;
+    }
+    // Activate new topology
+    if (success) {
+        cout << "Activating topology" << endl;
+        activateDDSTopology(topologyFile, STopologyRequest::request_t::EUpdateType::UPDATE);
+    }
+    
+    // Reconfigure devices
+    if (success) {
+        cout << "Configuring FairMQ devices" << endl;
+        success = changeState(fair::mq::sdk::TopologyTransition::InitDevice) &&
+        changeState(fair::mq::sdk::TopologyTransition::CompleteInit) &&
+        changeState(fair::mq::sdk::TopologyTransition::Bind) &&
+        changeState(fair::mq::sdk::TopologyTransition::Connect) &&
+        changeState(fair::mq::sdk::TopologyTransition::InitTask);
+    }
     return createReturnValue(success, "Update topology done", "Update topology failed", measure.duration());
 }
 
@@ -230,14 +242,14 @@ bool CControlService::waitForNumActiveAgents(size_t _numAgents)
     return true;
 }
 
-bool CControlService::activateDDSTopology(const string& _topologyFile)
+bool CControlService::activateDDSTopology(const string& _topologyFile, STopologyRequest::request_t::EUpdateType _updateType)
 {
     bool success(true);
 
     STopologyRequest::request_t topoInfo;
     topoInfo.m_topologyFile = _topologyFile;
     topoInfo.m_disableValidation = true;
-    topoInfo.m_updateType = STopologyRequest::request_t::EUpdateType::ACTIVATE;
+    topoInfo.m_updateType = _updateType;
 
     std::condition_variable cv;
 
@@ -312,6 +324,37 @@ bool CControlService::shutdownDDSSession()
         cerr << "Shutdown failed: " << _e.what() << endl;
     }
     return success;
+}
+
+CControlService::DDSTopoPtr_t CControlService::createDDSTopo(const std::string& _topologyFile) const
+{
+    try
+    {
+        return make_shared<CTopology>(_topologyFile);
+    }
+    catch (exception& _e)
+    {
+        cerr << "Failed to initialize topology: " << _e.what() << endl;
+    }
+    return nullptr;
+}
+
+void CControlService::createFairMQTopo(const DDSTopoPtr_t& _topo)
+{
+    try
+    {
+        m_fairmqTopo.reset();
+        fair::mq::sdk::DDSEnv env;
+        fair::mq::sdk::DDSSession session(m_session, env);
+        session.StopOnDestruction(false);
+        fair::mq::sdk::DDSTopo topo(*_topo, env);
+        m_fairmqTopo = make_shared<fair::mq::sdk::Topology>(topo, session);
+    }
+    catch (exception& _e)
+    {
+        m_fairmqTopo = nullptr;
+        cerr << "Failed to initialize FairMQ topology: " << _e.what() << endl;
+    }
 }
 
 bool CControlService::changeState(fair::mq::sdk::TopologyTransition _transition)
