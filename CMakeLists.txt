@@ -76,7 +76,7 @@ add_subdirectory(cli-server)
 if(gRPC_FOUND)
    install(TARGETS odc-grpc-server odc-grpc-client RUNTIME DESTINATION bin)
 endif()
-install(TARGETS odc_core_lib RUNTIME DESTINATION lib)
+install(TARGETS odc_core_lib LIBRARY DESTINATION lib)
 install(TARGETS odc-cli-server RUNTIME DESTINATION bin)
 
 # Daemon config
