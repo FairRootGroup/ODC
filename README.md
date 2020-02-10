@@ -26,8 +26,8 @@ brew install grpc
 ## Installation form source
 
 ```bash
-git clone https://github.com/FairRootGroup/DDS-control
-cd DDS-control
+git clone https://github.com/FairRootGroup/ODC
+cd ODC
 mkdir build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=[INSTALL_DIR] ..
 make install
