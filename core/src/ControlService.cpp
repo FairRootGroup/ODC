@@ -114,6 +114,11 @@ SReturnValue CControlService::UpdateTopology(const SUpdateTopologyParams& _param
         m_topo = createDDSTopo(topologyFile);
         success = m_topo != nullptr;
     }
+    // Activate new topology
+    if (success) {
+        cout << "Activating topology" << endl;
+        activateDDSTopology(topologyFile, STopologyRequest::request_t::EUpdateType::UPDATE);
+    }
     // New FairMQ topology object
     if (success)
     {
@@ -121,12 +126,6 @@ SReturnValue CControlService::UpdateTopology(const SUpdateTopologyParams& _param
         createFairMQTopo(m_topo);
         success = m_fairmqTopo != nullptr;
     }
-    // Activate new topology
-    if (success) {
-        cout << "Activating topology" << endl;
-        activateDDSTopology(topologyFile, STopologyRequest::request_t::EUpdateType::UPDATE);
-    }
-    
     // Reconfigure devices
     if (success) {
         cout << "Configuring FairMQ devices" << endl;
