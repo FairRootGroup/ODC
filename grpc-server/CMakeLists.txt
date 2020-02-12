@@ -3,9 +3,8 @@
 #
 
 # odc-grpc-server executable
-configure_file(src/main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/src/main.cpp @ONLY)
 add_executable(odc-grpc-server
-    "${CMAKE_CURRENT_BINARY_DIR}/src/main.cpp"
+    "src/main.cpp"
     "src/GrpcControlServer.h"
     "src/GrpcControlServer.cpp"
     "src/GrpcControlService.h"

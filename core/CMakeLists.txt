@@ -3,7 +3,9 @@
 #
 
 # odc_core_lib
+configure_file(src/BuildConstants.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/BuildConstants.h @ONLY)
 add_library(odc_core_lib
+    "${CMAKE_CURRENT_BINARY_DIR}/src/BuildConstants.h"
     "src/ControlService.h"
     "src/ControlService.cpp"
     "src/TimeMeasure.h"

@@ -3,6 +3,7 @@
 //
 
 // ODC
+#include "BuildConstants.h"
 #include "CliControlService.h"
 #include "CliHelper.h"
 
@@ -35,7 +36,7 @@ int main(int argc, char** argv)
     options.add_options()("help,h", "Produce help message");
     CCliHelper::addInitializeOptions(options, SInitializeParams(1000), initializeParams);
     CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 12), submitParams);
-    string defaultTopo("@FairMQ_DATADIR@/ex-dds-topology-infinite.xml");
+    string defaultTopo(kBuildFairMQDataDir + "/ex-dds-topology-infinite.xml");
     CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
     CCliHelper::addUpscaleOptions(options, SUpdateParams(defaultTopo), upscaleParams);
     CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultTopo), downscaleParams);
@@ -61,11 +62,11 @@ int main(int argc, char** argv)
     string new_path;
     if (current_path != nullptr)
     {
-        new_path = string("@FairMQ_BINDIR@") + string(":") + string(current_path);
+        new_path = kBuildFairMQBinDir + string(":") + string(current_path);
     }
     else
     {
-        new_path = string("@FairMQ_BINDIR@");
+        new_path = kBuildFairMQBinDir;
     }
     setenv("PATH", new_path.c_str(), 1);
 

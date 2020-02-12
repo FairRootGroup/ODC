@@ -1,0 +1,18 @@
+// Copyright 2014 GSI, Inc. All rights reserved.
+//
+// This file contains a number of helpers to calculate execution time of a function.
+//
+#ifndef __ODC__BuildConstants__
+#define __ODC__BuildConstants__
+
+#include <string>
+
+namespace odc
+{
+    namespace core
+    {
+        const std::string kBuildFairMQBinDir = "@FairMQ_BINDIR@";
+        const std::string kBuildFairMQDataDir = "@FairMQ_DATADIR@";
+    } // namespace core
+} // namespace odc
+#endif /*__ODC__BuildConstants__*/

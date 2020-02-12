@@ -3,9 +3,8 @@
 #
 
 # odc-cli-server executable
-configure_file(src/main.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/src/main.cpp @ONLY)
 add_executable(odc-cli-server
-    "${CMAKE_CURRENT_BINARY_DIR}/src/main.cpp"
+    "src/main.cpp"
     "src/CliControlService.h"
     "src/CliControlService.cpp"
 )

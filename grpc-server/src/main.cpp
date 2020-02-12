@@ -3,6 +3,7 @@
 //
 
 // ODC
+#include "BuildConstants.h"
 #include "CliHelper.h"
 #include "GrpcControlServer.h"
 #include "GrpcControlService.h"
@@ -55,11 +56,11 @@ int main(int argc, char** argv)
     string new_path;
     if (current_path != nullptr)
     {
-        new_path = string("@FairMQ_BINDIR@") + string(":") + string(current_path);
+        new_path = kBuildFairMQBinDir + string(":") + string(current_path);
     }
     else
     {
-        new_path = string("@FairMQ_BINDIR@");
+        new_path = kBuildFairMQBinDir;
     }
     setenv("PATH", new_path.c_str(), 1);
 
