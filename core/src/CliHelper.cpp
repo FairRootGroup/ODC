@@ -13,41 +13,34 @@ void CCliHelper::addInitializeOptions(boost::program_options::options_descriptio
                                       SInitializeParams& _params)
 {
     _options.add_options()(
-        "runid",
-        bpo::value<runID_t>(&_params.m_runID)->default_value(_defaultParams.m_runID),
-        (string("Topology filepath (default ") + to_string(_defaultParams.m_runID) + string(")")).c_str());
+        "runid", bpo::value<runID_t>(&_params.m_runID)->default_value(_defaultParams.m_runID), "Run ID");
 }
 
 void CCliHelper::addActivateOptions(bpo::options_description& _options,
                                     const SActivateParams& _defaultParams,
                                     SActivateParams& _params)
 {
-    _options.add_options()(
-        "topo",
-        bpo::value<string>(&_params.m_topologyFile)->default_value(_defaultParams.m_topologyFile),
-        (string("Topology filepath (default ") + _defaultParams.m_topologyFile + string(")")).c_str());
+    _options.add_options()("topo",
+                           bpo::value<string>(&_params.m_topologyFile)->default_value(_defaultParams.m_topologyFile),
+                           "Topology filepath");
 }
 
 void CCliHelper::addUpscaleOptions(bpo::options_description& _options,
                                    const SUpdateParams& _defaultParams,
                                    SUpdateParams& _params)
 {
-    _options.add_options()(
-        "uptopo",
-        bpo::value<string>(&_params.m_topologyFile)->default_value(_defaultParams.m_topologyFile),
-        (string("Topology filepath of the upscale request (default ") + _defaultParams.m_topologyFile + string(")"))
-            .c_str());
+    _options.add_options()("uptopo",
+                           bpo::value<string>(&_params.m_topologyFile)->default_value(_defaultParams.m_topologyFile),
+                           "Topology filepath of the upscale");
 }
 
 void CCliHelper::addDownscaleOptions(bpo::options_description& _options,
                                      const SUpdateParams& _defaultParams,
                                      SUpdateParams& _params)
 {
-    _options.add_options()(
-        "downtopo",
-        bpo::value<string>(&_params.m_topologyFile)->default_value(_defaultParams.m_topologyFile),
-        (string("Topology filepath of the downscale request (default ") + _defaultParams.m_topologyFile + string(")"))
-            .c_str());
+    _options.add_options()("downtopo",
+                           bpo::value<string>(&_params.m_topologyFile)->default_value(_defaultParams.m_topologyFile),
+                           "Topology filepath of the downscale request");
 }
 
 void CCliHelper::addSubmitOptions(bpo::options_description& _options,
@@ -70,7 +63,5 @@ void CCliHelper::addSubmitOptions(bpo::options_description& _options,
 
 void CCliHelper::addHostOptions(bpo::options_description& _options, const string& _defaultHost, string& _host)
 {
-    _options.add_options()("host",
-                           bpo::value<string>(&_host)->default_value(_defaultHost),
-                           (string("Server address (defaul \"") + _defaultHost + string("\")")).c_str());
+    _options.add_options()("host", bpo::value<string>(&_host)->default_value(_defaultHost), "Server address");
 }
