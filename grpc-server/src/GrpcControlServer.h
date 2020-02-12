@@ -7,8 +7,7 @@
 
 // STD
 #include <string>
-
-// DDS
+// ODC
 #include "GrpcControlService.h"
 
 namespace odc
@@ -18,7 +17,7 @@ namespace odc
         class CGrpcControlServer final
         {
           public:
-            void Run(const std::string& _host, const std::string& _rmsPlugin, const std::string& _configFile);
+            void Run(const std::string& _host, const odc::core::SSubmitParams& _submitParams);
         };
     } // namespace grpc
 } // namespace odc

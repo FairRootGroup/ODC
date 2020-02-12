@@ -10,28 +10,60 @@ using namespace odc::core;
 using namespace odc::grpc;
 using namespace std;
 
-CGrpcControlService::CGrpcControlService(const std::string& _rmsPlugin, const std::string& _configFile)
+CGrpcControlService::CGrpcControlService()
     : m_service(make_shared<CControlService>())
-    , m_rmsPlugin(_rmsPlugin)
-    , m_configFile(_configFile)
 {
+}
+
+void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _params)
+{
+    m_submitParams = _params;
 }
 
 ::grpc::Status CGrpcControlService::Initialize(::grpc::ServerContext* context,
                                                const odc::InitializeRequest* request,
                                                odc::GeneralReply* response)
 {
-    SInitializeParams params{ request->topology(), m_rmsPlugin, m_configFile };
-    SReturnValue value = m_service->Initialize(params);
+    SInitializeParams params{ request->runid() };
+    SReturnValue value = m_service->execInitialize(params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::ConfigureRun(::grpc::ServerContext* context,
-                                                 const odc::ConfigureRunRequest* request,
-                                                 odc::GeneralReply* response)
+::grpc::Status CGrpcControlService::Submit(::grpc::ServerContext* context,
+                                           const odc::SubmitRequest* request,
+                                           odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->ConfigureRun();
+    SReturnValue value = m_service->execSubmit(m_submitParams);
+    setupGeneralReply(response, value);
+    return ::grpc::Status::OK;
+}
+
+::grpc::Status CGrpcControlService::Activate(::grpc::ServerContext* context,
+                                             const odc::ActivateRequest* request,
+                                             odc::GeneralReply* response)
+{
+    SActivateParams params{ request->topology() };
+    SReturnValue value = m_service->execActivate(params);
+    setupGeneralReply(response, value);
+    return ::grpc::Status::OK;
+}
+
+::grpc::Status CGrpcControlService::Update(::grpc::ServerContext* context,
+                                           const odc::UpdateRequest* request,
+                                           odc::GeneralReply* response)
+{
+    SUpdateParams params{ request->topology() };
+    SReturnValue value = m_service->execUpdate(params);
+    setupGeneralReply(response, value);
+    return ::grpc::Status::OK;
+}
+
+::grpc::Status CGrpcControlService::Configure(::grpc::ServerContext* context,
+                                              const odc::ConfigureRequest* request,
+                                              odc::GeneralReply* response)
+{
+    SReturnValue value = m_service->execConfigure();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -40,7 +72,7 @@ CGrpcControlService::CGrpcControlService(const std::string& _rmsPlugin, const st
                                           const odc::StartRequest* request,
                                           odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->Start();
+    SReturnValue value = m_service->execStart();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -49,7 +81,16 @@ CGrpcControlService::CGrpcControlService(const std::string& _rmsPlugin, const st
                                          const odc::StopRequest* request,
                                          odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->Stop();
+    SReturnValue value = m_service->execStop();
+    setupGeneralReply(response, value);
+    return ::grpc::Status::OK;
+}
+
+::grpc::Status CGrpcControlService::Reset(::grpc::ServerContext* context,
+                                          const odc::ResetRequest* request,
+                                          odc::GeneralReply* response)
+{
+    SReturnValue value = m_service->execReset();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -58,7 +99,7 @@ CGrpcControlService::CGrpcControlService(const std::string& _rmsPlugin, const st
                                               const odc::TerminateRequest* request,
                                               odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->Terminate();
+    SReturnValue value = m_service->execTerminate();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -67,17 +108,7 @@ CGrpcControlService::CGrpcControlService(const std::string& _rmsPlugin, const st
                                              const odc::ShutdownRequest* request,
                                              odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->Shutdown();
-    setupGeneralReply(response, value);
-    return ::grpc::Status::OK;
-}
-
-::grpc::Status CGrpcControlService::UpdateTopology(::grpc::ServerContext* context,
-                                             const odc::UpdateTopologyRequest* request,
-                                             odc::GeneralReply* response)
-{
-    SUpdateTopologyParams params{ request->topology() };
-    SReturnValue value = m_service->UpdateTopology(params);
+    SReturnValue value = m_service->execShutdown();
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }

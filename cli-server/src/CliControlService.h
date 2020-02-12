@@ -6,31 +6,33 @@
 #define __ODC__CliControlService__
 
 // ODC
+#include "CliServiceHelper.h"
 #include "ControlService.h"
 
 namespace odc
 {
     namespace cli
     {
-        class CCliControlService
+        class CCliControlService : public odc::core::CCliServiceHelper<CCliControlService>
         {
 
           public:
             CCliControlService();
 
-          public:
-            void Initialize(const std::string& _rmsPlugin,
-                            const std::string& _configFile,
-                            const std::string& _topologyFile);
-            void ConfigureRun();
-            void Start();
-            void Stop();
-            void Terminate();
-            void Shutdown();
-            void UpdateTopology(const std::string& _topologyFile);
+            std::string requestInitialize(const odc::core::SInitializeParams& _params);
+            std::string requestSubmit(const odc::core::SSubmitParams& _params);
+            std::string requestActivate(const odc::core::SActivateParams& _params);
+            std::string requestUpscale(const odc::core::SUpdateParams& _params);
+            std::string requestDownscale(const odc::core::SUpdateParams& _params);
+            std::string requestConfigure();
+            std::string requestStart();
+            std::string requestStop();
+            std::string requestReset();
+            std::string requestTerminate();
+            std::string requestShutdown();
 
           private:
-            void printGeneralReply(const odc::core::SReturnValue& _value);
+            std::string generalReply(const odc::core::SReturnValue& _value);
 
           private:
             std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service

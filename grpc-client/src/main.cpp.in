@@ -2,6 +2,8 @@
 //
 //
 
+// ODC
+#include "CliHelper.h"
 #include "GrpcControlClient.h"
 
 // BOOST
@@ -10,41 +12,26 @@
 #include <boost/program_options/variables_map.hpp>
 
 using namespace std;
+using namespace odc::core;
 namespace bpo = boost::program_options;
-
-void printDescription()
-{
-    cout << "Sample client for DDS control." << endl
-         << "Available commands:" << endl
-         << ".quit - Quit the program." << endl
-         << ".init - Initialization request." << endl
-         << ".config - Configure run request." << endl
-         << ".start - Start request." << endl
-         << ".stop - Stop request." << endl
-         << ".term - Terminate request." << endl
-         << ".down - Shutdown request." << endl
-         << ".update - Update topology request." << endl;
-}
 
 int main(int argc, char** argv)
 {
     string host;
-    string topo;
-    string updatedTopo;
+    SInitializeParams initializeParams;
+    SActivateParams activateParams;
+    SUpdateParams upscaleParams;
+    SUpdateParams downscaleParams;
 
     // Generic options
-    bpo::options_description options("grpc-sample-client options");
+    bpo::options_description options("grpc-client options");
     options.add_options()("help,h", "Produce help message");
-    options.add_options()("host",
-                          bpo::value<std::string>(&host)->default_value("localhost:50051"),
-                          "DDS control connection string (default \"localhost:50051\")");
+    CCliHelper::addHostOptions(options, "localhost:50051", host);
+    CCliHelper::addInitializeOptions(options, SInitializeParams(1000), initializeParams);
     string defaultTopo("@FairMQ_DATADIR@/ex-dds-topology-infinite.xml");
-    options.add_options()("topo",
-                          bpo::value<std::string>(&topo)->default_value(defaultTopo),
-                          (string("Topology filepath (default ") + defaultTopo + string(")")).c_str());
-    options.add_options()("utopo",
-                          bpo::value<std::string>(&updatedTopo)->default_value(defaultTopo),
-                          (string("Updated topology filepath (default ") + defaultTopo + string(")")).c_str());
+    CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
+    CCliHelper::addUpscaleOptions(options, SUpdateParams(defaultTopo), upscaleParams);
+    CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultTopo), downscaleParams);
 
     // Parsing command-line
     bpo::variables_map vm;
@@ -58,69 +45,19 @@ int main(int argc, char** argv)
     }
 
     CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
+    control.setInitializeParams(initializeParams);
+    control.setActivateParams(activateParams);
+    control.setUpscaleParams(upscaleParams);
+    control.setDownscaleParams(downscaleParams);
 
-    // TODO: FIXME: Think of a better design on how to avoid code dublication.
-    printDescription();
+    CCliHelper::printDescription();
 
     while (true)
     {
         string cmd;
         cout << "Please enter command: ";
         getline(std::cin, cmd);
-
-        string replyString;
-
-        if (cmd.empty())
-        {
-        }
-        else if (cmd == ".quit")
-        {
-            return EXIT_SUCCESS;
-        }
-        else if (cmd == ".init")
-        {
-            cout << "Sending initialization request..." << endl;
-            replyString = control.RequestInitialize(topo);
-        }
-        else if (cmd == ".config")
-        {
-            cout << "Sending configure run request..." << endl;
-            replyString = control.RequestConfigureRun();
-        }
-        else if (cmd == ".start")
-        {
-            cout << "Sending start request..." << endl;
-            replyString = control.RequestStart();
-        }
-        else if (cmd == ".stop")
-        {
-            cout << "Sending stop request..." << endl;
-            replyString = control.RequestStop();
-        }
-        else if (cmd == ".term")
-        {
-            cout << "Sending terminate request..." << endl;
-            replyString = control.RequestTerminate();
-        }
-        else if (cmd == ".down")
-        {
-            cout << "Sending shutdown request..." << endl;
-            replyString = control.RequestShutdown();
-        }
-        else if (cmd == ".update")
-        {
-            cout << "Sending update topology request..." << endl;
-            replyString = control.RequestUpdateTopology(updatedTopo);
-        }
-        else
-        {
-            cout << "Unknown command " << cmd << endl;
-        }
-
-        if (!replyString.empty())
-        {
-            cout << "Reply: " << replyString << endl;
-        }
+        control.processRequest(cmd);
     }
 
     return EXIT_SUCCESS;

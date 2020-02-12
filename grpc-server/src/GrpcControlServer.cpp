@@ -10,9 +10,10 @@
 
 using namespace odc::grpc;
 
-void CGrpcControlServer::Run(const std::string& _host, const std::string& _rmsPlugin, const std::string& _configFile)
+void CGrpcControlServer::Run(const std::string& _host, const odc::core::SSubmitParams& _submitParams)
 {
-    CGrpcControlService service(_rmsPlugin, _configFile);
+    CGrpcControlService service;
+    service.setSubmitParams(_submitParams);
 
     ::grpc::ServerBuilder builder;
     builder.AddListeningPort(_host, ::grpc::InsecureServerCredentials());

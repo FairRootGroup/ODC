@@ -6,18 +6,24 @@ package odc;
 service ODC {
     // Initialize
     rpc Initialize (InitializeRequest) returns (GeneralReply) {}
-    // Configure run
-    rpc ConfigureRun (ConfigureRunRequest) returns (GeneralReply) {}
+    // Submit agents. Can be called multiple times in order to submit more agents.
+    rpc Submit (SubmitRequest) returns (GeneralReply) {}
+    // Activate topology.
+    rpc Activate (ActivateRequest) returns (GeneralReply) {}
+    // Update topology. Can be called multiple times in order to scale up or down the topology.
+    rpc Update (UpdateRequest) returns (GeneralReply) {}
+    // Configure
+    rpc Configure (ConfigureRequest) returns (GeneralReply) {}
     // Start
     rpc Start (StartRequest) returns (GeneralReply) {}
     // Stop
     rpc Stop (StopRequest) returns (GeneralReply) {}
+    // Reset
+    rpc Reset (ResetRequest) returns (GeneralReply) {}
     // Terminate
     rpc Terminate (TerminateRequest) returns (GeneralReply) {}
     // Shutdown
     rpc Shutdown (ShutdownRequest) returns (GeneralReply) {}
-    // Update topology
-    rpc UpdateTopology (UpdateTopologyRequest) returns (GeneralReply) {}
 }
 
 // Request status
@@ -39,15 +45,31 @@ message GeneralReply {
     ReplyStatus status = 2;
     Error error = 3;
     int32 exectime = 4; // Execution time in ms
+    uint64 runid = 5;
 }
 
 // Initialize request
 message InitializeRequest {
+    uint64 runid = 1; 
+}
+
+// Submit request
+message SubmitRequest {
+    // TODO: Add request parameters here
+}
+
+// Activate request
+message ActivateRequest {
     string topology = 1;
 }
 
-// Configure run request
-message ConfigureRunRequest {
+// Update request
+message UpdateRequest {
+    string topology = 1;
+}
+
+// Configure request
+message ConfigureRequest {
     // TODO: Add request parameters here
 }
 
@@ -61,6 +83,11 @@ message StopRequest {
     // TODO: Add request parameters here
 }
 
+// Reset request
+message ResetRequest {
+    // TODO: Add request parameters here
+}
+
 // Terminate request
 message TerminateRequest {
     // TODO: Add request parameters here
@@ -69,9 +96,4 @@ message TerminateRequest {
 // Shutdown request
 message ShutdownRequest {
     // TODO: Add request parameters here
-}
-
-// Update topology request
-message UpdateTopologyRequest {
-    string topology = 1;
 }

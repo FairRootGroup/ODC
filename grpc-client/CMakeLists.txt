@@ -13,6 +13,7 @@ target_link_libraries(odc-grpc-client
     Boost::boost
     Boost::program_options
     odc_grpc_proto_lib
+    odc_core_lib
 )
 target_include_directories(odc-grpc-client PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"

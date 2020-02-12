@@ -2,7 +2,8 @@
 //
 //
 
-// DDS
+// ODC
+#include "CliHelper.h"
 #include "GrpcControlServer.h"
 #include "GrpcControlService.h"
 
@@ -19,26 +20,19 @@
 #include <fairmq/sdk/DDSEnvironment.h>
 
 using namespace std;
+using namespace odc::core;
 namespace bpo = boost::program_options;
 
 int main(int argc, char** argv)
 {
     string host;
-    string rmsPlugin;
-    string configFile;
+    SSubmitParams submitParams;
 
     // Generic options
     bpo::options_description options("dds-control-server options");
     options.add_options()("help,h", "Produce help message");
-    options.add_options()("host",
-                          bpo::value<std::string>(&host)->default_value("localhost:50051"),
-                          "Server address (defaul \"localhost:50051\")");
-    options.add_options()("rms,r",
-                          bpo::value<std::string>(&rmsPlugin)->default_value("localhost"),
-                          "Defines a destination resource management system plug-in.");
-    options.add_options()("config,c",
-                          bpo::value<std::string>(&configFile)->default_value(""),
-                          "A plug-in's configuration file. It can be used to provide additional RMS options");
+    CCliHelper::addHostOptions(options, "localhost:50051", host);
+    CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 12), submitParams);
 
     // Parsing command-line
     bpo::variables_map vm;
@@ -70,7 +64,7 @@ int main(int argc, char** argv)
     setenv("PATH", new_path.c_str(), 1);
 
     odc::grpc::CGrpcControlServer server;
-    server.Run(host, rmsPlugin, configFile);
+    server.Run(host, submitParams);
 
     return EXIT_SUCCESS;
 }

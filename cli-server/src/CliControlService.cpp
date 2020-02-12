@@ -4,6 +4,8 @@
 
 // DDS
 #include "CliControlService.h"
+// STD
+#include <sstream>
 
 using namespace odc;
 using namespace odc::core;
@@ -15,60 +17,74 @@ CCliControlService::CCliControlService()
 {
 }
 
-void CCliControlService::Initialize(const string& _rmsPlugin, const string& _configFile, const string& _topologyFile)
+std::string CCliControlService::requestInitialize(const odc::core::SInitializeParams& _params)
 {
-    SInitializeParams params{ _topologyFile, _rmsPlugin, _configFile };
-    SReturnValue value = m_service->Initialize(params);
-    printGeneralReply(value);
+    return generalReply(m_service->execInitialize(_params));
 }
 
-void CCliControlService::ConfigureRun()
+std::string CCliControlService::requestSubmit(const odc::core::SSubmitParams& _params)
 {
-    SReturnValue value = m_service->ConfigureRun();
-    printGeneralReply(value);
+    return generalReply(m_service->execSubmit(_params));
 }
 
-void CCliControlService::Start()
+std::string CCliControlService::requestActivate(const odc::core::SActivateParams& _params)
 {
-    SReturnValue value = m_service->Start();
-    printGeneralReply(value);
+    return generalReply(m_service->execActivate(_params));
 }
 
-void CCliControlService::Stop()
+std::string CCliControlService::requestUpscale(const odc::core::SUpdateParams& _params)
 {
-    SReturnValue value = m_service->Stop();
-    printGeneralReply(value);
+    return generalReply(m_service->execUpdate(_params));
 }
 
-void CCliControlService::Terminate()
+std::string CCliControlService::requestDownscale(const odc::core::SUpdateParams& _params)
 {
-    SReturnValue value = m_service->Terminate();
-    printGeneralReply(value);
+    return generalReply(m_service->execUpdate(_params));
 }
 
-void CCliControlService::Shutdown()
+std::string CCliControlService::requestConfigure()
 {
-    SReturnValue value = m_service->Shutdown();
-    printGeneralReply(value);
+    return generalReply(m_service->execConfigure());
 }
 
- void CCliControlService::UpdateTopology(const std::string& _topologyFile)
+std::string CCliControlService::requestStart()
 {
-    SUpdateTopologyParams params{ _topologyFile };
-    SReturnValue value = m_service->UpdateTopology(params);
-    printGeneralReply(value);
+    return generalReply(m_service->execStart());
 }
 
-void CCliControlService::printGeneralReply(const SReturnValue& _value)
+std::string CCliControlService::requestStop()
 {
+    return generalReply(m_service->execStop());
+}
+
+std::string CCliControlService::requestReset()
+{
+    return generalReply(m_service->execReset());
+}
+
+std::string CCliControlService::requestTerminate()
+{
+    return generalReply(m_service->execTerminate());
+}
+
+std::string CCliControlService::requestShutdown()
+{
+    return generalReply(m_service->execShutdown());
+}
+
+string CCliControlService::generalReply(const SReturnValue& _value)
+{
+    stringstream ss;
     if (_value.m_statusCode == EStatusCode::ok)
     {
-        cout << "Status code: SUCCESS. Message: " << _value.m_msg << endl;
+        ss << "Status code: SUCCESS. Message: " << _value.m_msg << endl;
     }
     else
     {
-        cerr << "Status code: ERROR. Error code: " << _value.m_error.m_code
-             << ". Error message: " << _value.m_error.m_msg << endl;
+        ss << "Status code: ERROR. Error code: " << _value.m_error.m_code << ". Error message: " << _value.m_error.m_msg
+           << endl;
     }
-    cout << "Execution time: " << _value.m_execTime << " msec" << endl;
+    ss << "Execution time: " << _value.m_execTime << " msec" << endl;
+
+    return ss.str();
 }

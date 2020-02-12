@@ -2,8 +2,9 @@
 //
 //
 
-// DDS
+// ODC
 #include "CliControlService.h"
+#include "CliHelper.h"
 
 // STD
 #include <cstdlib>
@@ -18,45 +19,26 @@
 #include <fairmq/sdk/DDSEnvironment.h>
 
 using namespace std;
+using namespace odc::core;
 namespace bpo = boost::program_options;
-
-void printDescription()
-{
-    cout << "Sample client for DDS control." << endl
-         << "Available commands:" << endl
-         << ".quit - Quit the program." << endl
-         << ".init - Initialization request." << endl
-         << ".config - Configure run request." << endl
-         << ".start - Start request." << endl
-         << ".stop - Stop request." << endl
-         << ".term - Terminate request." << endl
-         << ".down - Shutdown request." << endl
-         << ".update - Update topology request." << endl;
-}
 
 int main(int argc, char** argv)
 {
-    string rmsPlugin;
-    string configFile;
-    string topologyFile;
-    string updatedTopologyFile;
+    SInitializeParams initializeParams;
+    SSubmitParams submitParams;
+    SActivateParams activateParams;
+    SUpdateParams upscaleParams;
+    SUpdateParams downscaleParams;
 
     // Generic options
     bpo::options_description options("odc-cli-server options");
     options.add_options()("help,h", "Produce help message");
-    options.add_options()("rms,r",
-                          bpo::value<std::string>(&rmsPlugin)->default_value("localhost"),
-                          "Defines a destination resource management system plug-in.");
-    options.add_options()("config,c",
-                          bpo::value<std::string>(&configFile)->default_value(""),
-                          "A plug-in's configuration file. It can be used to provide additional RMS options.");
+    CCliHelper::addInitializeOptions(options, SInitializeParams(1000), initializeParams);
+    CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 12), submitParams);
     string defaultTopo("@FairMQ_DATADIR@/ex-dds-topology-infinite.xml");
-    options.add_options()("topo",
-                          bpo::value<std::string>(&topologyFile)->default_value(defaultTopo),
-                          (string("Topology filepath (default ") + defaultTopo + string(")")).c_str());
-    options.add_options()("utopo",
-                          bpo::value<std::string>(&updatedTopologyFile)->default_value(defaultTopo),
-                          (string("Updated topology filepath (default ") + defaultTopo + string(")")).c_str());
+    CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
+    CCliHelper::addUpscaleOptions(options, SUpdateParams(defaultTopo), upscaleParams);
+    CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultTopo), downscaleParams);
 
     // Parsing command-line
     bpo::variables_map vm;
@@ -88,62 +70,20 @@ int main(int argc, char** argv)
     setenv("PATH", new_path.c_str(), 1);
 
     odc::cli::CCliControlService control;
+    control.setInitializeParams(initializeParams);
+    control.setSubmitParams(submitParams);
+    control.setActivateParams(activateParams);
+    control.setUpscaleParams(upscaleParams);
+    control.setDownscaleParams(downscaleParams);
 
-    // TODO: FIXME: Think of a better design on how to avoid code dublication.
-    printDescription();
+    CCliHelper::printDescription();
 
     while (true)
     {
         string cmd;
         cout << "Please enter command: ";
         getline(std::cin, cmd);
-
-        if (cmd.empty())
-        {
-        }
-        else if (cmd == ".quit")
-        {
-            return EXIT_SUCCESS;
-        }
-        else if (cmd == ".init")
-        {
-            cout << "Sending initialization request..." << endl;
-            control.Initialize(rmsPlugin, configFile, topologyFile);
-        }
-        else if (cmd == ".config")
-        {
-            cout << "Sending configure run request..." << endl;
-            control.ConfigureRun();
-        }
-        else if (cmd == ".start")
-        {
-            cout << "Sending start request..." << endl;
-            control.Start();
-        }
-        else if (cmd == ".stop")
-        {
-            cout << "Sending stop request..." << endl;
-            control.Stop();
-        }
-        else if (cmd == ".term")
-        {
-            cout << "Sending terminate request..." << endl;
-            control.Terminate();
-        }
-        else if (cmd == ".down")
-        {
-            cout << "Sending shutdown request..." << endl;
-            control.Shutdown();
-        }
-        else if (cmd == ".update")
-        {
-            cout << "Sending update topology request..." << endl;
-            control.UpdateTopology(updatedTopologyFile);
-        }
-        else
-        {
-            cout << "Unknown command " << cmd << endl;
-        }
+        control.processRequest(cmd);
     }
 
     return EXIT_SUCCESS;
