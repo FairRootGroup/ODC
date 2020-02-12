@@ -16,10 +16,7 @@ namespace odc
     {
         class CCliHelper
         {
-
           public:
-            static void printDescription();
-
             static void addInitializeOptions(boost::program_options::options_description& _options,
                                              const SInitializeParams& _defaultParams,
                                              SInitializeParams& _params);

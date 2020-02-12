@@ -18,6 +18,42 @@ namespace odc
         class CCliServiceHelper
         {
           public:
+            void run()
+            {
+                printDescription();
+
+                while (true)
+                {
+                    std::string cmd;
+                    std::cout << "Please enter command: ";
+                    getline(std::cin, cmd);
+                    processRequest(cmd);
+                }
+            }
+
+            void setInitializeParams(const odc::core::SInitializeParams& _initializeParams)
+            {
+                m_initializeParams = _initializeParams;
+            }
+
+            void setSubmitParams(const odc::core::SSubmitParams& _submitParams)
+            {
+                m_submitParams = _submitParams;
+            }
+            void setActivateParams(const odc::core::SActivateParams& _activateParams)
+            {
+                m_activateParams = _activateParams;
+            }
+            void setUpscaleParams(const odc::core::SUpdateParams& _upscaleParams)
+            {
+                m_upscaleParams = _upscaleParams;
+            }
+            void setDownscaleParams(const odc::core::SUpdateParams& _downscaleParams)
+            {
+                m_downscaleParams = _downscaleParams;
+            }
+
+          private:
             void processRequest(const std::string& _cmd)
             {
                 OwnerT* p = reinterpret_cast<OwnerT*>(this);
@@ -97,26 +133,21 @@ namespace odc
                 }
             }
 
-            void setInitializeParams(const odc::core::SInitializeParams& _initializeParams)
+            void printDescription()
             {
-                m_initializeParams = _initializeParams;
-            }
-
-            void setSubmitParams(const odc::core::SSubmitParams& _submitParams)
-            {
-                m_submitParams = _submitParams;
-            }
-            void setActivateParams(const odc::core::SActivateParams& _activateParams)
-            {
-                m_activateParams = _activateParams;
-            }
-            void setUpscaleParams(const odc::core::SUpdateParams& _upscaleParams)
-            {
-                m_upscaleParams = _upscaleParams;
-            }
-            void setDownscaleParams(const odc::core::SUpdateParams& _downscaleParams)
-            {
-                m_downscaleParams = _downscaleParams;
+                std::cout << "Sample client for DDS _service." << std::endl
+                          << "Available commands:" << std::endl
+                          << ".quit - Quit the program." << std::endl
+                          << ".init - Initialization request." << std::endl
+                          << ".submit - Submit request." << std::endl
+                          << ".activate - Activate request." << std::endl
+                          << ".upscale - Upscale topology request." << std::endl
+                          << ".downscale - Downscale topology request." << std::endl
+                          << ".config - Configure run request." << std::endl
+                          << ".start - Start request." << std::endl
+                          << ".stop - Stop request." << std::endl
+                          << ".term - Terminate request." << std::endl
+                          << ".down - Shutdown request." << std::endl;
             }
 
           private:

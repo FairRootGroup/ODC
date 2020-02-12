@@ -50,16 +50,7 @@ int main(int argc, char** argv)
     control.setActivateParams(activateParams);
     control.setUpscaleParams(upscaleParams);
     control.setDownscaleParams(downscaleParams);
-
-    CCliHelper::printDescription();
-
-    while (true)
-    {
-        string cmd;
-        cout << "Please enter command: ";
-        getline(std::cin, cmd);
-        control.processRequest(cmd);
-    }
+    control.run();
 
     return EXIT_SUCCESS;
 }

@@ -3,29 +3,10 @@
 //
 
 #include "CliHelper.h"
-// STD
-#include <iostream>
 
 using namespace std;
 using namespace odc::core;
 namespace bpo = boost::program_options;
-
-void CCliHelper::printDescription()
-{
-    cout << "Sample client for DDS _service." << endl
-         << "Available commands:" << endl
-         << ".quit - Quit the program." << endl
-         << ".init - Initialization request." << endl
-         << ".submit - Submit request." << endl
-         << ".activate - Activate request." << endl
-         << ".upscale - Upscale topology request." << endl
-         << ".downscale - Downscale topology request." << endl
-         << ".config - Configure run request." << endl
-         << ".start - Start request." << endl
-         << ".stop - Stop request." << endl
-         << ".term - Terminate request." << endl
-         << ".down - Shutdown request." << endl;
-}
 
 void CCliHelper::addInitializeOptions(boost::program_options::options_description& _options,
                                       const SInitializeParams& _defaultParams,
