@@ -6,6 +6,7 @@
 #define __ODC__ControlService__
 
 // STD
+#include <memory>
 #include <string>
 
 namespace odc
