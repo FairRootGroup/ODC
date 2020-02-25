@@ -4,6 +4,7 @@
 
 // ODC
 #include "ControlService.h"
+#include "Logger.h"
 #include "TimeMeasure.h"
 // FairMQ
 #include <fairmq/SDK.h>
