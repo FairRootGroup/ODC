@@ -44,9 +44,9 @@ namespace odc
             warning,
             error,
             fatal,
-            log_stdout,
-            log_stdout_clean, // nothing will be pre-append to the output
-            log_stderr
+            stdout,
+            clean, // nothing will be pre-append to the output
+            stderr
         };
 
         /// Array of log severity names
@@ -114,9 +114,9 @@ namespace odc
                 ostreamSink_t stdoutSink = add_console_log(std::cout, keywords::format = "%Process%: %Message%");
                 ostreamSink_t stdoutCleanSink = add_console_log(std::cout, keywords::format = "%Message%");
                 ostreamSink_t stderrSink = add_console_log(std::cerr, keywords::format = "%Process%: error: %Message%");
-                stdoutSink->set_filter(severity == ESeverity::log_stdout);
-                stdoutCleanSink->set_filter(severity == ESeverity::log_stdout_clean);
-                stderrSink->set_filter(severity == ESeverity::log_stderr);
+                stdoutSink->set_filter(severity == ESeverity::stdout);
+                stdoutCleanSink->set_filter(severity == ESeverity::clean);
+                stderrSink->set_filter(severity == ESeverity::stderr);
             }
 
             void createFileSink(const SConfig& _config) const

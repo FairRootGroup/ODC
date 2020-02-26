@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 
     if (vm.count("help"))
     {
-        OLOG(ESeverity::log_stdout_clean) << options;
+        OLOG(ESeverity::clean) << options;
         return EXIT_SUCCESS;
     }
 
