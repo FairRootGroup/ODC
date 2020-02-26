@@ -6,16 +6,14 @@
 #include "BuildConstants.h"
 #include "CliControlService.h"
 #include "CliHelper.h"
-
+#include "Logger.h"
 // STD
 #include <cstdlib>
 #include <iostream>
-
 // BOOST
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-
 // FairMQ SDK
 #include <fairmq/sdk/DDSEnvironment.h>
 
@@ -30,6 +28,7 @@ int main(int argc, char** argv)
     SActivateParams activateParams;
     SUpdateParams upscaleParams;
     SUpdateParams downscaleParams;
+    CLogger::SConfig logConfig;
 
     // Generic options
     bpo::options_description options("odc-cli-server options");
@@ -40,15 +39,18 @@ int main(int argc, char** argv)
     CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
     CCliHelper::addUpscaleOptions(options, SUpdateParams(defaultTopo), upscaleParams);
     CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultTopo), downscaleParams);
+    CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
 
     // Parsing command-line
     bpo::variables_map vm;
     bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
     bpo::notify(vm);
 
+    CLogger::instance().init(logConfig);
+
     if (vm.count("help"))
     {
-        cout << options;
+        OLOG(ESeverity::log_stdout_clean) << options;
         return EXIT_SUCCESS;
     }
 

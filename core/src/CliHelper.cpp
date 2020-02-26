@@ -65,3 +65,14 @@ void CCliHelper::addHostOptions(bpo::options_description& _options, const string
 {
     _options.add_options()("host", bpo::value<string>(&_host)->default_value(_defaultHost), "Server address");
 }
+
+void CCliHelper::addLogOptions(boost::program_options::options_description& _options,
+                               const CLogger::SConfig& _defaultConfig,
+                               CLogger::SConfig& _config)
+{
+    _options.add_options()(
+        "logdir", bpo::value<string>(&_config.m_logDir)->default_value(_defaultConfig.m_logDir), "Log files directory");
+    _options.add_options()("severity",
+                           bpo::value<ESeverity>(&_config.m_severity)->default_value(_defaultConfig.m_severity),
+                           "Log severity level");
+}

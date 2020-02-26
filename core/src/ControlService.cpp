@@ -185,12 +185,12 @@ bool CControlService::SImpl::createDDSSession()
     try
     {
         boost::uuids::uuid sessionID = m_session->create();
-        cout << "DDS session created with session ID: " << to_string(sessionID) << endl;
+        OLOG(ESeverity::info) << "DDS session created with session ID: " << to_string(sessionID);
     }
     catch (exception& _e)
     {
         success = false;
-        cerr << "Failed to create DDS session: " << _e.what() << endl;
+        OLOG(ESeverity::error) << "Failed to create DDS session: " << _e.what();
     }
     return success;
 }
@@ -216,16 +216,16 @@ bool CControlService::SImpl::submitDDSAgents(const SSubmitParams& _params)
         if (_message.m_severity == dds::intercom_api::EMsgSeverity::error)
         {
             success = false;
-            cerr << "Server reports error: " << _message.m_msg << endl;
+            OLOG(ESeverity::error) << "Server reports error: " << _message.m_msg;
         }
         else
         {
-            cout << "Server reports: " << _message.m_msg << endl;
+            OLOG(ESeverity::debug) << "Server reports: " << _message.m_msg;
         }
     });
 
     requestPtr->setDoneCallback([&cv]() {
-        cout << "Agent submission done" << endl;
+        OLOG(ESeverity::info) << "Agent submission done";
         cv.notify_all();
     });
 
@@ -238,11 +238,11 @@ bool CControlService::SImpl::submitDDSAgents(const SSubmitParams& _params)
     if (waitStatus == std::cv_status::timeout)
     {
         success = false;
-        cerr << "Timed out waiting for agent submission" << endl;
+        OLOG(ESeverity::error) << "Timed out waiting for agent submission";
     }
     else
     {
-        cout << "Agent submission done successfully" << endl;
+        OLOG(ESeverity::info) << "Agent submission done successfully";
     }
     return success;
 }
@@ -252,11 +252,11 @@ bool CControlService::SImpl::waitForNumActiveAgents(size_t _numAgents)
     try
     {
         m_session->waitForNumAgents<CSession::EAgentState::active>(
-            _numAgents, std::chrono::seconds(m_timeout), std::chrono::milliseconds(500), 3600, &std::cout);
+            _numAgents, std::chrono::seconds(m_timeout), std::chrono::milliseconds(500), 3600);
     }
     catch (std::exception& _e)
     {
-        cerr << "Timeout waiting for DDS agents: " << _e.what() << endl;
+        OLOG(ESeverity::error) << "Timeout waiting for DDS agents: " << _e.what();
         return false;
     }
     return true;
@@ -280,11 +280,11 @@ bool CControlService::SImpl::activateDDSTopology(const string& _topologyFile,
         if (_message.m_severity == dds::intercom_api::EMsgSeverity::error)
         {
             success = false;
-            cerr << "Server reports error: " << _message.m_msg << endl;
+            OLOG(ESeverity::error) << "Server reports error: " << _message.m_msg;
         }
         else
         {
-            cout << "Server reports: " << _message.m_msg << endl;
+            OLOG(ESeverity::debug) << "Server reports: " << _message.m_msg;
         }
     });
 
@@ -292,13 +292,13 @@ bool CControlService::SImpl::activateDDSTopology(const string& _topologyFile,
         int completed = _progress.m_completed + _progress.m_errors;
         if (completed == _progress.m_total)
         {
-            cout << "Activated tasks: " << _progress.m_completed << "\nErrors: " << _progress.m_errors
-                 << "\nTotal: " << _progress.m_total << endl;
+            OLOG(ESeverity::info) << "Activated tasks: " << _progress.m_completed << "\nErrors: " << _progress.m_errors
+                                  << "\nTotal: " << _progress.m_total;
         }
     });
 
     requestPtr->setDoneCallback([&cv]() {
-        cout << "Topology activation done" << endl;
+        OLOG(ESeverity::info) << "Topology activation done";
         cv.notify_all();
     });
 
@@ -311,11 +311,11 @@ bool CControlService::SImpl::activateDDSTopology(const string& _topologyFile,
     if (waitStatus == std::cv_status::timeout)
     {
         success = false;
-        cerr << "Timed out waiting for agent submission" << endl;
+        OLOG(ESeverity::error) << "Timed out waiting for agent submission";
     }
     else
     {
-        cout << "Topology activation done successfully" << endl;
+        OLOG(ESeverity::info) << "Topology activation done successfully";
     }
     return success;
 }
@@ -330,11 +330,11 @@ bool CControlService::SImpl::shutdownDDSSession()
             m_session->shutdown();
             if (m_session->getSessionID() == boost::uuids::nil_uuid())
             {
-                cout << "DDS session shutted down" << endl;
+                OLOG(ESeverity::info) << "DDS session shutted down";
             }
             else
             {
-                cerr << "Failed to shut down DDS session" << endl;
+                OLOG(ESeverity::error) << "Failed to shut down DDS session";
                 success = false;
             }
         }
@@ -342,7 +342,7 @@ bool CControlService::SImpl::shutdownDDSSession()
     catch (exception& _e)
     {
         success = false;
-        cerr << "Shutdown failed: " << _e.what() << endl;
+        OLOG(ESeverity::error) << "Shutdown failed: " << _e.what();
     }
     return success;
 }
@@ -361,7 +361,7 @@ bool CControlService::SImpl::createFairMQTopo(const std::string& _topologyFile)
     catch (exception& _e)
     {
         m_fairmqTopology = nullptr;
-        cerr << "Failed to initialize FairMQ topology: " << _e.what() << endl;
+        OLOG(ESeverity::error) << "Failed to initialize FairMQ topology: " << _e.what();
     }
     return m_fairmqTopology != nullptr;
 }
@@ -382,7 +382,7 @@ bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _tran
             _transition,
             std::chrono::seconds(m_timeout),
             [&cv, &success, &targetState](std::error_code _ec, fair::mq::sdk::TopologyState _state) {
-                cout << "Change transition result: " << _ec.message() << endl;
+                OLOG(ESeverity::info) << "Change transition result: " << _ec.message();
                 success = !_ec;
                 try
                 {
@@ -391,7 +391,7 @@ bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _tran
                 catch (exception& _e)
                 {
                     success = false;
-                    cerr << "Change state failed: " << _e.what() << endl;
+                    OLOG(ESeverity::error) << "Change state failed: " << _e.what();
                 }
                 cv.notify_all();
             });
@@ -403,17 +403,17 @@ bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _tran
         if (waitStatus == std::cv_status::timeout)
         {
             success = false;
-            cerr << "Timed out waiting for change state " << _transition << endl;
+            OLOG(ESeverity::error) << "Timed out waiting for change state " << _transition;
         }
         else
         {
-            cout << "Change state done successfully " << _transition << endl;
+            OLOG(ESeverity::info) << "Change state done successfully " << _transition;
         }
     }
     catch (exception& _e)
     {
         success = false;
-        cerr << "Change state failed: " << _e.what() << endl;
+        OLOG(ESeverity::error) << "Change state failed: " << _e.what();
     }
 
     return success;

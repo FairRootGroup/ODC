@@ -7,6 +7,7 @@
 
 // ODC
 #include "ControlService.h"
+#include "Logger.h"
 // BOOST
 #include <boost/program_options/options_description.hpp>
 
@@ -35,6 +36,9 @@ namespace odc
             static void addHostOptions(boost::program_options::options_description& _options,
                                        const std::string& _defaultHost,
                                        std::string& _host);
+            static void addLogOptions(boost::program_options::options_description& _options,
+                                      const CLogger::SConfig& _defaultConfig,
+                                      CLogger::SConfig& _config);
         };
     } // namespace core
 } // namespace odc

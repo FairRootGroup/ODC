@@ -131,7 +131,7 @@ std::string CGrpcControlClient::GetReplyString(const grpc::Status& _status, cons
     else
     {
         std::stringstream ss;
-        ss << "RPC failed with error code " << _status.error_code() << ": " << _status.error_message() << std::endl;
+        ss << "RPC failed with error code " << _status.error_code() << ": " << _status.error_message();
         return ss.str();
     }
 }

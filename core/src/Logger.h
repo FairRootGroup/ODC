@@ -28,7 +28,9 @@
 
 // Main macro to be used for logging in ODC
 // Example: LOG(info) << "My message";
-#define LOG(severity) BOOST_LOG_SEV(odc::core::CLogger::instance().logger(), severity)
+// TODO: FIXME: OLOG has to be changed to LOG. For the moment this is a workaround, because FairMQ SDK uses FairLogger
+// which also defines LOG macro.
+#define OLOG(severity) BOOST_LOG_SEV(odc::core::CLogger::instance().logger(), severity)
 
 namespace odc
 {
@@ -101,7 +103,7 @@ namespace odc
                 boost::log::core::get()->add_global_attribute("Process",
                                                               boost::log::attributes::current_process_name());
 
-                LOG(ESeverity::info) << "Log engine is initialized with severety \"" << _config.m_severity << "\"";
+                OLOG(ESeverity::info) << "Log engine is initialized with severety \"" << _config.m_severity << "\"";
             }
 
           private:

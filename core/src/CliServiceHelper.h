@@ -7,6 +7,7 @@
 
 // ODC
 #include "ControlService.h"
+#include "Logger.h"
 // STD
 #include <iostream>
 
@@ -25,7 +26,7 @@ namespace odc
                 while (true)
                 {
                     std::string cmd;
-                    std::cout << "Please enter command: ";
+                    OLOG(ESeverity::log_stdout_clean) << "Please enter command: ";
                     getline(std::cin, cmd);
                     processRequest(cmd);
                 }
@@ -69,85 +70,85 @@ namespace odc
                 }
                 else if (_cmd == ".init")
                 {
-                    std::cout << "Sending initialization request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending initialization request...";
                     replyString = p->requestInitialize(m_initializeParams);
                 }
                 else if (_cmd == ".submit")
                 {
-                    std::cout << "Sending submit request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending submit request...";
                     replyString = p->requestSubmit(m_submitParams);
                 }
                 else if (_cmd == ".activate")
                 {
-                    std::cout << "Sending activate request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending activate request...";
                     replyString = p->requestActivate(m_activateParams);
                 }
                 else if (_cmd == ".upscale")
                 {
-                    std::cout << "Sending upscale request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending upscale request...";
                     replyString = p->requestUpscale(m_upscaleParams);
                 }
                 else if (_cmd == ".downscale")
                 {
-                    std::cout << "Sending downscale request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending downscale request...";
                     replyString = p->requestDownscale(m_downscaleParams);
                 }
                 else if (_cmd == ".config")
                 {
-                    std::cout << "Sending configure run request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending configure run request...";
                     replyString = p->requestConfigure();
                 }
                 else if (_cmd == ".start")
                 {
-                    std::cout << "Sending start request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending start request...";
                     replyString = p->requestStart();
                 }
                 else if (_cmd == ".stop")
                 {
-                    std::cout << "Sending stop request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending stop request...";
                     replyString = p->requestStop();
                 }
                 else if (_cmd == ".reset")
                 {
-                    std::cout << "Sending reset request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending reset request...";
                     replyString = p->requestReset();
                 }
                 else if (_cmd == ".term")
                 {
-                    std::cout << "Sending terminate request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending terminate request...";
                     replyString = p->requestTerminate();
                 }
                 else if (_cmd == ".down")
                 {
-                    std::cout << "Sending shutdown request..." << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Sending shutdown request...";
                     replyString = p->requestShutdown();
                 }
                 else
                 {
-                    std::cout << "Unknown command " << _cmd << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Unknown command " << _cmd;
                 }
 
                 if (!replyString.empty())
                 {
-                    std::cout << "Reply: " << replyString << std::endl;
+                    OLOG(ESeverity::log_stdout_clean) << "Reply: " << replyString;
                 }
             }
 
             void printDescription()
             {
-                std::cout << "Sample client for DDS _service." << std::endl
-                          << "Available commands:" << std::endl
-                          << ".quit - Quit the program." << std::endl
-                          << ".init - Initialization request." << std::endl
-                          << ".submit - Submit request." << std::endl
-                          << ".activate - Activate request." << std::endl
-                          << ".upscale - Upscale topology request." << std::endl
-                          << ".downscale - Downscale topology request." << std::endl
-                          << ".config - Configure run request." << std::endl
-                          << ".start - Start request." << std::endl
-                          << ".stop - Stop request." << std::endl
-                          << ".term - Terminate request." << std::endl
-                          << ".down - Shutdown request." << std::endl;
+                OLOG(ESeverity::log_stdout_clean) << "Sample client for ODC service." << std::endl
+                                                  << "Available commands:" << std::endl
+                                                  << ".quit - Quit the program." << std::endl
+                                                  << ".init - Initialization request." << std::endl
+                                                  << ".submit - Submit request." << std::endl
+                                                  << ".activate - Activate request." << std::endl
+                                                  << ".upscale - Upscale topology request." << std::endl
+                                                  << ".downscale - Downscale topology request." << std::endl
+                                                  << ".config - Configure run request." << std::endl
+                                                  << ".start - Start request." << std::endl
+                                                  << ".stop - Stop request." << std::endl
+                                                  << ".term - Terminate request." << std::endl
+                                                  << ".down - Shutdown request." << std::endl;
             }
 
           private:

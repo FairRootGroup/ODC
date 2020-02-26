@@ -84,7 +84,7 @@ string CCliControlService::generalReply(const SReturnValue& _value)
         ss << "Status code: ERROR. Error code: " << _value.m_error.m_code << ". Error message: " << _value.m_error.m_msg
            << endl;
     }
-    ss << "Execution time: " << _value.m_execTime << " msec" << endl;
+    ss << "Execution time: " << _value.m_execTime << " msec";
 
     return ss.str();
 }

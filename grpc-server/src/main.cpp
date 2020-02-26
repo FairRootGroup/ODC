@@ -7,16 +7,14 @@
 #include "CliHelper.h"
 #include "GrpcControlServer.h"
 #include "GrpcControlService.h"
-
+#include "Logger.h"
 // STD
 #include <cstdlib>
 #include <iostream>
-
 // BOOST
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-
 // FairMQ SDK
 #include <fairmq/sdk/DDSEnvironment.h>
 
@@ -28,21 +26,25 @@ int main(int argc, char** argv)
 {
     string host;
     SSubmitParams submitParams;
+    CLogger::SConfig logConfig;
 
     // Generic options
     bpo::options_description options("dds-control-server options");
     options.add_options()("help,h", "Produce help message");
     CCliHelper::addHostOptions(options, "localhost:50051", host);
     CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 12), submitParams);
+    CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
 
     // Parsing command-line
     bpo::variables_map vm;
     bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
     bpo::notify(vm);
 
+    CLogger::instance().init(logConfig);
+
     if (vm.count("help"))
     {
-        cout << options;
+        OLOG(ESeverity::log_stdout_clean) << options;
         return EXIT_SUCCESS;
     }
 
