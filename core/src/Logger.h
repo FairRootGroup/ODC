@@ -121,15 +121,19 @@ namespace odc
 
             void createFileSink(const SConfig& _config) const
             {
+                // Log directory is empty, don't create file sink
+                if (_config.m_logDir.empty())
+                    return;
+
                 using namespace boost::log;
                 using fileSink_t =
                     boost::shared_ptr<boost::log::sinks::synchronous_sink<boost::log::sinks::text_file_backend>>;
 
-                // Check that log directory is provided and exists
-                if (_config.m_logDir.empty() || !boost::filesystem::exists(_config.m_logDir))
+                // If log directory doesn't exist throw an exception
+                if (!boost::filesystem::exists(_config.m_logDir))
                 {
-                    // TODO: FIXME: throw exception. If directory is empty fallback to std::cout, std::cerr
-                    return;
+                    throw std::runtime_error("Can't initialize file sink of logger. Directory \"" + _config.m_logDir +
+                                             "\" doesn't exist");
                 }
 
                 boost::filesystem::path logFile{ _config.m_logDir };
