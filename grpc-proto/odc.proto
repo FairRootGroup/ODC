@@ -14,6 +14,8 @@ service ODC {
     rpc Update (UpdateRequest) returns (GeneralReply) {}
     // Configure
     rpc Configure (ConfigureRequest) returns (GeneralReply) {}
+    // Set property
+    rpc SetProperty (SetPropertyRequest) returns (GeneralReply) {}
     // Start
     rpc Start (StartRequest) returns (GeneralReply) {}
     // Stop
@@ -71,6 +73,13 @@ message UpdateRequest {
 // Configure request
 message ConfigureRequest {
     // TODO: Add request parameters here
+}
+
+// Set property request
+message SetPropertyRequest {
+    string key = 1;
+    string value = 2;
+    string path = 3;
 }
 
 // Start request

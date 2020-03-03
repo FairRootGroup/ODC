@@ -79,7 +79,7 @@ namespace odc
             {
             }
 
-            runID_t m_runID; ///< Run ID
+            runID_t m_runID{ 0 }; ///< Run ID
         };
 
         /// \brief Structure holds configuration parameters of the submit request
@@ -133,6 +133,24 @@ namespace odc
             std::string m_topologyFile; ///< Path to the topoloy file
         };
 
+        /// \brief Structure holds configuaration parameters of the SetProperty request
+        struct SSetPropertyParams
+        {
+            SSetPropertyParams()
+            {
+            }
+
+            SSetPropertyParams(const std::string& _key, const std::string& _value, const std::string& _path)
+                : m_key(_key)
+                , m_value(_value)
+                , m_path(_path)
+            {
+            }
+            std::string m_key;   ///< Property key
+            std::string m_value; ///< Property value
+            std::string m_path;  ///< Path in the topology
+        };
+
         class CControlService
         {
           public:
@@ -149,6 +167,8 @@ namespace odc
             SReturnValue execUpdate(const SUpdateParams& _params);
             /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
             SReturnValue execConfigure();
+            /// \brief Set property
+            SReturnValue execSetProperty(const SSetPropertyParams& _params);
             /// \brief Start devices: Run
             SReturnValue execStart();
             /// \brief Stop devices: Stop

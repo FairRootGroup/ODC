@@ -47,6 +47,7 @@ struct CControlService::SImpl
     SReturnValue execActivate(const SActivateParams& _params);
     SReturnValue execUpdate(const SUpdateParams& _params);
     SReturnValue execConfigure();
+    SReturnValue execSetProperty(const SSetPropertyParams& _params);
     SReturnValue execStart();
     SReturnValue execStop();
     SReturnValue execReset();
@@ -66,6 +67,7 @@ struct CControlService::SImpl
     bool shutdownDDSSession();
     bool createFairMQTopo(const std::string& _topologyFile);
     bool changeState(fair::mq::sdk::TopologyTransition _transition);
+    bool setProperty(const SSetPropertyParams& _params);
     bool changeStateConfigure();
     bool changeStateReset();
 
@@ -129,6 +131,13 @@ SReturnValue CControlService::SImpl::execConfigure()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = changeStateConfigure();
+    return createReturnValue(success, "ConfigureRun done", "ConfigureRun failed", measure.duration());
+}
+
+SReturnValue CControlService::SImpl::execSetProperty(const SSetPropertyParams& _params)
+{
+    STimeMeasure<std::chrono::milliseconds> measure;
+    bool success = setProperty(_params);
     return createReturnValue(success, "ConfigureRun done", "ConfigureRun failed", measure.duration());
 }
 
@@ -419,6 +428,49 @@ bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _tran
     return success;
 }
 
+bool CControlService::SImpl::setProperty(const SSetPropertyParams& _params)
+{
+    if (m_fairmqTopology == nullptr)
+        return false;
+
+    bool success(true);
+
+    try
+    {
+        std::condition_variable cv;
+
+        m_fairmqTopology->AsyncSetProperties({ { _params.m_key, _params.m_value } },
+                                             _params.m_path,
+                                             std::chrono::seconds(m_timeout),
+                                             [&cv, &success](std::error_code _ec, fair::mq::sdk::FailedDevices) {
+                                                 OLOG(ESeverity::info) << "Set property result: " << _ec.message();
+                                                 success = !_ec;
+                                                 cv.notify_all();
+                                             });
+
+        std::mutex mtx;
+        std::unique_lock<std::mutex> lock(mtx);
+        std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(m_timeout));
+
+        if (waitStatus == std::cv_status::timeout)
+        {
+            success = false;
+            OLOG(ESeverity::error) << "Timed out waiting for set property";
+        }
+        else
+        {
+            OLOG(ESeverity::info) << "Set property done successfully";
+        }
+    }
+    catch (exception& _e)
+    {
+        success = false;
+        OLOG(ESeverity::error) << "Set property failed: " << _e.what();
+    }
+
+    return success;
+}
+
 bool CControlService::SImpl::changeStateConfigure()
 {
     return changeState(fair::mq::sdk::TopologyTransition::InitDevice) &&
@@ -466,6 +518,11 @@ SReturnValue CControlService::execUpdate(const SUpdateParams& _params)
 SReturnValue CControlService::execConfigure()
 {
     return m_impl->execConfigure();
+}
+
+SReturnValue CControlService::execSetProperty(const SSetPropertyParams& _params)
+{
+    return m_impl->execSetProperty(_params);
 }
 
 SReturnValue CControlService::execStart()
