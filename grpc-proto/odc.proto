@@ -35,6 +35,13 @@ enum ReplyStatus {
     ERROR = 2;
 }
 
+// Device type
+enum DeviceType {
+    ALL = 0;
+    RECO = 1;
+    QC = 2;
+}
+
 // General error
 message Error {
     string msg = 1;
@@ -70,8 +77,8 @@ message UpdateRequest {
     string topology = 1;
 }
 
-// Configure request
-message ConfigureRequest {
+// Shutdown request
+message ShutdownRequest {
     // TODO: Add request parameters here
 }
 
@@ -82,27 +89,31 @@ message SetPropertyRequest {
     string path = 3;
 }
 
+//
+// FairMQ device state change requests
+//
+
+// Configure request
+message ConfigureRequest {
+    DeviceType device = 1;
+}
+
 // Start request
 message StartRequest {
-    // TODO: Add request parameters here
+    DeviceType device = 1;
 }
 
 // Stop request
 message StopRequest {
-    // TODO: Add request parameters here
+    DeviceType device = 1;
 }
 
 // Reset request
 message ResetRequest {
-    // TODO: Add request parameters here
+    DeviceType device = 1;
 }
 
 // Terminate request
 message TerminateRequest {
-    // TODO: Add request parameters here
-}
-
-// Shutdown request
-message ShutdownRequest {
-    // TODO: Add request parameters here
+    DeviceType device = 1;
 }

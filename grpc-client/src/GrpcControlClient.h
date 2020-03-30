@@ -18,6 +18,8 @@
 
 class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClient>
 {
+    using hlp = odc::core::CCliServiceHelper<CGrpcControlClient>;
+
   public:
     CGrpcControlClient(std::shared_ptr<grpc::Channel> channel);
 
@@ -26,11 +28,11 @@ class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClien
     std::string requestActivate(const odc::core::SActivateParams& _params);
     std::string requestUpscale(const odc::core::SUpdateParams& _params);
     std::string requestDownscale(const odc::core::SUpdateParams& _params);
-    std::string requestConfigure();
-    std::string requestStart();
-    std::string requestStop();
-    std::string requestReset();
-    std::string requestTerminate();
+    std::string requestConfigure(hlp::EDeviceType _deviceType);
+    std::string requestStart(hlp::EDeviceType _deviceType);
+    std::string requestStop(hlp::EDeviceType _deviceType);
+    std::string requestReset(hlp::EDeviceType _deviceType);
+    std::string requestTerminate(hlp::EDeviceType _deviceType);
     std::string requestShutdown();
 
   private:
@@ -39,6 +41,7 @@ class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClien
   private:
     template <typename Reply_t>
     std::string GetReplyString(const grpc::Status& _status, const Reply_t& _reply);
+    odc::DeviceType odcDeviceToProto(hlp::EDeviceType _odc);
 
   private:
     std::unique_ptr<odc::ODC::Stub> m_stub;

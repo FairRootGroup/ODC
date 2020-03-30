@@ -17,6 +17,16 @@ CCliControlService::CCliControlService()
 {
 }
 
+void CCliControlService::setRecoTopoPath(const std::string& _path)
+{
+    m_recoTopoPath = _path;
+}
+
+void CCliControlService::setQCTopoPath(const std::string& _path)
+{
+    m_qcTopoPath = _path;
+}
+
 std::string CCliControlService::requestInitialize(const odc::core::SInitializeParams& _params)
 {
     return generalReply(m_service->execInitialize(_params));
@@ -42,29 +52,29 @@ std::string CCliControlService::requestDownscale(const odc::core::SUpdateParams&
     return generalReply(m_service->execUpdate(_params));
 }
 
-std::string CCliControlService::requestConfigure()
+std::string CCliControlService::requestConfigure(hlp::EDeviceType _deviceType)
 {
-    return generalReply(m_service->execConfigure());
+    return generalReply(m_service->execConfigure(pathForDevice(_deviceType)));
 }
 
-std::string CCliControlService::requestStart()
+std::string CCliControlService::requestStart(hlp::EDeviceType _deviceType)
 {
-    return generalReply(m_service->execStart());
+    return generalReply(m_service->execStart(pathForDevice(_deviceType)));
 }
 
-std::string CCliControlService::requestStop()
+std::string CCliControlService::requestStop(hlp::EDeviceType _deviceType)
 {
-    return generalReply(m_service->execStop());
+    return generalReply(m_service->execStop(pathForDevice(_deviceType)));
 }
 
-std::string CCliControlService::requestReset()
+std::string CCliControlService::requestReset(hlp::EDeviceType _deviceType)
 {
-    return generalReply(m_service->execReset());
+    return generalReply(m_service->execReset(pathForDevice(_deviceType)));
 }
 
-std::string CCliControlService::requestTerminate()
+std::string CCliControlService::requestTerminate(hlp::EDeviceType _deviceType)
 {
-    return generalReply(m_service->execTerminate());
+    return generalReply(m_service->execTerminate(pathForDevice(_deviceType)));
 }
 
 std::string CCliControlService::requestShutdown()
@@ -87,4 +97,20 @@ string CCliControlService::generalReply(const SReturnValue& _value)
     ss << "Execution time: " << _value.m_execTime << " msec";
 
     return ss.str();
+}
+
+string CCliControlService::pathForDevice(hlp::EDeviceType _type)
+{
+    switch (_type)
+    {
+        case hlp::EDeviceType::reco:
+            return m_recoTopoPath;
+
+        case hlp::EDeviceType::qc:
+            return m_qcTopoPath;
+
+        default:
+            return "";
+    }
+    return "";
 }

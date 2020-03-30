@@ -20,6 +20,16 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
     m_submitParams = _params;
 }
 
+void CGrpcControlService::setRecoTopoPath(const std::string& _path)
+{
+    m_recoTopoPath = _path;
+}
+
+void CGrpcControlService::setQCTopoPath(const std::string& _path)
+{
+    m_qcTopoPath = _path;
+}
+
 ::grpc::Status CGrpcControlService::Initialize(::grpc::ServerContext* context,
                                                const odc::InitializeRequest* request,
                                                odc::GeneralReply* response)
@@ -63,7 +73,8 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                               const odc::ConfigureRequest* request,
                                               odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->execConfigure();
+    SDeviceParams params{ pathForDevice(request->device()) };
+    SReturnValue value = m_service->execConfigure(params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -72,7 +83,8 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                           const odc::StartRequest* request,
                                           odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->execStart();
+    SDeviceParams params{ pathForDevice(request->device()) };
+    SReturnValue value = m_service->execStart(params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -81,7 +93,8 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                          const odc::StopRequest* request,
                                          odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->execStop();
+    SDeviceParams params{ pathForDevice(request->device()) };
+    SReturnValue value = m_service->execStop(params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -90,7 +103,8 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                           const odc::ResetRequest* request,
                                           odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->execReset();
+    SDeviceParams params{ pathForDevice(request->device()) };
+    SReturnValue value = m_service->execReset(params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -99,7 +113,8 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                               const odc::TerminateRequest* request,
                                               odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->execTerminate();
+    SDeviceParams params{ pathForDevice(request->device()) };
+    SReturnValue value = m_service->execTerminate(params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -131,4 +146,20 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
         _response->set_allocated_error(error);
     }
     _response->set_exectime(_value.m_execTime);
+}
+
+string CGrpcControlService::pathForDevice(odc::DeviceType _type)
+{
+    switch (_type)
+    {
+        case odc::DeviceType::RECO:
+            return m_recoTopoPath;
+
+        case odc::DeviceType::QC:
+            return m_qcTopoPath;
+
+        default:
+            return "";
+    }
+    return "";
 }

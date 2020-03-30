@@ -151,11 +151,29 @@ namespace odc
             std::string m_path;  ///< Path in the topology
         };
 
+        /// \brief Structure holds device state params used in FairMQ device state chenge requests.
+        struct SDeviceParams
+        {
+            SDeviceParams()
+            {
+            }
+
+            SDeviceParams(const std::string& _path)
+                : m_path(_path)
+            {
+            }
+            std::string m_path; ///< Path to the topoloy file
+        };
+
         class CControlService
         {
           public:
             /// \brief Default constructor
             CControlService();
+
+            //
+            // DDS topology and session requests
+            //
 
             /// \brief Initialize DDS session
             SReturnValue execInitialize(const SInitializeParams& _params);
@@ -165,20 +183,26 @@ namespace odc
             SReturnValue execActivate(const SActivateParams& _params);
             /// \brief Update topology. Can be called multiple times in order to update topology.
             SReturnValue execUpdate(const SUpdateParams& _params);
-            /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
-            SReturnValue execConfigure();
-            /// \brief Set property
-            SReturnValue execSetProperty(const SSetPropertyParams& _params);
-            /// \brief Start devices: Run
-            SReturnValue execStart();
-            /// \brief Stop devices: Stop
-            SReturnValue execStop();
-            /// \brief Reset devices: ResetTask->ResetDevice
-            SReturnValue execReset();
-            /// \brief Terminate devices: End
-            SReturnValue execTerminate();
             /// \brief Shutdown DDS session
             SReturnValue execShutdown();
+
+            /// \brief Set property
+            SReturnValue execSetProperty(const SSetPropertyParams& _params);
+
+            //
+            // FairMQ device change state requests
+            //
+
+            /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
+            SReturnValue execConfigure(const SDeviceParams& _params);
+            /// \brief Start devices: Run
+            SReturnValue execStart(const SDeviceParams& _params);
+            /// \brief Stop devices: Stop
+            SReturnValue execStop(const SDeviceParams& _params);
+            /// \brief Reset devices: ResetTask->ResetDevice
+            SReturnValue execReset(const SDeviceParams& _params);
+            /// \brief Terminate devices: End
+            SReturnValue execTerminate(const SDeviceParams& _params);
 
           private:
             struct SImpl;

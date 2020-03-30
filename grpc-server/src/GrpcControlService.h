@@ -22,6 +22,8 @@ namespace odc
             CGrpcControlService();
 
             void setSubmitParams(const odc::core::SSubmitParams& _params);
+            void setRecoTopoPath(const std::string& _path);
+            void setQCTopoPath(const std::string& _path);
 
           private:
             ::grpc::Status Initialize(::grpc::ServerContext* context,
@@ -56,9 +58,12 @@ namespace odc
                                     odc::GeneralReply* response) override;
 
             void setupGeneralReply(odc::GeneralReply* _response, const odc::core::SReturnValue& _value);
+            std::string pathForDevice(odc::DeviceType _type);
 
             std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
             odc::core::SSubmitParams m_submitParams;               ///< Parameters of the submit request
+            std::string m_recoTopoPath;                            ///< Topology path of reco devices
+            std::string m_qcTopoPath;                              ///< Topology path of QC devices
         };
     } // namespace grpc
 } // namespace odc

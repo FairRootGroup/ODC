@@ -31,6 +31,8 @@ int main(int argc, char** argv)
         SUpdateParams upscaleParams;
         SUpdateParams downscaleParams;
         CLogger::SConfig logConfig;
+        string recoTopoPath;
+        string qcTopoPath;
 
         // Generic options
         bpo::options_description options("odc-cli-server options");
@@ -42,6 +44,7 @@ int main(int argc, char** argv)
         CCliHelper::addUpscaleOptions(options, SUpdateParams(defaultTopo), upscaleParams);
         CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultTopo), downscaleParams);
         CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
+        CCliHelper::addPathOptions(options, "", recoTopoPath, "", qcTopoPath);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -88,6 +91,8 @@ int main(int argc, char** argv)
         control.setActivateParams(activateParams);
         control.setUpscaleParams(upscaleParams);
         control.setDownscaleParams(downscaleParams);
+        control.setRecoTopoPath(recoTopoPath);
+        control.setQCTopoPath(qcTopoPath);
         control.run();
     }
     catch (exception& _e)

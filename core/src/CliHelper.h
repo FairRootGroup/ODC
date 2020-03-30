@@ -39,6 +39,11 @@ namespace odc
             static void addLogOptions(boost::program_options::options_description& _options,
                                       const CLogger::SConfig& _defaultConfig,
                                       CLogger::SConfig& _config);
+            static void addPathOptions(boost::program_options::options_description& _options,
+                                       const std::string& _defaultRecoPath,
+                                       std::string& _recoPath,
+                                       const std::string& _defaultQCPath,
+                                       std::string& _qcPath);
         };
     } // namespace core
 } // namespace odc

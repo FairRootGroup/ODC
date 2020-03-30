@@ -76,3 +76,15 @@ void CCliHelper::addLogOptions(boost::program_options::options_description& _opt
                            bpo::value<ESeverity>(&_config.m_severity)->default_value(_defaultConfig.m_severity),
                            "Log severity level");
 }
+
+void CCliHelper::addPathOptions(boost::program_options::options_description& _options,
+                                const std::string& _defaultRecoPath,
+                                std::string& _recoPath,
+                                const std::string& _defaultQCPath,
+                                std::string& _qcPath)
+{
+    _options.add_options()(
+        "rpath", bpo::value<string>(&_recoPath)->default_value(_defaultRecoPath), "Topology path of reco devices");
+    _options.add_options()(
+        "qpath", bpo::value<string>(&_qcPath)->default_value(_defaultQCPath), "Topology path of QC devices");
+}
