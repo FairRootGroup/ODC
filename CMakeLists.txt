@@ -6,6 +6,11 @@ project(ODC)
 cmake_minimum_required( VERSION 3.12.0 FATAL_ERROR )
 cmake_policy(VERSION 3.12...3.14)
 
+# Define CMAKE_INSTALL_*DIR variables
+include(GNUInstallDirs)
+
+string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
+
 set(BUILD_SHARED_LIBS ON)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -61,6 +66,12 @@ add_custom_target(format-code
        COMMAND ${CMAKE_SOURCE_DIR}/utils/update_format.sh ${CMAKE_SOURCE_DIR}
        COMMENT "Updating source code formatting.")
 
+# Define install dirs
+set(PROJECT_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR})
+set(PROJECT_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})
+set(PROJECT_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER})
+set(PROJECT_INSTALL_DATADIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME_LOWER})
+
 # Targets
 add_subdirectory(core)
 if(gRPC_FOUND)
@@ -69,15 +80,16 @@ if(gRPC_FOUND)
    add_subdirectory(grpc-client)
 endif()
 add_subdirectory(cli-server)
+add_subdirectory(examples)
 
 #
 # Install
 #
 if(gRPC_FOUND)
-   install(TARGETS odc-grpc-server odc-grpc-client RUNTIME DESTINATION bin)
+   install(TARGETS odc-grpc-server odc-grpc-client RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 endif()
-install(TARGETS odc_core_lib LIBRARY DESTINATION lib)
-install(TARGETS odc-cli-server RUNTIME DESTINATION bin)
+install(TARGETS odc_core_lib LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR})
+install(TARGETS odc-cli-server RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 
 # Daemon config
 if(APPLE)

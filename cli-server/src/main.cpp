@@ -39,7 +39,7 @@ int main(int argc, char** argv)
         options.add_options()("help,h", "Produce help message");
         CCliHelper::addInitializeOptions(options, SInitializeParams(1000), initializeParams);
         CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 12), submitParams);
-        string defaultTopo(kBuildFairMQDataDir + "/ex-dds-topology-infinite.xml");
+        string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
         CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
         CCliHelper::addUpscaleOptions(options, SUpdateParams(defaultTopo), upscaleParams);
         CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultTopo), downscaleParams);

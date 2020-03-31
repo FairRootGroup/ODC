@@ -1,0 +1,52 @@
+<topology name="ExampleDDS">
+
+    <property name="fmqchan_data1" />
+    <property name="fmqchan_data2" />
+
+    <declrequirement name="SamplerWorker" type="wnname" value="sampler"/>
+    <declrequirement name="ProcessorWorker" type="wnname" value="processor"/>
+    <declrequirement name="SinkWorker" type="wnname" value="sink"/>
+
+    <decltask name="Sampler">
+        <exe>fairmq-ex-dds-sampler --color false --channel-config name=data1,type=push,method=bind --rate 100 -P dds</exe>
+        <env reachable="false">fairmq-ex-dds-env.sh</env>
+        <requirements>
+            <name>SamplerWorker</name>
+        </requirements>
+        <properties>
+            <name access="write">fmqchan_data1</name>
+        </properties>
+    </decltask>
+
+    <decltask name="Processor">
+        <exe>fairmq-ex-dds-processor --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P dds</exe>
+        <env reachable="false">fairmq-ex-dds-env.sh</env>
+        <requirements>
+            <name>ProcessorWorker</name>
+        </requirements>
+        <properties>
+            <name access="read">fmqchan_data1</name>
+            <name access="read">fmqchan_data2</name>
+        </properties>
+    </decltask>
+
+    <decltask name="Sink">
+        <exe>fairmq-ex-dds-sink --color false --channel-config name=data2,type=pull,method=bind -P dds</exe>
+        <env reachable="false">fairmq-ex-dds-env.sh</env>
+        <requirements>
+            <name>SinkWorker</name>
+        </requirements>
+        <properties>
+            <name access="write">fmqchan_data2</name>
+        </properties>
+    </decltask>
+
+    <main name="main">
+        <task>Sampler</task>
+        <task>Sink</task>
+        <group name="ProcessorGroup" n="@ODC_VAR_EXAMPLE_N@">
+            <task>Processor</task>
+        </group>
+    </main>
+
+</topology>

@@ -3,6 +3,7 @@
 #
 
 # odc_core_lib
+set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
 configure_file(src/BuildConstants.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/BuildConstants.h @ONLY)
 add_library(odc_core_lib
     "${CMAKE_CURRENT_BINARY_DIR}/src/BuildConstants.h"
