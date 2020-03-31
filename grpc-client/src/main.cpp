@@ -34,8 +34,10 @@ int main(int argc, char** argv)
         CCliHelper::addInitializeOptions(options, SInitializeParams(1000), initializeParams);
         string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
         CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
-        CCliHelper::addUpscaleOptions(options, SUpdateParams(defaultTopo), upscaleParams);
-        CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultTopo), downscaleParams);
+        string defaultUpscaleTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");
+        CCliHelper::addUpscaleOptions(options, SUpdateParams(defaultUpscaleTopo), upscaleParams);
+        string defaultDownscaleTopo(kODCDataDir + "/ex-dds-topology-infinite-down.xml");
+        CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultDownscaleTopo), downscaleParams);
         CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
 
         // Parsing command-line
