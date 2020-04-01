@@ -2,10 +2,18 @@
 #
 #
 
-# odc_core_lib
+# BuildConstants header
 set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
 configure_file(src/BuildConstants.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/BuildConstants.h @ONLY)
+
+# Version header
+set(ODC_VERSION "${PROJECT_VERSION}")
+configure_file(src/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/Version.h @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/src/Version.h DESTINATION ${PROJECT_INSTALL_INCLUDEDIR})
+
+# odc_core_lib target
 add_library(odc_core_lib
+    "${CMAKE_CURRENT_BINARY_DIR}/src/Version.h"
     "${CMAKE_CURRENT_BINARY_DIR}/src/BuildConstants.h"
     "src/ControlService.h"
     "src/ControlService.cpp"

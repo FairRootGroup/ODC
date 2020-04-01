@@ -1,0 +1,10 @@
+// Copyright 2014 GSI, Inc. All rights reserved.
+//
+//
+
+#ifndef __ODC__Version__
+#define __ODC__Version__
+
+#define ODC_VERSION "@ODC_VERSION@"
+
+#endif /*__ODC__Version__*/

@@ -1,6 +1,8 @@
 # Copyright 2019 GSI, Inc. All rights reserved.
 #
 #
+project(ODC)
+
 cmake_minimum_required( VERSION 3.12.0 FATAL_ERROR )
 cmake_policy(VERSION 3.12...3.14)
 
@@ -12,7 +14,6 @@ include(ODCUtils)
 
 odc_get_version()
 
-project(ODC VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 message(STATUS "Building ${PROJECT_NAME} ${PROJECT_VERSION} ...")
 
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
