@@ -2,7 +2,7 @@
 #
 #
 
-# Configure and install DDS test topologies
+# Configure and install ODC test topologies
 macro(odcConfigExampleTopo N FILE_IN FILE_OUT)
     set(ODC_VAR_EXAMPLE_N ${N})
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${FILE_IN} ${CMAKE_CURRENT_BINARY_DIR}/${FILE_OUT} @ONLY)

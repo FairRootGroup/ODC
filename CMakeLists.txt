@@ -1,23 +1,35 @@
 # Copyright 2019 GSI, Inc. All rights reserved.
 #
 #
-project(ODC)
-
 cmake_minimum_required( VERSION 3.12.0 FATAL_ERROR )
 cmake_policy(VERSION 3.12...3.14)
+
+# Cmake find modules
+set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
+# ODC utilities
+include(ODCUtils)
+
+odc_get_version()
+
+project(ODC VERSION ${PROJECT_VERSION} LANGUAGES CXX)
+message(STATUS "Building ${PROJECT_NAME} ${PROJECT_VERSION} ...")
+
+string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
 # Define CMAKE_INSTALL_*DIR variables
 include(GNUInstallDirs)
 
-string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
+# Define install dirs
+set(PROJECT_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR})
+set(PROJECT_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})
+set(PROJECT_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER})
+set(PROJECT_INSTALL_DATADIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME_LOWER})
 
 set(BUILD_SHARED_LIBS ON)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Cmake find modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
 # Find Protobuf installation
 find_package(Protobuf)
@@ -65,12 +77,6 @@ endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 add_custom_target(format-code
        COMMAND ${CMAKE_SOURCE_DIR}/utils/update_format.sh ${CMAKE_SOURCE_DIR}
        COMMENT "Updating source code formatting.")
-
-# Define install dirs
-set(PROJECT_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR})
-set(PROJECT_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})
-set(PROJECT_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER})
-set(PROJECT_INSTALL_DATADIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME_LOWER})
 
 # Targets
 add_subdirectory(core)
