@@ -93,10 +93,10 @@ add_subdirectory(examples)
 # Install
 #
 if(gRPC_FOUND)
-   install(TARGETS odc-grpc-server odc-grpc-client RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
+   install(TARGETS odc-grpc-server odc-grpc-client EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 endif()
-install(TARGETS odc_core_lib LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR})
-install(TARGETS odc-cli-server RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
+install(TARGETS odc_core_lib EXPORT ${PROJECT_NAME}Targets LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR})
+install(TARGETS odc-cli-server EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 
 # Daemon config
 if(APPLE)
@@ -115,3 +115,5 @@ else()
 endif()
 
 install(FILES ${daemon_file} DESTINATION ${daemon_destination})
+
+odc_install_cmake_package()

@@ -20,3 +20,34 @@ function(odc_get_version)
   set(PROJECT_VERSION ${PROJECT_VERSION} PARENT_SCOPE)
 
 endfunction()
+
+
+
+# Generate and install CMake package
+macro(odc_install_cmake_package)
+  include(CMakePackageConfigHelpers)
+  set(PACKAGE_INSTALL_DESTINATION
+    ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}-${PROJECT_VERSION}
+  )
+  install(EXPORT ${PROJECT_NAME}Targets
+    NAMESPACE ${PROJECT_NAME}::
+    DESTINATION ${PACKAGE_INSTALL_DESTINATION}
+    EXPORT_LINK_INTERFACE_LIBRARIES
+  )
+  write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+  )
+  configure_package_config_file(
+    ${CMAKE_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    INSTALL_DESTINATION ${PACKAGE_INSTALL_DESTINATION}
+    PATH_VARS CMAKE_INSTALL_PREFIX
+  )
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake
+    DESTINATION ${PACKAGE_INSTALL_DESTINATION}
+  )
+endmacro()

@@ -5,6 +5,6 @@
 #ifndef __ODC__Version__
 #define __ODC__Version__
 
-#define ODC_VERSION "@ODC_VERSION@"
+#define ODC_VERSION "@PROJECT_VERSION@"
 
 #endif /*__ODC__Version__*/
