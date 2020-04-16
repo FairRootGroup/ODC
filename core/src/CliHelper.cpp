@@ -87,12 +87,12 @@ void CCliHelper::addDeviceOptions(boost::program_options::options_description& _
                            bpo::value<string>(&_recoParams.m_path)->default_value(_defaultRecoParams.m_path),
                            "Topology path of reco devices");
     _options.add_options()("rdetailed",
-                           bpo::value<bool>(&_recoParams.m_detailed)->default_value(_defaultRecoParams.m_detailed),
+                           bpo::bool_switch(&_recoParams.m_detailed)->default_value(_defaultRecoParams.m_detailed),
                            "Detailed reply of reco devices");
     _options.add_options()("qpath",
                            bpo::value<string>(&_qcParams.m_path)->default_value(_defaultQCParams.m_path),
                            "Topology path of QC devices");
     _options.add_options()("qdetailed",
-                           bpo::value<bool>(&_qcParams.m_detailed)->default_value(_defaultQCParams.m_detailed),
+                           bpo::bool_switch(&_qcParams.m_detailed)->default_value(_defaultQCParams.m_detailed),
                            "Detailed reply of QC devices");
 }

@@ -25,13 +25,11 @@ using namespace dds::topology_api;
 //
 struct CControlService::SImpl
 {
+    using DDSTopologyPtr_t = std::shared_ptr<dds::topology_api::CTopology>;
     using DDSSessionPtr_t = std::shared_ptr<dds::tools_api::CSession>;
     using FairMQTopologyPtr_t = std::shared_ptr<fair::mq::sdk::Topology>;
 
     SImpl()
-        : m_session(make_shared<CSession>())
-        , m_fairmqTopology(nullptr)
-        , m_timeout(1800.)
     {
         //    fair::Logger::SetConsoleSeverity("debug");
     }
@@ -69,12 +67,15 @@ struct CControlService::SImpl
     bool waitForNumActiveAgents(size_t _numAgents);
     bool shutdownDDSSession();
     bool createFairMQTopo(const std::string& _topologyFile);
+    bool createTopo(const std::string& _topologyFile);
     bool setProperty(const SSetPropertyParams& _params);
     bool changeState(fair::mq::sdk::TopologyTransition _transition,
                      const std::string& _path,
-                     fair::mq::sdk::TopologyState* _topologyState = nullptr);
-    bool changeStateConfigure(const std::string& _path, fair::mq::sdk::TopologyState* _topologyState = nullptr);
-    bool changeStateReset(const std::string& _path, fair::mq::sdk::TopologyState* _topologyState = nullptr);
+                     TopologyState* _topologyState = nullptr);
+    bool changeStateConfigure(const std::string& _path, TopologyState* _topologyState = nullptr);
+    bool changeStateReset(const std::string& _path, TopologyState* _topologyState = nullptr);
+
+    void fairMQToODCTopologyState(const fair::mq::sdk::TopologyState& _fairmq, TopologyState* _odc);
 
     // Disable copy constructors and assignment operators
     SImpl(const SImpl&) = delete;
@@ -82,10 +83,11 @@ struct CControlService::SImpl
     SImpl& operator=(const SImpl&) = delete;
     SImpl& operator=(SImpl&&) = delete;
 
-    DDSSessionPtr_t m_session;            ///< DDS session
-    FairMQTopologyPtr_t m_fairmqTopology; ///< FairMQ topology
-    const size_t m_timeout;               ///< Request timeout in sec
-    runID_t m_runID;                      ///< Current external runID for this session
+    DDSTopologyPtr_t m_topo{ nullptr };                   ///< DDS topology
+    DDSSessionPtr_t m_session{ make_shared<CSession>() }; ///< DDS session
+    FairMQTopologyPtr_t m_fairmqTopology{ nullptr };      ///< FairMQ topology
+    const size_t m_timeout{ 1800 };                       ///< Request timeout in sec
+    runID_t m_runID{ 0 };                                 ///< Current external runID for this session
 };
 
 SReturnValue CControlService::SImpl::execInitialize(const SInitializeParams& _params)
@@ -115,7 +117,7 @@ SReturnValue CControlService::SImpl::execActivate(const SActivateParams& _params
     // Activate DDS topology
     // Create fair::mq::sdk::Topology
     bool success = activateDDSTopology(_params.m_topologyFile, STopologyRequest::request_t::EUpdateType::ACTIVATE) &&
-                   createFairMQTopo(_params.m_topologyFile);
+                   createTopo(_params.m_topologyFile) && createFairMQTopo(_params.m_topologyFile);
     return createReturnValue(success, "Activate done", "Activate failed", measure.duration());
 }
 
@@ -128,7 +130,8 @@ SReturnValue CControlService::SImpl::execUpdate(const SUpdateParams& _params)
     // Configure devices' state
     bool success = changeStateReset("") &&
                    activateDDSTopology(_params.m_topologyFile, STopologyRequest::request_t::EUpdateType::UPDATE) &&
-                   createFairMQTopo(_params.m_topologyFile) && changeStateConfigure("");
+                   createTopo(_params.m_topologyFile) && createFairMQTopo(_params.m_topologyFile) &&
+                   changeStateConfigure("");
     return createReturnValue(success, "Update done", "Update failed", measure.duration());
 }
 
@@ -373,6 +376,20 @@ bool CControlService::SImpl::shutdownDDSSession()
     return success;
 }
 
+bool CControlService::SImpl::createTopo(const std::string& _topologyFile)
+{
+    try
+    {
+        m_topo = make_shared<dds::topology_api::CTopology>(_topologyFile);
+    }
+    catch (exception& _e)
+    {
+        OLOG(ESeverity::error) << "Failed to initialize DDS topology: " << _e.what();
+        return false;
+    }
+    return true;
+}
+
 bool CControlService::SImpl::createFairMQTopo(const std::string& _topologyFile)
 {
     try
@@ -394,7 +411,7 @@ bool CControlService::SImpl::createFairMQTopo(const std::string& _topologyFile)
 
 bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _transition,
                                          const string& _path,
-                                         fair::mq::sdk::TopologyState* _topologyState)
+                                         TopologyState* _topologyState)
 {
     if (m_fairmqTopology == nullptr)
         return false;
@@ -406,26 +423,26 @@ bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _tran
         fair::mq::sdk::DeviceState targetState;
         std::condition_variable cv;
 
-        m_fairmqTopology->AsyncChangeState(
-            _transition,
-            _path,
-            std::chrono::seconds(m_timeout),
-            [&cv, &success, &targetState, &_topologyState](std::error_code _ec, fair::mq::sdk::TopologyState _state) {
-                OLOG(ESeverity::info) << "Change transition result: " << _ec.message();
-                success = !_ec;
-                try
-                {
-                    targetState = fair::mq::sdk::AggregateState(_state);
-                }
-                catch (exception& _e)
-                {
-                    success = false;
-                    OLOG(ESeverity::error) << "Change state failed: " << _e.what();
-                }
-                if (_topologyState != nullptr)
-                    *_topologyState = _state;
-                cv.notify_all();
-            });
+        m_fairmqTopology->AsyncChangeState(_transition,
+                                           _path,
+                                           std::chrono::seconds(m_timeout),
+                                           [&cv, &success, &targetState, &_topologyState, this](
+                                               std::error_code _ec, fair::mq::sdk::TopologyState _state) {
+                                               OLOG(ESeverity::info) << "Change transition result: " << _ec.message();
+                                               success = !_ec;
+                                               try
+                                               {
+                                                   targetState = fair::mq::sdk::AggregateState(_state);
+                                               }
+                                               catch (exception& _e)
+                                               {
+                                                   success = false;
+                                                   OLOG(ESeverity::error) << "Change state failed: " << _e.what();
+                                               }
+                                               if (_topologyState != nullptr)
+                                                   fairMQToODCTopologyState(_state, _topologyState);
+                                               cv.notify_all();
+                                           });
 
         std::mutex mtx;
         std::unique_lock<std::mutex> lock(mtx);
@@ -450,7 +467,7 @@ bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _tran
     return success;
 }
 
-bool CControlService::SImpl::changeStateConfigure(const string& _path, fair::mq::sdk::TopologyState* _topologyState)
+bool CControlService::SImpl::changeStateConfigure(const string& _path, TopologyState* _topologyState)
 {
     return changeState(fair::mq::sdk::TopologyTransition::InitDevice, _path, _topologyState) &&
            changeState(fair::mq::sdk::TopologyTransition::CompleteInit, _path, _topologyState) &&
@@ -459,7 +476,7 @@ bool CControlService::SImpl::changeStateConfigure(const string& _path, fair::mq:
            changeState(fair::mq::sdk::TopologyTransition::InitTask, _path, _topologyState);
 }
 
-bool CControlService::SImpl::changeStateReset(const string& _path, fair::mq::sdk::TopologyState* _topologyState)
+bool CControlService::SImpl::changeStateReset(const string& _path, TopologyState* _topologyState)
 {
     return changeState(fair::mq::sdk::TopologyTransition::ResetTask, _path, _topologyState) &&
            changeState(fair::mq::sdk::TopologyTransition::ResetDevice, _path, _topologyState);
@@ -506,6 +523,19 @@ bool CControlService::SImpl::setProperty(const SSetPropertyParams& _params)
     }
 
     return success;
+}
+
+void CControlService::SImpl::fairMQToODCTopologyState(const fair::mq::sdk::TopologyState& _fairmq, TopologyState* _odc)
+{
+    if (_odc == nullptr || m_topo == nullptr)
+        return;
+
+    _odc->reserve(_fairmq.size());
+    for (const auto& state : _fairmq)
+    {
+        const auto& task = m_topo->getRuntimeTaskById(state.taskId);
+        _odc->push_back(SDeviceStatus(state, task.m_taskPath));
+    }
 }
 
 //

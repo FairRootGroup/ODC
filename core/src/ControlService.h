@@ -42,6 +42,28 @@ namespace odc
             std::string m_msg; ///< Error message
         };
 
+        /// \brief Holds device status of detailed output
+        struct SDeviceStatus
+        {
+            using container_t = std::vector<SDeviceStatus>;
+
+            SDeviceStatus()
+            {
+            }
+
+            SDeviceStatus(const fair::mq::sdk::DeviceStatus& _status, const std::string& _path)
+                : m_status(_status)
+                , m_path(_path)
+            {
+            }
+
+            fair::mq::sdk::DeviceStatus m_status;
+            std::string m_path;
+        };
+
+        /// \brief Aggregated topology state
+        using TopologyState = SDeviceStatus::container_t;
+
         struct SReturnDetails
         {
             using ptr_t = std::shared_ptr<SReturnDetails>;
@@ -50,12 +72,12 @@ namespace odc
             {
             }
 
-            SReturnDetails(const fair::mq::sdk::TopologyState& _topologyState)
+            SReturnDetails(const TopologyState& _topologyState)
                 : m_topologyState(_topologyState)
             {
             }
 
-            fair::mq::sdk::TopologyState m_topologyState; ///< FairMQ aggregated topology state
+            TopologyState m_topologyState; ///< FairMQ aggregated topology state
         };
 
         /// \brief Structure holds return value of the request

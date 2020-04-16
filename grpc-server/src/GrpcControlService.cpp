@@ -129,7 +129,7 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
     {
         _response->set_status(odc::ReplyStatus::ERROR);
         //_response->set_msg("");
-        // protobuf will take care of deleting the object
+        // Protobuf message takes the ownership and deletes the object
         odc::Error* error = new odc::Error();
         error->set_code(_value.m_error.m_code);
         error->set_msg(_value.m_error.m_msg);
@@ -140,7 +140,20 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
 
 void CGrpcControlService::setupStateChangeReply(odc::StateChangeReply* _response, const odc::core::SReturnValue& _value)
 {
-    odc::GeneralReply* general(const_cast<odc::GeneralReply*>(&_response->reply()));
-    setupGeneralReply(general, _value);
-    // TODO: FIXME: add details to response
+    // Protobuf message takes the ownership and deletes the object
+    odc::GeneralReply* generalResponse = new odc::GeneralReply();
+    setupGeneralReply(generalResponse, _value);
+    _response->set_allocated_reply(generalResponse);
+
+    if (_value.m_details != nullptr)
+    {
+        const auto& topologyState = _value.m_details->m_topologyState;
+        for (const auto& state : topologyState)
+        {
+            auto device = _response->add_devices();
+            device->set_path(state.m_path);
+            device->set_id(state.m_status.taskId);
+            device->set_state(fair::mq::GetStateName(state.m_status.state));
+        }
+    }
 }

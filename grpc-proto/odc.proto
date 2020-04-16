@@ -52,8 +52,9 @@ message GeneralReply {
 
 // Device path
 message Device {
-    string state = 1;
-    string path = 2; 
+    uint64 id = 1;
+    string state = 2;
+    string path = 3;
 }
 
 // State change request
