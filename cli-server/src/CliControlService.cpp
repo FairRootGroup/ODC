@@ -85,7 +85,17 @@ string CCliControlService::generalReply(const SReturnValue& _value)
            << endl;
     }
 
-    // TODO: FIXME: print details
+    if (_value.m_details != nullptr)
+    {
+        ss << endl << "Devices: " << endl;
+        const auto& topologyState = _value.m_details->m_topologyState;
+        for (const auto& state : topologyState)
+        {
+            ss << "{ id: " << state.m_status.taskId << "; path: " << state.m_path
+               << "; state: " << fair::mq::GetStateName(state.m_status.state) << " }" << endl;
+        }
+        ss << endl;
+    }
 
     ss << "Execution time: " << _value.m_execTime << " msec";
 
