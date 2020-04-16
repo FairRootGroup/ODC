@@ -8,6 +8,8 @@
 // STD
 #include <memory>
 #include <string>
+// FairMQ
+#include <fairmq/sdk/Topology.h>
 
 namespace odc
 {
@@ -40,6 +42,22 @@ namespace odc
             std::string m_msg; ///< Error message
         };
 
+        struct SReturnDetails
+        {
+            using ptr_t = std::shared_ptr<SReturnDetails>;
+
+            SReturnDetails()
+            {
+            }
+
+            SReturnDetails(const fair::mq::sdk::TopologyState& _topologyState)
+                : m_topologyState(_topologyState)
+            {
+            }
+
+            fair::mq::sdk::TopologyState m_topologyState; ///< FairMQ aggregated topology state
+        };
+
         /// \brief Structure holds return value of the request
         struct SReturnValue
         {
@@ -51,12 +69,14 @@ namespace odc
                          const std::string& _msg,
                          size_t _execTime,
                          const SError& _error,
-                         runID_t _runID)
+                         runID_t _runID,
+                         SReturnDetails::ptr_t _details = nullptr)
                 : m_statusCode(_statusCode)
                 , m_msg(_msg)
                 , m_execTime(_execTime)
                 , m_error(_error)
                 , m_runID(_runID)
+                , m_details(_details)
             {
             }
 
@@ -65,6 +85,9 @@ namespace odc
             size_t m_execTime{ 0 };                           ///< Execution time in milliseconds
             SError m_error;       ///< In case of error containes information about the error
             runID_t m_runID{ 0 }; ///< Run ID
+
+            // Optional parameters
+            SReturnDetails::ptr_t m_details; ///< Details of the return value. Stored only if requested.
         };
 
         /// \brief Structure holds configuration parameters of the Initiaalize request
@@ -158,11 +181,13 @@ namespace odc
             {
             }
 
-            SDeviceParams(const std::string& _path)
+            SDeviceParams(const std::string& _path, bool _detailed)
                 : m_path(_path)
+                , m_detailed(_detailed)
             {
             }
-            std::string m_path; ///< Path to the topoloy file
+            std::string m_path;       ///< Path to the topoloy file
+            bool m_detailed{ false }; ///< If True than return also detailed information
         };
 
         class CControlService

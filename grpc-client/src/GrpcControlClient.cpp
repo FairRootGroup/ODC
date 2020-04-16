@@ -2,35 +2,22 @@
 //
 //
 
+// ODC
 #include "GrpcControlClient.h"
-
-using odc::ActivateRequest;
-using odc::ConfigureRequest;
-using odc::GeneralReply;
-using odc::InitializeRequest;
-using odc::ODC;
-using odc::ReplyStatus;
-using odc::ResetRequest;
-using odc::ShutdownRequest;
-using odc::StartRequest;
-using odc::StopRequest;
-using odc::SubmitRequest;
-using odc::TerminateRequest;
-using odc::UpdateRequest;
 
 using namespace odc::core;
 using namespace std;
 
 CGrpcControlClient::CGrpcControlClient(shared_ptr<grpc::Channel> channel)
-    : m_stub(ODC::NewStub(channel))
+    : m_stub(odc::ODC::NewStub(channel))
 {
 }
 
 std::string CGrpcControlClient::requestInitialize(const SInitializeParams& _params)
 {
-    InitializeRequest request;
+    odc::InitializeRequest request;
     request.set_runid(_params.m_runID);
-    GeneralReply reply;
+    odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Initialize(&context, request, &reply);
     return GetReplyString(status, reply);
@@ -40,8 +27,8 @@ std::string CGrpcControlClient::requestSubmit(const SSubmitParams& _params)
 {
     // Submit parameters are not used for the request.
 
-    SubmitRequest request;
-    GeneralReply reply;
+    odc::SubmitRequest request;
+    odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Submit(&context, request, &reply);
     return GetReplyString(status, reply);
@@ -49,9 +36,9 @@ std::string CGrpcControlClient::requestSubmit(const SSubmitParams& _params)
 
 std::string CGrpcControlClient::requestActivate(const SActivateParams& _params)
 {
-    ActivateRequest request;
+    odc::ActivateRequest request;
     request.set_topology(_params.m_topologyFile);
-    GeneralReply reply;
+    odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Activate(&context, request, &reply);
     return GetReplyString(status, reply);
@@ -67,60 +54,35 @@ std::string CGrpcControlClient::requestDownscale(const SUpdateParams& _params)
     return updateRequest(_params);
 }
 
-std::string CGrpcControlClient::requestConfigure(hlp::EDeviceType _deviceType)
+std::string CGrpcControlClient::requestConfigure(const SDeviceParams& _params)
 {
-    ConfigureRequest request;
-    request.set_device(odcDeviceToProto(_deviceType));
-    GeneralReply reply;
-    grpc::ClientContext context;
-    grpc::Status status = m_stub->Configure(&context, request, &reply);
-    return GetReplyString(status, reply);
+    return stateChangeRequest<odc::ConfigureRequest>(_params, &odc::ODC::Stub::Configure);
 }
 
-std::string CGrpcControlClient::requestStart(hlp::EDeviceType _deviceType)
+std::string CGrpcControlClient::requestStart(const SDeviceParams& _params)
 {
-    StartRequest request;
-    request.set_device(odcDeviceToProto(_deviceType));
-    GeneralReply reply;
-    grpc::ClientContext context;
-    grpc::Status status = m_stub->Start(&context, request, &reply);
-    return GetReplyString(status, reply);
+    return stateChangeRequest<odc::StartRequest>(_params, &odc::ODC::Stub::Start);
 }
 
-std::string CGrpcControlClient::requestStop(hlp::EDeviceType _deviceType)
+std::string CGrpcControlClient::requestStop(const SDeviceParams& _params)
 {
-    StopRequest request;
-    request.set_device(odcDeviceToProto(_deviceType));
-    GeneralReply reply;
-    grpc::ClientContext context;
-    grpc::Status status = m_stub->Stop(&context, request, &reply);
-    return GetReplyString(status, reply);
+    return stateChangeRequest<odc::StopRequest>(_params, &odc::ODC::Stub::Stop);
 }
 
-std::string CGrpcControlClient::requestReset(hlp::EDeviceType _deviceType)
+std::string CGrpcControlClient::requestReset(const SDeviceParams& _params)
 {
-    ResetRequest request;
-    request.set_device(odcDeviceToProto(_deviceType));
-    GeneralReply reply;
-    grpc::ClientContext context;
-    grpc::Status status = m_stub->Reset(&context, request, &reply);
-    return GetReplyString(status, reply);
+    return stateChangeRequest<odc::ResetRequest>(_params, &odc::ODC::Stub::Reset);
 }
 
-std::string CGrpcControlClient::requestTerminate(hlp::EDeviceType _deviceType)
+std::string CGrpcControlClient::requestTerminate(const SDeviceParams& _params)
 {
-    TerminateRequest request;
-    request.set_device(odcDeviceToProto(_deviceType));
-    GeneralReply reply;
-    grpc::ClientContext context;
-    grpc::Status status = m_stub->Terminate(&context, request, &reply);
-    return GetReplyString(status, reply);
+    return stateChangeRequest<odc::TerminateRequest>(_params, &odc::ODC::Stub::Terminate);
 }
 
 std::string CGrpcControlClient::requestShutdown()
 {
-    ShutdownRequest request;
-    GeneralReply reply;
+    odc::ShutdownRequest request;
+    odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Shutdown(&context, request, &reply);
     return GetReplyString(status, reply);
@@ -143,26 +105,27 @@ std::string CGrpcControlClient::GetReplyString(const grpc::Status& _status, cons
 
 std::string CGrpcControlClient::updateRequest(const SUpdateParams& _params)
 {
-    UpdateRequest request;
+    odc::UpdateRequest request;
     request.set_topology(_params.m_topologyFile);
-    GeneralReply reply;
+    odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Update(&context, request, &reply);
     return GetReplyString(status, reply);
 }
 
-odc::DeviceType CGrpcControlClient::odcDeviceToProto(hlp::EDeviceType _odc)
+template <typename Request_t, typename StubFunc_t>
+std::string CGrpcControlClient::stateChangeRequest(const SDeviceParams& _params, StubFunc_t _stubFunc)
 {
-    switch (_odc)
-    {
-        case hlp::EDeviceType::reco:
-            return odc::DeviceType::RECO;
+    // Protobuf message takes the ownership and deletes the object
+    odc::StateChangeRequest* stateChange = new odc::StateChangeRequest();
+    stateChange->set_path(_params.m_path);
+    stateChange->set_detailed(_params.m_detailed);
 
-        case hlp::EDeviceType::qc:
-            return odc::DeviceType::QC;
+    Request_t request;
+    request.set_allocated_request(stateChange);
 
-        case hlp::EDeviceType::all:
-            return odc::DeviceType::ALL;
-    }
-    return odc::DeviceType::ALL;
+    odc::StateChangeReply reply;
+    grpc::ClientContext context;
+    grpc::Status status = (m_stub.get()->*_stubFunc)(&context, request, &reply);
+    return GetReplyString(status, reply);
 }

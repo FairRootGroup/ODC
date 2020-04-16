@@ -13,17 +13,17 @@ service ODC {
     // Update topology. Can be called multiple times in order to scale up or down the topology.
     rpc Update (UpdateRequest) returns (GeneralReply) {}
     // Configure
-    rpc Configure (ConfigureRequest) returns (GeneralReply) {}
+    rpc Configure (ConfigureRequest) returns (StateChangeReply) {}
     // Set property
     rpc SetProperty (SetPropertyRequest) returns (GeneralReply) {}
     // Start
-    rpc Start (StartRequest) returns (GeneralReply) {}
+    rpc Start (StartRequest) returns (StateChangeReply) {}
     // Stop
-    rpc Stop (StopRequest) returns (GeneralReply) {}
+    rpc Stop (StopRequest) returns (StateChangeReply) {}
     // Reset
-    rpc Reset (ResetRequest) returns (GeneralReply) {}
+    rpc Reset (ResetRequest) returns (StateChangeReply) {}
     // Terminate
-    rpc Terminate (TerminateRequest) returns (GeneralReply) {}
+    rpc Terminate (TerminateRequest) returns (StateChangeReply) {}
     // Shutdown
     rpc Shutdown (ShutdownRequest) returns (GeneralReply) {}
 }
@@ -33,13 +33,6 @@ enum ReplyStatus {
     UNKNOWN = 0;
     SUCCESS = 1;
     ERROR = 2;
-}
-
-// Device type
-enum DeviceType {
-    ALL = 0;
-    RECO = 1;
-    QC = 2;
 }
 
 // General error
@@ -56,6 +49,28 @@ message GeneralReply {
     int32 exectime = 4; // Execution time in ms
     uint64 runid = 5;
 }
+
+// Device path
+message Device {
+    string state = 1;
+    string path = 2; 
+}
+
+// State change request
+message StateChangeRequest {
+    string path = 2;
+    bool detailed = 3;
+}
+
+// State change reply
+message StateChangeReply {
+    GeneralReply reply = 1;
+    repeated Device devices = 2; 
+}
+
+//
+// Requests
+//
 
 // Initialize request
 message InitializeRequest {
@@ -95,25 +110,25 @@ message SetPropertyRequest {
 
 // Configure request
 message ConfigureRequest {
-    DeviceType device = 1;
+    StateChangeRequest request = 1;
 }
 
 // Start request
 message StartRequest {
-    DeviceType device = 1;
+    StateChangeRequest request = 1;
 }
 
 // Stop request
 message StopRequest {
-    DeviceType device = 1;
+    StateChangeRequest request = 1;
 }
 
 // Reset request
 message ResetRequest {
-    DeviceType device = 1;
+    StateChangeRequest request = 1;
 }
 
 // Terminate request
 message TerminateRequest {
-    DeviceType device = 1;
+    StateChangeRequest request = 1;
 }

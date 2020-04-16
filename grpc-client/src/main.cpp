@@ -26,6 +26,8 @@ int main(int argc, char** argv)
         SUpdateParams upscaleParams;
         SUpdateParams downscaleParams;
         CLogger::SConfig logConfig;
+        SDeviceParams recoDeviceParams;
+        SDeviceParams qcDeviceParams;
 
         // Generic options
         bpo::options_description options("grpc-client options");
@@ -39,6 +41,7 @@ int main(int argc, char** argv)
         string defaultDownscaleTopo(kODCDataDir + "/ex-dds-topology-infinite-down.xml");
         CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultDownscaleTopo), downscaleParams);
         CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
+        CCliHelper::addDeviceOptions(options, SDeviceParams(), recoDeviceParams, SDeviceParams(), qcDeviceParams);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -66,6 +69,8 @@ int main(int argc, char** argv)
         control.setActivateParams(activateParams);
         control.setUpscaleParams(upscaleParams);
         control.setDownscaleParams(downscaleParams);
+        control.setRecoDeviceParams(recoDeviceParams);
+        control.setQCDeviceParams(qcDeviceParams);
         control.run();
     }
     catch (exception& _e)

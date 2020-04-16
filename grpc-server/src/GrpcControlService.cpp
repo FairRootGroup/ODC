@@ -20,16 +20,6 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
     m_submitParams = _params;
 }
 
-void CGrpcControlService::setRecoTopoPath(const std::string& _path)
-{
-    m_recoTopoPath = _path;
-}
-
-void CGrpcControlService::setQCTopoPath(const std::string& _path)
-{
-    m_qcTopoPath = _path;
-}
-
 ::grpc::Status CGrpcControlService::Initialize(::grpc::ServerContext* context,
                                                const odc::InitializeRequest* request,
                                                odc::GeneralReply* response)
@@ -71,51 +61,51 @@ void CGrpcControlService::setQCTopoPath(const std::string& _path)
 
 ::grpc::Status CGrpcControlService::Configure(::grpc::ServerContext* context,
                                               const odc::ConfigureRequest* request,
-                                              odc::GeneralReply* response)
+                                              odc::StateChangeReply* response)
 {
-    SDeviceParams params{ pathForDevice(request->device()) };
+    SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execConfigure(params);
-    setupGeneralReply(response, value);
+    setupStateChangeReply(response, value);
     return ::grpc::Status::OK;
 }
 
 ::grpc::Status CGrpcControlService::Start(::grpc::ServerContext* context,
                                           const odc::StartRequest* request,
-                                          odc::GeneralReply* response)
+                                          odc::StateChangeReply* response)
 {
-    SDeviceParams params{ pathForDevice(request->device()) };
+    SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execStart(params);
-    setupGeneralReply(response, value);
+    setupStateChangeReply(response, value);
     return ::grpc::Status::OK;
 }
 
 ::grpc::Status CGrpcControlService::Stop(::grpc::ServerContext* context,
                                          const odc::StopRequest* request,
-                                         odc::GeneralReply* response)
+                                         odc::StateChangeReply* response)
 {
-    SDeviceParams params{ pathForDevice(request->device()) };
+    SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execStop(params);
-    setupGeneralReply(response, value);
+    setupStateChangeReply(response, value);
     return ::grpc::Status::OK;
 }
 
 ::grpc::Status CGrpcControlService::Reset(::grpc::ServerContext* context,
                                           const odc::ResetRequest* request,
-                                          odc::GeneralReply* response)
+                                          odc::StateChangeReply* response)
 {
-    SDeviceParams params{ pathForDevice(request->device()) };
+    SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execReset(params);
-    setupGeneralReply(response, value);
+    setupStateChangeReply(response, value);
     return ::grpc::Status::OK;
 }
 
 ::grpc::Status CGrpcControlService::Terminate(::grpc::ServerContext* context,
                                               const odc::TerminateRequest* request,
-                                              odc::GeneralReply* response)
+                                              odc::StateChangeReply* response)
 {
-    SDeviceParams params{ pathForDevice(request->device()) };
+    SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execTerminate(params);
-    setupGeneralReply(response, value);
+    setupStateChangeReply(response, value);
     return ::grpc::Status::OK;
 }
 
@@ -148,18 +138,9 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
     _response->set_exectime(_value.m_execTime);
 }
 
-string CGrpcControlService::pathForDevice(odc::DeviceType _type)
+void CGrpcControlService::setupStateChangeReply(odc::StateChangeReply* _response, const odc::core::SReturnValue& _value)
 {
-    switch (_type)
-    {
-        case odc::DeviceType::RECO:
-            return m_recoTopoPath;
-
-        case odc::DeviceType::QC:
-            return m_qcTopoPath;
-
-        default:
-            return "";
-    }
-    return "";
+    odc::GeneralReply* general(const_cast<odc::GeneralReply*>(&_response->reply()));
+    setupGeneralReply(general, _value);
+    // TODO: FIXME: add details to response
 }

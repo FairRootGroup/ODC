@@ -14,8 +14,6 @@ void CGrpcControlServer::Run(const std::string& _host)
 {
     CGrpcControlService service;
     service.setSubmitParams(m_submitParams);
-    service.setQCTopoPath(m_qcTopoPath);
-    service.setRecoTopoPath(m_recoTopoPath);
 
     ::grpc::ServerBuilder builder;
     builder.AddListeningPort(_host, ::grpc::InsecureServerCredentials());
@@ -29,14 +27,4 @@ void CGrpcControlServer::Run(const std::string& _host)
 void CGrpcControlServer::setSubmitParams(const odc::core::SSubmitParams& _params)
 {
     m_submitParams = _params;
-}
-
-void CGrpcControlServer::setRecoTopoPath(const std::string& _path)
-{
-    m_recoTopoPath = _path;
-}
-
-void CGrpcControlServer::setQCTopoPath(const std::string& _path)
-{
-    m_qcTopoPath = _path;
 }

@@ -18,8 +18,6 @@
 
 class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClient>
 {
-    using hlp = odc::core::CCliServiceHelper<CGrpcControlClient>;
-
   public:
     CGrpcControlClient(std::shared_ptr<grpc::Channel> channel);
 
@@ -28,20 +26,21 @@ class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClien
     std::string requestActivate(const odc::core::SActivateParams& _params);
     std::string requestUpscale(const odc::core::SUpdateParams& _params);
     std::string requestDownscale(const odc::core::SUpdateParams& _params);
-    std::string requestConfigure(hlp::EDeviceType _deviceType);
-    std::string requestStart(hlp::EDeviceType _deviceType);
-    std::string requestStop(hlp::EDeviceType _deviceType);
-    std::string requestReset(hlp::EDeviceType _deviceType);
-    std::string requestTerminate(hlp::EDeviceType _deviceType);
+    std::string requestConfigure(const odc::core::SDeviceParams& _params);
+    std::string requestStart(const odc::core::SDeviceParams& _params);
+    std::string requestStop(const odc::core::SDeviceParams& _params);
+    std::string requestReset(const odc::core::SDeviceParams& _params);
+    std::string requestTerminate(const odc::core::SDeviceParams& _params);
     std::string requestShutdown();
 
   private:
     std::string updateRequest(const odc::core::SUpdateParams& _params);
+    template <typename Request_t, typename StubFunc_t>
+    std::string stateChangeRequest(const odc::core::SDeviceParams& _params, StubFunc_t _stubFunc);
 
   private:
     template <typename Reply_t>
     std::string GetReplyString(const grpc::Status& _status, const Reply_t& _reply);
-    odc::DeviceType odcDeviceToProto(hlp::EDeviceType _odc);
 
   private:
     std::unique_ptr<odc::ODC::Stub> m_stub;

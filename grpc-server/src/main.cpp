@@ -29,8 +29,6 @@ int main(int argc, char** argv)
         string host;
         SSubmitParams submitParams;
         CLogger::SConfig logConfig;
-        string recoTopoPath;
-        string qcTopoPath;
 
         // Generic options
         bpo::options_description options("dds-control-server options");
@@ -38,7 +36,6 @@ int main(int argc, char** argv)
         CCliHelper::addHostOptions(options, "localhost:50051", host);
         CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 12), submitParams);
         CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
-        CCliHelper::addPathOptions(options, "", recoTopoPath, "", qcTopoPath);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -81,8 +78,6 @@ int main(int argc, char** argv)
 
         odc::grpc::CGrpcControlServer server;
         server.setSubmitParams(submitParams);
-        server.setQCTopoPath(qcTopoPath);
-        server.setRecoTopoPath(recoTopoPath);
         server.Run(host);
     }
     catch (exception& _e)

@@ -77,14 +77,22 @@ void CCliHelper::addLogOptions(boost::program_options::options_description& _opt
                            "Log severity level");
 }
 
-void CCliHelper::addPathOptions(boost::program_options::options_description& _options,
-                                const std::string& _defaultRecoPath,
-                                std::string& _recoPath,
-                                const std::string& _defaultQCPath,
-                                std::string& _qcPath)
+void CCliHelper::addDeviceOptions(boost::program_options::options_description& _options,
+                                  const SDeviceParams& _defaultRecoParams,
+                                  SDeviceParams& _recoParams,
+                                  const SDeviceParams& _defaultQCParams,
+                                  SDeviceParams& _qcParams)
 {
-    _options.add_options()(
-        "rpath", bpo::value<string>(&_recoPath)->default_value(_defaultRecoPath), "Topology path of reco devices");
-    _options.add_options()(
-        "qpath", bpo::value<string>(&_qcPath)->default_value(_defaultQCPath), "Topology path of QC devices");
+    _options.add_options()("rpath",
+                           bpo::value<string>(&_recoParams.m_path)->default_value(_defaultRecoParams.m_path),
+                           "Topology path of reco devices");
+    _options.add_options()("rdetailed",
+                           bpo::value<bool>(&_recoParams.m_detailed)->default_value(_defaultRecoParams.m_detailed),
+                           "Detailed reply of reco devices");
+    _options.add_options()("qpath",
+                           bpo::value<string>(&_qcParams.m_path)->default_value(_defaultQCParams.m_path),
+                           "Topology path of QC devices");
+    _options.add_options()("qdetailed",
+                           bpo::value<bool>(&_qcParams.m_detailed)->default_value(_defaultQCParams.m_detailed),
+                           "Detailed reply of QC devices");
 }

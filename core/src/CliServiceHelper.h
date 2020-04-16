@@ -21,14 +21,6 @@ namespace odc
         class CCliServiceHelper
         {
           public:
-            enum class EDeviceType
-            {
-                all,
-                reco,
-                qc
-            };
-
-          public:
             void run()
             {
                 printDescription();
@@ -42,36 +34,43 @@ namespace odc
                 }
             }
 
-            void setInitializeParams(const odc::core::SInitializeParams& _initializeParams)
+            void setInitializeParams(const odc::core::SInitializeParams& _params)
             {
-                m_initializeParams = _initializeParams;
+                m_initializeParams = _params;
             }
-
-            void setSubmitParams(const odc::core::SSubmitParams& _submitParams)
+            void setSubmitParams(const odc::core::SSubmitParams& _params)
             {
-                m_submitParams = _submitParams;
+                m_submitParams = _params;
             }
-            void setActivateParams(const odc::core::SActivateParams& _activateParams)
+            void setActivateParams(const odc::core::SActivateParams& _params)
             {
-                m_activateParams = _activateParams;
+                m_activateParams = _params;
             }
-            void setUpscaleParams(const odc::core::SUpdateParams& _upscaleParams)
+            void setUpscaleParams(const odc::core::SUpdateParams& _params)
             {
-                m_upscaleParams = _upscaleParams;
+                m_upscaleParams = _params;
             }
-            void setDownscaleParams(const odc::core::SUpdateParams& _downscaleParams)
+            void setDownscaleParams(const odc::core::SUpdateParams& _params)
             {
-                m_downscaleParams = _downscaleParams;
+                m_downscaleParams = _params;
+            }
+            void setRecoDeviceParams(const odc::core::SDeviceParams& _params)
+            {
+                m_recoDeviceParams = _params;
+            }
+            void setQCDeviceParams(const odc::core::SDeviceParams& _params)
+            {
+                m_qcDeviceParams = _params;
             }
 
           private:
-            EDeviceType stringToDeviceType(const std::string& _str)
+            const odc::core::SDeviceParams& stringToDeviceParams(const std::string& _str)
             {
                 if (_str == "reco")
-                    return EDeviceType::reco;
+                    return m_recoDeviceParams;
                 else if (_str == "qc")
-                    return EDeviceType::qc;
-                return EDeviceType::all;
+                    return m_qcDeviceParams;
+                return m_allDeviceParams;
             }
 
             void processRequest(const std::string& _cmd)
@@ -120,27 +119,27 @@ namespace odc
                 else if (cmd == ".config")
                 {
                     OLOG(ESeverity::clean) << "Sending configure run request...";
-                    replyString = p->requestConfigure(stringToDeviceType(par));
+                    replyString = p->requestConfigure(stringToDeviceParams(par));
                 }
                 else if (cmd == ".start")
                 {
                     OLOG(ESeverity::clean) << "Sending start request...";
-                    replyString = p->requestStart(stringToDeviceType(par));
+                    replyString = p->requestStart(stringToDeviceParams(par));
                 }
                 else if (cmd == ".stop")
                 {
                     OLOG(ESeverity::clean) << "Sending stop request...";
-                    replyString = p->requestStop(stringToDeviceType(par));
+                    replyString = p->requestStop(stringToDeviceParams(par));
                 }
                 else if (cmd == ".reset")
                 {
                     OLOG(ESeverity::clean) << "Sending reset request...";
-                    replyString = p->requestReset(stringToDeviceType(par));
+                    replyString = p->requestReset(stringToDeviceParams(par));
                 }
                 else if (cmd == ".term")
                 {
                     OLOG(ESeverity::clean) << "Sending terminate request...";
-                    replyString = p->requestTerminate(stringToDeviceType(par));
+                    replyString = p->requestTerminate(stringToDeviceParams(par));
                 }
                 else if (cmd == ".down")
                 {
@@ -182,6 +181,9 @@ namespace odc
             odc::core::SActivateParams m_activateParams;
             odc::core::SUpdateParams m_upscaleParams;
             odc::core::SUpdateParams m_downscaleParams;
+            odc::core::SDeviceParams m_recoDeviceParams; ///< Parameters of Reco devices
+            odc::core::SDeviceParams m_qcDeviceParams;   ///< Parameters of QC devices
+            odc::core::SDeviceParams m_allDeviceParams;
         };
     } // namespace core
 } // namespace odc
