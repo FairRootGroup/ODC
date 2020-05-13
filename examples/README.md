@@ -4,9 +4,16 @@ ODC provides several examples of [DDS topologies](http://dds.gsi.de/doc/nightly/
 
 ## Run on ALICE HLT cluster
 
-We assume that ODC and its dependencies are installed using [aliBuild](https://github.com/alisw/alibuild) in `INSTALL_DIR`.
+Installation of ODC and its dependencies using [aliBuild](https://github.com/alisw/alibuild):
 
-For this example we use [DDS](https://github.com/FairRootGroup/DDS) [SSH plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#ssh-plugin) which requires a SSH configuration file.
+```
+> mkdir INSTALL_DIR
+> cd INSTALL_DIR
+> git clone https://github.com/alisw/alidist.git
+> aliBuild --default odc build ODC
+```
+
+For this example we use [SSH plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#ssh-plugin) of [DDS](https://github.com/FairRootGroup/DDS)  which requires a SSH configuration file.
 
 Create file `hosts.cfg` with the following content:
 
