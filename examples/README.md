@@ -25,12 +25,12 @@ eval `alienv --no-refresh load ODC/latest-odc`
 cd -
 @bash_end@
 
-wn_epn-vs000, epn-vs000, , YOUR_WRK_DIR,  12
-wn_epn-vs001, epn-vs001, , YOUR_WRK_DIR,  12
-wn_epn-vs002, epn-vs002, , YOUR_WRK_DIR,  12
+wn_epn-vs000, epn-vs000, , WRK_DIR,  12
+wn_epn-vs001, epn-vs001, , WRK_DIR,  12
+wn_epn-vs002, epn-vs002, , WRK_DIR,  12
 ```
 
-Replace `INSTALL_DIR` and `YOUR_WRK_DIR` with the real directory names. Important prerequisite: working directories `YOUR_WRK_DIR` from SSH config file must exist. We recommend to use the local storage of the machine (i.e. `/tmp`) for the working directories.
+Replace `INSTALL_DIR` and `WRK_DIR` with the real directory names. Important prerequisite: working directories `WRK_DIR` from SSH config file must exist. We recommend to use the local storage of the machine (i.e. `/tmp`) for the working directories.
 
 Open two terminal windows. In each of the terminal first initialize the environment:
 ```
@@ -62,7 +62,7 @@ Standard sequence of requests:
 .upscale (Scale topology up. From 12 to 36 devices.)
 .start
 .stop
-.downscale (Scale topology down. From 36 devices to 12.)
+.downscale (Scale topology down. From 36 devices to 24.)
 .start
 .stop
 .reset
