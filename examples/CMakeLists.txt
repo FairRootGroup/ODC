@@ -9,9 +9,9 @@ macro(odcConfigExampleTopo N FILE_IN FILE_OUT)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${FILE_OUT} DESTINATION ${PROJECT_INSTALL_DATADIR})
 endmacro()
     
-odcConfigExampleTopo(10 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite.xml)
-odcConfigExampleTopo(20 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite-up.xml)
-odcConfigExampleTopo(5 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite-down.xml)
+odcConfigExampleTopo(1 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite.xml)
+odcConfigExampleTopo(3 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite-up.xml)
+odcConfigExampleTopo(2 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite-down.xml)
 
 # Install QC example topology
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ex-qc-topology.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
