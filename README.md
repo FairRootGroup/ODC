@@ -3,11 +3,13 @@
 ## Introduction
 The Online Device Control project control/communicate with a graph (topology) of [FairMQ](https://github.com/FairRootGroup/FairMQ) devices using [DDS](http://dds.gsi.de) or PMIx (under development) 
 
-For now The project containes two main executables:
-  * The DDS-control server: `dds-control-server`
-  * The sample client: `grpc-sample-client`
+The project containes a library and several executables:
+  * The core library `odc-core-lib`.
+  * The gRPC server `odc-grpc-server` is a sample implementation of the server based on the `odc-core-lib`.
+  * The gRPC client `odc-grpc-client` is a sample implementation of client.
+  * The CLI server `odc-cli-server` is another sample implementation of the server which doesn't require gRPC installation.
 
-Communication between server and client is done via [gRPC](https://grpc.io/). The interface of the DDS-control server is described in the [ddscontrol.proto](proto/ddscontrol.proto) file.
+Communication between `odc-grpc-server` and `odc-grpc-client` is done via [gRPC](https://grpc.io/). The interface of the `odc-grpc-server` is described in the [odc.proto](grpc-proto/odc.proto) file.
 
 ## 3-rd party dependencies
 
@@ -35,17 +37,50 @@ make install
 
 If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `BOOST`, `DDS`, `Protobuf`, `gRPC`, `FairMQ`, `FairLogger` (`*_ROOT` variables can also be environment variables).
 
-## Usage
-Start the server in foreground:
-```bash
-export PATH=[INSTALL_DIR]/bin:$PATH
-dds-control-server
+## Installation with aliBuild
+
+Alternatively, ODC and 3-rd party dependencies can be installed using [aliBuild](https://github.com/alisw/alibuild):
+
+```
+> mkdir INSTALL_DIR
+> cd INSTALL_DIR
+> git clone https://github.com/alisw/alidist.git
+> aliBuild --default odc build ODC
 ```
 
-Start the sample client in a different terminal:
+## Usage
+Start the gRPC server in foreground:
 ```bash
 export PATH=[INSTALL_DIR]/bin:$PATH
-grpc-sample-client
+odc-grpc-server
+```
+
+Start the sample gRPC client in a different terminal:
+```bash
+export PATH=[INSTALL_DIR]/bin:$PATH
+odc-grpc-client
+```
+
+Alternatively, if gRPC is not installed, start CLI server in foreground:
+```bash
+export PATH=[INSTALL_DIR]/bin:$PATH
+odc-cli-server
+```
+
+By default this example uses [localhost plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#localhost-plugin) of [DDS](https://github.com/FairRootGroup/DDS) and a topology which is installed in `INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml`.
+
+The standard sequence of requests:
+```
+.init
+.submit
+.activate
+.config
+.start
+.stop
+.reset
+.term
+.down
+.quit
 ```
 
 Alternatively, start the server as a background daemon (in your user session):
@@ -54,19 +89,21 @@ Linux:
 ```bash
 # After installation, execute once
 systemctl --user daemon-reload
-# Then control dds-control-server via
-systemctl --user start/stop/status dds-control
+# Then control odc-grpc-server via
+systemctl --user start/stop/status odc-service
 # View server logs
-journalctl --user-unit dds-control [-f]
+journalctl --user-unit odc-service [-f]
 ```
 
 MacOS:
 ```bash
 # TODO Someone on a mac verify this or correct, and find out where logs end up
 # See https://www.launchd.info/. Also, I guess there are GUIs on Mac to do this too?
-launchctl load/unload ~/Library/LaunchAgents/de.gsi.dds-control.plist
-launchctl start/stop de.gsi.dds-control
+launchctl load/unload ~/Library/LaunchAgents/de.gsi.odc.plist
+launchctl start/stop de.gsi.odc-grpc-server
 ```
 
 Find more details on the usage of the `systemctl`/`launchctl` commands in the manpages
 of your system.
+
+More examples can be found [here](examples).

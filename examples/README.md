@@ -2,6 +2,29 @@
 
 ODC provides several examples of [DDS topologies](http://dds.gsi.de/doc/nightly/topology.html) which are installed in `INSTALL_DIR/share/odc`.
 
+## Run locally
+
+Start ODC gRPC server:
+```
+> odc-grpc-server
+```
+
+Start ODC gRPC client:
+```
+> odc-grpc-client
+```
+
+Alternatively, start the CLI server:
+```
+> odc-cli-server
+```
+
+By default this example uses [localhost plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#localhost-plugin) of [DDS](https://github.com/FairRootGroup/DDS) and three topologies which are installed in `INSTALL_DIR/share/odc/`:
+
+* `ex-dds-topology-infinite.xml` - initial topology with 12 FairMQ devices;
+* `ex-dds-topology-infinite-up.xml` - upscaled topololy with 36 FairMQ devices;
+* `ex-dds-topology-infinite-down.xml` - downscaled topology with 24 FairMQ devices.
+
 ## Run on ALICE HLT cluster
 
 Installation of ODC and its dependencies using [aliBuild](https://github.com/alisw/alibuild):
@@ -13,7 +36,7 @@ Installation of ODC and its dependencies using [aliBuild](https://github.com/ali
 > aliBuild --default odc build ODC
 ```
 
-For this example we use [SSH plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#ssh-plugin) of [DDS](https://github.com/FairRootGroup/DDS)  which requires a SSH configuration file.
+For this example we use [SSH plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#ssh-plugin) of [DDS](https://github.com/FairRootGroup/DDS) which requires a SSH configuration file.
 
 Create file `hosts.cfg` with the following content:
 
@@ -51,7 +74,7 @@ Start ODC gRPC client:
 > odc-grpc-client --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml --uptopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-up.xml --downtopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-down.xml
 ```
 
-Standard sequence of requests:
+### Standard sequence of requests
 ```
 .init
 .submit
