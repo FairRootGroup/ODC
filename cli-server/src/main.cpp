@@ -38,7 +38,7 @@ int main(int argc, char** argv)
         bpo::options_description options("odc-cli-server options");
         options.add_options()("help,h", "Produce help message");
         CCliHelper::addInitializeOptions(options, SInitializeParams(1000), initializeParams);
-        CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 12), submitParams);
+        CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 36), submitParams);
         string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
         CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
         string defaultUpscaleTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");
