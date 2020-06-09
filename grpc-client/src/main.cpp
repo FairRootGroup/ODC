@@ -33,7 +33,7 @@ int main(int argc, char** argv)
         bpo::options_description options("grpc-client options");
         options.add_options()("help,h", "Produce help message");
         CCliHelper::addHostOptions(options, "localhost:50051", host);
-        CCliHelper::addInitializeOptions(options, SInitializeParams(1000), initializeParams);
+        CCliHelper::addInitializeOptions(options, SInitializeParams(1000, ""), initializeParams);
         string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
         CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
         string defaultUpscaleTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");

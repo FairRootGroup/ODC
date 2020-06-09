@@ -153,7 +153,7 @@ namespace odc
 
                 if (!replyString.empty())
                 {
-                    OLOG(ESeverity::clean) << "Reply: " << replyString;
+                    OLOG(ESeverity::clean) << "Reply: (\n" << replyString << ")";
                 }
             }
 

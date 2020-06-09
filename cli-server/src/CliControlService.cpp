@@ -75,29 +75,33 @@ std::string CCliControlService::requestShutdown()
 string CCliControlService::generalReply(const SReturnValue& _value)
 {
     stringstream ss;
+
     if (_value.m_statusCode == EStatusCode::ok)
     {
-        ss << "Status code: SUCCESS. Message: " << _value.m_msg << endl;
+        ss << "  Status code: SUCCESS\n  Message: " << _value.m_msg << endl;
     }
     else
     {
-        ss << "Status code: ERROR. Error code: " << _value.m_error.m_code << ". Error message: " << _value.m_error.m_msg
-           << endl;
+        ss << "  Status code: ERROR\n  Error code: " << _value.m_error.m_code
+           << "\n  Error message: " << _value.m_error.m_msg << endl;
     }
+
+    ss << "  Run ID: " << _value.m_runID << endl;
+    ss << "  Session ID: " << _value.m_sessionID << endl;
 
     if (_value.m_details != nullptr)
     {
-        ss << endl << "Devices: " << endl;
+        ss << endl << "  Devices: " << endl;
         const auto& topologyState = _value.m_details->m_topologyState;
         for (const auto& state : topologyState)
         {
-            ss << "{ id: " << state.m_status.taskId << "; path: " << state.m_path
+            ss << "    { id: " << state.m_status.taskId << "; path: " << state.m_path
                << "; state: " << fair::mq::GetStateName(state.m_status.state) << " }" << endl;
         }
         ss << endl;
     }
 
-    ss << "Execution time: " << _value.m_execTime << " msec";
+    ss << "  Execution time: " << _value.m_execTime << " msec" << endl;
 
     return ss.str();
 }

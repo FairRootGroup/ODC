@@ -14,6 +14,9 @@ void CCliHelper::addInitializeOptions(boost::program_options::options_descriptio
 {
     _options.add_options()(
         "runid", bpo::value<runID_t>(&_params.m_runID)->default_value(_defaultParams.m_runID), "Run ID");
+    _options.add_options()("sid",
+                           bpo::value<std::string>(&_params.m_sessionID)->default_value(_defaultParams.m_sessionID),
+                           "Session ID of DDS");
 }
 
 void CCliHelper::addActivateOptions(bpo::options_description& _options,

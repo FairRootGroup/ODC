@@ -17,6 +17,7 @@ std::string CGrpcControlClient::requestInitialize(const SInitializeParams& _para
 {
     odc::InitializeRequest request;
     request.set_runid(_params.m_runID);
+    request.set_sessionid(_params.m_sessionID);
     odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Initialize(&context, request, &reply);
@@ -98,7 +99,7 @@ std::string CGrpcControlClient::GetReplyString(const grpc::Status& _status, cons
     else
     {
         std::stringstream ss;
-        ss << "RPC failed with error code " << _status.error_code() << ": " << _status.error_message();
+        ss << "RPC failed with error code " << _status.error_code() << ": " << _status.error_message() << endl;
         return ss.str();
     }
 }

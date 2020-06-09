@@ -61,10 +61,12 @@ struct CControlService::SImpl
                                    size_t _execTime,
                                    SReturnDetails::ptr_t _details = nullptr);
     bool createDDSSession();
+    bool attachToDDSSession(const std::string& _sessionID);
     bool submitDDSAgents(const SSubmitParams& _params);
     bool activateDDSTopology(const std::string& _topologyFile,
                              dds::tools_api::STopologyRequest::request_t::EUpdateType _updateType);
     bool waitForNumActiveAgents(size_t _numAgents);
+    bool requestCommanderInfo(SCommanderInfoRequest::response_t& _commanderInfo);
     bool shutdownDDSSession();
     bool createFairMQTopo(const std::string& _topologyFile);
     bool createTopo(const std::string& _topologyFile);
@@ -95,9 +97,33 @@ SReturnValue CControlService::SImpl::execInitialize(const SInitializeParams& _pa
     STimeMeasure<std::chrono::milliseconds> measure;
     // Set current run ID
     m_runID = _params.m_runID;
-    // Shutdown DDS session if it is running already
-    // Create new DDS session
-    bool success = shutdownDDSSession() && createDDSSession();
+
+    bool success{ true };
+    if (_params.m_sessionID.empty())
+    {
+        // Shutdown DDS session if it is running already
+        // Create new DDS session
+        success = shutdownDDSSession() && createDDSSession();
+    }
+    else
+    {
+        // Shutdown DDS session if it is running already
+        // Attach to an existing DDS session
+        success = shutdownDDSSession() && attachToDDSSession(_params.m_sessionID);
+
+        // Request current active topology, if any
+        if (success)
+        {
+            SCommanderInfoRequest::response_t commanderInfo;
+            success = requestCommanderInfo(commanderInfo);
+
+            // If topology is active, create FairMQ topology
+            if (success && !commanderInfo.m_activeTopologyPath.empty())
+            {
+                success = createFairMQTopo(commanderInfo.m_activeTopologyPath);
+            }
+        }
+    }
     return createReturnValue(success, "Initialize done", "Initialize failed", measure.duration());
 }
 
@@ -201,11 +227,12 @@ SReturnValue CControlService::SImpl::createReturnValue(bool _success,
                                                        size_t _execTime,
                                                        SReturnDetails::ptr_t _details)
 {
+    string sidStr{ to_string(m_session->getSessionID()) };
     if (_success)
     {
-        return SReturnValue(EStatusCode::ok, _msg, _execTime, SError(), m_runID, _details);
+        return SReturnValue(EStatusCode::ok, _msg, _execTime, SError(), m_runID, sidStr, _details);
     }
-    return SReturnValue(EStatusCode::error, "", _execTime, SError(123, _errMsg), m_runID, _details);
+    return SReturnValue(EStatusCode::error, "", _execTime, SError(123, _errMsg), m_runID, sidStr, _details);
 }
 
 bool CControlService::SImpl::createDDSSession()
@@ -220,6 +247,22 @@ bool CControlService::SImpl::createDDSSession()
     {
         success = false;
         OLOG(ESeverity::error) << "Failed to create DDS session: " << _e.what();
+    }
+    return success;
+}
+
+bool CControlService::SImpl::attachToDDSSession(const std::string& _sessionID)
+{
+    bool success(true);
+    try
+    {
+        m_session->attach(_sessionID);
+        OLOG(ESeverity::info) << "Attach to a DDS session with session ID: " << _sessionID;
+    }
+    catch (exception& _e)
+    {
+        success = false;
+        OLOG(ESeverity::error) << "Failed to attach to a DDS session: " << _e.what();
     }
     return success;
 }
@@ -274,6 +317,24 @@ bool CControlService::SImpl::submitDDSAgents(const SSubmitParams& _params)
         OLOG(ESeverity::info) << "Agent submission done successfully";
     }
     return success;
+}
+
+bool CControlService::SImpl::requestCommanderInfo(SCommanderInfoRequest::response_t& _commanderInfo)
+{
+    try
+    {
+        stringstream ss;
+        m_session->syncSendRequest<SCommanderInfoRequest>(
+            SCommanderInfoRequest::request_t(), _commanderInfo, std::chrono::seconds(m_timeout), &ss);
+        OLOG(ESeverity::info) << ss.str();
+        OLOG(ESeverity::debug) << "Commander info: " << _commanderInfo;
+        return true;
+    }
+    catch (exception& _e)
+    {
+        OLOG(ESeverity::error) << "Error getting DDS commander info: " << _e.what();
+        return false;
+    }
 }
 
 bool CControlService::SImpl::waitForNumActiveAgents(size_t _numAgents)

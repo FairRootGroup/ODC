@@ -24,7 +24,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                                const odc::InitializeRequest* request,
                                                odc::GeneralReply* response)
 {
-    SInitializeParams params{ request->runid() };
+    SInitializeParams params{ request->runid(), request->sessionid() };
     SReturnValue value = m_service->execInitialize(params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
@@ -135,6 +135,8 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
         error->set_msg(_value.m_error.m_msg);
         _response->set_allocated_error(error);
     }
+    _response->set_runid(_value.m_runID);
+    _response->set_sessionid(_value.m_sessionID);
     _response->set_exectime(_value.m_execTime);
 }
 

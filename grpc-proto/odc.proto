@@ -48,6 +48,7 @@ message GeneralReply {
     Error error = 3;
     int32 exectime = 4; // Execution time in ms
     uint64 runid = 5;
+    string sessionid = 6;
 }
 
 // Device path
@@ -75,7 +76,8 @@ message StateChangeReply {
 
 // Initialize request
 message InitializeRequest {
-    uint64 runid = 1; 
+    uint64 runid = 1;
+    string sessionid = 2;
 }
 
 // Submit request

@@ -92,12 +92,14 @@ namespace odc
                          size_t _execTime,
                          const SError& _error,
                          runID_t _runID,
+                         const std::string& _sessionID,
                          SReturnDetails::ptr_t _details = nullptr)
                 : m_statusCode(_statusCode)
                 , m_msg(_msg)
                 , m_execTime(_execTime)
                 , m_error(_error)
                 , m_runID(_runID)
+                , m_sessionID(_sessionID)
                 , m_details(_details)
             {
             }
@@ -105,8 +107,9 @@ namespace odc
             EStatusCode m_statusCode{ EStatusCode::unknown }; ///< Operation status code
             std::string m_msg;                                ///< General message about the status
             size_t m_execTime{ 0 };                           ///< Execution time in milliseconds
-            SError m_error;       ///< In case of error containes information about the error
-            runID_t m_runID{ 0 }; ///< Run ID
+            SError m_error;          ///< In case of error containes information about the error
+            runID_t m_runID{ 0 };    ///< Run ID
+            std::string m_sessionID; ///< Session ID of DDS
 
             // Optional parameters
             SReturnDetails::ptr_t m_details; ///< Details of the return value. Stored only if requested.
@@ -119,12 +122,14 @@ namespace odc
             {
             }
 
-            SInitializeParams(runID_t _runID)
+            SInitializeParams(runID_t _runID, const std::string& _sessionID)
                 : m_runID(_runID)
+                , m_sessionID(_sessionID)
             {
             }
 
-            runID_t m_runID{ 0 }; ///< Run ID
+            runID_t m_runID{ 0 };    ///< Run ID
+            std::string m_sessionID; ///< DDS session ID
         };
 
         /// \brief Structure holds configuration parameters of the submit request
