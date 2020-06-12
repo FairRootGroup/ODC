@@ -26,6 +26,7 @@ int main(int argc, char** argv)
 {
     try
     {
+        size_t timeout;
         string host;
         SSubmitParams submitParams;
         CLogger::SConfig logConfig;
@@ -33,6 +34,7 @@ int main(int argc, char** argv)
         // Generic options
         bpo::options_description options("dds-control-server options");
         options.add_options()("help,h", "Produce help message");
+        CCliHelper::addTimeoutOptions(options, 30, timeout);
         CCliHelper::addHostOptions(options, "localhost:50051", host);
         CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 36), submitParams);
         CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
@@ -77,6 +79,7 @@ int main(int argc, char** argv)
         setenv("PATH", new_path.c_str(), 1);
 
         odc::grpc::CGrpcControlServer server;
+        server.setTimeout(chrono::seconds(timeout));
         server.setSubmitParams(submitParams);
         server.Run(host);
     }

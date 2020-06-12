@@ -22,6 +22,7 @@ namespace odc
             CGrpcControlService();
 
             void setSubmitParams(const odc::core::SSubmitParams& _params);
+            void setTimeout(const std::chrono::seconds& _timeout);
 
           private:
             ::grpc::Status Initialize(::grpc::ServerContext* context,

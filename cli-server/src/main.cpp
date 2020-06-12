@@ -8,6 +8,7 @@
 #include "CliHelper.h"
 #include "Logger.h"
 // STD
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 // BOOST
@@ -25,6 +26,7 @@ int main(int argc, char** argv)
 {
     try
     {
+        size_t timeout;
         SInitializeParams initializeParams;
         SSubmitParams submitParams;
         SActivateParams activateParams;
@@ -37,6 +39,7 @@ int main(int argc, char** argv)
         // Generic options
         bpo::options_description options("odc-cli-server options");
         options.add_options()("help,h", "Produce help message");
+        CCliHelper::addTimeoutOptions(options, 30, timeout);
         CCliHelper::addInitializeOptions(options, SInitializeParams(1000, ""), initializeParams);
         CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 36), submitParams);
         string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
@@ -88,6 +91,7 @@ int main(int argc, char** argv)
         setenv("PATH", new_path.c_str(), 1);
 
         odc::cli::CCliControlService control;
+        control.setTimeout(chrono::seconds(timeout));
         control.setInitializeParams(initializeParams);
         control.setSubmitParams(submitParams);
         control.setActivateParams(activateParams);

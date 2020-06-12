@@ -15,6 +15,11 @@ CGrpcControlService::CGrpcControlService()
 {
 }
 
+void CGrpcControlService::setTimeout(const std::chrono::seconds& _timeout)
+{
+    m_service->setTimeout(_timeout);
+}
+
 void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _params)
 {
     m_submitParams = _params;

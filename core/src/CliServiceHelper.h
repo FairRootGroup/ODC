@@ -9,6 +9,7 @@
 #include "ControlService.h"
 #include "Logger.h"
 // STD
+#include <chrono>
 #include <iostream>
 // BOOST
 #include <boost/algorithm/string.hpp>
@@ -61,6 +62,10 @@ namespace odc
             void setQCDeviceParams(const odc::core::SDeviceParams& _params)
             {
                 m_qcDeviceParams = _params;
+            }
+            void setTimeout(const std::chrono::seconds& _timeout)
+            {
+                m_timeout = _timeout;
             }
 
           private:
@@ -184,6 +189,7 @@ namespace odc
             odc::core::SDeviceParams m_recoDeviceParams; ///< Parameters of Reco devices
             odc::core::SDeviceParams m_qcDeviceParams;   ///< Parameters of QC devices
             odc::core::SDeviceParams m_allDeviceParams;
+            std::chrono::seconds m_timeout; ///< Request timeout
         };
     } // namespace core
 } // namespace odc

@@ -223,6 +223,10 @@ namespace odc
             /// \brief Default constructor
             CControlService();
 
+            /// \brief Set timeout of requests
+            /// \param [in] _timeout Timeout in seconds
+            void setTimeout(const std::chrono::seconds& _timeout);
+
             //
             // DDS topology and session requests
             //

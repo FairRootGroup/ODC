@@ -17,12 +17,15 @@ namespace odc
         class CGrpcControlServer final
         {
           public:
+            CGrpcControlServer();
+
             void Run(const std::string& _host);
 
+            void setTimeout(const std::chrono::seconds& _timeout);
             void setSubmitParams(const odc::core::SSubmitParams& _params);
 
           private:
-            odc::core::SSubmitParams m_submitParams; ///< Parameters of the submit request
+            std::shared_ptr<CGrpcControlService> m_service; ///< Service for request processing
         };
     } // namespace grpc
 } // namespace odc

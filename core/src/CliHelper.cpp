@@ -8,6 +8,14 @@ using namespace std;
 using namespace odc::core;
 namespace bpo = boost::program_options;
 
+void CCliHelper::addTimeoutOptions(boost::program_options::options_description& _options,
+                                   size_t _defaultTimeout,
+                                   size_t& _timeout)
+{
+    _options.add_options()(
+        "timeout", bpo::value<size_t>(&_timeout)->default_value(_defaultTimeout), "Timeout of requests in sec");
+}
+
 void CCliHelper::addInitializeOptions(boost::program_options::options_description& _options,
                                       const SInitializeParams& _defaultParams,
                                       SInitializeParams& _params)

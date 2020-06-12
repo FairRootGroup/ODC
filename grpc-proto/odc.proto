@@ -60,8 +60,8 @@ message Device {
 
 // State change request
 message StateChangeRequest {
-    string path = 2;
-    bool detailed = 3;
+    string path = 1;
+    bool detailed = 2;
 }
 
 // State change reply

@@ -18,6 +18,9 @@ namespace odc
         class CCliHelper
         {
           public:
+            static void addTimeoutOptions(boost::program_options::options_description& _options,
+                                          size_t _defaultTimeout,
+                                          size_t& _timeout);
             static void addInitializeOptions(boost::program_options::options_description& _options,
                                              const SInitializeParams& _defaultParams,
                                              SInitializeParams& _params);

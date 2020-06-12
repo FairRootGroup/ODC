@@ -38,6 +38,11 @@ struct CControlService::SImpl
     {
     }
 
+    void setTimeout(const chrono::seconds& _timeout)
+    {
+        m_timeout = _timeout;
+    }
+
     // Core API calls
     // TODO: FIXME: Implement sanity check before calling API
     SReturnValue execInitialize(const SInitializeParams& _params);
@@ -88,7 +93,7 @@ struct CControlService::SImpl
     DDSTopologyPtr_t m_topo{ nullptr };                   ///< DDS topology
     DDSSessionPtr_t m_session{ make_shared<CSession>() }; ///< DDS session
     FairMQTopologyPtr_t m_fairmqTopology{ nullptr };      ///< FairMQ topology
-    const size_t m_timeout{ 1800 };                       ///< Request timeout in sec
+    chrono::seconds m_timeout{ 30 };                      ///< Request timeout in sec
     runID_t m_runID{ 0 };                                 ///< Current external runID for this session
 };
 
@@ -305,7 +310,7 @@ bool CControlService::SImpl::submitDDSAgents(const SSubmitParams& _params)
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(m_timeout));
+    std::cv_status waitStatus = cv.wait_for(lock, m_timeout);
 
     if (waitStatus == std::cv_status::timeout)
     {
@@ -325,7 +330,7 @@ bool CControlService::SImpl::requestCommanderInfo(SCommanderInfoRequest::respons
     {
         stringstream ss;
         m_session->syncSendRequest<SCommanderInfoRequest>(
-            SCommanderInfoRequest::request_t(), _commanderInfo, std::chrono::seconds(m_timeout), &ss);
+            SCommanderInfoRequest::request_t(), _commanderInfo, m_timeout, &ss);
         OLOG(ESeverity::info) << ss.str();
         OLOG(ESeverity::debug) << "Commander info: " << _commanderInfo;
         return true;
@@ -341,8 +346,7 @@ bool CControlService::SImpl::waitForNumActiveAgents(size_t _numAgents)
 {
     try
     {
-        m_session->waitForNumAgents<CSession::EAgentState::active>(
-            _numAgents, std::chrono::seconds(m_timeout), std::chrono::milliseconds(500), 3600);
+        m_session->waitForNumAgents<CSession::EAgentState::active>(_numAgents, m_timeout);
     }
     catch (std::exception& _e)
     {
@@ -396,7 +400,7 @@ bool CControlService::SImpl::activateDDSTopology(const string& _topologyFile,
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(m_timeout));
+    std::cv_status waitStatus = cv.wait_for(lock, m_timeout);
 
     if (waitStatus == std::cv_status::timeout)
     {
@@ -486,7 +490,7 @@ bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _tran
 
         m_fairmqTopology->AsyncChangeState(_transition,
                                            _path,
-                                           std::chrono::seconds(m_timeout),
+                                           m_timeout,
                                            [&cv, &success, &targetState, &_topologyState, this](
                                                std::error_code _ec, fair::mq::sdk::TopologyState _state) {
                                                OLOG(ESeverity::info) << "Change transition result: " << _ec.message();
@@ -507,7 +511,7 @@ bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _tran
 
         std::mutex mtx;
         std::unique_lock<std::mutex> lock(mtx);
-        std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(m_timeout));
+        std::cv_status waitStatus = cv.wait_for(lock, m_timeout);
 
         if (waitStatus == std::cv_status::timeout)
         {
@@ -556,7 +560,7 @@ bool CControlService::SImpl::setProperty(const SSetPropertyParams& _params)
 
         m_fairmqTopology->AsyncSetProperties({ { _params.m_key, _params.m_value } },
                                              _params.m_path,
-                                             std::chrono::seconds(m_timeout),
+                                             m_timeout,
                                              [&cv, &success](std::error_code _ec, fair::mq::sdk::FailedDevices) {
                                                  OLOG(ESeverity::info) << "Set property result: " << _ec.message();
                                                  success = !_ec;
@@ -565,7 +569,7 @@ bool CControlService::SImpl::setProperty(const SSetPropertyParams& _params)
 
         std::mutex mtx;
         std::unique_lock<std::mutex> lock(mtx);
-        std::cv_status waitStatus = cv.wait_for(lock, std::chrono::seconds(m_timeout));
+        std::cv_status waitStatus = cv.wait_for(lock, m_timeout);
 
         if (waitStatus == std::cv_status::timeout)
         {
@@ -606,6 +610,11 @@ void CControlService::SImpl::fairMQToODCTopologyState(const fair::mq::sdk::Topol
 CControlService::CControlService()
     : m_impl(make_shared<CControlService::SImpl>())
 {
+}
+
+void CControlService::setTimeout(const chrono::seconds& _timeout)
+{
+    m_impl->setTimeout(_timeout);
 }
 
 SReturnValue CControlService::execInitialize(const SInitializeParams& _params)
