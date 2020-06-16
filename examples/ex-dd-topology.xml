@@ -1,0 +1,5 @@
+<topology name="o2-dd">
+   <decltask name="TfBuilder">
+       <exe reachable="true">TfBuilder --id tfb_0 --other-options</exe>
+   </decltask>
+</topology>
