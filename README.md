@@ -1,7 +1,7 @@
 # Online Device Control
 
 ## Introduction
-The Online Device Control project control/communicate with a graph (topology) of [FairMQ](https://github.com/FairRootGroup/FairMQ) devices using [DDS](http://dds.gsi.de) or PMIx (under development) 
+The Online Device Control project control/communicate with a graph (topology) of [FairMQ](https://github.com/FairRootGroup/FairMQ) devices using [DDS](http://dds.gsi.de) or PMIx (under development)
 
 The project containes a library and several executables:
   * The core library `odc-core-lib`.
@@ -11,6 +11,23 @@ The project containes a library and several executables:
 
 Communication between `odc-grpc-server` and `odc-grpc-client` is done via [gRPC](https://grpc.io/). The interface of the `odc-grpc-server` is described in the [odc.proto](grpc-proto/odc.proto) file.
 
+## Command Mapping
+
+| ECS Command | ODC Reaction                                                                                                                |
+| ----------- | ------------                                                                                                                |
+| initialize  | initialize DDS session                                                                                                      |
+| submit      | submit DDS agents                                                                                                           |
+| activate    | activate topology (devices enter `Idle` state)                                                                              |
+| update      | update topology (up or down scale or any other topology change) (invovles reset, activate, configure)                       |
+| configure   | transition devices into `Ready` state (via `InitDevice` -> `CompleteInit` -> `Bind` -> `Connect` -> `InitTask` transitions) |
+| setProperty | change devices configuration                                                                                                |
+| start       | transition devices into `Running` state (via `Run` transition)                                                              |
+| stop        | transition devices into `Ready` state (via `Stop` transition)                                                               |
+| reset       | transition devices into `Idle` state (via `ResetTask` -> `ResetDevice` transitions)                                         |
+| terminate   | shut devices down via `End` transition                                                                                      |
+| shutdown    | shutdown DDS session                                                                                                        |
+
+
 ## 3-rd party dependencies
 
   * [Boost](https://www.boost.org/)
@@ -19,7 +36,7 @@ Communication between `odc-grpc-server` and `odc-grpc-client` is done via [gRPC]
   * [gRPC](https://grpc.io/)
   * [FairMQ](https://github.com/FairRootGroup/FairMQ)
   * [FairLogger](https://github.com/FairRootGroup/FairLogger)
-  
+
 For macOS we recommend to install gRPC via `brew` which also installs `Protobuf` and other dependencies:
 ```bash
 brew install grpc
