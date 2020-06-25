@@ -5,8 +5,8 @@
 ### ODC common
 Added: possibility to attach to the running DDS session.    
 Added: DDS session ID in each reply.    
-Added: eet request timeout via command line interface.    
-
+Added: set request timeout via command line interface.    
+Added: unit tests.    
 
 
 ## v0.2 (2020-05-13)

@@ -54,6 +54,10 @@ make install
 
 If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `BOOST`, `DDS`, `Protobuf`, `gRPC`, `FairMQ`, `FairLogger` (`*_ROOT` variables can also be environment variables).
 
+### CMake command line options
+
+  * `-DBUILD_TESTS=OFF` disables building of tests.
+
 ## Installation with aliBuild
 
 Alternatively, ODC and 3-rd party dependencies can be installed using [aliBuild](https://github.com/alisw/alibuild):

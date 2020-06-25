@@ -18,6 +18,8 @@ message(STATUS "Building ${PROJECT_NAME} ${PROJECT_VERSION} ...")
 
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
+option(BUILD_TESTS "Build ODC unit tests" ON)
+
 # Define CMAKE_INSTALL_*DIR variables
 include(GNUInstallDirs)
 
@@ -26,6 +28,8 @@ set(PROJECT_INSTALL_BINDIR ${CMAKE_INSTALL_BINDIR})
 set(PROJECT_INSTALL_LIBDIR ${CMAKE_INSTALL_LIBDIR})
 set(PROJECT_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME_LOWER})
 set(PROJECT_INSTALL_DATADIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME_LOWER})
+set(PROJECT_INSTALL_TESTS tests)
+
 
 set(BUILD_SHARED_LIBS ON)
 
@@ -46,6 +50,9 @@ message(STATUS "Using DDS ${DDS_VERSION}")
 
 # Find Boost installation
 set(Boost_Components log log_setup thread program_options filesystem system regex)
+if(BUILD_TESTS)
+  set(Boost_Components ${Boost_Components} unit_test_framework)
+endif(BUILD_TESTS)
 find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
 
 # Find FairMQ
@@ -88,6 +95,9 @@ if(gRPC_FOUND)
 endif()
 add_subdirectory(cli-server)
 add_subdirectory(examples)
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif(BUILD_TESTS)
 
 #
 # Install
