@@ -54,12 +54,10 @@ int main(int argc, char** argv)
         auto epnGroup{ creator.getMainGroup()->addElement<CTopoGroup>("EPNGroup") };
         // Set required number of DPL collections (number of EPNs)
         epnGroup->setN(numCollections);
-        // Add new EPN collection to EPN group
-        auto epnCollection{ epnGroup->addElement<CTopoCollection>("DPL") };
-        // Initialize EPN collection from XML topology file
-        epnCollection->initFromXML(dplTopoFilepath);
-        // Add TfBuilder task to DPL collection and initialize the task from XML topology file
-        epnCollection->addElement<CTopoTask>("TfBuilder")->initFromXML(ddTopoFilepath);
+        // Add new EPN collection to EPN group and initialize it from XML topology file
+        epnGroup->addElement<CTopoCollection>("DPL")->initFromXML(dplTopoFilepath);
+        // Add TfBuilder task to EPN group and initialize it from XML topology file
+        epnGroup->addElement<CTopoTask>("TfBuilderTask")->initFromXML(ddTopoFilepath);
         // Save topology to the oputput file
         string outputTopoFile{ "ex-epn-topology.xml" };
         creator.save(outputTopoFile);
