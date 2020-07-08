@@ -3,71 +3,78 @@ syntax = "proto3";
 package odc;
 
 // The ODC service definition.
+// For details also see https://github.com/FairRootGroup/ODC#command-mapping
 service ODC {
-    // Initialize
+    // Creates a new DDS session or attaches to an existion DDS session.
     rpc Initialize (InitializeRequest) returns (GeneralReply) {}
-    // Submit agents. Can be called multiple times in order to submit more agents.
+    // Submits DDS agents (deploys a dynamic cluster) according to a specified computing resources.
+    // Can be called multiple times in order to submit more DDS agents (allocate more resources).
     rpc Submit (SubmitRequest) returns (GeneralReply) {}
-    // Activate topology.
+    // Activates a given topology.
     rpc Activate (ActivateRequest) returns (GeneralReply) {}
-    // Update topology. Can be called multiple times in order to scale up or down the topology.
+    // Updates a topology, for example, scale up or down number of tasks.
+    // Can be called multiple times.
     rpc Update (UpdateRequest) returns (GeneralReply) {}
-    // Configure
+    // Transitions devices into Ready state.
     rpc Configure (ConfigureRequest) returns (StateChangeReply) {}
-    // Set property
+    // Changes devices configuration.
     rpc SetProperty (SetPropertyRequest) returns (GeneralReply) {}
-    // Start
+    // Transition devices into Running state.
     rpc Start (StartRequest) returns (StateChangeReply) {}
-    // Stop
+    // Transitions devices into Ready state.
     rpc Stop (StopRequest) returns (StateChangeReply) {}
-    // Reset
+    // Transitions devices into Idle state.
     rpc Reset (ResetRequest) returns (StateChangeReply) {}
-    // Terminate
+    // Shuts devices down via End transition.
     rpc Terminate (TerminateRequest) returns (StateChangeReply) {}
-    // Shutdown
+    // Shutdown DDS session.
     rpc Shutdown (ShutdownRequest) returns (GeneralReply) {}
 }
 
 // Request status
 enum ReplyStatus {
-    UNKNOWN = 0;
-    SUCCESS = 1;
-    ERROR = 2;
+    UNKNOWN = 0; // Status is unknown
+    SUCCESS = 1; // Request performed successfully
+    ERROR = 2; // Failed to perform request
 }
 
 // General error
 message Error {
-    string msg = 1;
-    int32 code = 2;
+    string msg = 1; // Detailed error message
+    int32 code = 2; // Error code.
+                    // TODO: Make error codes specific for each concrete request and/or error type.
+                    // TODO: Add link to a documented error codes.
 }
 
 // General reply to requests
 message GeneralReply {
-    string msg = 1;
-    ReplyStatus status = 2;
-    Error error = 3;
-    int32 exectime = 4; // Execution time in ms
-    uint64 runid = 5;
-    string sessionid = 6;
+    string msg = 1; // Detailed reply message
+    ReplyStatus status = 2; // Request status code (UNKNOWN, SUCCESS, ERROR)
+    Error error = 3; // If status is ERROR than this field containes error description otherwise it's empty
+    int32 exectime = 4; // Request execution time in ms
+    uint64 runid = 5; // TODO: run ID from ECS, check if we need it in ODC
+    string sessionid = 6; // DDS session ID
 }
 
-// Device path
+// Device information
+// Runtime task ID and path are the same as in DDS.
+// To get task details use DDS Topology API.
 message Device {
-    uint64 id = 1;
-    string state = 2;
-    string path = 3;
+    uint64 id = 1; // Runtime task ID (same as in DDS)
+    string state = 2; // FairMQ device state as string
+    string path = 3; // Runtime task path (same as in DDS)
 }
 
-// State change request
+// Device state change request
 message StateChangeRequest {
-    string path = 1;
-    bool detailed = 2;
+    string path = 1; // Task path in the DDS topology. Can be a regular expression.
+    bool detailed = 2; // If true than a list of affected devices is populated in the reply.
 }
 
-// State change reply
+// Device state change reply
 message StateChangeReply {
-    GeneralReply reply = 1;
-    repeated Device devices = 2; 
+    GeneralReply reply = 1; // Genaral reply. See GeneralReply message for details.
+    repeated Device devices = 2; // If detailed reply is requested than this field contains a list of affected devices otherwise it's empty.
 }
 
 //
@@ -76,35 +83,35 @@ message StateChangeReply {
 
 // Initialize request
 message InitializeRequest {
-    uint64 runid = 1;
-    string sessionid = 2;
+    uint64 runid = 1; // TODO: run ID from ECS, check if we need it in ODC
+    string sessionid = 2; // DDS session ID. If session ID is provided that ODC connects to an existing DDS session. If session ID is an empty string that a new DDS session is created.
 }
 
 // Submit request
 message SubmitRequest {
-    // TODO: Add request parameters here
+    // No configuration parameters required for this request
 }
 
 // Activate request
 message ActivateRequest {
-    string topology = 1;
+    string topology = 1; // Filepath to a DDS topology file
 }
 
 // Update request
 message UpdateRequest {
-    string topology = 1;
+    string topology = 1; // Filepath to a DDS topology file
 }
 
 // Shutdown request
 message ShutdownRequest {
-    // TODO: Add request parameters here
+    // No configuration parameters required for this request
 }
 
 // Set property request
 message SetPropertyRequest {
-    string key = 1;
-    string value = 2;
-    string path = 3;
+    string key = 1; // Property key
+    string value = 2; // Property value
+    string path = 3; // Task path in the DDS topology. Can be a regular expression.
 }
 
 //
@@ -113,25 +120,25 @@ message SetPropertyRequest {
 
 // Configure request
 message ConfigureRequest {
-    StateChangeRequest request = 1;
+    StateChangeRequest request = 1; // State change request. See StateChangeRequests for details.
 }
 
 // Start request
 message StartRequest {
-    StateChangeRequest request = 1;
+    StateChangeRequest request = 1; // State change request. See StateChangeRequests for details.
 }
 
 // Stop request
 message StopRequest {
-    StateChangeRequest request = 1;
+    StateChangeRequest request = 1; // State change request. See StateChangeRequests for details.
 }
 
 // Reset request
 message ResetRequest {
-    StateChangeRequest request = 1;
+    StateChangeRequest request = 1; // State change request. See StateChangeRequests for details.
 }
 
 // Terminate request
 message TerminateRequest {
-    StateChangeRequest request = 1;
+    StateChangeRequest request = 1; // State change request. See StateChangeRequests for details.
 }
