@@ -15,17 +15,17 @@ Communication between `odc-grpc-server` and `odc-grpc-client` is done via [gRPC]
 
 | Command | ODC reaction |
 | ----------- | ------------ |
-| Initialize  | Create a new DDS session or attache to an existing DDS session |
-| Submit      | Submit DDS agents (deploys a dynamic cluster) according to a specified computing resources. Can be called multiple times in order to submit more DDS agents (allocate more resources). |
-| Activate    | Activate DDS topology (devices enter `Idle` state) |
-| Update      | Update DDS topology (up or down scale or any other topology change) (invovles Reset, Activate, Configure) |
-| Configure   | Transition devices into `Ready` state (via `InitDevice` -> `CompleteInit` -> `Bind` -> `Connect` -> `InitTask` transitions) |
+| Initialize | Create a new DDS session or attache to an existing DDS session |
+| Submit | Submit DDS agents (deploys a dynamic cluster) according to a specified computing resources. Can be called multiple times in order to submit more DDS agents (allocate more resources). |
+| Activate | Activate DDS topology (devices enter `Idle` state) |
+| Update |  Updates a topology (up or down scale number of tasks or any other topology change). It consists of 3 commands: `Reset`, `Activate` and `Configure`. Can be called multiple times. |
+| Configure | Transition devices into `Ready` state (via `InitDevice` -> `CompleteInit` -> `Bind` -> `Connect` -> `InitTask` transitions) |
 | SetProperty | Change devices configuration |
-| Start       | Transition devices into `Running` state (via `Run` transition) |
-| Stop        | Transition devices into `Ready` state (via `Stop` transition) |
-| Reset       | Transition devices into `Idle` state (via `ResetTask` -> `ResetDevice` transitions) |
-| Terminate   | Shut devices down via `End` transition |
-| Shutdown    | Shutdown DDS session |
+| Start | Transition devices into `Running` state (via `Run` transition) |
+| Stop | Transition devices into `Ready` state (via `Stop` transition) |
+| Reset | Transition devices into `Idle` state (via `ResetTask` -> `ResetDevice` transitions) |
+| Terminate | Shut devices down via `End` transition |
+| Shutdown | Shutdown DDS session |
 
 
 ## 3-rd party dependencies

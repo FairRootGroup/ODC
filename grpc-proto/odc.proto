@@ -5,14 +5,15 @@ package odc;
 // The ODC service definition.
 // For details also see https://github.com/FairRootGroup/ODC#command-mapping
 service ODC {
-    // Creates a new DDS session or attaches to an existion DDS session.
+    // Creates a new DDS session or attaches to an existing DDS session.
     rpc Initialize (InitializeRequest) returns (GeneralReply) {}
     // Submits DDS agents (deploys a dynamic cluster) according to a specified computing resources.
     // Can be called multiple times in order to submit more DDS agents (allocate more resources).
     rpc Submit (SubmitRequest) returns (GeneralReply) {}
     // Activates a given topology.
     rpc Activate (ActivateRequest) returns (GeneralReply) {}
-    // Updates a topology, for example, scale up or down number of tasks.
+    // Updates a topology (up or down scale number of tasks or any other topology change).
+    // It consists of 3 commands: Reset, Activate and Configure.
     // Can be called multiple times.
     rpc Update (UpdateRequest) returns (GeneralReply) {}
     // Transitions devices into Ready state.
