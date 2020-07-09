@@ -49,6 +49,11 @@ std::string CCliControlService::requestDownscale(const odc::core::SUpdateParams&
     return generalReply(m_service->execUpdate(_params));
 }
 
+std::string CCliControlService::requestGetState(const odc::core::SDeviceParams& _params)
+{
+    return generalReply(m_service->execGetState(_params));
+}
+
 std::string CCliControlService::requestConfigure(const odc::core::SDeviceParams& _params)
 {
     return generalReply(m_service->execConfigure(_params));
@@ -93,6 +98,7 @@ string CCliControlService::generalReply(const SReturnValue& _value)
            << "\n  Error message: " << _value.m_error.m_msg << endl;
     }
 
+    ss << "  Aggregated state: " << _value.m_aggregatedState << endl;
     ss << "  Run ID: " << _value.m_runID << endl;
     ss << "  Session ID: " << _value.m_sessionID << endl;
 

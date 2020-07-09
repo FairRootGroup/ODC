@@ -29,6 +29,7 @@ class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClien
                            const odc::core::SActivateParams& _activateParams);
     std::string requestUpscale(const odc::core::SUpdateParams& _params);
     std::string requestDownscale(const odc::core::SUpdateParams& _params);
+    std::string requestGetState(const odc::core::SDeviceParams& _params);
     std::string requestConfigure(const odc::core::SDeviceParams& _params);
     std::string requestStart(const odc::core::SDeviceParams& _params);
     std::string requestStop(const odc::core::SDeviceParams& _params);

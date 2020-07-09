@@ -75,53 +75,63 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
     return ::grpc::Status::OK;
 }
 
+::grpc::Status CGrpcControlService::GetState(::grpc::ServerContext* context,
+                                             const odc::StateRequest* request,
+                                             odc::StateReply* response)
+{
+    SDeviceParams params{ request->path(), request->detailed() };
+    SReturnValue value = m_service->execGetState(params);
+    setupStateReply(response, value);
+    return ::grpc::Status::OK;
+}
+
 ::grpc::Status CGrpcControlService::Configure(::grpc::ServerContext* context,
                                               const odc::ConfigureRequest* request,
-                                              odc::StateChangeReply* response)
+                                              odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execConfigure(params);
-    setupStateChangeReply(response, value);
+    setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
 
 ::grpc::Status CGrpcControlService::Start(::grpc::ServerContext* context,
                                           const odc::StartRequest* request,
-                                          odc::StateChangeReply* response)
+                                          odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execStart(params);
-    setupStateChangeReply(response, value);
+    setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
 
 ::grpc::Status CGrpcControlService::Stop(::grpc::ServerContext* context,
                                          const odc::StopRequest* request,
-                                         odc::StateChangeReply* response)
+                                         odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execStop(params);
-    setupStateChangeReply(response, value);
+    setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
 
 ::grpc::Status CGrpcControlService::Reset(::grpc::ServerContext* context,
                                           const odc::ResetRequest* request,
-                                          odc::StateChangeReply* response)
+                                          odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execReset(params);
-    setupStateChangeReply(response, value);
+    setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
 
 ::grpc::Status CGrpcControlService::Terminate(::grpc::ServerContext* context,
                                               const odc::TerminateRequest* request,
-                                              odc::StateChangeReply* response)
+                                              odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execTerminate(params);
-    setupStateChangeReply(response, value);
+    setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
 
@@ -154,9 +164,10 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
     _response->set_runid(_value.m_runID);
     _response->set_sessionid(_value.m_sessionID);
     _response->set_exectime(_value.m_execTime);
+    _response->set_state(fair::mq::GetStateName(_value.m_aggregatedState));
 }
 
-void CGrpcControlService::setupStateChangeReply(odc::StateChangeReply* _response, const odc::core::SReturnValue& _value)
+void CGrpcControlService::setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value)
 {
     // Protobuf message takes the ownership and deletes the object
     odc::GeneralReply* generalResponse = new odc::GeneralReply();

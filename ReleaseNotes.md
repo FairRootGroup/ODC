@@ -4,6 +4,12 @@
 
 ### ODC common
 Added: new Run request which combines Initialize, Submit and Activate. Run request always creates a new DDS session.    
+Added: new GetState request which returns a current aggregated state of FairMQ devices.    
+
+### ODC gRPC protocol
+Modified: documentation of the proto file.    
+Modified: StateChangeRequest changed to StateRequest.    
+Modified: StateChangeReply changed to StateReply. New `state` field containing aggregated device state was added.    
 
 
 

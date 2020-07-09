@@ -93,6 +93,7 @@ namespace odc
                          const SError& _error,
                          runID_t _runID,
                          const std::string& _sessionID,
+                         fair::mq::sdk::DeviceState _aggregatedState,
                          SReturnDetails::ptr_t _details = nullptr)
                 : m_statusCode(_statusCode)
                 , m_msg(_msg)
@@ -100,6 +101,7 @@ namespace odc
                 , m_error(_error)
                 , m_runID(_runID)
                 , m_sessionID(_sessionID)
+                , m_aggregatedState(_aggregatedState)
                 , m_details(_details)
             {
             }
@@ -110,6 +112,10 @@ namespace odc
             SError m_error;          ///< In case of error containes information about the error
             runID_t m_runID{ 0 };    ///< Run ID
             std::string m_sessionID; ///< Session ID of DDS
+            // TODO: FIXME: find a better initial value, for the moment there is no undefined state
+            fair::mq::sdk::DeviceState m_aggregatedState{
+                fair::mq::sdk::DeviceState::Ok
+            }; ///< Aggregated state of the affected divices
 
             // Optional parameters
             SReturnDetails::ptr_t m_details; ///< Details of the return value. Stored only if requested.
@@ -248,6 +254,8 @@ namespace odc
 
             /// \brief Set property
             SReturnValue execSetProperty(const SSetPropertyParams& _params);
+            /// \brief Get state
+            SReturnValue execGetState(const SDeviceParams& _params);
 
             //
             // FairMQ device change state requests

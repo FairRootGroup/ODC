@@ -37,30 +37,33 @@ namespace odc
             ::grpc::Status Run(::grpc::ServerContext* context,
                                const odc::RunRequest* request,
                                odc::GeneralReply* response) override;
+            ::grpc::Status GetState(::grpc::ServerContext* context,
+                                    const odc::StateRequest* request,
+                                    odc::StateReply* response) override;
             ::grpc::Status Update(::grpc::ServerContext* context,
                                   const odc::UpdateRequest* request,
                                   odc::GeneralReply* response) override;
             ::grpc::Status Configure(::grpc::ServerContext* context,
                                      const odc::ConfigureRequest* request,
-                                     odc::StateChangeReply* response) override;
+                                     odc::StateReply* response) override;
             ::grpc::Status Start(::grpc::ServerContext* context,
                                  const odc::StartRequest* request,
-                                 odc::StateChangeReply* response) override;
+                                 odc::StateReply* response) override;
             ::grpc::Status Stop(::grpc::ServerContext* context,
                                 const odc::StopRequest* request,
-                                odc::StateChangeReply* response) override;
+                                odc::StateReply* response) override;
             ::grpc::Status Reset(::grpc::ServerContext* context,
                                  const odc::ResetRequest* request,
-                                 odc::StateChangeReply* response) override;
+                                 odc::StateReply* response) override;
             ::grpc::Status Terminate(::grpc::ServerContext* context,
                                      const odc::TerminateRequest* request,
-                                     odc::StateChangeReply* response) override;
+                                     odc::StateReply* response) override;
             ::grpc::Status Shutdown(::grpc::ServerContext* context,
                                     const odc::ShutdownRequest* request,
                                     odc::GeneralReply* response) override;
 
             void setupGeneralReply(odc::GeneralReply* _response, const odc::core::SReturnValue& _value);
-            void setupStateChangeReply(odc::StateChangeReply* _response, const odc::core::SReturnValue& _value);
+            void setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value);
 
             std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
             odc::core::SSubmitParams m_submitParams;               ///< Parameters of the submit request

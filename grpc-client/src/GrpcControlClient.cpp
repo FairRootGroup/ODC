@@ -68,6 +68,17 @@ std::string CGrpcControlClient::requestDownscale(const SUpdateParams& _params)
     return updateRequest(_params);
 }
 
+std::string CGrpcControlClient::requestGetState(const odc::core::SDeviceParams& _params)
+{
+    odc::StateRequest request;
+    request.set_path(_params.m_path);
+    request.set_detailed(_params.m_detailed);
+    odc::StateReply reply;
+    grpc::ClientContext context;
+    grpc::Status status = m_stub->GetState(&context, request, &reply);
+    return GetReplyString(status, reply);
+}
+
 std::string CGrpcControlClient::requestConfigure(const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::ConfigureRequest>(_params, &odc::ODC::Stub::Configure);
@@ -131,14 +142,14 @@ template <typename Request_t, typename StubFunc_t>
 std::string CGrpcControlClient::stateChangeRequest(const SDeviceParams& _params, StubFunc_t _stubFunc)
 {
     // Protobuf message takes the ownership and deletes the object
-    odc::StateChangeRequest* stateChange = new odc::StateChangeRequest();
+    odc::StateRequest* stateChange = new odc::StateRequest();
     stateChange->set_path(_params.m_path);
     stateChange->set_detailed(_params.m_detailed);
 
     Request_t request;
     request.set_allocated_request(stateChange);
 
-    odc::StateChangeReply reply;
+    odc::StateReply reply;
     grpc::ClientContext context;
     grpc::Status status = (m_stub.get()->*_stubFunc)(&context, request, &reply);
     return GetReplyString(status, reply);

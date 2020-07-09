@@ -80,7 +80,7 @@ namespace odc
 
             void processRequest(const std::string& _cmd)
             {
-                if (cmd == ".quit")
+                if (_cmd == ".quit")
                 {
                     exit(EXIT_SUCCESS);
                 }
@@ -129,6 +129,11 @@ namespace odc
                     OLOG(ESeverity::clean) << "Sending configure run request...";
                     replyString = p->requestConfigure(stringToDeviceParams(par));
                 }
+                else if (cmd == ".state")
+                {
+                    OLOG(ESeverity::clean) << "Sending get state request...";
+                    replyString = p->requestGetState(stringToDeviceParams(par));
+                }
                 else if (cmd == ".start")
                 {
                     OLOG(ESeverity::clean) << "Sending start request...";
@@ -176,6 +181,7 @@ namespace odc
                                        << ".run - Run request." << std::endl
                                        << ".upscale - Upscale topology request." << std::endl
                                        << ".downscale - Downscale topology request." << std::endl
+                                       << ".state (all|reco|qc) - Get state request." << std::endl
                                        << ".config (all|reco|qc) - Configure run request." << std::endl
                                        << ".start (all|reco|qc) - Start request." << std::endl
                                        << ".stop (all|reco|qc) - Stop request." << std::endl
