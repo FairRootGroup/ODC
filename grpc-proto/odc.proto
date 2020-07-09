@@ -12,6 +12,9 @@ service ODC {
     rpc Submit (SubmitRequest) returns (GeneralReply) {}
     // Activates a given topology.
     rpc Activate (ActivateRequest) returns (GeneralReply) {}
+    // Run request combines Initialize, Submit and Activate into a single request.
+    // Run request always creates a new DDS session.
+    rpc Run (RunRequest) returns (GeneralReply) {}
     // Updates a topology (up or down scale number of tasks or any other topology change).
     // It consists of 3 commands: Reset, Activate and Configure.
     // Can be called multiple times.
@@ -96,6 +99,12 @@ message SubmitRequest {
 // Activate request
 message ActivateRequest {
     string topology = 1; // Filepath to a DDS topology file
+}
+
+// Run request
+message RunRequest {
+    uint64 runid = 1; // TODO: run ID from ECS, check if we need it in ODC
+    string topology = 2; // Filepath to a DDS topology file
 }
 
 // Update request

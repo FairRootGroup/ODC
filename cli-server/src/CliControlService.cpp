@@ -32,6 +32,13 @@ std::string CCliControlService::requestActivate(const odc::core::SActivateParams
     return generalReply(m_service->execActivate(_params));
 }
 
+std::string CCliControlService::requestRun(const odc::core::SInitializeParams& _initializeParams,
+                                           const odc::core::SSubmitParams& _submitParams,
+                                           const odc::core::SActivateParams& _activateParams)
+{
+    return generalReply(m_service->execRun(_initializeParams, _submitParams, _activateParams));
+}
+
 std::string CCliControlService::requestUpscale(const odc::core::SUpdateParams& _params)
 {
     return generalReply(m_service->execUpdate(_params));

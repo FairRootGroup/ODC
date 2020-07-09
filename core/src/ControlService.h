@@ -237,6 +237,10 @@ namespace odc
             SReturnValue execSubmit(const SSubmitParams& _params);
             /// \brief Activate topology
             SReturnValue execActivate(const SActivateParams& _params);
+            /// \brief Run request combines Initialize, Submit and Activate
+            SReturnValue execRun(const SInitializeParams& _initializeParams,
+                                 const SSubmitParams& _submitParams,
+                                 const SActivateParams& _activateParams);
             /// \brief Update topology. Can be called multiple times in order to update topology.
             SReturnValue execUpdate(const SUpdateParams& _params);
             /// \brief Shutdown DDS session

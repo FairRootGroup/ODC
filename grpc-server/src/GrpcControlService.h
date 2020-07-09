@@ -34,6 +34,9 @@ namespace odc
             ::grpc::Status Activate(::grpc::ServerContext* context,
                                     const odc::ActivateRequest* request,
                                     odc::GeneralReply* response) override;
+            ::grpc::Status Run(::grpc::ServerContext* context,
+                               const odc::RunRequest* request,
+                               odc::GeneralReply* response) override;
             ::grpc::Status Update(::grpc::ServerContext* context,
                                   const odc::UpdateRequest* request,
                                   odc::GeneralReply* response) override;

@@ -15,9 +15,10 @@ Communication between `odc-grpc-server` and `odc-grpc-client` is done via [gRPC]
 
 | Command | ODC reaction |
 | ----------- | ------------ |
-| Initialize | Create a new DDS session or attache to an existing DDS session |
+| Initialize | Create a new DDS session or attach to an existing DDS session |
 | Submit | Submit DDS agents (deploys a dynamic cluster) according to a specified computing resources. Can be called multiple times in order to submit more DDS agents (allocate more resources). |
 | Activate | Activate DDS topology (devices enter `Idle` state) |
+| Run | Combine Initialize, Submit and Activate commands. A new DDS session is always created. |
 | Update |  Updates a topology (up or down scale number of tasks or any other topology change). It consists of 3 commands: `Reset`, `Activate` and `Configure`. Can be called multiple times. |
 | Configure | Transition devices into `Ready` state (via `InitDevice` -> `CompleteInit` -> `Bind` -> `Connect` -> `InitTask` transitions) |
 | SetProperty | Change devices configuration |

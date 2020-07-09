@@ -21,6 +21,9 @@ namespace odc
             std::string requestInitialize(const odc::core::SInitializeParams& _params);
             std::string requestSubmit(const odc::core::SSubmitParams& _params);
             std::string requestActivate(const odc::core::SActivateParams& _params);
+            std::string requestRun(const odc::core::SInitializeParams& _initializeParams,
+                                   const odc::core::SSubmitParams& _submitParams,
+                                   const odc::core::SActivateParams& _activateParams);
             std::string requestUpscale(const odc::core::SUpdateParams& _params);
             std::string requestDownscale(const odc::core::SUpdateParams& _params);
             std::string requestConfigure(const odc::core::SDeviceParams& _params);

@@ -80,6 +80,11 @@ namespace odc
 
             void processRequest(const std::string& _cmd)
             {
+                if (cmd == ".quit")
+                {
+                    exit(EXIT_SUCCESS);
+                }
+
                 OwnerT* p = reinterpret_cast<OwnerT*>(this);
 
                 std::string replyString;
@@ -89,14 +94,7 @@ namespace odc
                 std::string cmd{ cmds.empty() ? "" : cmds.front() };
                 std::string par{ cmds.size() > 1 ? cmds[1] : "" };
 
-                if (cmd.empty())
-                {
-                }
-                else if (cmd == ".quit")
-                {
-                    exit(EXIT_SUCCESS);
-                }
-                else if (cmd == ".init")
+                if (cmd == ".init")
                 {
                     OLOG(ESeverity::clean) << "Sending initialization request...";
                     replyString = p->requestInitialize(m_initializeParams);
@@ -110,6 +108,11 @@ namespace odc
                 {
                     OLOG(ESeverity::clean) << "Sending activate request...";
                     replyString = p->requestActivate(m_activateParams);
+                }
+                else if (cmd == ".run")
+                {
+                    OLOG(ESeverity::clean) << "Sending run request...";
+                    replyString = p->requestRun(m_initializeParams, m_submitParams, m_activateParams);
                 }
                 else if (cmd == ".upscale")
                 {
@@ -170,6 +173,7 @@ namespace odc
                                        << ".init - Initialization request." << std::endl
                                        << ".submit - Submit request." << std::endl
                                        << ".activate - Activate request." << std::endl
+                                       << ".run - Run request." << std::endl
                                        << ".upscale - Upscale topology request." << std::endl
                                        << ".downscale - Downscale topology request." << std::endl
                                        << ".config (all|reco|qc) - Configure run request." << std::endl

@@ -45,6 +45,19 @@ std::string CGrpcControlClient::requestActivate(const SActivateParams& _params)
     return GetReplyString(status, reply);
 }
 
+std::string CGrpcControlClient::requestRun(const odc::core::SInitializeParams& _initializeParams,
+                                           const odc::core::SSubmitParams& _submitParams,
+                                           const odc::core::SActivateParams& _activateParams)
+{
+    odc::RunRequest request;
+    request.set_runid(_initializeParams.m_runID);
+    request.set_topology(_activateParams.m_topologyFile);
+    odc::GeneralReply reply;
+    grpc::ClientContext context;
+    grpc::Status status = m_stub->Run(&context, request, &reply);
+    return GetReplyString(status, reply);
+}
+
 std::string CGrpcControlClient::requestUpscale(const SUpdateParams& _params)
 {
     return updateRequest(_params);

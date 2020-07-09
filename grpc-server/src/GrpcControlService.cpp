@@ -54,6 +54,17 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
     return ::grpc::Status::OK;
 }
 
+::grpc::Status CGrpcControlService::Run(::grpc::ServerContext* context,
+                                        const odc::RunRequest* request,
+                                        odc::GeneralReply* response)
+{
+    SInitializeParams initializeParams{ request->runid(), "" };
+    SActivateParams activateParams{ request->topology() };
+    SReturnValue value = m_service->execRun(initializeParams, m_submitParams, activateParams);
+    setupGeneralReply(response, value);
+    return ::grpc::Status::OK;
+}
+
 ::grpc::Status CGrpcControlService::Update(::grpc::ServerContext* context,
                                            const odc::UpdateRequest* request,
                                            odc::GeneralReply* response)

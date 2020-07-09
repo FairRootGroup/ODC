@@ -48,6 +48,9 @@ struct CControlService::SImpl
     SReturnValue execInitialize(const SInitializeParams& _params);
     SReturnValue execSubmit(const SSubmitParams& _params);
     SReturnValue execActivate(const SActivateParams& _params);
+    SReturnValue execRun(const SInitializeParams& _initializeParams,
+                         const SSubmitParams& _submitParams,
+                         const SActivateParams& _activateParams);
     SReturnValue execUpdate(const SUpdateParams& _params);
     SReturnValue execShutdown();
 
@@ -150,6 +153,20 @@ SReturnValue CControlService::SImpl::execActivate(const SActivateParams& _params
     bool success = activateDDSTopology(_params.m_topologyFile, STopologyRequest::request_t::EUpdateType::ACTIVATE) &&
                    createTopo(_params.m_topologyFile) && createFairMQTopo(_params.m_topologyFile);
     return createReturnValue(success, "Activate done", "Activate failed", measure.duration());
+}
+
+SReturnValue CControlService::SImpl::execRun(const SInitializeParams& _initializeParams,
+                                             const SSubmitParams& _submitParams,
+                                             const SActivateParams& _activateParams)
+{
+    STimeMeasure<std::chrono::milliseconds> measure;
+    // Run request doesn't support attachment to a DDS session.
+    // Execute consecuently Initialize, Submit and Activate.
+    bool success{ _initializeParams.m_sessionID.empty() &&
+                  (execInitialize(_initializeParams).m_statusCode == EStatusCode::ok) &&
+                  (execSubmit(_submitParams).m_statusCode == EStatusCode::ok) &&
+                  (execActivate(_activateParams).m_statusCode == EStatusCode::ok) };
+    return createReturnValue(success, "Run done", "Run failed", measure.duration());
 }
 
 SReturnValue CControlService::SImpl::execUpdate(const SUpdateParams& _params)
@@ -630,6 +647,13 @@ SReturnValue CControlService::execSubmit(const SSubmitParams& _params)
 SReturnValue CControlService::execActivate(const SActivateParams& _params)
 {
     return m_impl->execActivate(_params);
+}
+
+SReturnValue CControlService::execRun(const SInitializeParams& _initializeParams,
+                                      const SSubmitParams& _submitParams,
+                                      const SActivateParams& _activateParams)
+{
+    return m_impl->execRun(_initializeParams, _submitParams, _activateParams);
 }
 
 SReturnValue CControlService::execUpdate(const SUpdateParams& _params)
