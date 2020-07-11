@@ -10,6 +10,7 @@
 #include "Logger.h"
 // BOOST
 #include <boost/program_options/options_description.hpp>
+#include <boost/program_options/variables_map.hpp>
 
 namespace odc
 {
@@ -47,6 +48,12 @@ namespace odc
                                          SDeviceParams& _recoParams,
                                          const SDeviceParams& _defaultQCParams,
                                          SDeviceParams& _qcParams);
+            static void addSetPropertiesOptions(boost::program_options::options_description& _options,
+                                                const SSetPropertiesParams& _defaultParams,
+                                                SSetPropertiesParams& _params);
+            static void parseProperties(const boost::program_options::variables_map& _vm,
+                                        const SSetPropertiesParams& _defaultParams,
+                                        SSetPropertiesParams& _params);
         };
     } // namespace core
 } // namespace odc

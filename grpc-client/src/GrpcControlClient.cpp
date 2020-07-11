@@ -79,6 +79,22 @@ std::string CGrpcControlClient::requestGetState(const odc::core::SDeviceParams& 
     return GetReplyString(status, reply);
 }
 
+std::string CGrpcControlClient::requestSetProperties(const odc::core::SSetPropertiesParams& _params)
+{
+    odc::SetPropertiesRequest request;
+    request.set_path(_params.m_path);
+    for (const auto& v : _params.m_properties)
+    {
+        auto prop = request.add_properties();
+        prop->set_key(v.first);
+        prop->set_value(v.second);
+    }
+    odc::GeneralReply reply;
+    grpc::ClientContext context;
+    grpc::Status status = m_stub->SetProperties(&context, request, &reply);
+    return GetReplyString(status, reply);
+}
+
 std::string CGrpcControlClient::requestConfigure(const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::ConfigureRequest>(_params, &odc::ODC::Stub::Configure);

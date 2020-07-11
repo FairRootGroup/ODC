@@ -54,7 +54,7 @@ struct CControlService::SImpl
     SReturnValue execUpdate(const SUpdateParams& _params);
     SReturnValue execShutdown();
 
-    SReturnValue execSetProperty(const SSetPropertyParams& _params);
+    SReturnValue execSetProperties(const SSetPropertiesParams& _params);
     SReturnValue execGetState(const SDeviceParams& _params);
 
     SReturnValue execConfigure(const SDeviceParams& _params);
@@ -80,7 +80,7 @@ struct CControlService::SImpl
     bool shutdownDDSSession();
     bool createFairMQTopo(const std::string& _topologyFile);
     bool createTopo(const std::string& _topologyFile);
-    bool setProperty(const SSetPropertyParams& _params);
+    bool setProperties(const SSetPropertiesParams& _params);
     bool changeState(fair::mq::sdk::TopologyTransition _transition,
                      const std::string& _path,
                      fair::mq::sdk::DeviceState& _aggregatedState,
@@ -212,13 +212,13 @@ SReturnValue CControlService::SImpl::execShutdown()
         success, "Shutdown done", "Shutdown failed", measure.duration(), fair::mq::sdk::DeviceState::Ok);
 }
 
-SReturnValue CControlService::SImpl::execSetProperty(const SSetPropertyParams& _params)
+SReturnValue CControlService::SImpl::execSetProperties(const SSetPropertiesParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    bool success = setProperty(_params);
+    bool success = setProperties(_params);
     // TODO: FIXME: find a better initial value, for the moment there is no undefined state
     return createReturnValue(
-        success, "ConfigureRun done", "ConfigureRun failed", measure.duration(), fair::mq::sdk::DeviceState::Ok);
+        success, "SetProperties done", "SetProperties failed", measure.duration(), fair::mq::sdk::DeviceState::Ok);
 }
 
 SReturnValue CControlService::SImpl::execGetState(const SDeviceParams& _params)
@@ -639,7 +639,7 @@ bool CControlService::SImpl::getState(const string& _path,
     catch (exception& _e)
     {
         success = false;
-        OLOG(ESeverity::error) << "Grt state failed: " << _e.what();
+        OLOG(ESeverity::error) << "Get state failed: " << _e.what();
     }
     if (_topologyState != nullptr)
         fairMQToODCTopologyState(state, _topologyState);
@@ -647,7 +647,7 @@ bool CControlService::SImpl::getState(const string& _path,
     return success;
 }
 
-bool CControlService::SImpl::setProperty(const SSetPropertyParams& _params)
+bool CControlService::SImpl::setProperties(const SSetPropertiesParams& _params)
 {
     if (m_fairmqTopology == nullptr)
         return false;
@@ -658,11 +658,19 @@ bool CControlService::SImpl::setProperty(const SSetPropertyParams& _params)
     {
         std::condition_variable cv;
 
-        m_fairmqTopology->AsyncSetProperties({ { _params.m_key, _params.m_value } },
+        m_fairmqTopology->AsyncSetProperties(_params.m_properties,
                                              _params.m_path,
                                              m_timeout,
                                              [&cv, &success](std::error_code _ec, fair::mq::sdk::FailedDevices) {
-                                                 OLOG(ESeverity::info) << "Set property result: " << _ec.message();
+                                                 if (_ec)
+                                                 {
+                                                     OLOG(ESeverity::error)
+                                                         << "Set property error message: " << _ec.message();
+                                                 }
+                                                 else
+                                                 {
+                                                     OLOG(ESeverity::info) << "Set property finished successfully";
+                                                 }
                                                  success = !_ec;
                                                  cv.notify_all();
                                              });
@@ -749,9 +757,9 @@ SReturnValue CControlService::execShutdown()
     return m_impl->execShutdown();
 }
 
-SReturnValue CControlService::execSetProperty(const SSetPropertyParams& _params)
+SReturnValue CControlService::execSetProperties(const SSetPropertiesParams& _params)
 {
-    return m_impl->execSetProperty(_params);
+    return m_impl->execSetProperties(_params);
 }
 
 SReturnValue CControlService::execGetState(const SDeviceParams& _params)

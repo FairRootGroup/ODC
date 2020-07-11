@@ -54,6 +54,11 @@ std::string CCliControlService::requestGetState(const odc::core::SDeviceParams& 
     return generalReply(m_service->execGetState(_params));
 }
 
+std::string CCliControlService::requestSetProperties(const odc::core::SSetPropertiesParams& _params)
+{
+    return generalReply(m_service->execSetProperties(_params));
+}
+
 std::string CCliControlService::requestConfigure(const odc::core::SDeviceParams& _params)
 {
     return generalReply(m_service->execConfigure(_params));

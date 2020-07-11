@@ -85,6 +85,24 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
     return ::grpc::Status::OK;
 }
 
+::grpc::Status CGrpcControlService::SetProperties(::grpc::ServerContext* context,
+                                                  const odc::SetPropertiesRequest* request,
+                                                  odc::GeneralReply* response)
+{
+    // Convert from protobuf to ODC format
+    SSetPropertiesParams::Properties_t props;
+    for (size_t i = 0; i < request->properties_size(); i++)
+    {
+        auto prop{ request->properties(i) };
+        props.push_back(SSetPropertiesParams::Property_t(prop.key(), prop.value()));
+    }
+
+    SSetPropertiesParams params{ props, request->path() };
+    SReturnValue value = m_service->execSetProperties(params);
+    setupGeneralReply(response, value);
+    return ::grpc::Status::OK;
+}
+
 ::grpc::Status CGrpcControlService::Configure(::grpc::ServerContext* context,
                                               const odc::ConfigureRequest* request,
                                               odc::StateReply* response)

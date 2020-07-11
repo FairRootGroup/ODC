@@ -40,6 +40,9 @@ namespace odc
             ::grpc::Status GetState(::grpc::ServerContext* context,
                                     const odc::StateRequest* request,
                                     odc::StateReply* response) override;
+            ::grpc::Status SetProperties(::grpc::ServerContext* context,
+                                         const odc::SetPropertiesRequest* request,
+                                         odc::GeneralReply* response) override;
             ::grpc::Status Update(::grpc::ServerContext* context,
                                   const odc::UpdateRequest* request,
                                   odc::GeneralReply* response) override;

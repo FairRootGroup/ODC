@@ -67,6 +67,10 @@ namespace odc
             {
                 m_timeout = _timeout;
             }
+            void setSetPropertiesParams(const odc::core::SSetPropertiesParams& _params)
+            {
+                m_setPropertiesParams = _params;
+            }
 
           private:
             const odc::core::SDeviceParams& stringToDeviceParams(const std::string& _str)
@@ -134,6 +138,11 @@ namespace odc
                     OLOG(ESeverity::clean) << "Sending get state request...";
                     replyString = p->requestGetState(stringToDeviceParams(par));
                 }
+                else if (cmd == ".prop")
+                {
+                    OLOG(ESeverity::clean) << "Sending set properties request...";
+                    replyString = p->requestSetProperties(m_setPropertiesParams);
+                }
                 else if (cmd == ".start")
                 {
                     OLOG(ESeverity::clean) << "Sending start request...";
@@ -179,6 +188,7 @@ namespace odc
                                        << ".submit - Submit request." << std::endl
                                        << ".activate - Activate request." << std::endl
                                        << ".run - Run request." << std::endl
+                                       << ".prop - Set properties request." << std::endl
                                        << ".upscale - Upscale topology request." << std::endl
                                        << ".downscale - Downscale topology request." << std::endl
                                        << ".state (all|reco|qc) - Get state request." << std::endl
@@ -199,6 +209,7 @@ namespace odc
             odc::core::SDeviceParams m_recoDeviceParams; ///< Parameters of Reco devices
             odc::core::SDeviceParams m_qcDeviceParams;   ///< Parameters of QC devices
             odc::core::SDeviceParams m_allDeviceParams;
+            odc::core::SSetPropertiesParams m_setPropertiesParams;
             std::chrono::seconds m_timeout; ///< Request timeout
         };
     } // namespace core

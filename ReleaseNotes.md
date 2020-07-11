@@ -10,7 +10,7 @@ Added: new GetState request which returns a current aggregated state of FairMQ d
 Modified: documentation of the proto file.    
 Modified: StateChangeRequest changed to StateRequest.    
 Modified: StateChangeReply changed to StateReply. New `state` field containing aggregated device state was added.    
-
+Modified: implement SetPropertiesRequest instead of SetPropertyRequest. Multiple properties can be set with a single request.     
 
 
 ## v0.4 (2020-07-01)

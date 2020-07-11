@@ -21,7 +21,7 @@ Communication between `odc-grpc-server` and `odc-grpc-client` is done via [gRPC]
 | Run | Combine Initialize, Submit and Activate commands. A new DDS session is always created. |
 | Update |  Updates a topology (up or down scale number of tasks or any other topology change). It consists of 3 commands: `Reset`, `Activate` and `Configure`. Can be called multiple times. |
 | Configure | Transition devices into `Ready` state (via `InitDevice` -> `CompleteInit` -> `Bind` -> `Connect` -> `InitTask` transitions) |
-| SetProperty | Change devices configuration |
+| SetProperties | Change devices configuration |
 | GetState | Get current aggregated state of devices |
 | Start | Transition devices into `Running` state (via `Run` transition) |
 | Stop | Transition devices into `Ready` state (via `Stop` transition) |

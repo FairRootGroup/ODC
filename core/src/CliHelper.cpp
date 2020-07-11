@@ -3,6 +3,8 @@
 //
 
 #include "CliHelper.h"
+// BOOST
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 using namespace odc::core;
@@ -23,7 +25,7 @@ void CCliHelper::addInitializeOptions(boost::program_options::options_descriptio
     _options.add_options()(
         "runid", bpo::value<runID_t>(&_params.m_runID)->default_value(_defaultParams.m_runID), "Run ID");
     _options.add_options()("sid",
-                           bpo::value<std::string>(&_params.m_sessionID)->default_value(_defaultParams.m_sessionID),
+                           bpo::value<string>(&_params.m_sessionID)->default_value(_defaultParams.m_sessionID),
                            "Session ID of DDS");
 }
 
@@ -106,4 +108,57 @@ void CCliHelper::addDeviceOptions(boost::program_options::options_description& _
     _options.add_options()("qdetailed",
                            bpo::bool_switch(&_qcParams.m_detailed)->default_value(_defaultQCParams.m_detailed),
                            "Detailed reply of QC devices");
+}
+
+void CCliHelper::addSetPropertiesOptions(boost::program_options::options_description& _options,
+                                         const SSetPropertiesParams& _defaultParams,
+                                         SSetPropertiesParams& _params)
+{
+    _options.add_options()("ppath",
+                           bpo::value<string>(&_params.m_path)->default_value(_defaultParams.m_path),
+                           "Path for a set property request");
+
+    const auto& props(_defaultParams.m_properties);
+    vector<string> defaults;
+    transform(
+        props.begin(),
+        props.end(),
+        back_inserter(defaults),
+        [](const SSetPropertiesParams::Property_t& _p) -> string { return _p.first + ":" + _p.second; });
+    string defaultsStr;
+    for_each(props.begin(), props.end(), [&defaultsStr](const SSetPropertiesParams::Property_t& _p) {
+        defaultsStr += ("(" + _p.first + ":" + _p.second + ")");
+    });
+    _options.add_options()("prop",
+                           bpo::value<vector<string>>()->default_value(defaults, defaultsStr),
+                           "Key-value for a set property request 'key:value'");
+}
+
+void CCliHelper::parseProperties(const boost::program_options::variables_map& _vm,
+                                 const SSetPropertiesParams& _defaultParams,
+                                 SSetPropertiesParams& _params)
+{
+    if (_vm.count("prop"))
+    {
+        const auto& kvp(_vm["prop"].as<vector<string>>());
+        SSetPropertiesParams::Properties_t props;
+        for (const auto& v : kvp)
+        {
+            vector<string> strs;
+            boost::split(strs, v, boost::is_any_of(":"));
+            if (strs.size() == 2)
+            {
+                props.push_back({ strs[0], strs[1] });
+            }
+            else
+            {
+                throw runtime_error("Wrong property format for string '" + v + "'. Use 'key:value'.");
+            }
+        }
+        _params.m_properties = props;
+    }
+    else
+    {
+        _params.m_properties = _defaultParams.m_properties;
+    }
 }

@@ -28,6 +28,8 @@ int main(int argc, char** argv)
         CLogger::SConfig logConfig;
         SDeviceParams recoDeviceParams;
         SDeviceParams qcDeviceParams;
+        SSetPropertiesParams setPropertiesParams;
+        SSetPropertiesParams setPropertiesDefaultParams({ { "key1", "value1" }, { "key2", "value2" } }, "");
 
         // Generic options
         bpo::options_description options("grpc-client options");
@@ -42,6 +44,7 @@ int main(int argc, char** argv)
         CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultDownscaleTopo), downscaleParams);
         CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
         CCliHelper::addDeviceOptions(options, SDeviceParams(), recoDeviceParams, SDeviceParams(), qcDeviceParams);
+        CCliHelper::addSetPropertiesOptions(options, setPropertiesDefaultParams, setPropertiesParams);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -64,6 +67,8 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
+        CCliHelper::parseProperties(vm, setPropertiesDefaultParams, setPropertiesParams);
+
         CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
         control.setInitializeParams(initializeParams);
         control.setActivateParams(activateParams);
@@ -71,10 +76,12 @@ int main(int argc, char** argv)
         control.setDownscaleParams(downscaleParams);
         control.setRecoDeviceParams(recoDeviceParams);
         control.setQCDeviceParams(qcDeviceParams);
+        control.setSetPropertiesParams(setPropertiesParams);
         control.run();
     }
     catch (exception& _e)
     {
+        OLOG(ESeverity::clean) << _e.what();
         OLOG(ESeverity::fatal) << _e.what();
         return EXIT_FAILURE;
     }

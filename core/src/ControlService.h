@@ -189,22 +189,23 @@ namespace odc
             std::string m_topologyFile; ///< Path to the topoloy file
         };
 
-        /// \brief Structure holds configuaration parameters of the SetProperty request
-        struct SSetPropertyParams
+        /// \brief Structure holds configuaration parameters of the SetProperties request
+        struct SSetPropertiesParams
         {
-            SSetPropertyParams()
+            using Property_t = std::pair<std::string, std::string>;
+            using Properties_t = std::vector<Property_t>;
+
+            SSetPropertiesParams()
             {
             }
 
-            SSetPropertyParams(const std::string& _key, const std::string& _value, const std::string& _path)
-                : m_key(_key)
-                , m_value(_value)
-                , m_path(_path)
+            SSetPropertiesParams(const Properties_t& _properties, const std::string& _path)
+                : m_path(_path)
+                , m_properties(_properties)
             {
             }
-            std::string m_key;   ///< Property key
-            std::string m_value; ///< Property value
-            std::string m_path;  ///< Path in the topology
+            std::string m_path;        ///< Path in the topology
+            Properties_t m_properties; ///< List of device configuration properties
         };
 
         /// \brief Structure holds device state params used in FairMQ device state chenge requests.
@@ -252,8 +253,8 @@ namespace odc
             /// \brief Shutdown DDS session
             SReturnValue execShutdown();
 
-            /// \brief Set property
-            SReturnValue execSetProperty(const SSetPropertyParams& _params);
+            /// \brief Set properties
+            SReturnValue execSetProperties(const SSetPropertiesParams& _params);
             /// \brief Get state
             SReturnValue execGetState(const SDeviceParams& _params);
 

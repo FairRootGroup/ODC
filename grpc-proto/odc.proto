@@ -22,7 +22,7 @@ service ODC {
     // Transitions devices into Ready state.
     rpc Configure (ConfigureRequest) returns (StateReply) {}
     // Changes devices configuration.
-    rpc SetProperty (SetPropertyRequest) returns (GeneralReply) {}
+    rpc SetProperties (SetPropertiesRequest) returns (GeneralReply) {}
     // Get current aggregated state of devices.
     rpc GetState (StateRequest) returns (StateReply) {}
     // Transition devices into Running state.
@@ -121,11 +121,16 @@ message ShutdownRequest {
     // No configuration parameters required for this request
 }
 
-// Set property request
-message SetPropertyRequest {
+// Key-Value property
+message Property {
     string key = 1; // Property key
     string value = 2; // Property value
-    string path = 3; // Task path in the DDS topology. Can be a regular expression.
+}
+
+// Set properties request
+message SetPropertiesRequest {
+    string path = 1; // Task path in the DDS topology. Can be a regular expression.
+    repeated Property properties = 2; // List of properties to be set
 }
 
 //
