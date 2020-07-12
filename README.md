@@ -129,4 +129,7 @@ launchctl start/stop de.gsi.odc-grpc-server
 Find more details on the usage of the `systemctl`/`launchctl` commands in the manpages
 of your system.
 
-More examples can be found [here](examples).
+## Documentation
+
+1. [Frequently Asked Questions](docs/faq.md)
+2. [Examples](examples)
