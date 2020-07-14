@@ -121,10 +121,9 @@ void CCliHelper::addSetPropertiesOptions(boost::program_options::options_descrip
     const auto& props(_defaultParams.m_properties);
     vector<string> defaults;
     transform(
-        props.begin(),
-        props.end(),
-        back_inserter(defaults),
-        [](const SSetPropertiesParams::Property_t& _p) -> string { return _p.first + ":" + _p.second; });
+        props.begin(), props.end(), back_inserter(defaults), [](const SSetPropertiesParams::Property_t& _p) -> string {
+            return _p.first + ":" + _p.second;
+        });
     string defaultsStr;
     for_each(props.begin(), props.end(), [&defaultsStr](const SSetPropertiesParams::Property_t& _p) {
         defaultsStr += ("(" + _p.first + ":" + _p.second + ")");

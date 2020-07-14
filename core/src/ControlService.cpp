@@ -95,6 +95,7 @@ struct CControlService::SImpl
                           fair::mq::sdk::DeviceState& _aggregatedState,
                           TopologyState* _topologyState = nullptr);
 
+    fair::mq::sdk::DeviceState aggregateStateForPath(const fair::mq::sdk::TopologyState& _fairmq, const string& _path);
     void fairMQToODCTopologyState(const fair::mq::sdk::TopologyState& _fairmq, TopologyState* _odc);
 
     // Disable copy constructors and assignment operators
@@ -634,7 +635,7 @@ bool CControlService::SImpl::getState(const string& _path,
 
     try
     {
-        _aggregatedState = fair::mq::sdk::AggregateState(state);
+        _aggregatedState = aggregateStateForPath(state, _path);
     }
     catch (exception& _e)
     {
@@ -696,6 +697,67 @@ bool CControlService::SImpl::setProperties(const SSetPropertiesParams& _params)
     }
 
     return success;
+}
+
+fair::mq::sdk::DeviceState CControlService::SImpl::aggregateStateForPath(const fair::mq::sdk::TopologyState& _topoState,
+                                                                         const string& _path)
+{
+    if (_path.empty())
+        return fair::mq::sdk::AggregateState(_topoState);
+
+    if (m_topo == nullptr)
+        throw runtime_error("DDS topology is not initialized");
+
+    try
+    {
+        // Check if path points to a single task
+        // If task is found than return it's state as an aggregated topology state
+
+        // Throws if task not found for path
+        const auto& task{ m_topo->getRuntimeTask(_path) };
+        auto it{ find_if(
+            _topoState.cbegin(), _topoState.cend(), [&](const fair::mq::sdk::TopologyState::value_type& _v) {
+                return _v.taskId == task.m_taskId;
+            }) };
+        if (it != _topoState.cend())
+            return it->state;
+
+        throw runtime_error("Device not found for path " + _path);
+    }
+    catch (exception& _e)
+    {
+        // In case of exception check that path contains multiple tasks
+
+        // Collect all task IDs to a set for fast search
+        set<Id_t> taskIds;
+        auto it{ m_topo->getRuntimeTaskIteratorMatchingPath(_path) };
+        for_each(it.first, it.second, [&](const STopoRuntimeTask::FilterIterator_t::value_type& _v) {
+            taskIds.insert(_v.second.m_taskId);
+        });
+
+        if (taskIds.empty())
+            throw runtime_error("No tasks found matching the path " + _path);
+
+        // Find a state of a first task
+        auto firstIt{ find_if(
+            _topoState.cbegin(), _topoState.cend(), [&](const fair::mq::sdk::TopologyState::value_type& _v) {
+                return _v.taskId == *(taskIds.begin());
+            }) };
+        if (firstIt == _topoState.cend())
+            throw runtime_error("No states found for path " + _path);
+
+        // Check that all selected devices have the same state
+        fair::mq::sdk::DeviceState first{ firstIt->state };
+        if (std::all_of(
+                _topoState.cbegin(), _topoState.cend(), [&](const fair::mq::sdk::TopologyState::value_type& _v) {
+                    return (taskIds.count(_v.taskId) > 0) ? _v.state == first : true;
+                }))
+        {
+            return first;
+        }
+
+        throw fair::mq::sdk::MixedStateError("State is not uniform");
+    }
 }
 
 void CControlService::SImpl::fairMQToODCTopologyState(const fair::mq::sdk::TopologyState& _fairmq, TopologyState* _odc)
