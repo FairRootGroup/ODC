@@ -5,6 +5,7 @@
 ### ODC common
 Added: new Run request which combines Initialize, Submit and Activate. Run request always creates a new DDS session.    
 Added: new GetState request which returns a current aggregated state of FairMQ devices.    
+Modified: bump DDS version is 3.5.1    
 
 ### ODC gRPC protocol
 Modified: documentation of the proto file.    
