@@ -68,7 +68,7 @@ struct CControlService::SImpl
                                    const std::string& _msg,
                                    const std::string& _errMsg,
                                    size_t _execTime,
-                                   fair::mq::sdk::DeviceState _aggregatedState,
+                                   fair::mq::sdk::AggregatedTopologyState _aggregatedState,
                                    SReturnDetails::ptr_t _details = nullptr);
     bool createDDSSession();
     bool attachToDDSSession(const std::string& _sessionID);
@@ -83,19 +83,20 @@ struct CControlService::SImpl
     bool setProperties(const SSetPropertiesParams& _params);
     bool changeState(fair::mq::sdk::TopologyTransition _transition,
                      const std::string& _path,
-                     fair::mq::sdk::DeviceState& _aggregatedState,
+                     fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                      TopologyState* _topologyState = nullptr);
     bool getState(const string& _path,
-                  fair::mq::sdk::DeviceState& _aggregatedState,
+                  fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                   TopologyState* _topologyState = nullptr);
     bool changeStateConfigure(const std::string& _path,
-                              fair::mq::sdk::DeviceState& _aggregatedState,
+                              fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                               TopologyState* _topologyState = nullptr);
     bool changeStateReset(const std::string& _path,
-                          fair::mq::sdk::DeviceState& _aggregatedState,
+                          fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                           TopologyState* _topologyState = nullptr);
 
-    fair::mq::sdk::DeviceState aggregateStateForPath(const fair::mq::sdk::TopologyState& _fairmq, const string& _path);
+    fair::mq::sdk::AggregatedTopologyState aggregateStateForPath(const fair::mq::sdk::TopologyState& _fairmq,
+                                                                 const string& _path);
     void fairMQToODCTopologyState(const fair::mq::sdk::TopologyState& _fairmq, TopologyState* _odc);
 
     // Disable copy constructors and assignment operators
@@ -143,9 +144,11 @@ SReturnValue CControlService::SImpl::execInitialize(const SInitializeParams& _pa
             }
         }
     }
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    return createReturnValue(
-        success, "Initialize done", "Initialize failed", measure.duration(), fair::mq::sdk::DeviceState::Ok);
+    return createReturnValue(success,
+                             "Initialize done",
+                             "Initialize failed",
+                             measure.duration(),
+                             fair::mq::sdk::AggregatedTopologyState::Undefined);
 }
 
 SReturnValue CControlService::SImpl::execSubmit(const SSubmitParams& _params)
@@ -155,9 +158,8 @@ SReturnValue CControlService::SImpl::execSubmit(const SSubmitParams& _params)
     // Submit DDS agents
     // Wait until all agents are active
     bool success = submitDDSAgents(_params) && waitForNumActiveAgents(allCount);
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
     return createReturnValue(
-        success, "Submit done", "Submit failed", measure.duration(), fair::mq::sdk::DeviceState::Ok);
+        success, "Submit done", "Submit failed", measure.duration(), fair::mq::sdk::AggregatedTopologyState::Undefined);
 }
 
 SReturnValue CControlService::SImpl::execActivate(const SActivateParams& _params)
@@ -167,8 +169,8 @@ SReturnValue CControlService::SImpl::execActivate(const SActivateParams& _params
     // Create fair::mq::sdk::Topology
     bool success = activateDDSTopology(_params.m_topologyFile, STopologyRequest::request_t::EUpdateType::ACTIVATE) &&
                    createTopo(_params.m_topologyFile) && createFairMQTopo(_params.m_topologyFile);
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    fair::mq::sdk::DeviceState state{ success ? fair::mq::sdk::DeviceState::Idle : fair::mq::sdk::DeviceState::Ok };
+    fair::mq::sdk::AggregatedTopologyState state{ success ? fair::mq::sdk::AggregatedTopologyState::Idle
+                                                          : fair::mq::sdk::AggregatedTopologyState::Undefined };
     return createReturnValue(success, "Activate done", "Activate failed", measure.duration(), state);
 }
 
@@ -183,16 +185,15 @@ SReturnValue CControlService::SImpl::execRun(const SInitializeParams& _initializ
                   (execInitialize(_initializeParams).m_statusCode == EStatusCode::ok) &&
                   (execSubmit(_submitParams).m_statusCode == EStatusCode::ok) &&
                   (execActivate(_activateParams).m_statusCode == EStatusCode::ok) };
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    fair::mq::sdk::DeviceState state{ success ? fair::mq::sdk::DeviceState::Idle : fair::mq::sdk::DeviceState::Ok };
+    fair::mq::sdk::AggregatedTopologyState state{ success ? fair::mq::sdk::AggregatedTopologyState::Idle
+                                                          : fair::mq::sdk::AggregatedTopologyState::Undefined };
     return createReturnValue(success, "Run done", "Run failed", measure.duration(), state);
 }
 
 SReturnValue CControlService::SImpl::execUpdate(const SUpdateParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    fair::mq::sdk::DeviceState state{ fair::mq::sdk::DeviceState::Ok };
+    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
     // Reset devices' state
     // Update DDS topology
     // Create fair::mq::sdk::Topology
@@ -208,25 +209,28 @@ SReturnValue CControlService::SImpl::execShutdown()
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = shutdownDDSSession();
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    return createReturnValue(
-        success, "Shutdown done", "Shutdown failed", measure.duration(), fair::mq::sdk::DeviceState::Ok);
+    return createReturnValue(success,
+                             "Shutdown done",
+                             "Shutdown failed",
+                             measure.duration(),
+                             fair::mq::sdk::AggregatedTopologyState::Undefined);
 }
 
 SReturnValue CControlService::SImpl::execSetProperties(const SSetPropertiesParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     bool success = setProperties(_params);
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    return createReturnValue(
-        success, "SetProperties done", "SetProperties failed", measure.duration(), fair::mq::sdk::DeviceState::Ok);
+    return createReturnValue(success,
+                             "SetProperties done",
+                             "SetProperties failed",
+                             measure.duration(),
+                             fair::mq::sdk::AggregatedTopologyState::Undefined);
 }
 
 SReturnValue CControlService::SImpl::execGetState(const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    fair::mq::sdk::DeviceState state{ fair::mq::sdk::DeviceState::Ok };
+    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
     bool success{ getState(_params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState)) };
     return createReturnValue(success, "GetState done", "GetState failed", measure.duration(), state, details);
@@ -235,61 +239,56 @@ SReturnValue CControlService::SImpl::execGetState(const SDeviceParams& _params)
 SReturnValue CControlService::SImpl::execConfigure(const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    fair::mq::sdk::DeviceState state{ fair::mq::sdk::DeviceState::Ok };
+    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
-    bool success =
-        changeStateConfigure(_params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    bool success{ changeStateConfigure(
+        _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState)) };
     return createReturnValue(success, "ConfigureRun done", "ConfigureRun failed", measure.duration(), state, details);
 }
 
 SReturnValue CControlService::SImpl::execStart(const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    fair::mq::sdk::DeviceState state{ fair::mq::sdk::DeviceState::Ok };
+    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
-    bool success = changeState(fair::mq::sdk::TopologyTransition::Run,
-                               _params.m_path,
-                               state,
-                               ((details == nullptr) ? nullptr : &details->m_topologyState));
+    bool success{ changeState(fair::mq::sdk::TopologyTransition::Run,
+                              _params.m_path,
+                              state,
+                              ((details == nullptr) ? nullptr : &details->m_topologyState)) };
     return createReturnValue(success, "Start done", "Start failed", measure.duration(), state, details);
 }
 
 SReturnValue CControlService::SImpl::execStop(const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    fair::mq::sdk::DeviceState state{ fair::mq::sdk::DeviceState::Ok };
+    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
-    bool success = changeState(fair::mq::sdk::TopologyTransition::Stop,
-                               _params.m_path,
-                               state,
-                               ((details == nullptr) ? nullptr : &details->m_topologyState));
+    bool success{ changeState(fair::mq::sdk::TopologyTransition::Stop,
+                              _params.m_path,
+                              state,
+                              ((details == nullptr) ? nullptr : &details->m_topologyState)) };
     return createReturnValue(success, "Stop done", "Stop failed", measure.duration(), state, details);
 }
 
 SReturnValue CControlService::SImpl::execReset(const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    fair::mq::sdk::DeviceState state{ fair::mq::sdk::DeviceState::Ok };
+    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
-    bool success =
-        changeStateReset(_params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    bool success{ changeStateReset(
+        _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState)) };
     return createReturnValue(success, "Reset done", "Reset failed", measure.duration(), state, details);
 }
 
 SReturnValue CControlService::SImpl::execTerminate(const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    // TODO: FIXME: find a better initial value, for the moment there is no undefined state
-    fair::mq::sdk::DeviceState state{ fair::mq::sdk::DeviceState::Ok };
+    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
-    bool success = changeState(fair::mq::sdk::TopologyTransition::End,
-                               _params.m_path,
-                               state,
-                               ((details == nullptr) ? nullptr : &details->m_topologyState));
+    bool success{ changeState(fair::mq::sdk::TopologyTransition::End,
+                              _params.m_path,
+                              state,
+                              ((details == nullptr) ? nullptr : &details->m_topologyState)) };
     return createReturnValue(success, "Terminate done", "Terminate failed", measure.duration(), state, details);
 }
 
@@ -297,7 +296,7 @@ SReturnValue CControlService::SImpl::createReturnValue(bool _success,
                                                        const std::string& _msg,
                                                        const std::string& _errMsg,
                                                        size_t _execTime,
-                                                       fair::mq::sdk::DeviceState _aggregatedState,
+                                                       fair::mq::sdk::AggregatedTopologyState _aggregatedState,
                                                        SReturnDetails::ptr_t _details)
 {
     string sidStr{ to_string(m_session->getSessionID()) };
@@ -545,7 +544,7 @@ bool CControlService::SImpl::createFairMQTopo(const std::string& _topologyFile)
 
 bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _transition,
                                          const string& _path,
-                                         fair::mq::sdk::DeviceState& _aggregatedState,
+                                         fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                                          TopologyState* _topologyState)
 {
     if (m_fairmqTopology == nullptr)
@@ -602,7 +601,7 @@ bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _tran
 }
 
 bool CControlService::SImpl::changeStateConfigure(const string& _path,
-                                                  fair::mq::sdk::DeviceState& _aggregatedState,
+                                                  fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                                                   TopologyState* _topologyState)
 {
     return changeState(fair::mq::sdk::TopologyTransition::InitDevice, _path, _aggregatedState, _topologyState) &&
@@ -613,7 +612,7 @@ bool CControlService::SImpl::changeStateConfigure(const string& _path,
 }
 
 bool CControlService::SImpl::changeStateReset(const string& _path,
-                                              fair::mq::sdk::DeviceState& _aggregatedState,
+                                              fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                                               TopologyState* _topologyState)
 {
     return changeState(fair::mq::sdk::TopologyTransition::ResetTask, _path, _aggregatedState, _topologyState) &&
@@ -621,12 +620,9 @@ bool CControlService::SImpl::changeStateReset(const string& _path,
 }
 
 bool CControlService::SImpl::getState(const string& _path,
-                                      fair::mq::sdk::DeviceState& _aggregatedState,
+                                      fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                                       TopologyState* _topologyState)
 {
-    // TODO: FIXME: path is not supported yet by FairMQ GetCurrentState()
-    // Implement path either when its available in FairMQ or make a custom implementation.
-
     if (m_fairmqTopology == nullptr)
         return false;
 
@@ -699,8 +695,8 @@ bool CControlService::SImpl::setProperties(const SSetPropertiesParams& _params)
     return success;
 }
 
-fair::mq::sdk::DeviceState CControlService::SImpl::aggregateStateForPath(const fair::mq::sdk::TopologyState& _topoState,
-                                                                         const string& _path)
+fair::mq::sdk::AggregatedTopologyState CControlService::SImpl::aggregateStateForPath(
+    const fair::mq::sdk::TopologyState& _topoState, const string& _path)
 {
     if (_path.empty())
         return fair::mq::sdk::AggregateState(_topoState);
@@ -720,7 +716,7 @@ fair::mq::sdk::DeviceState CControlService::SImpl::aggregateStateForPath(const f
                 return _v.taskId == task.m_taskId;
             }) };
         if (it != _topoState.cend())
-            return it->state;
+            return static_cast<fair::mq::sdk::AggregatedTopologyState>(it->state);
 
         throw runtime_error("Device not found for path " + _path);
     }
@@ -747,7 +743,8 @@ fair::mq::sdk::DeviceState CControlService::SImpl::aggregateStateForPath(const f
             throw runtime_error("No states found for path " + _path);
 
         // Check that all selected devices have the same state
-        fair::mq::sdk::DeviceState first{ firstIt->state };
+        fair::mq::sdk::AggregatedTopologyState first{ static_cast<fair::mq::sdk::AggregatedTopologyState>(
+            firstIt->state) };
         if (std::all_of(
                 _topoState.cbegin(), _topoState.cend(), [&](const fair::mq::sdk::TopologyState::value_type& _v) {
                     return (taskIds.count(_v.taskId) > 0) ? _v.state == first : true;
@@ -756,7 +753,7 @@ fair::mq::sdk::DeviceState CControlService::SImpl::aggregateStateForPath(const f
             return first;
         }
 
-        throw fair::mq::sdk::MixedStateError("State is not uniform");
+        return fair::mq::sdk::AggregatedTopologyState::Mixed;
     }
 }
 
