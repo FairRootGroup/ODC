@@ -1,6 +1,9 @@
 # ODC Release Notes
 
-## v0.6 (NOT YET RELEASED)
+## v0.8 (NOT YET RELEASED)
+
+
+## v0.6 (2020-07-16)
 
 ### ODC common
 Added: new Run request which combines Initialize, Submit and Activate. Run request always creates a new DDS session.    
