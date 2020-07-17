@@ -94,6 +94,7 @@ struct CControlService::SImpl
     bool changeStateReset(const std::string& _path,
                           fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                           TopologyState* _topologyState = nullptr);
+    bool resetTopology();
 
     fair::mq::sdk::AggregatedTopologyState aggregateStateForPath(const fair::mq::sdk::TopologyState& _fairmq,
                                                                  const string& _path);
@@ -137,10 +138,14 @@ SReturnValue CControlService::SImpl::execInitialize(const SInitializeParams& _pa
             SCommanderInfoRequest::response_t commanderInfo;
             success = requestCommanderInfo(commanderInfo);
 
-            // If topology is active, create FairMQ topology
+            // If topology is active, create DDS and FairMQ topology
             if (success && !commanderInfo.m_activeTopologyPath.empty())
             {
-                success = createFairMQTopo(commanderInfo.m_activeTopologyPath);
+                success = createTopo(commanderInfo.m_activeTopologyPath);
+                if (success)
+                {
+                    success = createFairMQTopo(commanderInfo.m_activeTopologyPath);
+                }
             }
         }
     }
@@ -487,7 +492,10 @@ bool CControlService::SImpl::shutdownDDSSession()
     bool success(true);
     try
     {
-        if (m_session->IsRunning())
+        // Reset topology on shutdown
+        success = resetTopology();
+
+        if (success && m_session->IsRunning())
         {
             m_session->shutdown();
             if (m_session->getSessionID() == boost::uuids::nil_uuid())
@@ -540,6 +548,13 @@ bool CControlService::SImpl::createFairMQTopo(const std::string& _topologyFile)
         OLOG(ESeverity::error) << "Failed to initialize FairMQ topology: " << _e.what();
     }
     return m_fairmqTopology != nullptr;
+}
+
+bool CControlService::SImpl::resetTopology()
+{
+    m_topo.reset();
+    m_fairmqTopology.reset();
+    return true;
 }
 
 bool CControlService::SImpl::changeState(fair::mq::sdk::TopologyTransition _transition,
