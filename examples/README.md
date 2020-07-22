@@ -39,7 +39,7 @@ Installation of ODC and its dependencies using [aliBuild](https://github.com/ali
 > mkdir INSTALL_DIR
 > cd INSTALL_DIR
 > git clone https://github.com/alisw/alidist.git
-> aliBuild --default odc build ODC
+> aliBuild --default o2-dataflow build ODC
 ```
 
 For this example we use [SSH plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#ssh-plugin) of [DDS](https://github.com/FairRootGroup/DDS) which requires a SSH configuration file.
@@ -50,7 +50,7 @@ Create file `hosts.cfg` with the following content:
 @bash_begin@
 export PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/ibutils/bin:$PATH
 cd INSTALL_DIR/
-eval `alienv --no-refresh load ODC/latest-odc`
+eval `alienv --no-refresh load ODC/latest-o2-dataflow`
 cd -
 @bash_end@
 
@@ -64,7 +64,7 @@ Replace `INSTALL_DIR` and `WRK_DIR` with the real directory names. Important pre
 Open two terminal windows. In each of the terminal first initialize the environment:
 ```
 > cd INSTALL_DIR
-> alienv enter ODC/latest-odc
+> alienv enter ODC/latest-o2-dataflow
 > export LC_ALL=C; unset LANGUAGE
 > cd INSTALL_DIR/sw/slc7_x86-64/DDS/latest
 > source DDS_env.sh

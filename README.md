@@ -68,7 +68,7 @@ Alternatively, ODC and 3-rd party dependencies can be installed using [aliBuild]
 > mkdir INSTALL_DIR
 > cd INSTALL_DIR
 > git clone https://github.com/alisw/alidist.git
-> aliBuild --default odc build ODC
+> aliBuild --default o2-dataflow build ODC
 ```
 
 ## Usage
