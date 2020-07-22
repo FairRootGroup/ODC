@@ -4,6 +4,12 @@ ODC provides several examples of [DDS topologies](http://dds.gsi.de/doc/nightly/
 
 ## Run locally
 
+Source DDS environment script before starting ODC server:
+```
+> cd DDS_INSTALL_DIR
+> source DDS_env.sh
+```
+
 Start ODC gRPC server:
 ```
 > odc-grpc-server

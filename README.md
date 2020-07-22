@@ -72,6 +72,12 @@ Alternatively, ODC and 3-rd party dependencies can be installed using [aliBuild]
 ```
 
 ## Usage
+Source DDS environment script before starting ODC server:
+```
+> cd DDS_INSTALL_DIR
+> source DDS_env.sh
+```
+
 Start the gRPC server in foreground:
 ```bash
 export PATH=[INSTALL_DIR]/bin:$PATH
