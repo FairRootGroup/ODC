@@ -2,6 +2,10 @@
 
 ## v0.8 (NOT YET RELEASED)
 
+### ODC common
+Modified: improved error propagation. Use proper error codes and messages.    
+Fixed: reset topology on shutdown. Topology can be activated and stoped multiple times.    
+
 
 ## v0.6 (2020-07-16)
 
