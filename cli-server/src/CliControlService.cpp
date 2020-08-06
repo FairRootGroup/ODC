@@ -99,8 +99,9 @@ string CCliControlService::generalReply(const SReturnValue& _value)
     }
     else
     {
-        ss << "  Status code: ERROR\n  Error code: " << _value.m_error.m_code
-           << "\n  Error message: " << _value.m_error.m_msg << endl;
+        ss << "  Status code: ERROR\n  Error code: " << _value.m_error.m_code.value()
+           << "\n  Error message: " << _value.m_error.m_code.message() << " (" << _value.m_error.m_details << ")"
+           << endl;
     }
 
     ss << "  Aggregated state: " << _value.m_aggregatedState << endl;

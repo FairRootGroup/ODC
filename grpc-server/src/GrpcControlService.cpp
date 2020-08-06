@@ -175,8 +175,8 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
         //_response->set_msg("");
         // Protobuf message takes the ownership and deletes the object
         odc::Error* error = new odc::Error();
-        error->set_code(_value.m_error.m_code);
-        error->set_msg(_value.m_error.m_msg);
+        error->set_code(_value.m_error.m_code.value());
+        error->set_msg(_value.m_error.m_code.message() + " (" + _value.m_error.m_details + ")");
         _response->set_allocated_error(error);
     }
     _response->set_runid(_value.m_runID);

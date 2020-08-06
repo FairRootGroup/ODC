@@ -21,6 +21,8 @@ add_library(odc_core_lib
     "src/CliHelper.cpp"
     "src/CliServiceHelper.h"
     "src/Logger.h"
+    "src/Error.h"
+    "src/Error.cpp"
 )
 target_link_libraries(odc_core_lib
   DDS::dds_topology_lib

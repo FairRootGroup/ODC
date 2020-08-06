@@ -8,6 +8,7 @@
 // STD
 #include <memory>
 #include <string>
+#include <system_error>
 // FairMQ
 #include <fairmq/sdk/Topology.h>
 
@@ -32,14 +33,17 @@ namespace odc
             {
             }
 
-            SError(int _code, const std::string& _msg)
+            SError(std::error_code _code, const std::string& _details)
                 : m_code(_code)
-                , m_msg(_msg)
+                , m_details(_details)
             {
             }
 
-            int m_code{ 0 };   ///< Error code
-            std::string m_msg; ///< Error message
+            std::error_code m_code; ///< Error code
+            std::string m_details;  ///< Details of the error
+
+            // \brief Ostream operator.
+            friend std::ostream& operator<<(std::ostream& _os, const SError& _error);
         };
 
         /// \brief Holds device status of detailed output
