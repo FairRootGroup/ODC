@@ -100,6 +100,8 @@ Start ODC gRPC client:
 .quit
 ```
 
+The default sequence of request can also be executed in batch mode using `--batch` option. The sequence of commands can be changed via `--cmds` option.
+
 ### Data Distribution example
 For a Data Distribution example create a topology file `ex-dd-topology.xml` with the following content:
 ```

@@ -98,7 +98,7 @@ odc-cli-server
 
 By default this example uses [localhost plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#localhost-plugin) of [DDS](https://github.com/FairRootGroup/DDS) and a topology which is installed in `INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml`.
 
-The standard sequence of requests:
+The standard sequence of requests for interactive mode:
 ```
 .init
 .submit
@@ -111,6 +111,8 @@ The standard sequence of requests:
 .down
 .quit
 ```
+
+The default sequence of request can also be executed in batch mode using `--batch` option. The sequence of commands can be changed via `--cmds` option.
 
 Alternatively, start the server as a background daemon (in your user session):
 
