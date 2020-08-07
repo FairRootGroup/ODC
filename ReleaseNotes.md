@@ -5,7 +5,8 @@
 ### ODC common
 Modified: improved error propagation. Use proper error codes and messages.    
 Fixed: reset topology on shutdown. Topology can be activated and stoped multiple times.    
-Added: execution of a sequence of commands in a batch mode. New "--batch" and "--cmds" command line arguments.
+Added: execution of a sequence of commands in a batch mode. New "--batch" and "--cmds" command line arguments.    
+Fixed: command line options of set properties request.    
 
 
 ## v0.6 (2020-07-16)

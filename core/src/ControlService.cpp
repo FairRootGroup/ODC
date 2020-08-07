@@ -720,13 +720,13 @@ bool CControlService::SImpl::setProperties(SError& _error, const SSetPropertiesP
                 success = !_ec;
                 if (success)
                 {
-                    fillError(_error,
-                              ErrorCode::FairMQSetPropertiesFailed,
-                              string("Set property error message: ") + _ec.message());
+                    OLOG(ESeverity::info) << "Set property finished successfully";
                 }
                 else
                 {
-                    OLOG(ESeverity::info) << "Set property finished successfully";
+                    fillError(_error,
+                              ErrorCode::FairMQSetPropertiesFailed,
+                              string("Set property error message: ") + _ec.message());
                 }
                 cv.notify_all();
             });
