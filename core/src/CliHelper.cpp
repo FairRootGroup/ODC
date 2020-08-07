@@ -124,13 +124,10 @@ void CCliHelper::addSetPropertiesOptions(boost::program_options::options_descrip
         props.begin(), props.end(), back_inserter(defaults), [](const SSetPropertiesParams::Property_t& _p) -> string {
             return _p.first + ":" + _p.second;
         });
-    string defaultsStr;
-    for_each(props.begin(), props.end(), [&defaultsStr](const SSetPropertiesParams::Property_t& _p) {
-        defaultsStr += ("(" + _p.first + ":" + _p.second + ")");
-    });
+    string defaultsStr{ boost::algorithm::join(defaults, " ") };
     _options.add_options()("prop",
-                           bpo::value<vector<string>>()->default_value(defaults, defaultsStr),
-                           "Key-value for a set property request 'key:value'");
+                           bpo::value<vector<string>>()->multitoken()->default_value(defaults, defaultsStr),
+                           "Key-value pairs for a set properties request ( key1:value1 key2:value2 )");
 }
 
 void CCliHelper::parseProperties(const boost::program_options::variables_map& _vm,
