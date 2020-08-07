@@ -30,6 +30,11 @@ int main(int argc, char** argv)
         SDeviceParams qcDeviceParams;
         SSetPropertiesParams setPropertiesParams;
         SSetPropertiesParams setPropertiesDefaultParams({ { "key1", "value1" }, { "key2", "value2" } }, "");
+        vector<string> cmds;
+        vector<string> defaultCmds{ ".init",    ".submit", ".activate", ".config",    ".start", ".stop",
+                                    ".upscale", ".start",  ".stop",     ".downscale", ".start", ".stop",
+                                    ".reset",   ".term",   ".down",     ".quit" };
+        bool batch;
 
         // Generic options
         bpo::options_description options("grpc-client options");
@@ -45,6 +50,7 @@ int main(int argc, char** argv)
         CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
         CCliHelper::addDeviceOptions(options, SDeviceParams(), recoDeviceParams, SDeviceParams(), qcDeviceParams);
         CCliHelper::addSetPropertiesOptions(options, setPropertiesDefaultParams, setPropertiesParams);
+        CCliHelper::addBatchOptions(options, defaultCmds, cmds, false, batch);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -77,7 +83,7 @@ int main(int argc, char** argv)
         control.setRecoDeviceParams(recoDeviceParams);
         control.setQCDeviceParams(qcDeviceParams);
         control.setSetPropertiesParams(setPropertiesParams);
-        control.run();
+        control.run((batch) ? cmds : vector<string>(), std::chrono::milliseconds(1000));
     }
     catch (exception& _e)
     {

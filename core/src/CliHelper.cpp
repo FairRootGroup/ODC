@@ -161,3 +161,18 @@ void CCliHelper::parseProperties(const boost::program_options::variables_map& _v
         _params.m_properties = _defaultParams.m_properties;
     }
 }
+
+void CCliHelper::addBatchOptions(boost::program_options::options_description& _options,
+                                 const std::vector<std::string>& _defaultCmds,
+                                 std::vector<std::string>& _cmds,
+                                 bool _defaultBatch,
+                                 bool& _batch)
+{
+    _options.add_options()(
+        "batch", bpo::bool_switch(&_batch)->default_value(_defaultBatch), "Non interactive batch mode");
+    string defaultsStr{ boost::algorithm::join(_defaultCmds, " ") };
+    _options.add_options()(
+        "cmds",
+        bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(_defaultCmds, defaultsStr),
+        "Array of command to be executed in batch mode");
+}

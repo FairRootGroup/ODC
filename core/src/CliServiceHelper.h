@@ -22,16 +22,37 @@ namespace odc
         class CCliServiceHelper
         {
           public:
-            void run()
+            /// \brief Run the service
+            /// \param[in] _cmds Array of requests. If empty than command line input is required.
+            /// \param[in] _delay Delay between command execution.
+            void run(const std::vector<std::string>& _cmds = std::vector<std::string>(),
+                     const std::chrono::milliseconds& _delay = std::chrono::milliseconds(1000))
             {
                 printDescription();
 
-                while (true)
+                // Read the input from commnad line
+                if (_cmds.empty())
                 {
-                    std::string cmd;
-                    OLOG(ESeverity::clean) << "Please enter command: ";
-                    getline(std::cin, cmd);
-                    processRequest(cmd);
+                    while (true)
+                    {
+                        std::string cmd;
+                        OLOG(ESeverity::clean) << "Please enter command: ";
+                        getline(std::cin, cmd);
+                        processRequest(cmd);
+                    }
+                }
+                else
+                {
+                    // Execute consequently all commands
+                    for (const auto& cmd : _cmds)
+                    {
+                        OLOG(ESeverity::clean) << "Executing command \"" << cmd << "\"";
+                        processRequest(cmd);
+                        OLOG(ESeverity::clean) << "Waiting " << _delay.count() << " ms";
+                        std::this_thread::sleep_for(_delay);
+                    }
+                    // Exit at the end
+                    exit(EXIT_SUCCESS);
                 }
             }
 

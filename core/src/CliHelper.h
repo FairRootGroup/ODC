@@ -54,6 +54,11 @@ namespace odc
             static void parseProperties(const boost::program_options::variables_map& _vm,
                                         const SSetPropertiesParams& _defaultParams,
                                         SSetPropertiesParams& _params);
+            static void addBatchOptions(boost::program_options::options_description& _options,
+                                        const std::vector<std::string>& _defaultCmds,
+                                        std::vector<std::string>& _cmds,
+                                        bool _defaultBatch,
+                                        bool& _batch);
         };
     } // namespace core
 } // namespace odc
