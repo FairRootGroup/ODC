@@ -1,6 +1,9 @@
 # ODC Release Notes
 
-## v0.8 (NOT YET RELEASED)
+## v0.10 (NOT YET RELEASED)
+
+
+## v0.8 (2020-08-10)
 
 ### ODC common
 Modified: improved error propagation. Use proper error codes and messages.    
