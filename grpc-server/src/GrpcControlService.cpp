@@ -182,12 +182,7 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
     _response->set_partitionid(_value.m_partitionID);
     _response->set_sessionid(_value.m_sessionID);
     _response->set_exectime(_value.m_execTime);
-    // TODO: FIXME: fair::mq::GetStateName() not available for AggregatedTopologyState.
-    // This is a workaround
-    string name{ _value.m_aggregatedState != fair::mq::sdk::AggregatedTopologyState::Mixed
-                     ? fair::mq::GetStateName(static_cast<fair::mq::sdk::DeviceState>(_value.m_aggregatedState))
-                     : "MIXED" };
-    _response->set_state(name);
+    _response->set_state(GetAggregatedTopologyStateName(_value.m_aggregatedState));
 }
 
 void CGrpcControlService::setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value)
