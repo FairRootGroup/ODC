@@ -17,76 +17,89 @@ CCliControlService::CCliControlService()
 {
 }
 
-std::string CCliControlService::requestInitialize(const odc::core::SInitializeParams& _params)
+std::string CCliControlService::requestInitialize(odc::core::partitionID_t _partitionID,
+                                                  const odc::core::SInitializeParams& _params)
 {
-    return generalReply(m_service->execInitialize(_params));
+    return generalReply(m_service->execInitialize(_partitionID, _params));
 }
 
-std::string CCliControlService::requestSubmit(const odc::core::SSubmitParams& _params)
+std::string CCliControlService::requestSubmit(odc::core::partitionID_t _partitionID,
+                                              const odc::core::SSubmitParams& _params)
 {
-    return generalReply(m_service->execSubmit(_params));
+    return generalReply(m_service->execSubmit(_partitionID, _params));
 }
 
-std::string CCliControlService::requestActivate(const odc::core::SActivateParams& _params)
+std::string CCliControlService::requestActivate(odc::core::partitionID_t _partitionID,
+                                                const odc::core::SActivateParams& _params)
 {
-    return generalReply(m_service->execActivate(_params));
+    return generalReply(m_service->execActivate(_partitionID, _params));
 }
 
-std::string CCliControlService::requestRun(const odc::core::SInitializeParams& _initializeParams,
+std::string CCliControlService::requestRun(odc::core::partitionID_t _partitionID,
+                                           const odc::core::SInitializeParams& _initializeParams,
                                            const odc::core::SSubmitParams& _submitParams,
                                            const odc::core::SActivateParams& _activateParams)
 {
-    return generalReply(m_service->execRun(_initializeParams, _submitParams, _activateParams));
+    return generalReply(m_service->execRun(_partitionID, _initializeParams, _submitParams, _activateParams));
 }
 
-std::string CCliControlService::requestUpscale(const odc::core::SUpdateParams& _params)
+std::string CCliControlService::requestUpscale(odc::core::partitionID_t _partitionID,
+                                               const odc::core::SUpdateParams& _params)
 {
-    return generalReply(m_service->execUpdate(_params));
+    return generalReply(m_service->execUpdate(_partitionID, _params));
 }
 
-std::string CCliControlService::requestDownscale(const odc::core::SUpdateParams& _params)
+std::string CCliControlService::requestDownscale(odc::core::partitionID_t _partitionID,
+                                                 const odc::core::SUpdateParams& _params)
 {
-    return generalReply(m_service->execUpdate(_params));
+    return generalReply(m_service->execUpdate(_partitionID, _params));
 }
 
-std::string CCliControlService::requestGetState(const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestGetState(odc::core::partitionID_t _partitionID,
+                                                const odc::core::SDeviceParams& _params)
 {
-    return generalReply(m_service->execGetState(_params));
+    return generalReply(m_service->execGetState(_partitionID, _params));
 }
 
-std::string CCliControlService::requestSetProperties(const odc::core::SSetPropertiesParams& _params)
+std::string CCliControlService::requestSetProperties(odc::core::partitionID_t _partitionID,
+                                                     const odc::core::SSetPropertiesParams& _params)
 {
-    return generalReply(m_service->execSetProperties(_params));
+    return generalReply(m_service->execSetProperties(_partitionID, _params));
 }
 
-std::string CCliControlService::requestConfigure(const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestConfigure(odc::core::partitionID_t _partitionID,
+                                                 const odc::core::SDeviceParams& _params)
 {
-    return generalReply(m_service->execConfigure(_params));
+    return generalReply(m_service->execConfigure(_partitionID, _params));
 }
 
-std::string CCliControlService::requestStart(const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestStart(odc::core::partitionID_t _partitionID,
+                                             const odc::core::SDeviceParams& _params)
 {
-    return generalReply(m_service->execStart(_params));
+    return generalReply(m_service->execStart(_partitionID, _params));
 }
 
-std::string CCliControlService::requestStop(const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestStop(odc::core::partitionID_t _partitionID,
+                                            const odc::core::SDeviceParams& _params)
 {
-    return generalReply(m_service->execStop(_params));
+    return generalReply(m_service->execStop(_partitionID, _params));
 }
 
-std::string CCliControlService::requestReset(const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestReset(odc::core::partitionID_t _partitionID,
+                                             const odc::core::SDeviceParams& _params)
 {
-    return generalReply(m_service->execReset(_params));
+    return generalReply(m_service->execReset(_partitionID, _params));
 }
 
-std::string CCliControlService::requestTerminate(const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestTerminate(odc::core::partitionID_t _partitionID,
+                                                 const odc::core::SDeviceParams& _params)
 {
-    return generalReply(m_service->execTerminate(_params));
+    return generalReply(m_service->execTerminate(_partitionID, _params));
 }
 
-std::string CCliControlService::requestShutdown()
+std::string CCliControlService::requestShutdown(odc::core::partitionID_t _partitionID)
 {
-    return generalReply(m_service->execShutdown());
+    return generalReply(m_service->execShutdown(_partitionID));
 }
 
 string CCliControlService::generalReply(const SReturnValue& _value)
@@ -105,7 +118,7 @@ string CCliControlService::generalReply(const SReturnValue& _value)
     }
 
     ss << "  Aggregated state: " << _value.m_aggregatedState << endl;
-    ss << "  Run ID: " << _value.m_runID << endl;
+    ss << "  Partition ID: " << _value.m_partitionID << endl;
     ss << "  Session ID: " << _value.m_sessionID << endl;
 
     if (_value.m_details != nullptr)

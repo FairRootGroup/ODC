@@ -59,6 +59,9 @@ namespace odc
                                         std::vector<std::string>& _cmds,
                                         bool _defaultBatch,
                                         bool& _batch);
+            static void addPartitionOptions(boost::program_options::options_description& _options,
+                                            const std::vector<partitionID_t>& _defaultPartitions,
+                                            std::vector<partitionID_t>& _partitions);
         };
     } // namespace core
 } // namespace odc

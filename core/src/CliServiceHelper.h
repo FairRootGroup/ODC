@@ -38,7 +38,13 @@ namespace odc
                         std::string cmd;
                         OLOG(ESeverity::clean) << "Please enter command: ";
                         getline(std::cin, cmd);
-                        processRequest(cmd);
+
+                        // TODO: FIXME: for testing purposes we loop over m_partitionIDs and send the same request to
+                        // different partitions. We need to find a better way to get a partition ID from CLI.
+                        for (auto v : m_partitionIDs)
+                        {
+                            processRequest(v, cmd);
+                        }
                     }
                 }
                 else
@@ -47,13 +53,23 @@ namespace odc
                     for (const auto& cmd : _cmds)
                     {
                         OLOG(ESeverity::clean) << "Executing command \"" << cmd << "\"";
-                        processRequest(cmd);
+                        // TODO: FIXME: for testing purposes we loop over m_partitionIDs and send the same request to
+                        // different partitions. We need to find a better way to get a partition ID from CLI.
+                        for (auto v : m_partitionIDs)
+                        {
+                            processRequest(v, cmd);
+                        }
                         OLOG(ESeverity::clean) << "Waiting " << _delay.count() << " ms";
                         std::this_thread::sleep_for(_delay);
                     }
                     // Exit at the end
                     exit(EXIT_SUCCESS);
                 }
+            }
+
+            void setPartitionIDs(const std::vector<partitionID_t>& _partitionIDs)
+            {
+                m_partitionIDs = _partitionIDs;
             }
 
             void setInitializeParams(const odc::core::SInitializeParams& _params)
@@ -103,7 +119,7 @@ namespace odc
                 return m_allDeviceParams;
             }
 
-            void processRequest(const std::string& _cmd)
+            void processRequest(partitionID_t _partitionID, const std::string& _cmd)
             {
                 if (_cmd == ".quit")
                 {
@@ -119,75 +135,77 @@ namespace odc
                 std::string cmd{ cmds.empty() ? "" : cmds.front() };
                 std::string par{ cmds.size() > 1 ? cmds[1] : "" };
 
+                OLOG(ESeverity::clean) << "Requests for partition ID <" << _partitionID << ">";
+
                 if (cmd == ".init")
                 {
                     OLOG(ESeverity::clean) << "Sending initialization request...";
-                    replyString = p->requestInitialize(m_initializeParams);
+                    replyString = p->requestInitialize(_partitionID, m_initializeParams);
                 }
                 else if (cmd == ".submit")
                 {
                     OLOG(ESeverity::clean) << "Sending submit request...";
-                    replyString = p->requestSubmit(m_submitParams);
+                    replyString = p->requestSubmit(_partitionID, m_submitParams);
                 }
                 else if (cmd == ".activate")
                 {
                     OLOG(ESeverity::clean) << "Sending activate request...";
-                    replyString = p->requestActivate(m_activateParams);
+                    replyString = p->requestActivate(_partitionID, m_activateParams);
                 }
                 else if (cmd == ".run")
                 {
                     OLOG(ESeverity::clean) << "Sending run request...";
-                    replyString = p->requestRun(m_initializeParams, m_submitParams, m_activateParams);
+                    replyString = p->requestRun(_partitionID, m_initializeParams, m_submitParams, m_activateParams);
                 }
                 else if (cmd == ".upscale")
                 {
                     OLOG(ESeverity::clean) << "Sending upscale request...";
-                    replyString = p->requestUpscale(m_upscaleParams);
+                    replyString = p->requestUpscale(_partitionID, m_upscaleParams);
                 }
                 else if (cmd == ".downscale")
                 {
                     OLOG(ESeverity::clean) << "Sending downscale request...";
-                    replyString = p->requestDownscale(m_downscaleParams);
+                    replyString = p->requestDownscale(_partitionID, m_downscaleParams);
                 }
                 else if (cmd == ".config")
                 {
                     OLOG(ESeverity::clean) << "Sending configure run request...";
-                    replyString = p->requestConfigure(stringToDeviceParams(par));
+                    replyString = p->requestConfigure(_partitionID, stringToDeviceParams(par));
                 }
                 else if (cmd == ".state")
                 {
                     OLOG(ESeverity::clean) << "Sending get state request...";
-                    replyString = p->requestGetState(stringToDeviceParams(par));
+                    replyString = p->requestGetState(_partitionID, stringToDeviceParams(par));
                 }
                 else if (cmd == ".prop")
                 {
                     OLOG(ESeverity::clean) << "Sending set properties request...";
-                    replyString = p->requestSetProperties(m_setPropertiesParams);
+                    replyString = p->requestSetProperties(_partitionID, m_setPropertiesParams);
                 }
                 else if (cmd == ".start")
                 {
                     OLOG(ESeverity::clean) << "Sending start request...";
-                    replyString = p->requestStart(stringToDeviceParams(par));
+                    replyString = p->requestStart(_partitionID, stringToDeviceParams(par));
                 }
                 else if (cmd == ".stop")
                 {
                     OLOG(ESeverity::clean) << "Sending stop request...";
-                    replyString = p->requestStop(stringToDeviceParams(par));
+                    replyString = p->requestStop(_partitionID, stringToDeviceParams(par));
                 }
                 else if (cmd == ".reset")
                 {
                     OLOG(ESeverity::clean) << "Sending reset request...";
-                    replyString = p->requestReset(stringToDeviceParams(par));
+                    replyString = p->requestReset(_partitionID, stringToDeviceParams(par));
                 }
                 else if (cmd == ".term")
                 {
                     OLOG(ESeverity::clean) << "Sending terminate request...";
-                    replyString = p->requestTerminate(stringToDeviceParams(par));
+                    replyString = p->requestTerminate(_partitionID, stringToDeviceParams(par));
                 }
                 else if (cmd == ".down")
                 {
                     OLOG(ESeverity::clean) << "Sending shutdown request...";
-                    replyString = p->requestShutdown();
+                    replyString = p->requestShutdown(_partitionID);
                 }
                 else
                 {
@@ -222,6 +240,7 @@ namespace odc
             }
 
           private:
+            std::vector<odc::core::partitionID_t> m_partitionIDs;
             odc::core::SInitializeParams m_initializeParams;
             odc::core::SSubmitParams m_submitParams;
             odc::core::SActivateParams m_activateParams;

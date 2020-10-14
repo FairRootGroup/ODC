@@ -1,6 +1,11 @@
 # ODC Release Notes
 
 ## v0.10 (NOT YET RELEASED)
+### ODC common
+Added: support for multiple partitions. In DDS terminology partition translates to a DDS session. ODC internally manages a mapping between a partition ID and corresponding DDS session.    
+
+### ODC gRPC protocol
+Modified: protocol was adapted to support multiple partitions (DDS sessions). Each request to ODC and each reply from ODC containes a `uint64 partitionid` which uniquely identifies a partition. `runid` is removed.    
 
 
 ## v0.8 (2020-08-10)

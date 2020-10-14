@@ -29,8 +29,8 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                                const odc::InitializeRequest* request,
                                                odc::GeneralReply* response)
 {
-    SInitializeParams params{ request->runid(), request->sessionid() };
-    SReturnValue value = m_service->execInitialize(params);
+    SInitializeParams params{ request->sessionid() };
+    SReturnValue value = m_service->execInitialize(request->partitionid(), params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -39,7 +39,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                            const odc::SubmitRequest* request,
                                            odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->execSubmit(m_submitParams);
+    SReturnValue value = m_service->execSubmit(request->partitionid(), m_submitParams);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -49,7 +49,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                              odc::GeneralReply* response)
 {
     SActivateParams params{ request->topology() };
-    SReturnValue value = m_service->execActivate(params);
+    SReturnValue value = m_service->execActivate(request->partitionid(), params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -58,9 +58,9 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                         const odc::RunRequest* request,
                                         odc::GeneralReply* response)
 {
-    SInitializeParams initializeParams{ request->runid(), "" };
+    SInitializeParams initializeParams{ "" };
     SActivateParams activateParams{ request->topology() };
-    SReturnValue value = m_service->execRun(initializeParams, m_submitParams, activateParams);
+    SReturnValue value = m_service->execRun(request->partitionid(), initializeParams, m_submitParams, activateParams);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -70,7 +70,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                            odc::GeneralReply* response)
 {
     SUpdateParams params{ request->topology() };
-    SReturnValue value = m_service->execUpdate(params);
+    SReturnValue value = m_service->execUpdate(request->partitionid(), params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -80,7 +80,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                              odc::StateReply* response)
 {
     SDeviceParams params{ request->path(), request->detailed() };
-    SReturnValue value = m_service->execGetState(params);
+    SReturnValue value = m_service->execGetState(request->partitionid(), params);
     setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -98,7 +98,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
     }
 
     SSetPropertiesParams params{ props, request->path() };
-    SReturnValue value = m_service->execSetProperties(params);
+    SReturnValue value = m_service->execSetProperties(request->partitionid(), params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -108,7 +108,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                               odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value = m_service->execConfigure(params);
+    SReturnValue value = m_service->execConfigure(request->request().partitionid(), params);
     setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -118,7 +118,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                           odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value = m_service->execStart(params);
+    SReturnValue value = m_service->execStart(request->request().partitionid(), params);
     setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -128,7 +128,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                          odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value = m_service->execStop(params);
+    SReturnValue value = m_service->execStop(request->request().partitionid(), params);
     setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -138,7 +138,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                           odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value = m_service->execReset(params);
+    SReturnValue value = m_service->execReset(request->request().partitionid(), params);
     setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -148,7 +148,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                               odc::StateReply* response)
 {
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value = m_service->execTerminate(params);
+    SReturnValue value = m_service->execTerminate(request->request().partitionid(), params);
     setupStateReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -157,7 +157,7 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                              const odc::ShutdownRequest* request,
                                              odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->execShutdown();
+    SReturnValue value = m_service->execShutdown(request->partitionid());
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -179,7 +179,7 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
         error->set_msg(_value.m_error.m_code.message() + " (" + _value.m_error.m_details + ")");
         _response->set_allocated_error(error);
     }
-    _response->set_runid(_value.m_runID);
+    _response->set_partitionid(_value.m_partitionID);
     _response->set_sessionid(_value.m_sessionID);
     _response->set_exectime(_value.m_execTime);
     // TODO: FIXME: fair::mq::GetStateName() not available for AggregatedTopologyState.

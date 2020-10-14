@@ -5,6 +5,7 @@
 #include "CliHelper.h"
 // BOOST
 #include <boost/algorithm/string.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 
 using namespace std;
 using namespace odc::core;
@@ -22,8 +23,6 @@ void CCliHelper::addInitializeOptions(boost::program_options::options_descriptio
                                       const SInitializeParams& _defaultParams,
                                       SInitializeParams& _params)
 {
-    _options.add_options()(
-        "runid", bpo::value<runID_t>(&_params.m_runID)->default_value(_defaultParams.m_runID), "Run ID");
     _options.add_options()("sid",
                            bpo::value<string>(&_params.m_sessionID)->default_value(_defaultParams.m_sessionID),
                            "Session ID of DDS");
@@ -172,4 +171,19 @@ void CCliHelper::addBatchOptions(boost::program_options::options_description& _o
         "cmds",
         bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(_defaultCmds, defaultsStr),
         "Array of command to be executed in batch mode");
+}
+
+void CCliHelper::addPartitionOptions(boost::program_options::options_description& _options,
+                                     const std::vector<partitionID_t>& _defaultPartitions,
+                                     std::vector<partitionID_t>& _partitions)
+{
+    using boost::adaptors::transformed;
+    using boost::algorithm::join;
+    auto tostr = static_cast<std::string (*)(partitionID_t)>(std::to_string);
+    string defaultsStr{ boost::algorithm::join(_defaultPartitions | transformed(tostr), " ") };
+    _options.add_options()("prts",
+                           bpo::value<std::vector<partitionID_t>>(&_partitions)
+                               ->multitoken()
+                               ->default_value(_defaultPartitions, defaultsStr),
+                           "Array of partition IDs");
 }

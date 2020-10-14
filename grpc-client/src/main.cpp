@@ -35,12 +35,13 @@ int main(int argc, char** argv)
                                     ".upscale", ".start",  ".stop",     ".downscale", ".start", ".stop",
                                     ".reset",   ".term",   ".down",     ".quit" };
         bool batch;
+        vector<partitionID_t> partitionIDs;
 
         // Generic options
         bpo::options_description options("grpc-client options");
         options.add_options()("help,h", "Produce help message");
         CCliHelper::addHostOptions(options, "localhost:50051", host);
-        CCliHelper::addInitializeOptions(options, SInitializeParams(1000, ""), initializeParams);
+        CCliHelper::addInitializeOptions(options, SInitializeParams(""), initializeParams);
         string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
         CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
         string defaultUpscaleTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");
@@ -51,6 +52,7 @@ int main(int argc, char** argv)
         CCliHelper::addDeviceOptions(options, SDeviceParams(), recoDeviceParams, SDeviceParams(), qcDeviceParams);
         CCliHelper::addSetPropertiesOptions(options, setPropertiesDefaultParams, setPropertiesParams);
         CCliHelper::addBatchOptions(options, defaultCmds, cmds, false, batch);
+        CCliHelper::addPartitionOptions(options, { 111 }, partitionIDs);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -76,6 +78,7 @@ int main(int argc, char** argv)
         CCliHelper::parseProperties(vm, setPropertiesDefaultParams, setPropertiesParams);
 
         CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
+        control.setPartitionIDs(partitionIDs);
         control.setInitializeParams(initializeParams);
         control.setActivateParams(activateParams);
         control.setUpscaleParams(upscaleParams);

@@ -16,7 +16,7 @@ namespace odc
 {
     namespace core
     {
-        using runID_t = uint64_t;
+        using partitionID_t = uint64_t;
 
         /// \brief Return status code of request
         enum EStatusCode
@@ -95,7 +95,7 @@ namespace odc
                          const std::string& _msg,
                          size_t _execTime,
                          const SError& _error,
-                         runID_t _runID,
+                         partitionID_t _partitionID,
                          const std::string& _sessionID,
                          fair::mq::sdk::AggregatedTopologyState _aggregatedState,
                          SReturnDetails::ptr_t _details = nullptr)
@@ -103,7 +103,7 @@ namespace odc
                 , m_msg(_msg)
                 , m_execTime(_execTime)
                 , m_error(_error)
-                , m_runID(_runID)
+                , m_partitionID(_partitionID)
                 , m_sessionID(_sessionID)
                 , m_aggregatedState(_aggregatedState)
                 , m_details(_details)
@@ -113,9 +113,9 @@ namespace odc
             EStatusCode m_statusCode{ EStatusCode::unknown }; ///< Operation status code
             std::string m_msg;                                ///< General message about the status
             size_t m_execTime{ 0 };                           ///< Execution time in milliseconds
-            SError m_error;          ///< In case of error containes information about the error
-            runID_t m_runID{ 0 };    ///< Run ID
-            std::string m_sessionID; ///< Session ID of DDS
+            SError m_error;                   ///< In case of error containes information about the error
+            partitionID_t m_partitionID{ 0 }; ///< Partition ID
+            std::string m_sessionID;          ///< Session ID of DDS
             fair::mq::sdk::AggregatedTopologyState m_aggregatedState{
                 fair::mq::sdk::AggregatedTopologyState::Undefined
             }; ///< Aggregated state of the affected divices
@@ -131,13 +131,11 @@ namespace odc
             {
             }
 
-            SInitializeParams(runID_t _runID, const std::string& _sessionID)
-                : m_runID(_runID)
-                , m_sessionID(_sessionID)
+            SInitializeParams(const std::string& _sessionID)
+                : m_sessionID(_sessionID)
             {
             }
 
-            runID_t m_runID{ 0 };    ///< Run ID
             std::string m_sessionID; ///< DDS session ID
         };
 
@@ -242,39 +240,40 @@ namespace odc
             //
 
             /// \brief Initialize DDS session
-            SReturnValue execInitialize(const SInitializeParams& _params);
+            SReturnValue execInitialize(partitionID_t _partitionID, const SInitializeParams& _params);
             /// \brief Submit DDS agents. Can be called multiple times in order to submit more agents.
-            SReturnValue execSubmit(const SSubmitParams& _params);
+            SReturnValue execSubmit(partitionID_t _partitionID, const SSubmitParams& _params);
             /// \brief Activate topology
-            SReturnValue execActivate(const SActivateParams& _params);
+            SReturnValue execActivate(partitionID_t _partitionID, const SActivateParams& _params);
             /// \brief Run request combines Initialize, Submit and Activate
-            SReturnValue execRun(const SInitializeParams& _initializeParams,
+            SReturnValue execRun(partitionID_t _partitionID,
+                                 const SInitializeParams& _initializeParams,
                                  const SSubmitParams& _submitParams,
                                  const SActivateParams& _activateParams);
             /// \brief Update topology. Can be called multiple times in order to update topology.
-            SReturnValue execUpdate(const SUpdateParams& _params);
+            SReturnValue execUpdate(partitionID_t _partitionID, const SUpdateParams& _params);
             /// \brief Shutdown DDS session
-            SReturnValue execShutdown();
+            SReturnValue execShutdown(partitionID_t _partitionID);
 
             /// \brief Set properties
-            SReturnValue execSetProperties(const SSetPropertiesParams& _params);
+            SReturnValue execSetProperties(partitionID_t _partitionID, const SSetPropertiesParams& _params);
             /// \brief Get state
-            SReturnValue execGetState(const SDeviceParams& _params);
+            SReturnValue execGetState(partitionID_t _partitionID, const SDeviceParams& _params);
 
             //
             // FairMQ device change state requests
             //
 
             /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
-            SReturnValue execConfigure(const SDeviceParams& _params);
+            SReturnValue execConfigure(partitionID_t _partitionID, const SDeviceParams& _params);
             /// \brief Start devices: Run
-            SReturnValue execStart(const SDeviceParams& _params);
+            SReturnValue execStart(partitionID_t _partitionID, const SDeviceParams& _params);
             /// \brief Stop devices: Stop
-            SReturnValue execStop(const SDeviceParams& _params);
+            SReturnValue execStop(partitionID_t _partitionID, const SDeviceParams& _params);
             /// \brief Reset devices: ResetTask->ResetDevice
-            SReturnValue execReset(const SDeviceParams& _params);
+            SReturnValue execReset(partitionID_t _partitionID, const SDeviceParams& _params);
             /// \brief Terminate devices: End
-            SReturnValue execTerminate(const SDeviceParams& _params);
+            SReturnValue execTerminate(partitionID_t _partitionID, const SDeviceParams& _params);
 
           private:
             struct SImpl;

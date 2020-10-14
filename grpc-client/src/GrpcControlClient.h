@@ -21,27 +21,31 @@ class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClien
   public:
     CGrpcControlClient(std::shared_ptr<grpc::Channel> channel);
 
-    std::string requestInitialize(const odc::core::SInitializeParams& _params);
-    std::string requestSubmit(const odc::core::SSubmitParams& _params);
-    std::string requestActivate(const odc::core::SActivateParams& _params);
-    std::string requestRun(const odc::core::SInitializeParams& _initializeParams,
+    std::string requestInitialize(odc::core::partitionID_t _partitionID, const odc::core::SInitializeParams& _params);
+    std::string requestSubmit(odc::core::partitionID_t _partitionID, const odc::core::SSubmitParams& _params);
+    std::string requestActivate(odc::core::partitionID_t _partitionID, const odc::core::SActivateParams& _params);
+    std::string requestRun(odc::core::partitionID_t _partitionID,
+                           const odc::core::SInitializeParams& _initializeParams,
                            const odc::core::SSubmitParams& _submitParams,
                            const odc::core::SActivateParams& _activateParams);
-    std::string requestUpscale(const odc::core::SUpdateParams& _params);
-    std::string requestDownscale(const odc::core::SUpdateParams& _params);
-    std::string requestGetState(const odc::core::SDeviceParams& _params);
-    std::string requestSetProperties(const odc::core::SSetPropertiesParams& _params);
-    std::string requestConfigure(const odc::core::SDeviceParams& _params);
-    std::string requestStart(const odc::core::SDeviceParams& _params);
-    std::string requestStop(const odc::core::SDeviceParams& _params);
-    std::string requestReset(const odc::core::SDeviceParams& _params);
-    std::string requestTerminate(const odc::core::SDeviceParams& _params);
-    std::string requestShutdown();
+    std::string requestUpscale(odc::core::partitionID_t _partitionID, const odc::core::SUpdateParams& _params);
+    std::string requestDownscale(odc::core::partitionID_t _partitionID, const odc::core::SUpdateParams& _params);
+    std::string requestGetState(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
+    std::string requestSetProperties(odc::core::partitionID_t _partitionID,
+                                     const odc::core::SSetPropertiesParams& _params);
+    std::string requestConfigure(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
+    std::string requestStart(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
+    std::string requestStop(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
+    std::string requestReset(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
+    std::string requestTerminate(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
+    std::string requestShutdown(odc::core::partitionID_t _partitionID);
 
   private:
-    std::string updateRequest(const odc::core::SUpdateParams& _params);
+    std::string updateRequest(odc::core::partitionID_t _partitionID, const odc::core::SUpdateParams& _params);
     template <typename Request_t, typename StubFunc_t>
-    std::string stateChangeRequest(const odc::core::SDeviceParams& _params, StubFunc_t _stubFunc);
+    std::string stateChangeRequest(odc::core::partitionID_t _partitionID,
+                                   const odc::core::SDeviceParams& _params,
+                                   StubFunc_t _stubFunc);
 
   private:
     template <typename Reply_t>

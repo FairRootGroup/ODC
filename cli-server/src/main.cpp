@@ -42,12 +42,13 @@ int main(int argc, char** argv)
                                     ".upscale", ".start",  ".stop",     ".downscale", ".start", ".stop",
                                     ".reset",   ".term",   ".down",     ".quit" };
         bool batch;
+        vector<partitionID_t> partitionIDs;
 
         // Generic options
         bpo::options_description options("odc-cli-server options");
         options.add_options()("help,h", "Produce help message");
         CCliHelper::addTimeoutOptions(options, 30, timeout);
-        CCliHelper::addInitializeOptions(options, SInitializeParams(1000, ""), initializeParams);
+        CCliHelper::addInitializeOptions(options, SInitializeParams(""), initializeParams);
         CCliHelper::addSubmitOptions(options, SSubmitParams("localhost", "", 1, 36), submitParams);
         string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
         CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
@@ -59,6 +60,7 @@ int main(int argc, char** argv)
         CCliHelper::addDeviceOptions(options, SDeviceParams(), recoDeviceParams, SDeviceParams(), qcDeviceParams);
         CCliHelper::addSetPropertiesOptions(options, setPropertiesDefaultParams, setPropertiesParams);
         CCliHelper::addBatchOptions(options, defaultCmds, cmds, false, batch);
+        CCliHelper::addPartitionOptions(options, { 111 }, partitionIDs);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -102,6 +104,7 @@ int main(int argc, char** argv)
         setenv("PATH", new_path.c_str(), 1);
 
         odc::cli::CCliControlService control;
+        control.setPartitionIDs(partitionIDs);
         control.setTimeout(chrono::seconds(timeout));
         control.setInitializeParams(initializeParams);
         control.setSubmitParams(submitParams);
