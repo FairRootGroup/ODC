@@ -119,7 +119,7 @@ namespace odc
                 return m_allDeviceParams;
             }
 
-            void processRequest(partitionID_t _partitionID, const std::string& _cmd)
+            void processRequest(const partitionID_t& _partitionID, const std::string& _cmd)
             {
                 if (_cmd == ".quit")
                 {

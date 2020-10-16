@@ -52,7 +52,7 @@ int main(int argc, char** argv)
         CCliHelper::addDeviceOptions(options, SDeviceParams(), recoDeviceParams, SDeviceParams(), qcDeviceParams);
         CCliHelper::addSetPropertiesOptions(options, setPropertiesDefaultParams, setPropertiesParams);
         CCliHelper::addBatchOptions(options, defaultCmds, cmds, false, batch);
-        CCliHelper::addPartitionOptions(options, { 111 }, partitionIDs);
+        CCliHelper::addPartitionOptions(options, { "111" }, partitionIDs);
 
         // Parsing command-line
         bpo::variables_map vm;

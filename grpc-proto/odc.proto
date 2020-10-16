@@ -58,7 +58,7 @@ message GeneralReply {
     ReplyStatus status = 2; // Request status code (UNKNOWN, SUCCESS, ERROR)
     Error error = 3; // If status is ERROR than this field contains error description otherwise it's empty
     int32 exectime = 4; // Request execution time in ms
-    uint64 partitionid = 5; // Partition ID from ECS
+    string partitionid = 5; // Partition ID from ECS
     string sessionid = 6; // DDS session ID
     string state = 7; // If successful and applicable to a request then contains an aggregated FairMQ device state, otherwise UNDEFINED.
 }
@@ -74,7 +74,7 @@ message Device {
 
 // Device change/get state request
 message StateRequest {
-    uint64 partitionid = 1; // Partition ID from ECS
+    string partitionid = 1; // Partition ID from ECS
     string path = 2; // Task path in the DDS topology. Can be a regular expression.
     bool detailed = 3; // If true then a list of affected devices is populated in the reply.
 }
@@ -91,36 +91,36 @@ message StateReply {
 
 // Initialize request
 message InitializeRequest {
-    uint64 partitionid = 1; // Partition ID from ECS
+    string partitionid = 1; // Partition ID from ECS
     string sessionid = 2; // DDS session ID. If session ID is provided that ODC connects to an existing DDS session. If session ID is an empty string that a new DDS session is created.
 }
 
 // Submit request
 message SubmitRequest {
-    uint64 partitionid = 1; // Partition ID from ECS
+    string partitionid = 1; // Partition ID from ECS
 }
 
 // Activate request
 message ActivateRequest {
-    uint64 partitionid = 1; // Partition ID from ECS
+    string partitionid = 1; // Partition ID from ECS
     string topology = 2; // Filepath to a DDS topology file
 }
 
 // Run request
 message RunRequest {
-    uint64 partitionid = 1; // Partition ID from ECS
+    string partitionid = 1; // Partition ID from ECS
     string topology = 2; // Filepath to a DDS topology file
 }
 
 // Update request
 message UpdateRequest {
-    uint64 partitionid = 1; // Partition ID from ECS
+    string partitionid = 1; // Partition ID from ECS
     string topology = 2; // Filepath to a DDS topology file
 }
 
 // Shutdown request
 message ShutdownRequest {
-    uint64 partitionid = 1; // Partition ID from ECS
+    string partitionid = 1; // Partition ID from ECS
 }
 
 // Key-Value property
@@ -131,7 +131,7 @@ message Property {
 
 // Set properties request
 message SetPropertiesRequest {
-    uint64 partitionid = 1; // Partition ID from ECS
+    string partitionid = 1; // Partition ID from ECS
     string path = 2; // Task path in the DDS topology. Can be a regular expression.
     repeated Property properties = 3; // List of properties to be set
 }

@@ -18,29 +18,35 @@ namespace odc
           public:
             CCliControlService();
 
-            std::string requestInitialize(odc::core::partitionID_t _partitionID,
+            std::string requestInitialize(const odc::core::partitionID_t& _partitionID,
                                           const odc::core::SInitializeParams& _params);
-            std::string requestSubmit(odc::core::partitionID_t _partitionID, const odc::core::SSubmitParams& _params);
-            std::string requestActivate(odc::core::partitionID_t _partitionID,
+            std::string requestSubmit(const odc::core::partitionID_t& _partitionID,
+                                      const odc::core::SSubmitParams& _params);
+            std::string requestActivate(const odc::core::partitionID_t& _partitionID,
                                         const odc::core::SActivateParams& _params);
-            std::string requestRun(odc::core::partitionID_t _partitionID,
+            std::string requestRun(const odc::core::partitionID_t& _partitionID,
                                    const odc::core::SInitializeParams& _initializeParams,
                                    const odc::core::SSubmitParams& _submitParams,
                                    const odc::core::SActivateParams& _activateParams);
-            std::string requestUpscale(odc::core::partitionID_t _partitionID, const odc::core::SUpdateParams& _params);
-            std::string requestDownscale(odc::core::partitionID_t _partitionID,
+            std::string requestUpscale(const odc::core::partitionID_t& _partitionID,
+                                       const odc::core::SUpdateParams& _params);
+            std::string requestDownscale(const odc::core::partitionID_t& _partitionID,
                                          const odc::core::SUpdateParams& _params);
-            std::string requestGetState(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
-            std::string requestSetProperties(odc::core::partitionID_t _partitionID,
+            std::string requestGetState(const odc::core::partitionID_t& _partitionID,
+                                        const odc::core::SDeviceParams& _params);
+            std::string requestSetProperties(const odc::core::partitionID_t& _partitionID,
                                              const odc::core::SSetPropertiesParams& _params);
-            std::string requestConfigure(odc::core::partitionID_t _partitionID,
+            std::string requestConfigure(const odc::core::partitionID_t& _partitionID,
                                          const odc::core::SDeviceParams& _params);
-            std::string requestStart(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
-            std::string requestStop(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
-            std::string requestReset(odc::core::partitionID_t _partitionID, const odc::core::SDeviceParams& _params);
-            std::string requestTerminate(odc::core::partitionID_t _partitionID,
+            std::string requestStart(const odc::core::partitionID_t& _partitionID,
+                                     const odc::core::SDeviceParams& _params);
+            std::string requestStop(const odc::core::partitionID_t& _partitionID,
+                                    const odc::core::SDeviceParams& _params);
+            std::string requestReset(const odc::core::partitionID_t& _partitionID,
+                                     const odc::core::SDeviceParams& _params);
+            std::string requestTerminate(const odc::core::partitionID_t& _partitionID,
                                          const odc::core::SDeviceParams& _params);
-            std::string requestShutdown(odc::core::partitionID_t _partitionID);
+            std::string requestShutdown(const odc::core::partitionID_t& _partitionID);
 
           private:
             std::string generalReply(const odc::core::SReturnValue& _value);

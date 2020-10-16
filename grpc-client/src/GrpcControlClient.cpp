@@ -13,7 +13,7 @@ CGrpcControlClient::CGrpcControlClient(shared_ptr<grpc::Channel> channel)
 {
 }
 
-std::string CGrpcControlClient::requestInitialize(odc::core::partitionID_t _partitionID,
+std::string CGrpcControlClient::requestInitialize(const odc::core::partitionID_t& _partitionID,
                                                   const SInitializeParams& _params)
 {
     odc::InitializeRequest request;
@@ -25,7 +25,8 @@ std::string CGrpcControlClient::requestInitialize(odc::core::partitionID_t _part
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestSubmit(odc::core::partitionID_t _partitionID, const SSubmitParams& _params)
+std::string CGrpcControlClient::requestSubmit(const odc::core::partitionID_t& _partitionID,
+                                              const SSubmitParams& _params)
 {
     // Submit parameters are not used for the request.
 
@@ -37,7 +38,8 @@ std::string CGrpcControlClient::requestSubmit(odc::core::partitionID_t _partitio
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestActivate(odc::core::partitionID_t _partitionID, const SActivateParams& _params)
+std::string CGrpcControlClient::requestActivate(const odc::core::partitionID_t& _partitionID,
+                                                const SActivateParams& _params)
 {
     odc::ActivateRequest request;
     request.set_partitionid(_partitionID);
@@ -48,7 +50,7 @@ std::string CGrpcControlClient::requestActivate(odc::core::partitionID_t _partit
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestRun(odc::core::partitionID_t _partitionID,
+std::string CGrpcControlClient::requestRun(const odc::core::partitionID_t& _partitionID,
                                            const odc::core::SInitializeParams& _initializeParams,
                                            const odc::core::SSubmitParams& _submitParams,
                                            const odc::core::SActivateParams& _activateParams)
@@ -62,17 +64,19 @@ std::string CGrpcControlClient::requestRun(odc::core::partitionID_t _partitionID
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestUpscale(odc::core::partitionID_t _partitionID, const SUpdateParams& _params)
+std::string CGrpcControlClient::requestUpscale(const odc::core::partitionID_t& _partitionID,
+                                               const SUpdateParams& _params)
 {
     return updateRequest(_partitionID, _params);
 }
 
-std::string CGrpcControlClient::requestDownscale(odc::core::partitionID_t _partitionID, const SUpdateParams& _params)
+std::string CGrpcControlClient::requestDownscale(const odc::core::partitionID_t& _partitionID,
+                                                 const SUpdateParams& _params)
 {
     return updateRequest(_partitionID, _params);
 }
 
-std::string CGrpcControlClient::requestGetState(odc::core::partitionID_t _partitionID,
+std::string CGrpcControlClient::requestGetState(const odc::core::partitionID_t& _partitionID,
                                                 const odc::core::SDeviceParams& _params)
 {
     odc::StateRequest request;
@@ -85,7 +89,7 @@ std::string CGrpcControlClient::requestGetState(odc::core::partitionID_t _partit
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestSetProperties(odc::core::partitionID_t _partitionID,
+std::string CGrpcControlClient::requestSetProperties(const odc::core::partitionID_t& _partitionID,
                                                      const odc::core::SSetPropertiesParams& _params)
 {
     odc::SetPropertiesRequest request;
@@ -103,32 +107,34 @@ std::string CGrpcControlClient::requestSetProperties(odc::core::partitionID_t _p
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestConfigure(odc::core::partitionID_t _partitionID, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestConfigure(const odc::core::partitionID_t& _partitionID,
+                                                 const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::ConfigureRequest>(_partitionID, _params, &odc::ODC::Stub::Configure);
 }
 
-std::string CGrpcControlClient::requestStart(odc::core::partitionID_t _partitionID, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestStart(const odc::core::partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::StartRequest>(_partitionID, _params, &odc::ODC::Stub::Start);
 }
 
-std::string CGrpcControlClient::requestStop(odc::core::partitionID_t _partitionID, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestStop(const odc::core::partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::StopRequest>(_partitionID, _params, &odc::ODC::Stub::Stop);
 }
 
-std::string CGrpcControlClient::requestReset(odc::core::partitionID_t _partitionID, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestReset(const odc::core::partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::ResetRequest>(_partitionID, _params, &odc::ODC::Stub::Reset);
 }
 
-std::string CGrpcControlClient::requestTerminate(odc::core::partitionID_t _partitionID, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestTerminate(const odc::core::partitionID_t& _partitionID,
+                                                 const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::TerminateRequest>(_partitionID, _params, &odc::ODC::Stub::Terminate);
 }
 
-std::string CGrpcControlClient::requestShutdown(odc::core::partitionID_t _partitionID)
+std::string CGrpcControlClient::requestShutdown(const odc::core::partitionID_t& _partitionID)
 {
     odc::ShutdownRequest request;
     request.set_partitionid(_partitionID);
@@ -153,7 +159,8 @@ std::string CGrpcControlClient::GetReplyString(const grpc::Status& _status, cons
     }
 }
 
-std::string CGrpcControlClient::updateRequest(odc::core::partitionID_t _partitionID, const SUpdateParams& _params)
+std::string CGrpcControlClient::updateRequest(const odc::core::partitionID_t& _partitionID,
+                                              const SUpdateParams& _params)
 {
     odc::UpdateRequest request;
     request.set_partitionid(_partitionID);
@@ -165,7 +172,7 @@ std::string CGrpcControlClient::updateRequest(odc::core::partitionID_t _partitio
 }
 
 template <typename Request_t, typename StubFunc_t>
-std::string CGrpcControlClient::stateChangeRequest(odc::core::partitionID_t _partitionID,
+std::string CGrpcControlClient::stateChangeRequest(const odc::core::partitionID_t& _partitionID,
                                                    const SDeviceParams& _params,
                                                    StubFunc_t _stubFunc)
 {

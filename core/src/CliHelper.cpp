@@ -5,7 +5,6 @@
 #include "CliHelper.h"
 // BOOST
 #include <boost/algorithm/string.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 
 using namespace std;
 using namespace odc::core;
@@ -177,10 +176,8 @@ void CCliHelper::addPartitionOptions(boost::program_options::options_description
                                      const std::vector<partitionID_t>& _defaultPartitions,
                                      std::vector<partitionID_t>& _partitions)
 {
-    using boost::adaptors::transformed;
     using boost::algorithm::join;
-    auto tostr = static_cast<std::string (*)(partitionID_t)>(std::to_string);
-    string defaultsStr{ boost::algorithm::join(_defaultPartitions | transformed(tostr), " ") };
+    string defaultsStr{ boost::algorithm::join(_defaultPartitions, " ") };
     _options.add_options()("prts",
                            bpo::value<std::vector<partitionID_t>>(&_partitions)
                                ->multitoken()

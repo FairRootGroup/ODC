@@ -38,7 +38,7 @@ struct CControlService::SImpl
         DDSTopologyPtr_t m_topo{ nullptr };              ///< DDS topology
         DDSSessionPtr_t m_session{ nullptr };            ///< DDS session
         FairMQTopologyPtr_t m_fairmqTopology{ nullptr }; ///< FairMQ topology
-        partitionID_t m_partitionID{ 0 };                ///< External partition ID of this DDS session
+        partitionID_t m_partitionID;                     ///< External partition ID of this DDS session
     };
 
     SImpl()
@@ -56,70 +56,70 @@ struct CControlService::SImpl
     }
 
     // Core API calls
-    SReturnValue execInitialize(partitionID_t _partitionID, const SInitializeParams& _params);
-    SReturnValue execSubmit(partitionID_t _partitionID, const SSubmitParams& _params);
-    SReturnValue execActivate(partitionID_t _partitionID, const SActivateParams& _params);
-    SReturnValue execRun(partitionID_t _partitionID,
+    SReturnValue execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params);
+    SReturnValue execSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params);
+    SReturnValue execActivate(const partitionID_t& _partitionID, const SActivateParams& _params);
+    SReturnValue execRun(const partitionID_t& _partitionID,
                          const SInitializeParams& _initializeParams,
                          const SSubmitParams& _submitParams,
                          const SActivateParams& _activateParams);
-    SReturnValue execUpdate(partitionID_t _partitionID, const SUpdateParams& _params);
-    SReturnValue execShutdown(partitionID_t _partitionID);
+    SReturnValue execUpdate(const partitionID_t& _partitionID, const SUpdateParams& _params);
+    SReturnValue execShutdown(const partitionID_t& _partitionID);
 
-    SReturnValue execSetProperties(partitionID_t _partitionID, const SSetPropertiesParams& _params);
-    SReturnValue execGetState(partitionID_t _partitionID, const SDeviceParams& _params);
+    SReturnValue execSetProperties(const partitionID_t& _partitionID, const SSetPropertiesParams& _params);
+    SReturnValue execGetState(const partitionID_t& _partitionID, const SDeviceParams& _params);
 
-    SReturnValue execConfigure(partitionID_t _partitionID, const SDeviceParams& _params);
-    SReturnValue execStart(partitionID_t _partitionID, const SDeviceParams& _params);
-    SReturnValue execStop(partitionID_t _partitionID, const SDeviceParams& _params);
-    SReturnValue execReset(partitionID_t _partitionID, const SDeviceParams& _params);
-    SReturnValue execTerminate(partitionID_t _partitionID, const SDeviceParams& _params);
+    SReturnValue execConfigure(const partitionID_t& _partitionID, const SDeviceParams& _params);
+    SReturnValue execStart(const partitionID_t& _partitionID, const SDeviceParams& _params);
+    SReturnValue execStop(const partitionID_t& _partitionID, const SDeviceParams& _params);
+    SReturnValue execReset(const partitionID_t& _partitionID, const SDeviceParams& _params);
+    SReturnValue execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params);
 
   private:
-    SReturnValue createReturnValue(partitionID_t _partitionID,
+    SReturnValue createReturnValue(const partitionID_t& _partitionID,
                                    const SError& _error,
                                    const std::string& _msg,
                                    size_t _execTime,
                                    fair::mq::sdk::AggregatedTopologyState _aggregatedState,
                                    SReturnDetails::ptr_t _details = nullptr);
-    bool createDDSSession(partitionID_t _partitionID, SError& _error);
-    bool attachToDDSSession(partitionID_t _partitionID, SError& _error, const std::string& _sessionID);
-    bool submitDDSAgents(partitionID_t _partitionID, SError& _error, const SSubmitParams& _params);
-    bool activateDDSTopology(partitionID_t _partitionID,
+    bool createDDSSession(const partitionID_t& _partitionID, SError& _error);
+    bool attachToDDSSession(const partitionID_t& _partitionID, SError& _error, const std::string& _sessionID);
+    bool submitDDSAgents(const partitionID_t& _partitionID, SError& _error, const SSubmitParams& _params);
+    bool activateDDSTopology(const partitionID_t& _partitionID,
                              SError& _error,
                              const std::string& _topologyFile,
                              dds::tools_api::STopologyRequest::request_t::EUpdateType _updateType);
-    bool waitForNumActiveAgents(partitionID_t _partitionID, SError& _error, size_t _numAgents);
-    bool requestCommanderInfo(partitionID_t _partitionID,
+    bool waitForNumActiveAgents(const partitionID_t& _partitionID, SError& _error, size_t _numAgents);
+    bool requestCommanderInfo(const partitionID_t& _partitionID,
                               SError& _error,
                               SCommanderInfoRequest::response_t& _commanderInfo);
-    bool shutdownDDSSession(partitionID_t _partitionID, SError& _error);
-    bool createFairMQTopo(partitionID_t _partitionID, SError& _error, const std::string& _topologyFile);
-    bool createTopo(partitionID_t _partitionID, SError& _error, const std::string& _topologyFile);
-    bool setProperties(partitionID_t _partitionID, SError& _error, const SSetPropertiesParams& _params);
-    bool changeState(partitionID_t _partitionID,
+    bool shutdownDDSSession(const partitionID_t& _partitionID, SError& _error);
+    bool createFairMQTopo(const partitionID_t& _partitionID, SError& _error, const std::string& _topologyFile);
+    bool createTopo(const partitionID_t& _partitionID, SError& _error, const std::string& _topologyFile);
+    bool setProperties(const partitionID_t& _partitionID, SError& _error, const SSetPropertiesParams& _params);
+    bool changeState(const partitionID_t& _partitionID,
                      SError& _error,
                      fair::mq::sdk::TopologyTransition _transition,
                      const std::string& _path,
                      fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                      TopologyState* _topologyState = nullptr);
-    bool getState(partitionID_t _partitionID,
+    bool getState(const partitionID_t& _partitionID,
                   SError& _error,
                   const string& _path,
                   fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                   TopologyState* _topologyState = nullptr);
-    bool changeStateConfigure(partitionID_t _partitionID,
+    bool changeStateConfigure(const partitionID_t& _partitionID,
                               SError& _error,
                               const std::string& _path,
                               fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                               TopologyState* _topologyState = nullptr);
-    bool changeStateReset(partitionID_t _partitionID,
+    bool changeStateReset(const partitionID_t& _partitionID,
                           SError& _error,
                           const std::string& _path,
                           fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                           TopologyState* _topologyState = nullptr);
 
-    void resetTopology(partitionID_t _partitionID);
+    void resetTopology(const partitionID_t& _partitionID);
 
     void fillError(SError& _error, ErrorCode _errorCode, const string& _msg);
 
@@ -130,7 +130,7 @@ struct CControlService::SImpl
                                   const fair::mq::sdk::TopologyState& _fairmq,
                                   TopologyState* _odc);
 
-    SSessionInfo::Ptr_t getOrCreateSessionInfo(partitionID_t _partitionID);
+    SSessionInfo::Ptr_t getOrCreateSessionInfo(const partitionID_t& _partitionID);
 
     // Disable copy constructors and assignment operators
     SImpl(const SImpl&) = delete;
@@ -144,7 +144,7 @@ struct CControlService::SImpl
     chrono::seconds m_timeout{ 30 }; ///< Request timeout in sec
 };
 
-SReturnValue CControlService::SImpl::execInitialize(partitionID_t _partitionID, const SInitializeParams& _params)
+SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
 
@@ -176,7 +176,7 @@ SReturnValue CControlService::SImpl::execInitialize(partitionID_t _partitionID, 
         _partitionID, error, "Initialize done", measure.duration(), fair::mq::sdk::AggregatedTopologyState::Undefined);
 }
 
-SReturnValue CControlService::SImpl::execSubmit(partitionID_t _partitionID, const SSubmitParams& _params)
+SReturnValue CControlService::SImpl::execSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     size_t allCount = _params.m_numAgents * _params.m_numSlots;
@@ -188,7 +188,7 @@ SReturnValue CControlService::SImpl::execSubmit(partitionID_t _partitionID, cons
         _partitionID, error, "Submit done", measure.duration(), fair::mq::sdk::AggregatedTopologyState::Undefined);
 }
 
-SReturnValue CControlService::SImpl::execActivate(partitionID_t _partitionID, const SActivateParams& _params)
+SReturnValue CControlService::SImpl::execActivate(const partitionID_t& _partitionID, const SActivateParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     // Activate DDS topology
@@ -203,7 +203,7 @@ SReturnValue CControlService::SImpl::execActivate(partitionID_t _partitionID, co
     return createReturnValue(_partitionID, error, "Activate done", measure.duration(), state);
 }
 
-SReturnValue CControlService::SImpl::execRun(partitionID_t _partitionID,
+SReturnValue CControlService::SImpl::execRun(const partitionID_t& _partitionID,
                                              const SInitializeParams& _initializeParams,
                                              const SSubmitParams& _submitParams,
                                              const SActivateParams& _activateParams)
@@ -233,7 +233,7 @@ SReturnValue CControlService::SImpl::execRun(partitionID_t _partitionID,
     return createReturnValue(_partitionID, error, "Run done", measure.duration(), state);
 }
 
-SReturnValue CControlService::SImpl::execUpdate(partitionID_t _partitionID, const SUpdateParams& _params)
+SReturnValue CControlService::SImpl::execUpdate(const partitionID_t& _partitionID, const SUpdateParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
@@ -251,7 +251,7 @@ SReturnValue CControlService::SImpl::execUpdate(partitionID_t _partitionID, cons
     return createReturnValue(_partitionID, error, "Update done", measure.duration(), state);
 }
 
-SReturnValue CControlService::SImpl::execShutdown(partitionID_t _partitionID)
+SReturnValue CControlService::SImpl::execShutdown(const partitionID_t& _partitionID)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     SError error;
@@ -260,7 +260,8 @@ SReturnValue CControlService::SImpl::execShutdown(partitionID_t _partitionID)
         _partitionID, error, "Shutdown done", measure.duration(), fair::mq::sdk::AggregatedTopologyState::Undefined);
 }
 
-SReturnValue CControlService::SImpl::execSetProperties(partitionID_t _partitionID, const SSetPropertiesParams& _params)
+SReturnValue CControlService::SImpl::execSetProperties(const partitionID_t& _partitionID,
+                                                       const SSetPropertiesParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     SError error;
@@ -272,7 +273,7 @@ SReturnValue CControlService::SImpl::execSetProperties(partitionID_t _partitionI
                              fair::mq::sdk::AggregatedTopologyState::Undefined);
 }
 
-SReturnValue CControlService::SImpl::execGetState(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::SImpl::execGetState(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
@@ -282,7 +283,7 @@ SReturnValue CControlService::SImpl::execGetState(partitionID_t _partitionID, co
     return createReturnValue(_partitionID, error, "GetState done", measure.duration(), state, details);
 }
 
-SReturnValue CControlService::SImpl::execConfigure(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::SImpl::execConfigure(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
@@ -293,7 +294,7 @@ SReturnValue CControlService::SImpl::execConfigure(partitionID_t _partitionID, c
     return createReturnValue(_partitionID, error, "ConfigureRun done", measure.duration(), state, details);
 }
 
-SReturnValue CControlService::SImpl::execStart(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::SImpl::execStart(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
@@ -308,7 +309,7 @@ SReturnValue CControlService::SImpl::execStart(partitionID_t _partitionID, const
     return createReturnValue(_partitionID, error, "Start done", measure.duration(), state, details);
 }
 
-SReturnValue CControlService::SImpl::execStop(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::SImpl::execStop(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
@@ -323,7 +324,7 @@ SReturnValue CControlService::SImpl::execStop(partitionID_t _partitionID, const 
     return createReturnValue(_partitionID, error, "Stop done", measure.duration(), state, details);
 }
 
-SReturnValue CControlService::SImpl::execReset(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::SImpl::execReset(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
@@ -334,7 +335,7 @@ SReturnValue CControlService::SImpl::execReset(partitionID_t _partitionID, const
     return createReturnValue(_partitionID, error, "Reset done", measure.duration(), state, details);
 }
 
-SReturnValue CControlService::SImpl::execTerminate(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::SImpl::execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
@@ -349,7 +350,7 @@ SReturnValue CControlService::SImpl::execTerminate(partitionID_t _partitionID, c
     return createReturnValue(_partitionID, error, "Terminate done", measure.duration(), state, details);
 }
 
-SReturnValue CControlService::SImpl::createReturnValue(partitionID_t _partitionID,
+SReturnValue CControlService::SImpl::createReturnValue(const partitionID_t& _partitionID,
                                                        const SError& _error,
                                                        const std::string& _msg,
                                                        size_t _execTime,
@@ -362,7 +363,7 @@ SReturnValue CControlService::SImpl::createReturnValue(partitionID_t _partitionI
     return SReturnValue(status, _msg, _execTime, _error, _partitionID, sidStr, _aggregatedState, _details);
 }
 
-bool CControlService::SImpl::createDDSSession(partitionID_t _partitionID, SError& _error)
+bool CControlService::SImpl::createDDSSession(const partitionID_t& _partitionID, SError& _error)
 {
     try
     {
@@ -378,7 +379,7 @@ bool CControlService::SImpl::createDDSSession(partitionID_t _partitionID, SError
     return true;
 }
 
-bool CControlService::SImpl::attachToDDSSession(partitionID_t _partitionID,
+bool CControlService::SImpl::attachToDDSSession(const partitionID_t& _partitionID,
                                                 SError& _error,
                                                 const std::string& _sessionID)
 {
@@ -397,7 +398,9 @@ bool CControlService::SImpl::attachToDDSSession(partitionID_t _partitionID,
     return true;
 }
 
-bool CControlService::SImpl::submitDDSAgents(partitionID_t _partitionID, SError& _error, const SSubmitParams& _params)
+bool CControlService::SImpl::submitDDSAgents(const partitionID_t& _partitionID,
+                                             SError& _error,
+                                             const SSubmitParams& _params)
 {
     bool success(true);
 
@@ -450,7 +453,7 @@ bool CControlService::SImpl::submitDDSAgents(partitionID_t _partitionID, SError&
     return success;
 }
 
-bool CControlService::SImpl::requestCommanderInfo(partitionID_t _partitionID,
+bool CControlService::SImpl::requestCommanderInfo(const partitionID_t& _partitionID,
                                                   SError& _error,
                                                   SCommanderInfoRequest::response_t& _commanderInfo)
 {
@@ -471,7 +474,9 @@ bool CControlService::SImpl::requestCommanderInfo(partitionID_t _partitionID,
     }
 }
 
-bool CControlService::SImpl::waitForNumActiveAgents(partitionID_t _partitionID, SError& _error, size_t _numAgents)
+bool CControlService::SImpl::waitForNumActiveAgents(const partitionID_t& _partitionID,
+                                                    SError& _error,
+                                                    size_t _numAgents)
 {
     try
     {
@@ -486,7 +491,7 @@ bool CControlService::SImpl::waitForNumActiveAgents(partitionID_t _partitionID, 
     return true;
 }
 
-bool CControlService::SImpl::activateDDSTopology(partitionID_t _partitionID,
+bool CControlService::SImpl::activateDDSTopology(const partitionID_t& _partitionID,
                                                  SError& _error,
                                                  const string& _topologyFile,
                                                  STopologyRequest::request_t::EUpdateType _updateType)
@@ -548,7 +553,7 @@ bool CControlService::SImpl::activateDDSTopology(partitionID_t _partitionID,
     return success;
 }
 
-bool CControlService::SImpl::shutdownDDSSession(partitionID_t _partitionID, SError& _error)
+bool CControlService::SImpl::shutdownDDSSession(const partitionID_t& _partitionID, SError& _error)
 {
     try
     {
@@ -578,7 +583,9 @@ bool CControlService::SImpl::shutdownDDSSession(partitionID_t _partitionID, SErr
     return true;
 }
 
-bool CControlService::SImpl::createTopo(partitionID_t _partitionID, SError& _error, const std::string& _topologyFile)
+bool CControlService::SImpl::createTopo(const partitionID_t& _partitionID,
+                                        SError& _error,
+                                        const std::string& _topologyFile)
 {
     try
     {
@@ -594,7 +601,7 @@ bool CControlService::SImpl::createTopo(partitionID_t _partitionID, SError& _err
     return true;
 }
 
-bool CControlService::SImpl::createFairMQTopo(partitionID_t _partitionID,
+bool CControlService::SImpl::createFairMQTopo(const partitionID_t& _partitionID,
                                               SError& _error,
                                               const std::string& _topologyFile)
 {
@@ -617,14 +624,14 @@ bool CControlService::SImpl::createFairMQTopo(partitionID_t _partitionID,
     return info->m_fairmqTopology != nullptr;
 }
 
-void CControlService::SImpl::resetTopology(partitionID_t _partitionID)
+void CControlService::SImpl::resetTopology(const partitionID_t& _partitionID)
 {
     auto info{ getOrCreateSessionInfo(_partitionID) };
     info->m_topo.reset();
     info->m_fairmqTopology.reset();
 }
 
-bool CControlService::SImpl::changeState(partitionID_t _partitionID,
+bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
                                          SError& _error,
                                          fair::mq::sdk::TopologyTransition _transition,
                                          const string& _path,
@@ -702,7 +709,7 @@ bool CControlService::SImpl::changeState(partitionID_t _partitionID,
     return success;
 }
 
-bool CControlService::SImpl::changeStateConfigure(partitionID_t _partitionID,
+bool CControlService::SImpl::changeStateConfigure(const partitionID_t& _partitionID,
                                                   SError& _error,
                                                   const string& _path,
                                                   fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
@@ -740,7 +747,7 @@ bool CControlService::SImpl::changeStateConfigure(partitionID_t _partitionID,
                        _topologyState);
 }
 
-bool CControlService::SImpl::changeStateReset(partitionID_t _partitionID,
+bool CControlService::SImpl::changeStateReset(const partitionID_t& _partitionID,
                                               SError& _error,
                                               const string& _path,
                                               fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
@@ -760,7 +767,7 @@ bool CControlService::SImpl::changeStateReset(partitionID_t _partitionID,
                        _topologyState);
 }
 
-bool CControlService::SImpl::getState(partitionID_t _partitionID,
+bool CControlService::SImpl::getState(const partitionID_t& _partitionID,
                                       SError& _error,
                                       const string& _path,
                                       fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
@@ -791,7 +798,7 @@ bool CControlService::SImpl::getState(partitionID_t _partitionID,
     return success;
 }
 
-bool CControlService::SImpl::setProperties(partitionID_t _partitionID,
+bool CControlService::SImpl::setProperties(const partitionID_t& _partitionID,
                                            SError& _error,
                                            const SSetPropertiesParams& _params)
 {
@@ -934,7 +941,8 @@ void CControlService::SImpl::fillError(SError& _error, ErrorCode _errorCode, con
     OLOG(ESeverity::error) << _error;
 }
 
-CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateSessionInfo(partitionID_t _partitionID)
+CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateSessionInfo(
+    const partitionID_t& _partitionID)
 {
     auto it{ m_sessions.find(_partitionID) };
     if (it == m_sessions.end())
@@ -976,22 +984,22 @@ void CControlService::setTimeout(const chrono::seconds& _timeout)
     m_impl->setTimeout(_timeout);
 }
 
-SReturnValue CControlService::execInitialize(partitionID_t _partitionID, const SInitializeParams& _params)
+SReturnValue CControlService::execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)
 {
     return m_impl->execInitialize(_partitionID, _params);
 }
 
-SReturnValue CControlService::execSubmit(partitionID_t _partitionID, const SSubmitParams& _params)
+SReturnValue CControlService::execSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params)
 {
     return m_impl->execSubmit(_partitionID, _params);
 }
 
-SReturnValue CControlService::execActivate(partitionID_t _partitionID, const SActivateParams& _params)
+SReturnValue CControlService::execActivate(const partitionID_t& _partitionID, const SActivateParams& _params)
 {
     return m_impl->execActivate(_partitionID, _params);
 }
 
-SReturnValue CControlService::execRun(partitionID_t _partitionID,
+SReturnValue CControlService::execRun(const partitionID_t& _partitionID,
                                       const SInitializeParams& _initializeParams,
                                       const SSubmitParams& _submitParams,
                                       const SActivateParams& _activateParams)
@@ -999,47 +1007,47 @@ SReturnValue CControlService::execRun(partitionID_t _partitionID,
     return m_impl->execRun(_partitionID, _initializeParams, _submitParams, _activateParams);
 }
 
-SReturnValue CControlService::execUpdate(partitionID_t _partitionID, const SUpdateParams& _params)
+SReturnValue CControlService::execUpdate(const partitionID_t& _partitionID, const SUpdateParams& _params)
 {
     return m_impl->execUpdate(_partitionID, _params);
 }
 
-SReturnValue CControlService::execShutdown(partitionID_t _partitionID)
+SReturnValue CControlService::execShutdown(const partitionID_t& _partitionID)
 {
     return m_impl->execShutdown(_partitionID);
 }
 
-SReturnValue CControlService::execSetProperties(partitionID_t _partitionID, const SSetPropertiesParams& _params)
+SReturnValue CControlService::execSetProperties(const partitionID_t& _partitionID, const SSetPropertiesParams& _params)
 {
     return m_impl->execSetProperties(_partitionID, _params);
 }
 
-SReturnValue CControlService::execGetState(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::execGetState(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return m_impl->execGetState(_partitionID, _params);
 }
 
-SReturnValue CControlService::execConfigure(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::execConfigure(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return m_impl->execConfigure(_partitionID, _params);
 }
 
-SReturnValue CControlService::execStart(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::execStart(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return m_impl->execStart(_partitionID, _params);
 }
 
-SReturnValue CControlService::execStop(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::execStop(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return m_impl->execStop(_partitionID, _params);
 }
 
-SReturnValue CControlService::execReset(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::execReset(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return m_impl->execReset(_partitionID, _params);
 }
 
-SReturnValue CControlService::execTerminate(partitionID_t _partitionID, const SDeviceParams& _params)
+SReturnValue CControlService::execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return m_impl->execTerminate(_partitionID, _params);
 }
