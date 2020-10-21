@@ -45,7 +45,7 @@ find_package(gRPC)
 message(STATUS "Using gRPC ${GRPC_VERSION}")
 
 # Find DDS installation
-find_package(DDS 3.5.1 CONFIG REQUIRED)
+find_package(DDS 3.5.3 CONFIG REQUIRED)
 message(STATUS "Using DDS ${DDS_VERSION}")
 
 # Find Boost installation
@@ -56,7 +56,7 @@ endif(BUILD_TESTS)
 find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
 
 # Find FairMQ
-find_package(FairMQ 1.4.21 REQUIRED COMPONENTS sdk)
+find_package(FairMQ 1.4.26 REQUIRED COMPONENTS sdk)
 message(STATUS "Using FairMQ ${FairMQ_GIT_VERSION}")
 if(FairMQ_CXX_STANDARD VERSION_GREATER CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD ${FairMQ_CXX_STANDARD})
