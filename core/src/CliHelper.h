@@ -19,49 +19,41 @@ namespace odc
         class CCliHelper
         {
           public:
-            static void addTimeoutOptions(boost::program_options::options_description& _options,
-                                          size_t _defaultTimeout,
-                                          size_t& _timeout);
-            static void addInitializeOptions(boost::program_options::options_description& _options,
-                                             const SInitializeParams& _defaultParams,
-                                             SInitializeParams& _params);
-            static void addActivateOptions(boost::program_options::options_description& _options,
-                                           const SActivateParams& _defaultParams,
-                                           SActivateParams& _params);
-            static void addUpscaleOptions(boost::program_options::options_description& _options,
-                                          const SUpdateParams& _defaultParams,
-                                          SUpdateParams& _params);
-            static void addDownscaleOptions(boost::program_options::options_description& _options,
-                                            const SUpdateParams& _defaultParams,
-                                            SUpdateParams& _params);
-            static void addSubmitOptions(boost::program_options::options_description& _options,
-                                         const SSubmitParams& _defaultParams,
-                                         SSubmitParams& _params);
-            static void addHostOptions(boost::program_options::options_description& _options,
-                                       const std::string& _defaultHost,
-                                       std::string& _host);
-            static void addLogOptions(boost::program_options::options_description& _options,
-                                      const CLogger::SConfig& _defaultConfig,
-                                      CLogger::SConfig& _config);
-            static void addDeviceOptions(boost::program_options::options_description& _options,
-                                         const SDeviceParams& _defaultRecoParams,
-                                         SDeviceParams& _recoParams,
-                                         const SDeviceParams& _defaultQCParams,
-                                         SDeviceParams& _qcParams);
-            static void addSetPropertiesOptions(boost::program_options::options_description& _options,
-                                                const SSetPropertiesParams& _defaultParams,
-                                                SSetPropertiesParams& _params);
-            static void parseProperties(const boost::program_options::variables_map& _vm,
-                                        const SSetPropertiesParams& _defaultParams,
-                                        SSetPropertiesParams& _params);
+            //
+            // Generic options
+            //
+            static void addHelpOptions(boost::program_options::options_description& _options);
+            static void addHostOptions(boost::program_options::options_description& _options, std::string& _host);
+            static void addLogOptions(boost::program_options::options_description& _options, CLogger::SConfig& _config);
+            static void addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout);
             static void addBatchOptions(boost::program_options::options_description& _options,
-                                        const std::vector<std::string>& _defaultCmds,
                                         std::vector<std::string>& _cmds,
-                                        bool _defaultBatch,
                                         bool& _batch);
             static void addPartitionOptions(boost::program_options::options_description& _options,
-                                            const std::vector<partitionID_t>& _defaultPartitions,
                                             std::vector<partitionID_t>& _partitions);
+
+            //
+            // Request specific options
+            //
+            static void addOptions(boost::program_options::options_description& _options, partitionID_t& _partitionID);
+            static void addOptions(boost::program_options::options_description& _options, SInitializeParams& _params);
+            static void addOptions(boost::program_options::options_description& _options, SActivateParams& _params);
+            static void addOptions(boost::program_options::options_description& _options, SUpdateParams& _params);
+            static void addOptions(boost::program_options::options_description& _options, SSubmitParams& _params);
+            static void addOptions(boost::program_options::options_description& _options, SDeviceParams& _params);
+            static void addOptions(boost::program_options::options_description& _options,
+                                   SSetPropertiesParams& _params);
+
+            //
+            // Extra step of options parsing
+            //
+            template <typename... RequestParams_t>
+            static void parseOptions(const boost::program_options::variables_map& _vm, RequestParams_t&&... _params)
+            {
+                // Default implementation does nothing
+            }
+
+            static void parseOptions(const boost::program_options::variables_map& _vm, SSetPropertiesParams& _params);
         };
     } // namespace core
 } // namespace odc

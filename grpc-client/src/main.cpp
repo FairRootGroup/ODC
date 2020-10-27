@@ -21,38 +21,18 @@ int main(int argc, char** argv)
     try
     {
         string host;
-        SInitializeParams initializeParams;
-        SActivateParams activateParams;
-        SUpdateParams upscaleParams;
-        SUpdateParams downscaleParams;
         CLogger::SConfig logConfig;
-        SDeviceParams recoDeviceParams;
-        SDeviceParams qcDeviceParams;
-        SSetPropertiesParams setPropertiesParams;
-        SSetPropertiesParams setPropertiesDefaultParams({ { "key1", "value1" }, { "key2", "value2" } }, "");
         vector<string> cmds;
-        vector<string> defaultCmds{ ".init",    ".submit", ".activate", ".config",    ".start", ".stop",
-                                    ".upscale", ".start",  ".stop",     ".downscale", ".start", ".stop",
-                                    ".reset",   ".term",   ".down",     ".quit" };
         bool batch;
         vector<partitionID_t> partitionIDs;
 
         // Generic options
         bpo::options_description options("grpc-client options");
-        options.add_options()("help,h", "Produce help message");
-        CCliHelper::addHostOptions(options, "localhost:50051", host);
-        CCliHelper::addInitializeOptions(options, SInitializeParams(""), initializeParams);
-        string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
-        CCliHelper::addActivateOptions(options, SActivateParams(defaultTopo), activateParams);
-        string defaultUpscaleTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");
-        CCliHelper::addUpscaleOptions(options, SUpdateParams(defaultUpscaleTopo), upscaleParams);
-        string defaultDownscaleTopo(kODCDataDir + "/ex-dds-topology-infinite-down.xml");
-        CCliHelper::addDownscaleOptions(options, SUpdateParams(defaultDownscaleTopo), downscaleParams);
-        CCliHelper::addLogOptions(options, CLogger::SConfig(), logConfig);
-        CCliHelper::addDeviceOptions(options, SDeviceParams(), recoDeviceParams, SDeviceParams(), qcDeviceParams);
-        CCliHelper::addSetPropertiesOptions(options, setPropertiesDefaultParams, setPropertiesParams);
-        CCliHelper::addBatchOptions(options, defaultCmds, cmds, false, batch);
-        CCliHelper::addPartitionOptions(options, { "111" }, partitionIDs);
+        CCliHelper::addHelpOptions(options);
+        CCliHelper::addHostOptions(options, host);
+        CCliHelper::addLogOptions(options, logConfig);
+        CCliHelper::addBatchOptions(options, cmds, batch);
+        CCliHelper::addPartitionOptions(options, partitionIDs);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -75,17 +55,8 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        CCliHelper::parseProperties(vm, setPropertiesDefaultParams, setPropertiesParams);
-
         CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
         control.setPartitionIDs(partitionIDs);
-        control.setInitializeParams(initializeParams);
-        control.setActivateParams(activateParams);
-        control.setUpscaleParams(upscaleParams);
-        control.setDownscaleParams(downscaleParams);
-        control.setRecoDeviceParams(recoDeviceParams);
-        control.setQCDeviceParams(qcDeviceParams);
-        control.setSetPropertiesParams(setPropertiesParams);
         control.run((batch) ? cmds : vector<string>(), std::chrono::milliseconds(1000));
     }
     catch (exception& _e)

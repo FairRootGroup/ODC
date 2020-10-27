@@ -6,13 +6,20 @@
 #define __ODC__CliServiceHelper__
 
 // ODC
+#include "CliHelper.h"
 #include "ControlService.h"
 #include "Logger.h"
 // STD
 #include <chrono>
 #include <iostream>
+#include <tuple>
 // BOOST
 #include <boost/algorithm/string.hpp>
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
+
+namespace bpo = boost::program_options;
 
 namespace odc
 {
@@ -43,7 +50,8 @@ namespace odc
                         // different partitions. We need to find a better way to get a partition ID from CLI.
                         for (auto v : m_partitionIDs)
                         {
-                            processRequest(v, cmd);
+                            std::string line{ cmd + " --id " + v };
+                            processRequest(line);
                         }
                     }
                 }
@@ -57,7 +65,8 @@ namespace odc
                         // different partitions. We need to find a better way to get a partition ID from CLI.
                         for (auto v : m_partitionIDs)
                         {
-                            processRequest(v, cmd);
+                            std::string line{ cmd + " --id " + v };
+                            processRequest(line);
                         }
                         OLOG(ESeverity::clean) << "Waiting " << _delay.count() << " ms";
                         std::this_thread::sleep_for(_delay);
@@ -71,141 +80,142 @@ namespace odc
             {
                 m_partitionIDs = _partitionIDs;
             }
-
-            void setInitializeParams(const odc::core::SInitializeParams& _params)
-            {
-                m_initializeParams = _params;
-            }
-            void setSubmitParams(const odc::core::SSubmitParams& _params)
-            {
-                m_submitParams = _params;
-            }
-            void setActivateParams(const odc::core::SActivateParams& _params)
-            {
-                m_activateParams = _params;
-            }
-            void setUpscaleParams(const odc::core::SUpdateParams& _params)
-            {
-                m_upscaleParams = _params;
-            }
-            void setDownscaleParams(const odc::core::SUpdateParams& _params)
-            {
-                m_downscaleParams = _params;
-            }
-            void setRecoDeviceParams(const odc::core::SDeviceParams& _params)
-            {
-                m_recoDeviceParams = _params;
-            }
-            void setQCDeviceParams(const odc::core::SDeviceParams& _params)
-            {
-                m_qcDeviceParams = _params;
-            }
             void setTimeout(const std::chrono::seconds& _timeout)
             {
                 m_timeout = _timeout;
             }
-            void setSetPropertiesParams(const odc::core::SSetPropertiesParams& _params)
-            {
-                m_setPropertiesParams = _params;
-            }
 
           private:
-            const odc::core::SDeviceParams& stringToDeviceParams(const std::string& _str)
+            template <typename... RequestParams_t>
+            bool parseCommand(const std::vector<std::string>& _args,
+                              partitionID_t& _partitionID,
+                              RequestParams_t&&... _params)
             {
-                if (_str == "reco")
-                    return m_recoDeviceParams;
-                else if (_str == "qc")
-                    return m_qcDeviceParams;
-                return m_allDeviceParams;
+                // Options description: generic + request specific
+                bpo::options_description options("Request options");
+                CCliHelper::addHelpOptions(options);
+                CCliHelper::addOptions(options, _partitionID);
+
+                // Loop over input parameters and add program options
+                std::apply([&options](auto&&... args) { ((CCliHelper::addOptions(options, args)), ...); },
+                           std::tie(_params...));
+
+                // Parsing command-line
+                bpo::variables_map vm;
+                bpo::store(bpo::command_line_parser(_args).options(options).run(), vm);
+                bpo::notify(vm);
+
+                CCliHelper::parseOptions(vm, _params...);
+
+                if (vm.count("help"))
+                {
+                    OLOG(ESeverity::clean) << options;
+                    return false;
+                }
+                return true;
             }
 
-            void processRequest(const partitionID_t& _partitionID, const std::string& _cmd)
+            template <typename RequestParams_t, typename StubFunc_t>
+            std::string request(const std::string& _msg, const std::vector<std::string>& _args, StubFunc_t _stubFunc)
+            {
+                OwnerT* p = reinterpret_cast<OwnerT*>(this);
+                partitionID_t partitionID;
+                RequestParams_t params;
+                if (parseCommand(_args, partitionID, params))
+                {
+                    OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: " << _msg;
+                    return (p->*_stubFunc)(partitionID, params);
+                }
+                return "";
+            }
+
+            void processRequest(const std::string& _cmd)
             {
                 if (_cmd == ".quit")
                 {
                     exit(EXIT_SUCCESS);
                 }
 
-                OwnerT* p = reinterpret_cast<OwnerT*>(this);
-
                 std::string replyString;
-
-                std::vector<std::string> cmds;
-                boost::split(cmds, _cmd, boost::is_any_of("\t "));
-                std::string cmd{ cmds.empty() ? "" : cmds.front() };
-                std::string par{ cmds.size() > 1 ? cmds[1] : "" };
-
-                OLOG(ESeverity::clean) << "Requests for partition ID <" << _partitionID << ">";
+                std::vector<std::string> args{ bpo::split_unix(_cmd) };
+                std::string cmd{ args.empty() ? "" : args.front() };
 
                 if (cmd == ".init")
                 {
-                    OLOG(ESeverity::clean) << "Sending initialization request...";
-                    replyString = p->requestInitialize(_partitionID, m_initializeParams);
+                    replyString =
+                        request<SInitializeParams>("sending Initialize request...", args, &OwnerT::requestInitialize);
                 }
                 else if (cmd == ".submit")
                 {
-                    OLOG(ESeverity::clean) << "Sending submit request...";
-                    replyString = p->requestSubmit(_partitionID, m_submitParams);
+                    replyString = request<SSubmitParams>("sending Submit request...", args, &OwnerT::requestSubmit);
                 }
                 else if (cmd == ".activate")
                 {
-                    OLOG(ESeverity::clean) << "Sending activate request...";
-                    replyString = p->requestActivate(_partitionID, m_activateParams);
+                    replyString =
+                        request<SActivateParams>("sending Activate request...", args, &OwnerT::requestActivate);
                 }
                 else if (cmd == ".run")
                 {
-                    OLOG(ESeverity::clean) << "Sending run request...";
-                    replyString = p->requestRun(_partitionID, m_initializeParams, m_submitParams, m_activateParams);
+                    OwnerT* p = reinterpret_cast<OwnerT*>(this);
+                    partitionID_t partitionID;
+                    SInitializeParams initializeParams;
+                    SSubmitParams submitParams;
+                    SActivateParams activateParams;
+                    if (parseCommand(args, partitionID, initializeParams, submitParams, activateParams))
+                    {
+                        OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: sending Run request";
+                        replyString = p->requestRun(partitionID, initializeParams, submitParams, activateParams);
+                    }
                 }
                 else if (cmd == ".upscale")
                 {
-                    OLOG(ESeverity::clean) << "Sending upscale request...";
-                    replyString = p->requestUpscale(_partitionID, m_upscaleParams);
+                    replyString = request<SUpdateParams>("sending Upscale request...", args, &OwnerT::requestUpscale);
                 }
                 else if (cmd == ".downscale")
                 {
-                    OLOG(ESeverity::clean) << "Sending downscale request...";
-                    replyString = p->requestDownscale(_partitionID, m_downscaleParams);
+                    replyString =
+                        request<SUpdateParams>("sending Downscale request...", args, &OwnerT::requestDownscale);
                 }
                 else if (cmd == ".config")
                 {
-                    OLOG(ESeverity::clean) << "Sending configure run request...";
-                    replyString = p->requestConfigure(_partitionID, stringToDeviceParams(par));
+                    replyString =
+                        request<SDeviceParams>("sending Configure request...", args, &OwnerT::requestConfigure);
                 }
                 else if (cmd == ".state")
                 {
-                    OLOG(ESeverity::clean) << "Sending get state request...";
-                    replyString = p->requestGetState(_partitionID, stringToDeviceParams(par));
+                    replyString = request<SDeviceParams>("sending GetState request...", args, &OwnerT::requestGetState);
                 }
                 else if (cmd == ".prop")
                 {
-                    OLOG(ESeverity::clean) << "Sending set properties request...";
-                    replyString = p->requestSetProperties(_partitionID, m_setPropertiesParams);
+                    replyString = request<SSetPropertiesParams>(
+                        "sending SetProperties request...", args, &OwnerT::requestSetProperties);
                 }
                 else if (cmd == ".start")
                 {
-                    OLOG(ESeverity::clean) << "Sending start request...";
-                    replyString = p->requestStart(_partitionID, stringToDeviceParams(par));
+                    replyString = request<SDeviceParams>("sending Start request...", args, &OwnerT::requestStart);
                 }
                 else if (cmd == ".stop")
                 {
-                    OLOG(ESeverity::clean) << "Sending stop request...";
-                    replyString = p->requestStop(_partitionID, stringToDeviceParams(par));
+                    replyString = request<SDeviceParams>("sending Stop request...", args, &OwnerT::requestStop);
                 }
                 else if (cmd == ".reset")
                 {
-                    OLOG(ESeverity::clean) << "Sending reset request...";
-                    replyString = p->requestReset(_partitionID, stringToDeviceParams(par));
+                    replyString = request<SDeviceParams>("sending Reset request...", args, &OwnerT::requestReset);
                 }
                 else if (cmd == ".term")
                 {
-                    OLOG(ESeverity::clean) << "Sending terminate request...";
-                    replyString = p->requestTerminate(_partitionID, stringToDeviceParams(par));
+                    replyString =
+                        request<SDeviceParams>("sending Terminate request...", args, &OwnerT::requestTerminate);
                 }
                 else if (cmd == ".down")
                 {
-                    OLOG(ESeverity::clean) << "Sending shutdown request...";
-                    replyString = p->requestShutdown(_partitionID);
+                    OwnerT* p = reinterpret_cast<OwnerT*>(this);
+                    partitionID_t partitionID;
+                    if (parseCommand(args, partitionID))
+                    {
+                        OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: sending Shutdown request";
+                        replyString = p->requestShutdown(partitionID);
+                    }
                 }
                 else
                 {
@@ -241,15 +251,6 @@ namespace odc
 
           private:
             std::vector<odc::core::partitionID_t> m_partitionIDs;
-            odc::core::SInitializeParams m_initializeParams;
-            odc::core::SSubmitParams m_submitParams;
-            odc::core::SActivateParams m_activateParams;
-            odc::core::SUpdateParams m_upscaleParams;
-            odc::core::SUpdateParams m_downscaleParams;
-            odc::core::SDeviceParams m_recoDeviceParams; ///< Parameters of Reco devices
-            odc::core::SDeviceParams m_qcDeviceParams;   ///< Parameters of QC devices
-            odc::core::SDeviceParams m_allDeviceParams;
-            odc::core::SSetPropertiesParams m_setPropertiesParams;
             std::chrono::seconds m_timeout; ///< Request timeout
         };
     } // namespace core

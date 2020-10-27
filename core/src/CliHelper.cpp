@@ -3,6 +3,7 @@
 //
 
 #include "CliHelper.h"
+#include "BuildConstants.h"
 // BOOST
 #include <boost/algorithm/string.hpp>
 
@@ -10,113 +11,116 @@ using namespace std;
 using namespace odc::core;
 namespace bpo = boost::program_options;
 
-void CCliHelper::addTimeoutOptions(boost::program_options::options_description& _options,
-                                   size_t _defaultTimeout,
-                                   size_t& _timeout)
+//
+// Generic options
+//
+
+void CCliHelper::addHelpOptions(boost::program_options::options_description& _options)
 {
+    _options.add_options()("help,h", "Produce help message");
+}
+
+void CCliHelper::addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout)
+{
+    _options.add_options()("timeout", bpo::value<size_t>(&_timeout)->default_value(30), "Timeout of requests in sec");
+}
+
+void CCliHelper::addHostOptions(bpo::options_description& _options, string& _host)
+{
+    _options.add_options()("host", bpo::value<string>(&_host)->default_value("localhost:50051"), "Server address");
+}
+
+void CCliHelper::addLogOptions(boost::program_options::options_description& _options, CLogger::SConfig& _config)
+{
+    _options.add_options()("logdir", bpo::value<string>(&_config.m_logDir)->default_value(""), "Log files directory");
     _options.add_options()(
-        "timeout", bpo::value<size_t>(&_timeout)->default_value(_defaultTimeout), "Timeout of requests in sec");
+        "severity", bpo::value<ESeverity>(&_config.m_severity)->default_value(ESeverity::info), "Log severity level");
 }
 
-void CCliHelper::addInitializeOptions(boost::program_options::options_description& _options,
-                                      const SInitializeParams& _defaultParams,
-                                      SInitializeParams& _params)
+void CCliHelper::addBatchOptions(boost::program_options::options_description& _options,
+                                 std::vector<std::string>& _cmds,
+                                 bool& _batch)
 {
-    _options.add_options()("sid",
-                           bpo::value<string>(&_params.m_sessionID)->default_value(_defaultParams.m_sessionID),
-                           "Session ID of DDS");
+    _options.add_options()("batch", bpo::bool_switch(&_batch)->default_value(false), "Non interactive batch mode");
+
+    vector<string> defaultCmds{ ".init", ".submit",    ".activate", ".config", ".start", ".stop", ".upscale", ".start",
+                                ".stop", ".downscale", ".start",    ".stop",   ".reset", ".term", ".down",    ".quit" };
+    string defaultsStr{ boost::algorithm::join(defaultCmds, " ") };
+    _options.add_options()(
+        "cmds",
+        bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(defaultCmds, defaultsStr),
+        "Array of command to be executed in batch mode");
 }
 
-void CCliHelper::addActivateOptions(bpo::options_description& _options,
-                                    const SActivateParams& _defaultParams,
-                                    SActivateParams& _params)
+void CCliHelper::addPartitionOptions(boost::program_options::options_description& _options,
+                                     std::vector<partitionID_t>& _partitions)
 {
-    _options.add_options()("topo",
-                           bpo::value<string>(&_params.m_topologyFile)->default_value(_defaultParams.m_topologyFile),
-                           "Topology filepath");
+    using boost::algorithm::join;
+    vector<partitionID_t> defaultPartitions{ "111" };
+    string defaultsStr{ boost::algorithm::join(defaultPartitions, " ") };
+    _options.add_options()("prts",
+                           bpo::value<std::vector<partitionID_t>>(&_partitions)
+                               ->multitoken()
+                               ->default_value(defaultPartitions, defaultsStr),
+                           "Array of partition IDs");
 }
 
-void CCliHelper::addUpscaleOptions(bpo::options_description& _options,
-                                   const SUpdateParams& _defaultParams,
-                                   SUpdateParams& _params)
+//
+// Request specific options
+//
+
+void CCliHelper::addOptions(boost::program_options::options_description& _options, partitionID_t& _partitionID)
 {
-    _options.add_options()("uptopo",
-                           bpo::value<string>(&_params.m_topologyFile)->default_value(_defaultParams.m_topologyFile),
-                           "Topology filepath of the upscale");
+    _options.add_options()("id", bpo::value<partitionID_t>(&_partitionID)->default_value(""), "Partition ID");
 }
 
-void CCliHelper::addDownscaleOptions(bpo::options_description& _options,
-                                     const SUpdateParams& _defaultParams,
-                                     SUpdateParams& _params)
+void CCliHelper::addOptions(boost::program_options::options_description& _options, SInitializeParams& _params)
 {
-    _options.add_options()("downtopo",
-                           bpo::value<string>(&_params.m_topologyFile)->default_value(_defaultParams.m_topologyFile),
-                           "Topology filepath of the downscale request");
+    _options.add_options()("sid", bpo::value<string>(&_params.m_sessionID)->default_value(""), "Session ID of DDS");
 }
 
-void CCliHelper::addSubmitOptions(bpo::options_description& _options,
-                                  const SSubmitParams& _defaultParams,
-                                  SSubmitParams& _params)
+void CCliHelper::addOptions(bpo::options_description& _options, SActivateParams& _params)
+{
+    string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
+    _options.add_options()(
+        "topo", bpo::value<string>(&_params.m_topologyFile)->default_value(defaultTopo), "Topology filepath");
+}
+
+void CCliHelper::addOptions(bpo::options_description& _options, SUpdateParams& _params)
+{
+    string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");
+    // string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-down.xml");
+    _options.add_options()(
+        "topo", bpo::value<string>(&_params.m_topologyFile)->default_value(defaultTopo), "Topology filepath");
+}
+
+void CCliHelper::addOptions(bpo::options_description& _options, SSubmitParams& _params)
 {
     _options.add_options()("rms,r",
-                           bpo::value<string>(&_params.m_rmsPlugin)->default_value(_defaultParams.m_rmsPlugin),
+                           bpo::value<string>(&_params.m_rmsPlugin)->default_value("localhost"),
                            "Defines a destination resource management system plug-in.");
     _options.add_options()("config,c",
-                           bpo::value<string>(&_params.m_configFile)->default_value(_defaultParams.m_configFile),
+                           bpo::value<string>(&_params.m_configFile)->default_value(""),
                            "A plug-in's configuration file. It can be used to provide additional RMS options");
-    _options.add_options()("agents",
-                           bpo::value<size_t>(&_params.m_numAgents)->default_value(_defaultParams.m_numAgents),
-                           "Number of DDS agents");
-    _options.add_options()("slots",
-                           bpo::value<size_t>(&_params.m_numSlots)->default_value(_defaultParams.m_numSlots),
-                           "Number of slots per DDS agent");
+    _options.add_options()(
+        "agents", bpo::value<size_t>(&_params.m_numAgents)->default_value(1), "Number of DDS agents");
+    _options.add_options()(
+        "slots", bpo::value<size_t>(&_params.m_numSlots)->default_value(36), "Number of slots per DDS agent");
 }
 
-void CCliHelper::addHostOptions(bpo::options_description& _options, const string& _defaultHost, string& _host)
+void CCliHelper::addOptions(boost::program_options::options_description& _options, SDeviceParams& _params)
 {
-    _options.add_options()("host", bpo::value<string>(&_host)->default_value(_defaultHost), "Server address");
+    _options.add_options()("path", bpo::value<string>(&_params.m_path)->default_value(""), "Topology path of devices");
+    _options.add_options()(
+        "detailed", bpo::bool_switch(&_params.m_detailed)->default_value(false), "Detailed reply of devices");
 }
 
-void CCliHelper::addLogOptions(boost::program_options::options_description& _options,
-                               const CLogger::SConfig& _defaultConfig,
-                               CLogger::SConfig& _config)
+void CCliHelper::addOptions(boost::program_options::options_description& _options, SSetPropertiesParams& _params)
 {
     _options.add_options()(
-        "logdir", bpo::value<string>(&_config.m_logDir)->default_value(_defaultConfig.m_logDir), "Log files directory");
-    _options.add_options()("severity",
-                           bpo::value<ESeverity>(&_config.m_severity)->default_value(_defaultConfig.m_severity),
-                           "Log severity level");
-}
+        "path", bpo::value<string>(&_params.m_path)->default_value(""), "Path for a set property request");
 
-void CCliHelper::addDeviceOptions(boost::program_options::options_description& _options,
-                                  const SDeviceParams& _defaultRecoParams,
-                                  SDeviceParams& _recoParams,
-                                  const SDeviceParams& _defaultQCParams,
-                                  SDeviceParams& _qcParams)
-{
-    _options.add_options()("rpath",
-                           bpo::value<string>(&_recoParams.m_path)->default_value(_defaultRecoParams.m_path),
-                           "Topology path of reco devices");
-    _options.add_options()("rdetailed",
-                           bpo::bool_switch(&_recoParams.m_detailed)->default_value(_defaultRecoParams.m_detailed),
-                           "Detailed reply of reco devices");
-    _options.add_options()("qpath",
-                           bpo::value<string>(&_qcParams.m_path)->default_value(_defaultQCParams.m_path),
-                           "Topology path of QC devices");
-    _options.add_options()("qdetailed",
-                           bpo::bool_switch(&_qcParams.m_detailed)->default_value(_defaultQCParams.m_detailed),
-                           "Detailed reply of QC devices");
-}
-
-void CCliHelper::addSetPropertiesOptions(boost::program_options::options_description& _options,
-                                         const SSetPropertiesParams& _defaultParams,
-                                         SSetPropertiesParams& _params)
-{
-    _options.add_options()("ppath",
-                           bpo::value<string>(&_params.m_path)->default_value(_defaultParams.m_path),
-                           "Path for a set property request");
-
-    const auto& props(_defaultParams.m_properties);
+    const SSetPropertiesParams::Properties_t props{ { "key1", "value1" }, { "key2", "value2" } };
     vector<string> defaults;
     transform(
         props.begin(), props.end(), back_inserter(defaults), [](const SSetPropertiesParams::Property_t& _p) -> string {
@@ -128,9 +132,11 @@ void CCliHelper::addSetPropertiesOptions(boost::program_options::options_descrip
                            "Key-value pairs for a set properties request ( key1:value1 key2:value2 )");
 }
 
-void CCliHelper::parseProperties(const boost::program_options::variables_map& _vm,
-                                 const SSetPropertiesParams& _defaultParams,
-                                 SSetPropertiesParams& _params)
+//
+// Extra step of options parsing
+//
+
+void CCliHelper::parseOptions(const boost::program_options::variables_map& _vm, SSetPropertiesParams& _params)
 {
     if (_vm.count("prop"))
     {
@@ -153,34 +159,6 @@ void CCliHelper::parseProperties(const boost::program_options::variables_map& _v
     }
     else
     {
-        _params.m_properties = _defaultParams.m_properties;
+        _params.m_properties = { { "key1", "value1" }, { "key2", "value2" } };
     }
-}
-
-void CCliHelper::addBatchOptions(boost::program_options::options_description& _options,
-                                 const std::vector<std::string>& _defaultCmds,
-                                 std::vector<std::string>& _cmds,
-                                 bool _defaultBatch,
-                                 bool& _batch)
-{
-    _options.add_options()(
-        "batch", bpo::bool_switch(&_batch)->default_value(_defaultBatch), "Non interactive batch mode");
-    string defaultsStr{ boost::algorithm::join(_defaultCmds, " ") };
-    _options.add_options()(
-        "cmds",
-        bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(_defaultCmds, defaultsStr),
-        "Array of command to be executed in batch mode");
-}
-
-void CCliHelper::addPartitionOptions(boost::program_options::options_description& _options,
-                                     const std::vector<partitionID_t>& _defaultPartitions,
-                                     std::vector<partitionID_t>& _partitions)
-{
-    using boost::algorithm::join;
-    string defaultsStr{ boost::algorithm::join(_defaultPartitions, " ") };
-    _options.add_options()("prts",
-                           bpo::value<std::vector<partitionID_t>>(&_partitions)
-                               ->multitoken()
-                               ->default_value(_defaultPartitions, defaultsStr),
-                           "Array of partition IDs");
 }
