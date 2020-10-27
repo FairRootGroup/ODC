@@ -115,18 +115,23 @@ namespace odc
                 return true;
             }
 
-            template <typename RequestParams_t, typename StubFunc_t>
+            template <typename... RequestParams_t, typename StubFunc_t>
             std::string request(const std::string& _msg, const std::vector<std::string>& _args, StubFunc_t _stubFunc)
             {
-                OwnerT* p = reinterpret_cast<OwnerT*>(this);
-                partitionID_t partitionID;
-                RequestParams_t params;
-                if (parseCommand(_args, partitionID, params))
-                {
-                    OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: " << _msg;
-                    return (p->*_stubFunc)(partitionID, params);
-                }
-                return "";
+                std::string result;
+                std::tuple<RequestParams_t...> tuple;
+                std::apply(
+                    [&result, &_msg, &_args, &_stubFunc, this](auto&&... params) {
+                        partitionID_t partitionID;
+                        if (parseCommand(_args, partitionID, params...))
+                        {
+                            OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: " << _msg;
+                            OwnerT* p = reinterpret_cast<OwnerT*>(this);
+                            result = (p->*_stubFunc)(partitionID, params...);
+                        }
+                    },
+                    tuple);
+                return result;
             }
 
             void processRequest(const std::string& _cmd)
@@ -156,16 +161,8 @@ namespace odc
                 }
                 else if (cmd == ".run")
                 {
-                    OwnerT* p = reinterpret_cast<OwnerT*>(this);
-                    partitionID_t partitionID;
-                    SInitializeParams initializeParams;
-                    SSubmitParams submitParams;
-                    SActivateParams activateParams;
-                    if (parseCommand(args, partitionID, initializeParams, submitParams, activateParams))
-                    {
-                        OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: sending Run request";
-                        replyString = p->requestRun(partitionID, initializeParams, submitParams, activateParams);
-                    }
+                    replyString = request<SInitializeParams, SSubmitParams, SActivateParams>(
+                        "sending Run request...", args, &OwnerT::requestRun);
                 }
                 else if (cmd == ".upscale")
                 {
@@ -209,13 +206,7 @@ namespace odc
                 }
                 else if (cmd == ".down")
                 {
-                    OwnerT* p = reinterpret_cast<OwnerT*>(this);
-                    partitionID_t partitionID;
-                    if (parseCommand(args, partitionID))
-                    {
-                        OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: sending Shutdown request";
-                        replyString = p->requestShutdown(partitionID);
-                    }
+                    replyString = request<>("sending Shutdown request...", args, &OwnerT::requestShutdown);
                 }
                 else
                 {
