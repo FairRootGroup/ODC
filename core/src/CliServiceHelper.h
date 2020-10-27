@@ -91,25 +91,33 @@ namespace odc
                               partitionID_t& _partitionID,
                               RequestParams_t&&... _params)
             {
-                // Options description: generic + request specific
-                bpo::options_description options("Request options");
-                CCliHelper::addHelpOptions(options);
-                CCliHelper::addOptions(options, _partitionID);
-
-                // Loop over input parameters and add program options
-                std::apply([&options](auto&&... args) { ((CCliHelper::addOptions(options, args)), ...); },
-                           std::tie(_params...));
-
-                // Parsing command-line
-                bpo::variables_map vm;
-                bpo::store(bpo::command_line_parser(_args).options(options).run(), vm);
-                bpo::notify(vm);
-
-                CCliHelper::parseOptions(vm, _params...);
-
-                if (vm.count("help"))
+                try
                 {
-                    OLOG(ESeverity::clean) << options;
+                    // Options description: generic + request specific
+                    bpo::options_description options("Request options");
+                    CCliHelper::addHelpOptions(options);
+                    CCliHelper::addOptions(options, _partitionID);
+
+                    // Loop over input parameters and add program options
+                    std::apply([&options](auto&&... args) { ((CCliHelper::addOptions(options, args)), ...); },
+                               std::tie(_params...));
+
+                    // Parsing command-line
+                    bpo::variables_map vm;
+                    bpo::store(bpo::command_line_parser(_args).options(options).run(), vm);
+                    bpo::notify(vm);
+
+                    CCliHelper::parseOptions(vm, _params...);
+
+                    if (vm.count("help"))
+                    {
+                        OLOG(ESeverity::clean) << options;
+                        return false;
+                    }
+                }
+                catch (std::exception& _e)
+                {
+                    OLOG(ESeverity::clean) << "Error parsing options: " << _e.what();
                     return false;
                 }
                 return true;
