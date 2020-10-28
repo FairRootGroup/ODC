@@ -37,8 +37,7 @@ int main(int argc, char** argv)
         CCliHelper::addHelpOptions(options);
         CCliHelper::addTimeoutOptions(options, timeout);
         CCliHelper::addLogOptions(options, logConfig);
-        CCliHelper::addBatchOptions(options, cmds, batch);
-        CCliHelper::addPartitionOptions(options, partitionIDs);
+        CCliHelper::addBatchOptions(options, cmds, batch, partitionIDs);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -80,9 +79,8 @@ int main(int argc, char** argv)
         setenv("PATH", new_path.c_str(), 1);
 
         odc::cli::CCliControlService control;
-        control.setPartitionIDs(partitionIDs);
         control.setTimeout(chrono::seconds(timeout));
-        control.run((batch) ? cmds : vector<string>(), std::chrono::milliseconds(1000));
+        control.run((batch) ? cmds : vector<string>(), partitionIDs, std::chrono::milliseconds(1000));
     }
     catch (exception& _e)
     {

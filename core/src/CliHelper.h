@@ -28,9 +28,8 @@ namespace odc
             static void addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout);
             static void addBatchOptions(boost::program_options::options_description& _options,
                                         std::vector<std::string>& _cmds,
-                                        bool& _batch);
-            static void addPartitionOptions(boost::program_options::options_description& _options,
-                                            std::vector<partitionID_t>& _partitions);
+                                        bool& _batch,
+                                        std::vector<partitionID_t>& _partitions);
 
             //
             // Request specific options

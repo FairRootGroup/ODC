@@ -39,30 +39,33 @@ void CCliHelper::addLogOptions(boost::program_options::options_description& _opt
 
 void CCliHelper::addBatchOptions(boost::program_options::options_description& _options,
                                  std::vector<std::string>& _cmds,
-                                 bool& _batch)
-{
-    _options.add_options()("batch", bpo::bool_switch(&_batch)->default_value(false), "Non interactive batch mode");
-
-    vector<string> defaultCmds{ ".init", ".submit",    ".activate", ".config", ".start", ".stop", ".upscale", ".start",
-                                ".stop", ".downscale", ".start",    ".stop",   ".reset", ".term", ".down",    ".quit" };
-    string defaultsStr{ boost::algorithm::join(defaultCmds, " ") };
-    _options.add_options()(
-        "cmds",
-        bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(defaultCmds, defaultsStr),
-        "Array of command to be executed in batch mode");
-}
-
-void CCliHelper::addPartitionOptions(boost::program_options::options_description& _options,
-                                     std::vector<partitionID_t>& _partitions)
+                                 bool& _batch,
+                                 std::vector<partitionID_t>& _partitions)
 {
     using boost::algorithm::join;
-    vector<partitionID_t> defaultPartitions{ "111" };
-    string defaultsStr{ boost::algorithm::join(defaultPartitions, " ") };
-    _options.add_options()("prts",
-                           bpo::value<std::vector<partitionID_t>>(&_partitions)
-                               ->multitoken()
-                               ->default_value(defaultPartitions, defaultsStr),
-                           "Array of partition IDs");
+
+    _options.add_options()("batch", bpo::bool_switch(&_batch)->default_value(false), "Non interactive batch mode");
+
+    string defaultUpTopo{ kODCDataDir + "/ex-dds-topology-infinite-up.xml" };
+    string defaultDownTopo{ kODCDataDir + "/ex-dds-topology-infinite-down.xml" };
+    string upCmd{ ".upscale --topo " + defaultUpTopo };
+    string downCmd{ ".downscale --topo " + defaultDownTopo };
+    vector<string> defaultCmds{ ".init", ".submit", ".activate", ".config", ".start", ".stop", upCmd,  ".start",
+                                ".stop", downCmd,   ".start",    ".stop",   ".reset", ".term", ".down" };
+    string defaultCmdsStr{ join(defaultCmds, " ") };
+    _options.add_options()(
+        "cmds",
+        bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(defaultCmds, defaultCmdsStr),
+        "Array of command to be executed in batch mode");
+
+    vector<partitionID_t> defaultPartitions{};
+    string defaultPartitionsStr{ join(defaultPartitions, " ") };
+    _options.add_options()(
+        "prts",
+        bpo::value<std::vector<partitionID_t>>(&_partitions)
+            ->multitoken()
+            ->default_value(defaultPartitions, defaultPartitionsStr),
+        "Array of partition IDs. If set than each command in batch mode will be executed for each partition.");
 }
 
 //

@@ -31,8 +31,7 @@ int main(int argc, char** argv)
         CCliHelper::addHelpOptions(options);
         CCliHelper::addHostOptions(options, host);
         CCliHelper::addLogOptions(options, logConfig);
-        CCliHelper::addBatchOptions(options, cmds, batch);
-        CCliHelper::addPartitionOptions(options, partitionIDs);
+        CCliHelper::addBatchOptions(options, cmds, batch, partitionIDs);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -56,8 +55,7 @@ int main(int argc, char** argv)
         }
 
         CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
-        control.setPartitionIDs(partitionIDs);
-        control.run((batch) ? cmds : vector<string>(), std::chrono::milliseconds(1000));
+        control.run((batch) ? cmds : vector<string>(), partitionIDs, std::chrono::milliseconds(1000));
     }
     catch (exception& _e)
     {

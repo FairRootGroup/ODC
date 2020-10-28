@@ -33,6 +33,7 @@ namespace odc
             /// \param[in] _cmds Array of requests. If empty than command line input is required.
             /// \param[in] _delay Delay between command execution.
             void run(const std::vector<std::string>& _cmds = std::vector<std::string>(),
+                     const std::vector<partitionID_t>& _partitionIDs = std::vector<partitionID_t>(),
                      const std::chrono::milliseconds& _delay = std::chrono::milliseconds(1000))
             {
                 printDescription();
@@ -45,14 +46,7 @@ namespace odc
                         std::string cmd;
                         OLOG(ESeverity::clean) << "Please enter command: ";
                         getline(std::cin, cmd);
-
-                        // TODO: FIXME: for testing purposes we loop over m_partitionIDs and send the same request to
-                        // different partitions. We need to find a better way to get a partition ID from CLI.
-                        for (auto v : m_partitionIDs)
-                        {
-                            std::string line{ cmd + " --id " + v };
-                            processRequest(line);
-                        }
+                        processRequest(cmd);
                     }
                 }
                 else
@@ -61,12 +55,17 @@ namespace odc
                     for (const auto& cmd : _cmds)
                     {
                         OLOG(ESeverity::clean) << "Executing command \"" << cmd << "\"";
-                        // TODO: FIXME: for testing purposes we loop over m_partitionIDs and send the same request to
-                        // different partitions. We need to find a better way to get a partition ID from CLI.
-                        for (auto v : m_partitionIDs)
+
+                        if (_partitionIDs.empty())
                         {
-                            std::string line{ cmd + " --id " + v };
-                            processRequest(line);
+                            processRequest(cmd);
+                        }
+                        else
+                        {
+                            for (auto v : _partitionIDs)
+                            {
+                                processRequest(cmd + " --id " + v);
+                            }
                         }
                         OLOG(ESeverity::clean) << "Waiting " << _delay.count() << " ms";
                         std::this_thread::sleep_for(_delay);
@@ -76,10 +75,6 @@ namespace odc
                 }
             }
 
-            void setPartitionIDs(const std::vector<partitionID_t>& _partitionIDs)
-            {
-                m_partitionIDs = _partitionIDs;
-            }
             void setTimeout(const std::chrono::seconds& _timeout)
             {
                 m_timeout = _timeout;
@@ -249,7 +244,6 @@ namespace odc
             }
 
           private:
-            std::vector<odc::core::partitionID_t> m_partitionIDs;
             std::chrono::seconds m_timeout; ///< Request timeout
         };
     } // namespace core
