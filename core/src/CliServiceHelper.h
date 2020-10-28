@@ -232,7 +232,12 @@ namespace odc
             void printDescription()
             {
                 OLOG(ESeverity::clean) << "Sample client for ODC service." << std::endl
-                                       << "Available commands:" << std::endl
+                                       << "Each command has a set of extra options. Use " << std::quoted("--help")
+                                       << " to list available options." << std::endl
+                                       << "For example, " << std::quoted(".activate --topo topo_file.xml")
+                                       << " command activates a topology " << std::quoted("topo_file.xml") << "."
+                                       << std::endl
+                                       << "List of available commands:" << std::endl
                                        << ".quit - Quit the program." << std::endl
                                        << ".init - Initialization request." << std::endl
                                        << ".submit - Submit request." << std::endl
@@ -241,12 +246,12 @@ namespace odc
                                        << ".prop - Set properties request." << std::endl
                                        << ".upscale - Upscale topology request." << std::endl
                                        << ".downscale - Downscale topology request." << std::endl
-                                       << ".state (all|reco|qc) - Get state request." << std::endl
-                                       << ".config (all|reco|qc) - Configure run request." << std::endl
-                                       << ".start (all|reco|qc) - Start request." << std::endl
-                                       << ".stop (all|reco|qc) - Stop request." << std::endl
-                                       << ".reset (all|reco|qc) - Reset request." << std::endl
-                                       << ".term (all|reco|qc) - Terminate request." << std::endl
+                                       << ".state - Get state request." << std::endl
+                                       << ".config - Configure run request." << std::endl
+                                       << ".start - Start request." << std::endl
+                                       << ".stop - Stop request." << std::endl
+                                       << ".reset - Reset request." << std::endl
+                                       << ".term - Terminate request." << std::endl
                                        << ".down - Shutdown request." << std::endl;
             }
 
