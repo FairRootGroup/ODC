@@ -42,7 +42,7 @@ namespace odc
             std::error_code m_code; ///< Error code
             std::string m_details;  ///< Details of the error
 
-            // \brief Ostream operator.
+            // \brief ostream operator.
             friend std::ostream& operator<<(std::ostream& _os, const SError& _error);
         };
 
@@ -137,6 +137,9 @@ namespace odc
             }
 
             std::string m_sessionID; ///< DDS session ID
+
+            // \brief ostream operator.
+            friend std::ostream& operator<<(std::ostream& _os, const SInitializeParams& _params);
         };
 
         /// \brief Structure holds configuration parameters of the submit request
@@ -160,6 +163,9 @@ namespace odc
             std::string m_configFile; ///< Path to the configuration file of the RMS plugin
             size_t m_numAgents{ 0 };  ///< Number of DDS agents
             size_t m_numSlots{ 0 };   ///< Number of slots per DDS agent
+
+            // \brief ostream operator.
+            friend std::ostream& operator<<(std::ostream& _os, const SSubmitParams& _params);
         };
 
         /// \brief Structure holds configuration parameters of the activate topology request
@@ -174,6 +180,9 @@ namespace odc
             {
             }
             std::string m_topologyFile; ///< Path to the topoloy file
+
+            // \brief ostream operator.
+            friend std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params);
         };
 
         /// \brief Structure holds configuration parameters of the updatetopology request
@@ -188,6 +197,9 @@ namespace odc
             {
             }
             std::string m_topologyFile; ///< Path to the topoloy file
+
+            // \brief ostream operator.
+            friend std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params);
         };
 
         /// \brief Structure holds configuaration parameters of the SetProperties request
@@ -207,6 +219,9 @@ namespace odc
             }
             std::string m_path;        ///< Path in the topology
             Properties_t m_properties; ///< List of device configuration properties
+
+            // \brief ostream operator.
+            friend std::ostream& operator<<(std::ostream& _os, const SSetPropertiesParams& _params);
         };
 
         /// \brief Structure holds device state params used in FairMQ device state chenge requests.
@@ -223,6 +238,9 @@ namespace odc
             }
             std::string m_path;       ///< Path to the topoloy file
             bool m_detailed{ false }; ///< If True than return also detailed information
+
+            // \brief ostream operator.
+            friend std::ostream& operator<<(std::ostream& _os, const SDeviceParams& _params);
         };
 
         class CControlService

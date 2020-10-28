@@ -54,7 +54,7 @@ namespace odc
                     // Execute consequently all commands
                     for (const auto& cmd : _cmds)
                     {
-                        OLOG(ESeverity::clean) << "Executing command \"" << cmd << "\"";
+                        OLOG(ESeverity::clean) << "Executing command " << std::quoted(cmd);
 
                         if (_partitionIDs.empty())
                         {
@@ -118,6 +118,12 @@ namespace odc
                 return true;
             }
 
+            template <typename T>
+            void print(const T& _value)
+            {
+                OLOG(ESeverity::clean) << _value;
+            }
+
             template <typename... RequestParams_t, typename StubFunc_t>
             std::string request(const std::string& _msg, const std::vector<std::string>& _args, StubFunc_t _stubFunc)
             {
@@ -129,6 +135,7 @@ namespace odc
                         if (parseCommand(_args, partitionID, params...))
                         {
                             OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: " << _msg;
+                            std::apply([this](auto&&... args) { ((print(args)), ...); }, std::tie(params...));
                             OwnerT* p = reinterpret_cast<OwnerT*>(this);
                             result = (p->*_stubFunc)(partitionID, params...);
                         }

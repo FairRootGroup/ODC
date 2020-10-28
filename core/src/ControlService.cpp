@@ -968,6 +968,43 @@ namespace odc
         {
             return _os << _error.m_code << " (" << _error.m_details << ")";
         }
+
+        std::ostream& operator<<(std::ostream& _os, const SInitializeParams& _params)
+        {
+            return _os << "InitilizeParams: sid=" << quoted(_params.m_sessionID);
+        }
+
+        std::ostream& operator<<(std::ostream& _os, const SSubmitParams& _params)
+        {
+            return _os << "SubmitParams: rmsPlugin=" << quoted(_params.m_rmsPlugin)
+                       << "; numAgents=" << _params.m_numAgents << "; numSlots=" << _params.m_numSlots
+                       << "; configFile=" << quoted(_params.m_configFile);
+        }
+
+        std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params)
+        {
+            return _os << "ActivateParams: topologyFile=" << quoted(_params.m_topologyFile);
+        }
+
+        std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params)
+        {
+            return _os << "UpdateParams: topologyFile=" << quoted(_params.m_topologyFile);
+        }
+
+        std::ostream& operator<<(std::ostream& _os, const SSetPropertiesParams& _params)
+        {
+            _os << "SetPropertiesParams: path=" << quoted(_params.m_path) << "; properties={";
+            for (const auto& v : _params.m_properties)
+            {
+                _os << " (" << v.first << ":" << v.second << ") ";
+            }
+            return _os << "}";
+        }
+
+        std::ostream& operator<<(std::ostream& _os, const SDeviceParams& _params)
+        {
+            return _os << "DeviceParams: path=" << quoted(_params.m_path) << "; detailed=" << _params.m_detailed;
+        }
     } // namespace core
 } // namespace odc
 //
