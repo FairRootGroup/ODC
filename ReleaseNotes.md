@@ -1,6 +1,9 @@
 # ODC Release Notes
 
-## v0.12 (NOT YET RELEASED)
+## v0.14 (NOT YET RELEASED)
+
+
+## v0.12 (2020-11-17)
 ### ODC common
 Modified: new C++ standard requirement - C++17.    
 Added: new Commnad Line Interface of  `odc-cli-server` and `odc-grpc-client`. New interface was adapted for the multi-partition case: each request containes now a list of command line options.    
