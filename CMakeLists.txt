@@ -19,6 +19,10 @@ message(STATUS "Building ${PROJECT_NAME} ${PROJECT_VERSION} ...")
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
 option(BUILD_TESTS "Build ODC unit tests" ON)
+option(BUILD_GRPC_CLIENT "Build gRPC client of ODC" ON)
+option(BUILD_GRPC_SERVER "Build gRPC server of ODC" ON)
+option(BUILD_CLI_SERVER "Build CLI server of ODC" ON)
+option(BUILD_EXAMPLES "Build ODC examples" ON)
 
 # Define CMAKE_INSTALL_*DIR variables
 include(GNUInstallDirs)
@@ -36,13 +40,15 @@ set(BUILD_SHARED_LIBS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Find Protobuf installation
-find_package(Protobuf)
-message(STATUS "Using protobuf ${Protobuf_VERSION}")
+if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
+    # Find Protobuf installation
+    find_package(Protobuf REQUIRED)
+    message(STATUS "Using protobuf ${Protobuf_VERSION}")
 
-# Find gRPC installation
-find_package(gRPC)
-message(STATUS "Using gRPC ${GRPC_VERSION}")
+    # Find gRPC installation
+    find_package(gRPC REQUIRED)
+    message(STATUS "Using gRPC ${GRPC_VERSION}")
+endif()
 
 # Find DDS installation
 find_package(DDS 3.5.3 CONFIG REQUIRED)
@@ -92,31 +98,31 @@ add_custom_target(format-code
 
 # Targets
 add_subdirectory(core)
-if(gRPC_FOUND)
+if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
    add_subdirectory(grpc-proto)
+endif()
+if(BUILD_GRPC_SERVER)
    add_subdirectory(grpc-server)
+endif()
+if(BUILD_GRPC_CLIENT)
    add_subdirectory(grpc-client)
 endif()
-add_subdirectory(cli-server)
-add_subdirectory(examples)
+if(BUILD_CLI_SERVER)
+   add_subdirectory(cli-server)
+endif()
+if(BUILD_EXAMPLES)
+   add_subdirectory(examples)
+endif()
 if(BUILD_TESTS)
-    add_subdirectory(tests)
-endif(BUILD_TESTS)
+   add_subdirectory(tests)
+endif()
 
-#
 # Install
-#
 SET(ODC_DOC_FILES
     ${CMAKE_SOURCE_DIR}/LICENSE
     ${CMAKE_SOURCE_DIR}/ReleaseNotes.md
 )
 install(FILES ${ODC_DOC_FILES} DESTINATION ${PROJECT_INSTALL_DOCDIR})
-
-if(gRPC_FOUND)
-   install(TARGETS odc-grpc-server odc-grpc-client EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
-endif()
-install(TARGETS odc_core_lib EXPORT ${PROJECT_NAME}Targets LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR})
-install(TARGETS odc-cli-server EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 
 # Daemon config
 if(APPLE)

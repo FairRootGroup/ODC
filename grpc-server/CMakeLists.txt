@@ -21,3 +21,4 @@ target_include_directories(odc-grpc-server PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
     "${GRPC_INCLUDE_DIR}"
 )
+install(TARGETS odc-grpc-server EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
