@@ -56,9 +56,15 @@ make install
 
 If dependencies are not installed in standard system directories, you can hint the installation location via `-DCMAKE_PREFIX_PATH=...` or per dependency via `-D{DEPENDENCY}_ROOT=...`. `{DEPENDENCY}` can be `BOOST`, `DDS`, `Protobuf`, `gRPC`, `FairMQ`, `FairLogger` (`*_ROOT` variables can also be environment variables).
 
+In order to build without `Protobuf` and `gRPC` dependencies one has to explicitly disable building of `odc-grpc-server` and `odc-grpc-client` via `cmake` command line options `-DBUILD_GRPC_CLIENT=OFF` and `-DBUILD_GRPC_SERVER=OFF`.
+
 ### CMake command line options
 
   * `-DBUILD_TESTS=OFF` disables building of tests.
+  * `-DBUILD_GRPC_CLIENT=OFF` disables building of gRPC client.
+  * `-DBUILD_GRPC_SERVER=OFF` disables building of gRPC server.
+  * `-DBUILD_CLI_SERVER=OFF` disables building of CLI server.
+  * `-DBUILD_EXAMPLES=OFF` disables building of examples.
 
 ## Installation with aliBuild
 
