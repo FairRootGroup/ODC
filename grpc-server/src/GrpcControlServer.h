@@ -10,24 +10,21 @@
 // ODC
 #include "GrpcControlService.h"
 
-namespace odc
+namespace odc::grpc
 {
-    namespace grpc
+    class CGrpcControlServer final
     {
-        class CGrpcControlServer final
-        {
-          public:
-            CGrpcControlServer();
+      public:
+        CGrpcControlServer();
 
-            void Run(const std::string& _host);
+        void Run(const std::string& _host);
 
-            void setTimeout(const std::chrono::seconds& _timeout);
-            void setSubmitParams(const odc::core::SSubmitParams& _params);
+        void setTimeout(const std::chrono::seconds& _timeout);
+        void setSubmitParams(const odc::core::SSubmitParams& _params);
 
-          private:
-            std::shared_ptr<CGrpcControlService> m_service; ///< Service for request processing
-        };
-    } // namespace grpc
-} // namespace odc
+      private:
+        std::shared_ptr<CGrpcControlService> m_service; ///< Service for request processing
+    };
+} // namespace odc::grpc
 
 #endif /* defined(__ODC__GrpcControlServer__) */

@@ -7,14 +7,11 @@
 
 #include <string>
 
-namespace odc
+namespace odc::core
 {
-    namespace core
-    {
-        const std::string kBuildFairMQBinDir = "@FairMQ_BINDIR@";
-        const std::string kBuildFairMQDataDir = "@FairMQ_DATADIR@";
-        const std::string kODCDataDir = "@ODC_DATADIR@";
-    } // namespace core
-} // namespace odc
+    const std::string kBuildFairMQBinDir = "@FairMQ_BINDIR@";
+    const std::string kBuildFairMQDataDir = "@FairMQ_DATADIR@";
+    const std::string kODCDataDir = "@ODC_DATADIR@";
+} // namespace odc::core
 
 #endif /*__ODC__BuildConstants__*/

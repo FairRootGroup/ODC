@@ -8,38 +8,35 @@
 // STD
 #include <system_error>
 
-namespace odc
+namespace odc::core
 {
-    namespace core
+    enum class ErrorCode
     {
-        enum class ErrorCode
-        {
-            RequestNotSupported = 100,
-            RequestTimeout,
+        RequestNotSupported = 100,
+        RequestTimeout,
 
-            DDSCreateSessionFailed = 200,
-            DDSShutdownSessionFailed,
-            DDSAttachToSessionFailed,
-            DDSCreateTopologyFailed,
-            DDSCommanderInfoFailed,
-            DDSSubmitAgentsFailed,
-            DDSActivateTopologyFailed,
+        DDSCreateSessionFailed = 200,
+        DDSShutdownSessionFailed,
+        DDSAttachToSessionFailed,
+        DDSCreateTopologyFailed,
+        DDSCommanderInfoFailed,
+        DDSSubmitAgentsFailed,
+        DDSActivateTopologyFailed,
 
-            FairMQCreateTopologyFailed = 300,
-            FairMQChangeStateFailed,
-            FairMQGetStateFailed,
-            FairMQSetPropertiesFailed
-        };
+        FairMQCreateTopologyFailed = 300,
+        FairMQChangeStateFailed,
+        FairMQGetStateFailed,
+        FairMQSetPropertiesFailed
+    };
 
-        struct ErrorCategory : std::error_category
-        {
-            const char* name() const noexcept override;
-            std::string message(int _condition) const override;
-        };
+    struct ErrorCategory : std::error_category
+    {
+        const char* name() const noexcept override;
+        std::string message(int _condition) const override;
+    };
 
-        std::error_code MakeErrorCode(ErrorCode);
-    } // namespace core
-} // namespace odc
+    std::error_code MakeErrorCode(ErrorCode);
+} // namespace odc::core
 
 namespace std
 {

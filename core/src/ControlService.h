@@ -12,292 +12,289 @@
 // FairMQ
 #include <fairmq/sdk/Topology.h>
 
-namespace odc
+namespace odc::core
 {
-    namespace core
+    using partitionID_t = std::string;
+
+    /// \brief Return status code of request
+    enum EStatusCode
     {
-        using partitionID_t = std::string;
+        unknown = 0,
+        ok,
+        error
+    };
 
-        /// \brief Return status code of request
-        enum EStatusCode
+    /// \brief General error
+    struct SError
+    {
+        SError()
         {
-            unknown = 0,
-            ok,
-            error
-        };
+        }
 
-        /// \brief General error
-        struct SError
+        SError(std::error_code _code, const std::string& _details)
+            : m_code(_code)
+            , m_details(_details)
         {
-            SError()
-            {
-            }
+        }
 
-            SError(std::error_code _code, const std::string& _details)
-                : m_code(_code)
-                , m_details(_details)
-            {
-            }
+        std::error_code m_code; ///< Error code
+        std::string m_details;  ///< Details of the error
 
-            std::error_code m_code; ///< Error code
-            std::string m_details;  ///< Details of the error
+        // \brief ostream operator.
+        friend std::ostream& operator<<(std::ostream& _os, const SError& _error);
+    };
 
-            // \brief ostream operator.
-            friend std::ostream& operator<<(std::ostream& _os, const SError& _error);
-        };
+    /// \brief Holds device status of detailed output
+    struct SDeviceStatus
+    {
+        using container_t = std::vector<SDeviceStatus>;
 
-        /// \brief Holds device status of detailed output
-        struct SDeviceStatus
+        SDeviceStatus()
         {
-            using container_t = std::vector<SDeviceStatus>;
+        }
 
-            SDeviceStatus()
-            {
-            }
-
-            SDeviceStatus(const fair::mq::sdk::DeviceStatus& _status, const std::string& _path)
-                : m_status(_status)
-                , m_path(_path)
-            {
-            }
-
-            fair::mq::sdk::DeviceStatus m_status;
-            std::string m_path;
-        };
-
-        /// \brief Aggregated topology state
-        using TopologyState = SDeviceStatus::container_t;
-
-        struct SReturnDetails
+        SDeviceStatus(const fair::mq::sdk::DeviceStatus& _status, const std::string& _path)
+            : m_status(_status)
+            , m_path(_path)
         {
-            using ptr_t = std::shared_ptr<SReturnDetails>;
+        }
 
-            SReturnDetails()
-            {
-            }
+        fair::mq::sdk::DeviceStatus m_status;
+        std::string m_path;
+    };
 
-            SReturnDetails(const TopologyState& _topologyState)
-                : m_topologyState(_topologyState)
-            {
-            }
+    /// \brief Aggregated topology state
+    using TopologyState = SDeviceStatus::container_t;
 
-            TopologyState m_topologyState; ///< FairMQ aggregated topology state
-        };
+    struct SReturnDetails
+    {
+        using ptr_t = std::shared_ptr<SReturnDetails>;
 
-        /// \brief Structure holds return value of the request
-        struct SReturnValue
+        SReturnDetails()
         {
-            SReturnValue()
-            {
-            }
+        }
 
-            SReturnValue(EStatusCode _statusCode,
-                         const std::string& _msg,
-                         size_t _execTime,
-                         const SError& _error,
-                         const partitionID_t& _partitionID,
-                         const std::string& _sessionID,
-                         fair::mq::sdk::AggregatedTopologyState _aggregatedState,
-                         SReturnDetails::ptr_t _details = nullptr)
-                : m_statusCode(_statusCode)
-                , m_msg(_msg)
-                , m_execTime(_execTime)
-                , m_error(_error)
-                , m_partitionID(_partitionID)
-                , m_sessionID(_sessionID)
-                , m_aggregatedState(_aggregatedState)
-                , m_details(_details)
-            {
-            }
-
-            EStatusCode m_statusCode{ EStatusCode::unknown }; ///< Operation status code
-            std::string m_msg;                                ///< General message about the status
-            size_t m_execTime{ 0 };                           ///< Execution time in milliseconds
-            SError m_error;              ///< In case of error containes information about the error
-            partitionID_t m_partitionID; ///< Partition ID
-            std::string m_sessionID;     ///< Session ID of DDS
-            fair::mq::sdk::AggregatedTopologyState m_aggregatedState{
-                fair::mq::sdk::AggregatedTopologyState::Undefined
-            }; ///< Aggregated state of the affected divices
-
-            // Optional parameters
-            SReturnDetails::ptr_t m_details; ///< Details of the return value. Stored only if requested.
-        };
-
-        /// \brief Structure holds configuration parameters of the Initiaalize request
-        struct SInitializeParams
+        SReturnDetails(const TopologyState& _topologyState)
+            : m_topologyState(_topologyState)
         {
-            SInitializeParams()
-            {
-            }
+        }
 
-            SInitializeParams(const std::string& _sessionID)
-                : m_sessionID(_sessionID)
-            {
-            }
+        TopologyState m_topologyState; ///< FairMQ aggregated topology state
+    };
 
-            std::string m_sessionID; ///< DDS session ID
-
-            // \brief ostream operator.
-            friend std::ostream& operator<<(std::ostream& _os, const SInitializeParams& _params);
-        };
-
-        /// \brief Structure holds configuration parameters of the submit request
-        struct SSubmitParams
+    /// \brief Structure holds return value of the request
+    struct SReturnValue
+    {
+        SReturnValue()
         {
-            SSubmitParams()
-            {
-            }
+        }
 
-            SSubmitParams(const std::string& _rmsPlugin,
-                          const std::string& _configFile,
-                          size_t _numAgents,
-                          size_t _numSlots)
-                : m_rmsPlugin(_rmsPlugin)
-                , m_configFile(_configFile)
-                , m_numAgents(_numAgents)
-                , m_numSlots(_numSlots)
-            {
-            }
-            std::string m_rmsPlugin;  ///< RMS plugin of DDS
-            std::string m_configFile; ///< Path to the configuration file of the RMS plugin
-            size_t m_numAgents{ 0 };  ///< Number of DDS agents
-            size_t m_numSlots{ 0 };   ///< Number of slots per DDS agent
-
-            // \brief ostream operator.
-            friend std::ostream& operator<<(std::ostream& _os, const SSubmitParams& _params);
-        };
-
-        /// \brief Structure holds configuration parameters of the activate topology request
-        struct SActivateParams
+        SReturnValue(EStatusCode _statusCode,
+                     const std::string& _msg,
+                     size_t _execTime,
+                     const SError& _error,
+                     const partitionID_t& _partitionID,
+                     const std::string& _sessionID,
+                     fair::mq::sdk::AggregatedTopologyState _aggregatedState,
+                     SReturnDetails::ptr_t _details = nullptr)
+            : m_statusCode(_statusCode)
+            , m_msg(_msg)
+            , m_execTime(_execTime)
+            , m_error(_error)
+            , m_partitionID(_partitionID)
+            , m_sessionID(_sessionID)
+            , m_aggregatedState(_aggregatedState)
+            , m_details(_details)
         {
-            SActivateParams()
-            {
-            }
+        }
 
-            SActivateParams(const std::string& _topologyFile)
-                : m_topologyFile(_topologyFile)
-            {
-            }
-            std::string m_topologyFile; ///< Path to the topoloy file
+        EStatusCode m_statusCode{ EStatusCode::unknown }; ///< Operation status code
+        std::string m_msg;                                ///< General message about the status
+        size_t m_execTime{ 0 };                           ///< Execution time in milliseconds
+        SError m_error;                                   ///< In case of error containes information about the error
+        partitionID_t m_partitionID;                      ///< Partition ID
+        std::string m_sessionID;                          ///< Session ID of DDS
+        fair::mq::sdk::AggregatedTopologyState m_aggregatedState{
+            fair::mq::sdk::AggregatedTopologyState::Undefined
+        }; ///< Aggregated state of the affected divices
 
-            // \brief ostream operator.
-            friend std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params);
-        };
+        // Optional parameters
+        SReturnDetails::ptr_t m_details; ///< Details of the return value. Stored only if requested.
+    };
 
-        /// \brief Structure holds configuration parameters of the updatetopology request
-        struct SUpdateParams
+    /// \brief Structure holds configuration parameters of the Initiaalize request
+    struct SInitializeParams
+    {
+        SInitializeParams()
         {
-            SUpdateParams()
-            {
-            }
+        }
 
-            SUpdateParams(const std::string& _topologyFile)
-                : m_topologyFile(_topologyFile)
-            {
-            }
-            std::string m_topologyFile; ///< Path to the topoloy file
-
-            // \brief ostream operator.
-            friend std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params);
-        };
-
-        /// \brief Structure holds configuaration parameters of the SetProperties request
-        struct SSetPropertiesParams
+        SInitializeParams(const std::string& _sessionID)
+            : m_sessionID(_sessionID)
         {
-            using Property_t = std::pair<std::string, std::string>;
-            using Properties_t = std::vector<Property_t>;
+        }
 
-            SSetPropertiesParams()
-            {
-            }
+        std::string m_sessionID; ///< DDS session ID
 
-            SSetPropertiesParams(const Properties_t& _properties, const std::string& _path)
-                : m_path(_path)
-                , m_properties(_properties)
-            {
-            }
-            std::string m_path;        ///< Path in the topology
-            Properties_t m_properties; ///< List of device configuration properties
+        // \brief ostream operator.
+        friend std::ostream& operator<<(std::ostream& _os, const SInitializeParams& _params);
+    };
 
-            // \brief ostream operator.
-            friend std::ostream& operator<<(std::ostream& _os, const SSetPropertiesParams& _params);
-        };
-
-        /// \brief Structure holds device state params used in FairMQ device state chenge requests.
-        struct SDeviceParams
+    /// \brief Structure holds configuration parameters of the submit request
+    struct SSubmitParams
+    {
+        SSubmitParams()
         {
-            SDeviceParams()
-            {
-            }
+        }
 
-            SDeviceParams(const std::string& _path, bool _detailed)
-                : m_path(_path)
-                , m_detailed(_detailed)
-            {
-            }
-            std::string m_path;       ///< Path to the topoloy file
-            bool m_detailed{ false }; ///< If True than return also detailed information
-
-            // \brief ostream operator.
-            friend std::ostream& operator<<(std::ostream& _os, const SDeviceParams& _params);
-        };
-
-        class CControlService
+        SSubmitParams(const std::string& _rmsPlugin,
+                      const std::string& _configFile,
+                      size_t _numAgents,
+                      size_t _numSlots)
+            : m_rmsPlugin(_rmsPlugin)
+            , m_configFile(_configFile)
+            , m_numAgents(_numAgents)
+            , m_numSlots(_numSlots)
         {
-          public:
-            /// \brief Default constructor
-            CControlService();
+        }
+        std::string m_rmsPlugin;  ///< RMS plugin of DDS
+        std::string m_configFile; ///< Path to the configuration file of the RMS plugin
+        size_t m_numAgents{ 0 };  ///< Number of DDS agents
+        size_t m_numSlots{ 0 };   ///< Number of slots per DDS agent
 
-            /// \brief Set timeout of requests
-            /// \param [in] _timeout Timeout in seconds
-            void setTimeout(const std::chrono::seconds& _timeout);
+        // \brief ostream operator.
+        friend std::ostream& operator<<(std::ostream& _os, const SSubmitParams& _params);
+    };
 
-            //
-            // DDS topology and session requests
-            //
+    /// \brief Structure holds configuration parameters of the activate topology request
+    struct SActivateParams
+    {
+        SActivateParams()
+        {
+        }
 
-            /// \brief Initialize DDS session
-            SReturnValue execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params);
-            /// \brief Submit DDS agents. Can be called multiple times in order to submit more agents.
-            SReturnValue execSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params);
-            /// \brief Activate topology
-            SReturnValue execActivate(const partitionID_t& _partitionID, const SActivateParams& _params);
-            /// \brief Run request combines Initialize, Submit and Activate
-            SReturnValue execRun(const partitionID_t& _partitionID,
-                                 const SInitializeParams& _initializeParams,
-                                 const SSubmitParams& _submitParams,
-                                 const SActivateParams& _activateParams);
-            /// \brief Update topology. Can be called multiple times in order to update topology.
-            SReturnValue execUpdate(const partitionID_t& _partitionID, const SUpdateParams& _params);
-            /// \brief Shutdown DDS session
-            SReturnValue execShutdown(const partitionID_t& _partitionID);
+        SActivateParams(const std::string& _topologyFile)
+            : m_topologyFile(_topologyFile)
+        {
+        }
+        std::string m_topologyFile; ///< Path to the topoloy file
 
-            /// \brief Set properties
-            SReturnValue execSetProperties(const partitionID_t& _partitionID, const SSetPropertiesParams& _params);
-            /// \brief Get state
-            SReturnValue execGetState(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        // \brief ostream operator.
+        friend std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params);
+    };
 
-            //
-            // FairMQ device change state requests
-            //
+    /// \brief Structure holds configuration parameters of the updatetopology request
+    struct SUpdateParams
+    {
+        SUpdateParams()
+        {
+        }
 
-            /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
-            SReturnValue execConfigure(const partitionID_t& _partitionID, const SDeviceParams& _params);
-            /// \brief Start devices: Run
-            SReturnValue execStart(const partitionID_t& _partitionID, const SDeviceParams& _params);
-            /// \brief Stop devices: Stop
-            SReturnValue execStop(const partitionID_t& _partitionID, const SDeviceParams& _params);
-            /// \brief Reset devices: ResetTask->ResetDevice
-            SReturnValue execReset(const partitionID_t& _partitionID, const SDeviceParams& _params);
-            /// \brief Terminate devices: End
-            SReturnValue execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        SUpdateParams(const std::string& _topologyFile)
+            : m_topologyFile(_topologyFile)
+        {
+        }
+        std::string m_topologyFile; ///< Path to the topoloy file
 
-          private:
-            struct SImpl;
-            std::shared_ptr<SImpl> m_impl;
-        };
-    } // namespace core
-} // namespace odc
+        // \brief ostream operator.
+        friend std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params);
+    };
+
+    /// \brief Structure holds configuaration parameters of the SetProperties request
+    struct SSetPropertiesParams
+    {
+        using Property_t = std::pair<std::string, std::string>;
+        using Properties_t = std::vector<Property_t>;
+
+        SSetPropertiesParams()
+        {
+        }
+
+        SSetPropertiesParams(const Properties_t& _properties, const std::string& _path)
+            : m_path(_path)
+            , m_properties(_properties)
+        {
+        }
+        std::string m_path;        ///< Path in the topology
+        Properties_t m_properties; ///< List of device configuration properties
+
+        // \brief ostream operator.
+        friend std::ostream& operator<<(std::ostream& _os, const SSetPropertiesParams& _params);
+    };
+
+    /// \brief Structure holds device state params used in FairMQ device state chenge requests.
+    struct SDeviceParams
+    {
+        SDeviceParams()
+        {
+        }
+
+        SDeviceParams(const std::string& _path, bool _detailed)
+            : m_path(_path)
+            , m_detailed(_detailed)
+        {
+        }
+        std::string m_path;       ///< Path to the topoloy file
+        bool m_detailed{ false }; ///< If True than return also detailed information
+
+        // \brief ostream operator.
+        friend std::ostream& operator<<(std::ostream& _os, const SDeviceParams& _params);
+    };
+
+    class CControlService
+    {
+      public:
+        /// \brief Default constructor
+        CControlService();
+
+        /// \brief Set timeout of requests
+        /// \param [in] _timeout Timeout in seconds
+        void setTimeout(const std::chrono::seconds& _timeout);
+
+        //
+        // DDS topology and session requests
+        //
+
+        /// \brief Initialize DDS session
+        SReturnValue execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params);
+        /// \brief Submit DDS agents. Can be called multiple times in order to submit more agents.
+        SReturnValue execSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params);
+        /// \brief Activate topology
+        SReturnValue execActivate(const partitionID_t& _partitionID, const SActivateParams& _params);
+        /// \brief Run request combines Initialize, Submit and Activate
+        SReturnValue execRun(const partitionID_t& _partitionID,
+                             const SInitializeParams& _initializeParams,
+                             const SSubmitParams& _submitParams,
+                             const SActivateParams& _activateParams);
+        /// \brief Update topology. Can be called multiple times in order to update topology.
+        SReturnValue execUpdate(const partitionID_t& _partitionID, const SUpdateParams& _params);
+        /// \brief Shutdown DDS session
+        SReturnValue execShutdown(const partitionID_t& _partitionID);
+
+        /// \brief Set properties
+        SReturnValue execSetProperties(const partitionID_t& _partitionID, const SSetPropertiesParams& _params);
+        /// \brief Get state
+        SReturnValue execGetState(const partitionID_t& _partitionID, const SDeviceParams& _params);
+
+        //
+        // FairMQ device change state requests
+        //
+
+        /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
+        SReturnValue execConfigure(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        /// \brief Start devices: Run
+        SReturnValue execStart(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        /// \brief Stop devices: Stop
+        SReturnValue execStop(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        /// \brief Reset devices: ResetTask->ResetDevice
+        SReturnValue execReset(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        /// \brief Terminate devices: End
+        SReturnValue execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params);
+
+      private:
+        struct SImpl;
+        std::shared_ptr<SImpl> m_impl;
+    };
+} // namespace odc::core
 
 #endif /* defined(__ODC__ControlService__) */
