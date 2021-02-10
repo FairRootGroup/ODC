@@ -7,6 +7,7 @@
 #include "CliHelper.h"
 #include "GrpcControlClient.h"
 #include "Logger.h"
+#include "Version.h"
 // BOOST
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -29,6 +30,7 @@ int main(int argc, char** argv)
         // Generic options
         bpo::options_description options("grpc-client options");
         CCliHelper::addHelpOptions(options);
+        CCliHelper::addVersionOptions(options);
         CCliHelper::addHostOptions(options, host);
         CCliHelper::addLogOptions(options, logConfig);
         CCliHelper::addBatchOptions(options, cmds, batch, partitionIDs);
@@ -51,6 +53,12 @@ int main(int argc, char** argv)
         if (vm.count("help"))
         {
             OLOG(ESeverity::clean) << options;
+            return EXIT_SUCCESS;
+        }
+
+        if (vm.count("version"))
+        {
+            OLOG(ESeverity::clean) << ODC_VERSION;
             return EXIT_SUCCESS;
         }
 

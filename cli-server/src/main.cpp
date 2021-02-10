@@ -7,6 +7,7 @@
 #include "CliControlService.h"
 #include "CliHelper.h"
 #include "Logger.h"
+#include "Version.h"
 // STD
 #include <chrono>
 #include <cstdlib>
@@ -35,6 +36,7 @@ int main(int argc, char** argv)
         // Generic options
         bpo::options_description options("odc-cli-server options");
         CCliHelper::addHelpOptions(options);
+        CCliHelper::addVersionOptions(options);
         CCliHelper::addTimeoutOptions(options, timeout);
         CCliHelper::addLogOptions(options, logConfig);
         CCliHelper::addBatchOptions(options, cmds, batch, partitionIDs);
@@ -57,6 +59,12 @@ int main(int argc, char** argv)
         if (vm.count("help"))
         {
             OLOG(ESeverity::clean) << options;
+            return EXIT_SUCCESS;
+        }
+
+        if (vm.count("version"))
+        {
+            OLOG(ESeverity::clean) << ODC_VERSION;
             return EXIT_SUCCESS;
         }
 

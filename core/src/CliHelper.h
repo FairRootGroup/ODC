@@ -21,6 +21,7 @@ namespace odc::core
         // Generic options
         //
         static void addHelpOptions(boost::program_options::options_description& _options);
+        static void addVersionOptions(boost::program_options::options_description& _options);
         static void addHostOptions(boost::program_options::options_description& _options, std::string& _host);
         static void addLogOptions(boost::program_options::options_description& _options, CLogger::SConfig& _config);
         static void addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout);

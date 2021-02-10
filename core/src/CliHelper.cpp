@@ -20,6 +20,11 @@ void CCliHelper::addHelpOptions(boost::program_options::options_description& _op
     _options.add_options()("help,h", "Produce help message");
 }
 
+void CCliHelper::addVersionOptions(boost::program_options::options_description& _options)
+{
+    _options.add_options()("version,v", "Print version");
+}
+
 void CCliHelper::addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout)
 {
     _options.add_options()("timeout", bpo::value<size_t>(&_timeout)->default_value(30), "Timeout of requests in sec");

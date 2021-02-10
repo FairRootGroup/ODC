@@ -8,6 +8,7 @@
 #include "GrpcControlServer.h"
 #include "GrpcControlService.h"
 #include "Logger.h"
+#include "Version.h"
 // STD
 #include <cstdlib>
 #include <iostream>
@@ -33,7 +34,8 @@ int main(int argc, char** argv)
 
         // Generic options
         bpo::options_description options("dds-control-server options");
-        options.add_options()("help,h", "Produce help message");
+        CCliHelper::addHelpOptions(options);
+        CCliHelper::addVersionOptions(options);
         CCliHelper::addTimeoutOptions(options, timeout);
         CCliHelper::addHostOptions(options, host);
         CCliHelper::addOptions(options, submitParams);
@@ -57,6 +59,12 @@ int main(int argc, char** argv)
         if (vm.count("help"))
         {
             OLOG(ESeverity::clean) << options;
+            return EXIT_SUCCESS;
+        }
+
+        if (vm.count("version"))
+        {
+            OLOG(ESeverity::clean) << ODC_VERSION;
             return EXIT_SUCCESS;
         }
 

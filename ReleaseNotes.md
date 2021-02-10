@@ -3,6 +3,7 @@
 ## v0.14 (NOT YET RELEASED)
 ### ODC common
 Added: new CMake build options: `BUILD_GRPC_CLIENT`, `BUILD_GRPC_SERVER`, `BUILD_CLI_SERVER`, `BUILD_EXAMPLES`. In order to build without `Protobuf` and `gRPC` dependencies one has to explicitly disable building of `odc-grpc-server` and `odc-grpc-client` via `cmake` command line options `-DBUILD_GRPC_CLIENT=OFF` and `-DBUILD_GRPC_SERVER=OFF`.    
+Added: `--version` argument for all executables.    
 
 
 ## v0.12 (2020-11-17)
