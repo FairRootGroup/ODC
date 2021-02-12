@@ -14,6 +14,7 @@ namespace odc::core
     {
         RequestNotSupported = 100,
         RequestTimeout,
+        ResourcePluginFailed,
 
         DDSCreateSessionFailed = 200,
         DDSShutdownSessionFailed,

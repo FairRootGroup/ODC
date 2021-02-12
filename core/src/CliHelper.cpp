@@ -104,16 +104,14 @@ void CCliHelper::addOptions(bpo::options_description& _options, SUpdateParams& _
 
 void CCliHelper::addOptions(bpo::options_description& _options, SSubmitParams& _params)
 {
-    _options.add_options()("rms,r",
-                           bpo::value<string>(&_params.m_rmsPlugin)->default_value("localhost"),
-                           "Defines a destination resource management system plug-in.");
-    _options.add_options()("config,c",
-                           bpo::value<string>(&_params.m_configFile)->default_value(""),
-                           "A plug-in's configuration file. It can be used to provide additional RMS options");
     _options.add_options()(
-        "agents", bpo::value<size_t>(&_params.m_numAgents)->default_value(1), "Number of DDS agents");
+        "plugin,p", bpo::value<string>(&_params.m_plugin)->default_value("odc-same"), "ODC resource plugin name.");
     _options.add_options()(
-        "slots", bpo::value<size_t>(&_params.m_numSlots)->default_value(36), "Number of slots per DDS agent");
+        "resources,r",
+        bpo::value<string>(&_params.m_resources)
+            ->default_value(
+                "<res><rms>localhost</rms><agents>1</agents><slots>36</slots><requiredSlots>36</requiredSlots></res>"),
+        "A resource description for a corresponding ODC resource plugin.");
 }
 
 void CCliHelper::addOptions(boost::program_options::options_description& _options, SDeviceParams& _params)

@@ -24,12 +24,15 @@ add_library(odc_core_lib
     "src/Error.h"
     "src/Error.cpp"
     "src/MiscUtils.h"
+    "src/DDSSubmit.h"
+    "src/DDSSubmit.cpp"
 )
 target_link_libraries(odc_core_lib
   DDS::dds_topology_lib
   DDS::dds_intercom_lib
   DDS::dds_tools_lib
   Boost::boost
+  Boost::filesystem
   FairMQ::SDK
 )
 target_include_directories(odc_core_lib PUBLIC

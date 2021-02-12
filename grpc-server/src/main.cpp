@@ -30,7 +30,6 @@ int main(int argc, char** argv)
     {
         size_t timeout;
         string host;
-        SSubmitParams submitParams;
         CLogger::SConfig logConfig;
 
         // Generic options
@@ -39,7 +38,6 @@ int main(int argc, char** argv)
         CCliHelper::addVersionOptions(options);
         CCliHelper::addTimeoutOptions(options, timeout);
         CCliHelper::addHostOptions(options, host);
-        CCliHelper::addOptions(options, submitParams);
         CCliHelper::addLogOptions(options, logConfig);
 
         // Parsing command-line
@@ -91,7 +89,6 @@ int main(int argc, char** argv)
 
         odc::grpc::CGrpcControlServer server;
         server.setTimeout(chrono::seconds(timeout));
-        server.setSubmitParams(submitParams);
         server.Run(host);
     }
     catch (exception& _e)

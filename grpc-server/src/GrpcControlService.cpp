@@ -20,11 +20,6 @@ void CGrpcControlService::setTimeout(const std::chrono::seconds& _timeout)
     m_service->setTimeout(_timeout);
 }
 
-void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _params)
-{
-    m_submitParams = _params;
-}
-
 ::grpc::Status CGrpcControlService::Initialize(::grpc::ServerContext* context,
                                                const odc::InitializeRequest* request,
                                                odc::GeneralReply* response)
@@ -39,7 +34,8 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                            const odc::SubmitRequest* request,
                                            odc::GeneralReply* response)
 {
-    SReturnValue value = m_service->execSubmit(request->partitionid(), m_submitParams);
+    SSubmitParams params{ request->plugin(), request->resources() };
+    SReturnValue value = m_service->execSubmit(request->partitionid(), params);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }
@@ -59,8 +55,9 @@ void CGrpcControlService::setSubmitParams(const odc::core::SSubmitParams& _param
                                         odc::GeneralReply* response)
 {
     SInitializeParams initializeParams{ "" };
+    SSubmitParams submitParams{ request->plugin(), request->resources() };
     SActivateParams activateParams{ request->topology() };
-    SReturnValue value = m_service->execRun(request->partitionid(), initializeParams, m_submitParams, activateParams);
+    SReturnValue value = m_service->execRun(request->partitionid(), initializeParams, submitParams, activateParams);
     setupGeneralReply(response, value);
     return ::grpc::Status::OK;
 }

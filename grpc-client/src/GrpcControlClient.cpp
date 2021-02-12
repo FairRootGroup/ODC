@@ -32,6 +32,8 @@ std::string CGrpcControlClient::requestSubmit(const odc::core::partitionID_t& _p
 
     odc::SubmitRequest request;
     request.set_partitionid(_partitionID);
+    request.set_plugin(_params.m_plugin);
+    request.set_resources(_params.m_resources);
     odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Submit(&context, request, &reply);
