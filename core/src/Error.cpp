@@ -21,6 +21,8 @@ namespace odc::core
                 return "Request not supported";
             case ErrorCode::RequestTimeout:
                 return "Request timeout";
+            case ErrorCode::ResourcePluginFailed:
+                return "Resource plugin failed";
             case ErrorCode::DDSCreateSessionFailed:
                 return "Failed to create a DDS session";
             case ErrorCode::DDSShutdownSessionFailed:

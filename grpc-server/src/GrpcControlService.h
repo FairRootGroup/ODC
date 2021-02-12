@@ -19,7 +19,6 @@ namespace odc::grpc
       public:
         CGrpcControlService();
 
-        void setSubmitParams(const odc::core::SSubmitParams& _params);
         void setTimeout(const std::chrono::seconds& _timeout);
 
       private:
@@ -67,7 +66,6 @@ namespace odc::grpc
         void setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value);
 
         std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
-        odc::core::SSubmitParams m_submitParams;               ///< Parameters of the submit request
     };
 } // namespace odc::grpc
 

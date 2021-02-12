@@ -20,7 +20,6 @@ namespace odc::grpc
         void Run(const std::string& _host);
 
         void setTimeout(const std::chrono::seconds& _timeout);
-        void setSubmitParams(const odc::core::SSubmitParams& _params);
 
       private:
         std::shared_ptr<CGrpcControlService> m_service; ///< Service for request processing

@@ -4,6 +4,7 @@
 
 // ODC
 #include "ControlService.h"
+#include "DDSSubmit.h"
 #include "Error.h"
 #include "Logger.h"
 #include "TimeMeasure.h"
@@ -84,7 +85,7 @@ struct CControlService::SImpl
                                    SReturnDetails::ptr_t _details = nullptr);
     bool createDDSSession(const partitionID_t& _partitionID, SError& _error);
     bool attachToDDSSession(const partitionID_t& _partitionID, SError& _error, const std::string& _sessionID);
-    bool submitDDSAgents(const partitionID_t& _partitionID, SError& _error, const SSubmitParams& _params);
+    bool submitDDSAgents(const partitionID_t& _partitionID, SError& _error, const CDDSSubmit::SParams& _params);
     bool activateDDSTopology(const partitionID_t& _partitionID,
                              SError& _error,
                              const std::string& _topologyFile,
@@ -140,8 +141,9 @@ struct CControlService::SImpl
 
     fair::mq::sdk::DDSEnv
         m_fairmqEnv; ///< FairMQ environment. We store it globally because only one instance per process is allowed.
-    SSessionInfo::Map_t m_sessions;  ///< Map of partition ID to session info
-    chrono::seconds m_timeout{ 30 }; ///< Request timeout in sec
+    SSessionInfo::Map_t m_sessions;                          ///< Map of partition ID to session info
+    chrono::seconds m_timeout{ 30 };                         ///< Request timeout in sec
+    CDDSSubmit::Ptr_t m_submit{ make_shared<CDDSSubmit>() }; ///< ODC to DDS submit resource converter
 };
 
 SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)
@@ -179,11 +181,27 @@ SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partit
 SReturnValue CControlService::SImpl::execSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    size_t allCount = _params.m_numAgents * _params.m_numSlots;
-    // Submit DDS agents
-    // Wait until all agents are active
+
+    // Get DDS submit parameters from ODC resource plugin
     SError error;
-    submitDDSAgents(_partitionID, error, _params) && waitForNumActiveAgents(_partitionID, error, allCount);
+    CDDSSubmit::SParams ddsParams;
+    try
+    {
+        ddsParams = m_submit->makeParams(_params.m_plugin, _params.m_resources);
+    }
+    catch (exception& _e)
+    {
+        fillError(error, ErrorCode::ResourcePluginFailed, string("Resource plugin failed: ") + _e.what());
+    }
+
+    if (!error.m_code)
+    {
+        const size_t requiredSlots{ ddsParams.m_requiredNumSlots };
+        // Submit DDS agents
+        // Wait until all agents are active
+        submitDDSAgents(_partitionID, error, ddsParams) && waitForNumActiveAgents(_partitionID, error, requiredSlots);
+    }
+
     return createReturnValue(
         _partitionID, error, "Submit done", measure.duration(), fair::mq::sdk::AggregatedTopologyState::Undefined);
 }
@@ -400,7 +418,7 @@ bool CControlService::SImpl::attachToDDSSession(const partitionID_t& _partitionI
 
 bool CControlService::SImpl::submitDDSAgents(const partitionID_t& _partitionID,
                                              SError& _error,
-                                             const SSubmitParams& _params)
+                                             const CDDSSubmit::SParams& _params)
 {
     bool success(true);
 
@@ -408,10 +426,7 @@ bool CControlService::SImpl::submitDDSAgents(const partitionID_t& _partitionID,
     requestInfo.m_rms = _params.m_rmsPlugin;
     requestInfo.m_instances = _params.m_numAgents;
     requestInfo.m_slots = _params.m_numSlots;
-    if (_params.m_rmsPlugin != "localhost")
-    {
-        requestInfo.m_config = _params.m_configFile;
-    }
+    requestInfo.m_config = _params.m_configFile;
 
     std::condition_variable cv;
 
@@ -960,53 +975,50 @@ CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateS
 // Misc
 //
 
-namespace odc
+namespace odc::core
 {
-    namespace core
+    std::ostream& operator<<(std::ostream& _os, const SError& _error)
     {
-        std::ostream& operator<<(std::ostream& _os, const SError& _error)
-        {
-            return _os << _error.m_code << " (" << _error.m_details << ")";
-        }
+        return _os << _error.m_code << " (" << _error.m_details << ")";
+    }
 
-        std::ostream& operator<<(std::ostream& _os, const SInitializeParams& _params)
-        {
-            return _os << "InitilizeParams: sid=" << quoted(_params.m_sessionID);
-        }
+    std::ostream& operator<<(std::ostream& _os, const SInitializeParams& _params)
+    {
+        return _os << "InitilizeParams: sid=" << quoted(_params.m_sessionID);
+    }
 
-        std::ostream& operator<<(std::ostream& _os, const SSubmitParams& _params)
-        {
-            return _os << "SubmitParams: rmsPlugin=" << quoted(_params.m_rmsPlugin)
-                       << "; numAgents=" << _params.m_numAgents << "; numSlots=" << _params.m_numSlots
-                       << "; configFile=" << quoted(_params.m_configFile);
-        }
+    std::ostream& operator<<(std::ostream& _os, const SSubmitParams& _params)
+    {
+        return _os << "SubmitParams: plugin=" << quoted(_params.m_plugin)
+                   << "; resources=" << quoted(_params.m_resources);
+    }
 
-        std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params)
-        {
-            return _os << "ActivateParams: topologyFile=" << quoted(_params.m_topologyFile);
-        }
+    std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params)
+    {
+        return _os << "ActivateParams: topologyFile=" << quoted(_params.m_topologyFile);
+    }
 
-        std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params)
-        {
-            return _os << "UpdateParams: topologyFile=" << quoted(_params.m_topologyFile);
-        }
+    std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params)
+    {
+        return _os << "UpdateParams: topologyFile=" << quoted(_params.m_topologyFile);
+    }
 
-        std::ostream& operator<<(std::ostream& _os, const SSetPropertiesParams& _params)
+    std::ostream& operator<<(std::ostream& _os, const SSetPropertiesParams& _params)
+    {
+        _os << "SetPropertiesParams: path=" << quoted(_params.m_path) << "; properties={";
+        for (const auto& v : _params.m_properties)
         {
-            _os << "SetPropertiesParams: path=" << quoted(_params.m_path) << "; properties={";
-            for (const auto& v : _params.m_properties)
-            {
-                _os << " (" << v.first << ":" << v.second << ") ";
-            }
-            return _os << "}";
+            _os << " (" << v.first << ":" << v.second << ") ";
         }
+        return _os << "}";
+    }
 
-        std::ostream& operator<<(std::ostream& _os, const SDeviceParams& _params)
-        {
-            return _os << "DeviceParams: path=" << quoted(_params.m_path) << "; detailed=" << _params.m_detailed;
-        }
-    } // namespace core
-} // namespace odc
+    std::ostream& operator<<(std::ostream& _os, const SDeviceParams& _params)
+    {
+        return _os << "DeviceParams: path=" << quoted(_params.m_path) << "; detailed=" << _params.m_detailed;
+    }
+} // namespace odc::core
+
 //
 // CControlService
 //

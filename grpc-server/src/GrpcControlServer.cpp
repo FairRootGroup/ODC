@@ -31,8 +31,3 @@ void CGrpcControlServer::setTimeout(const std::chrono::seconds& _timeout)
 {
     m_service->setTimeout(_timeout);
 }
-
-void CGrpcControlServer::setSubmitParams(const odc::core::SSubmitParams& _params)
-{
-    m_service->setSubmitParams(_params);
-}

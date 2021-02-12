@@ -147,20 +147,13 @@ namespace odc::core
         {
         }
 
-        SSubmitParams(const std::string& _rmsPlugin,
-                      const std::string& _configFile,
-                      size_t _numAgents,
-                      size_t _numSlots)
-            : m_rmsPlugin(_rmsPlugin)
-            , m_configFile(_configFile)
-            , m_numAgents(_numAgents)
-            , m_numSlots(_numSlots)
+        SSubmitParams(const std::string& _plugin, const std::string& _resources)
+            : m_plugin(_plugin)
+            , m_resources(_resources)
         {
         }
-        std::string m_rmsPlugin;  ///< RMS plugin of DDS
-        std::string m_configFile; ///< Path to the configuration file of the RMS plugin
-        size_t m_numAgents{ 0 };  ///< Number of DDS agents
-        size_t m_numSlots{ 0 };   ///< Number of slots per DDS agent
+        std::string m_plugin;    ///< ODC resource plugin name. Plugin has to be registered in ODC server.
+        std::string m_resources; ///< Parcable description of the requested resources.
 
         // \brief ostream operator.
         friend std::ostream& operator<<(std::ostream& _os, const SSubmitParams& _params);
