@@ -7,6 +7,7 @@
 #include "CliHelper.h"
 #include "GrpcControlClient.h"
 #include "Logger.h"
+#include "MiscUtils.h"
 #include "Version.h"
 // BOOST
 #include <boost/program_options/options_description.hpp>
@@ -61,6 +62,8 @@ int main(int argc, char** argv)
             OLOG(ESeverity::clean) << ODC_VERSION;
             return EXIT_SUCCESS;
         }
+
+        setupGrpcVerbosity(logConfig);
 
         CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
         control.run((batch) ? cmds : vector<string>(), partitionIDs, std::chrono::milliseconds(1000));

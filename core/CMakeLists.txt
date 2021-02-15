@@ -23,6 +23,7 @@ add_library(odc_core_lib
     "src/Logger.h"
     "src/Error.h"
     "src/Error.cpp"
+    "src/MiscUtils.h"
 )
 target_link_libraries(odc_core_lib
   DDS::dds_topology_lib

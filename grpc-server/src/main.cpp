@@ -8,6 +8,7 @@
 #include "GrpcControlServer.h"
 #include "GrpcControlService.h"
 #include "Logger.h"
+#include "MiscUtils.h"
 #include "Version.h"
 // STD
 #include <cstdlib>
@@ -67,6 +68,8 @@ int main(int argc, char** argv)
             OLOG(ESeverity::clean) << ODC_VERSION;
             return EXIT_SUCCESS;
         }
+
+        setupGrpcVerbosity(logConfig);
 
         {
             // Equivalent to calling source DDS_env.sh
