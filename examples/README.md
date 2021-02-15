@@ -148,6 +148,19 @@ Use the following sequence of commands:
 .quit
 ```
 
+## Run on GSI Virgo cluster
+
+Connect to Virgo cluster at GSI:
+```
+ssh -J $USER@lxpool.gsi.de virgo-centos7.hpc.gsi.de
+```
+ODC and its dependencies are installed in `/cvmfs/cbm.gsi.de/centos7/opt/linux-centos7-x86_64/`. Please use the latest available installation.
+
+**Important note:** By default `http_proxy` is set on Virgo submitter nodes. We need to explicitly disable the use of HTTP proxy by exporting `no_grpc_proxy`. See [gRPC environment variables](https://grpc.github.io/grpc/cpp/md_doc_environment_variables.html)
+```
+export no_grpc_proxy={ODC_SERVER_HOSTNAME}
+```
+
 ## Create a DDS topology
 
 [The DDS topology example](src/odc-topo.cpp) shows how to create a topology XML file using [DDS topology APIs](https://github.com/FairRootGroup/DDS/tree/master/dds-topology-lib/src). In the example we combine two topologies [1](ex-dpl-topology.xml) and [2](ex-dd-topology.xml) into a single XML file. The first topology is an example of the DPL export to DDS. The second one is an example of TfBuilder task declaration. 
