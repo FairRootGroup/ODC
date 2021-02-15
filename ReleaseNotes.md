@@ -1,7 +1,8 @@
 # ODC Release Notes
 
 ## v0.16 (NOT YET RELEASED)
-
+### gRPC
+Added: set severity for gRPC library. Setting severity to dbg, inf, err also sets corresponding value of GRPC_VERBOSITY. For command line use `--severity` option of `odc-grpc-server` and `odc-grpc-client`. Resolves GH-14.    
 
 
 ## v0.14 (2021-02-10)
