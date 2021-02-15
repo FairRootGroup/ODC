@@ -31,7 +31,7 @@ By default this example uses [localhost plugin](http://dds.gsi.de/doc/nightly/RM
 * `ex-dds-topology-infinite-up.xml` - upscaled topololy with 36 FairMQ devices;
 * `ex-dds-topology-infinite-down.xml` - downscaled topology with 24 FairMQ devices.
 
-## Run on ALICE EPN VS cluster
+## Run on ALICE EPN cluster
 
 Installation of ODC and its dependencies using [aliBuild](https://github.com/alisw/alibuild):
 
@@ -54,9 +54,9 @@ eval `alienv --no-refresh load ODC/latest-o2-dataflow`
 cd -
 @bash_end@
 
-wn_epn-vs000, epn-vs000, , WRK_DIR,  12
-wn_epn-vs001, epn-vs001, , WRK_DIR,  12
-wn_epn-vs002, epn-vs002, , WRK_DIR,  12
+wn_epn002, epn002, , WRK_DIR,  12
+wn_epn003, epn003, , WRK_DIR,  12
+wn_epn004, epn004, , WRK_DIR,  12
 ```
 
 Replace `INSTALL_DIR` and `WRK_DIR` with the real directory names. Important prerequisite: working directories `WRK_DIR` from SSH config file must exist. We recommend to use the local storage of the machine (i.e. `/tmp`) for the working directories.
@@ -66,7 +66,7 @@ Open two terminal windows. In each of the terminal first initialize the environm
 > cd INSTALL_DIR
 > alienv enter ODC/latest-o2-dataflow
 > export LC_ALL=C; unset LANGUAGE
-> cd INSTALL_DIR/sw/slc7_x86-64/DDS/latest
+> cd INSTALL_DIR/sw/slc8_x86-64/DDS/latest
 > source DDS_env.sh
 ```
 
