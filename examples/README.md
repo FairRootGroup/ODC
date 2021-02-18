@@ -80,28 +80,6 @@ Start ODC gRPC client:
 > odc-grpc-client --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml --uptopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-up.xml --downtopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-down.xml
 ```
 
-### Standard sequence of requests
-```
-.init
-.submit
-.activate
-.config
-.start
-.stop
-.upscale (Scale topology up. From 12 to 36 devices.)
-.start
-.stop
-.downscale (Scale topology down. From 36 devices to 24.)
-.start
-.stop
-.reset
-.term
-.down
-.quit
-```
-
-The default sequence of request can also be executed in batch mode using `--batch` option. The sequence of commands can be changed via `--cmds` option.
-
 ### Data Distribution example
 For a Data Distribution example create a topology file `ex-dd-topology.xml` with the following content:
 ```
@@ -154,12 +132,56 @@ Connect to Virgo cluster at GSI:
 ```
 ssh -J $USER@lxpool.gsi.de virgo-centos7.hpc.gsi.de
 ```
-ODC and its dependencies are installed in `/cvmfs/cbm.gsi.de/centos7/opt/linux-centos7-x86_64/`. Please use the latest available installation.
+ODC and its dependencies are installed in `/cvmfs/cbm.gsi.de/centos7/opt/linux-centos7-x86_64/`. Please use the latest available release.
 
-**Important note:** By default `http_proxy` is set on Virgo submitter nodes. We need to explicitly disable the use of HTTP proxy by exporting `no_grpc_proxy`. See [gRPC environment variables](https://grpc.github.io/grpc/cpp/md_doc_environment_variables.html)
+**Important note:** By default `http_proxy` is set on Virgo submitter nodes. We need to explicitly disable the use of HTTP proxy by exporting `no_grpc_proxy`. See [gRPC environment variables](https://grpc.github.io/grpc/cpp/md_doc_environment_variables.html) for details.
 ```
 export no_grpc_proxy={ODC_SERVER_HOSTNAME}
 ```
+
+We also need to set locale:
+```
+> export LC_ALL=C; unset LANGUAGE
+```
+
+For this example we use [Slurm plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#slurm-plugin) of [DDS](https://github.com/FairRootGroup/DDS). In general no additional configuration is required for Slurm. But if neccessary one can create a configuration file with additional parameters. For example, a `slurm.cfg` file which sets the account and partition to `cbm_online`:
+
+```
+#SBATCH --account=cbm_online
+#SBATCH --partition=cbm_online
+```
+
+Start ODC gRPC server:
+```
+> odc-grpc-server --rms slurm --config PATH_TO_CFG/slurm.cfg --agents 3 --slots 12
+```
+
+Start ODC gRPC client:
+```
+> odc-grpc-client --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml --uptopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-up.xml --downtopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-down.xml
+```
+
+## Standard sequence of requests
+```
+.init
+.submit
+.activate
+.config
+.start
+.stop
+.upscale (Scale topology up. From 12 to 36 devices.)
+.start
+.stop
+.downscale (Scale topology down. From 36 devices to 24.)
+.start
+.stop
+.reset
+.term
+.down
+.quit
+```
+
+The default sequence of request can also be executed in batch mode using `--batch` option. The sequence of commands can be changed via `--cmds` option.
 
 ## Create a DDS topology
 
