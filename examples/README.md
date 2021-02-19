@@ -139,8 +139,9 @@ ODC and its dependencies are installed in `/cvmfs/cbm.gsi.de/centos7/opt/linux-c
 export no_grpc_proxy={ODC_SERVER_HOSTNAME}
 ```
 
-We also need to set locale:
+Set `$HOME` to your `lustre` home directory and set locale:
 ```
+> export HOME=/lustre/GROUP/LOGIN
 > export LC_ALL=C; unset LANGUAGE
 ```
 
@@ -153,13 +154,15 @@ For this example we use [Slurm plugin](http://dds.gsi.de/doc/nightly/RMS-plugins
 
 Start ODC gRPC server:
 ```
-> odc-grpc-server --rms slurm --config PATH_TO_CFG/slurm.cfg --agents 3 --slots 12
+> odc-grpc-server --host "*:22334" --rms slurm --config PATH_TO_CFG/slurm.cfg --agents 3 --slots 12
 ```
+The number of agents (3) and slots (12) is required to test default topoloies of ODC. These numbers has to be adjusted if you want to test your own topology. 
 
 Start ODC gRPC client:
 ```
-> odc-grpc-client --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml --uptopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-up.xml --downtopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-down.xml
+> odc-grpc-client --host "{ODC_SERVER_HOSTNAME}:22334"
 ```
+`{ODC_SERVER_HOSTNAME}` has to be replace with the real hostname. Port can be change.
 
 ## Standard sequence of requests
 ```
