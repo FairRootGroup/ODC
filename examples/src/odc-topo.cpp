@@ -24,10 +24,12 @@ int main(int argc, char** argv)
     {
         string dplTopoFilepath;
         string ddTopoFilepath;
-        size_t numCollections;
+        string outputTopoFilepath;
+        size_t numDpl;
+        size_t numDd;
 
         // Generic options
-        bpo::options_description options("odc-cli-server options");
+        bpo::options_description options("odc-topo options");
         options.add_options()("help,h", "Produce help message");
         string defaultDPLTopo(odc::core::kODCDataDir + "/ex-dpl-topology.xml");
         options.add_options()(
@@ -36,7 +38,11 @@ int main(int argc, char** argv)
         options.add_options()("dd",
                               bpo::value<string>(&ddTopoFilepath)->default_value(defaultDDTopo),
                               "Path to Data Distribution topology file");
-        options.add_options()("n", bpo::value<size_t>(&numCollections)->default_value(10), "Number of DPL collections");
+        options.add_options()("output,o",
+                              bpo::value<string>(&outputTopoFilepath)->default_value("topology.xml"),
+                              "Output topology filepath");
+        options.add_options()("ndpl", bpo::value<size_t>(&numDpl)->default_value(10), "Number of DPL collections");
+        options.add_options()("ndd", bpo::value<size_t>(&numDd)->default_value(10), "Number of DD tasks");
         // Parsing command-line
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
@@ -50,22 +56,26 @@ int main(int argc, char** argv)
 
         // DDS topology creator
         CTopoCreator creator;
-        // New EPN group containing DPL collections and Data Distribution tasks
-        auto epnGroup{ creator.getMainGroup()->addElement<CTopoGroup>("EPNGroup") };
-        // Set required number of DPL collections (number of EPNs)
-        epnGroup->setN(numCollections);
+        // New DPL group containing DPL collections
+        auto dplGroup{ creator.getMainGroup()->addElement<CTopoGroup>("DPLGroup") };
+        // Set required number of DPL collections
+        dplGroup->setN(numDpl);
         // Add new EPN collection to EPN group and initialize it from XML topology file
-        epnGroup->addElement<CTopoCollection>("DPL")->initFromXML(dplTopoFilepath);
-        // Add TfBuilder task to EPN group and initialize it from XML topology file
-        epnGroup->addElement<CTopoTask>("TfBuilderTask")->initFromXML(ddTopoFilepath);
+        dplGroup->addElement<CTopoCollection>("DPL")->initFromXML(dplTopoFilepath);
+        // New Data Distribution group containing DD tasks
+        auto ddGroup{ creator.getMainGroup()->addElement<CTopoGroup>("DDGroup") };
+        // Set required number of Data Distribution tasks
+        ddGroup->setN(numDd);
+        // Add TfBuilder task to DD group and initialize it from XML topology file
+        ddGroup->addElement<CTopoTask>("TfBuilderTask")->initFromXML(ddTopoFilepath);
+
         // Save topology to the oputput file
-        string outputTopoFile{ "ex-epn-topology.xml" };
-        creator.save(outputTopoFile);
-        cout << "New DDS topology successfully created and saved to a file " << quoted(outputTopoFile) << endl;
+        creator.save(outputTopoFilepath);
+        cout << "New DDS topology successfully created and saved to a file " << quoted(outputTopoFilepath) << endl;
 
         // Validate created topology
         // Create a topology from the output file
-        CTopology topo(outputTopoFile);
+        CTopology topo(outputTopoFilepath);
         cout << "DDS topology " << quoted(topo.getName()) << " successfully opened from file "
              << quoted(topo.getFilepath()) << endl;
     }
