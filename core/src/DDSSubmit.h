@@ -23,7 +23,11 @@ namespace odc::core
             /// \brief Default constructor
             SParams();
             /// \brief Constructor with arguments
-            SParams(const std::string& _rmsPlugin, const std::string& _configFile, size_t _numAgents, size_t _numSlots);
+            SParams(const std::string& _rmsPlugin,
+                    const std::string& _configFile,
+                    size_t _numAgents,
+                    size_t _numSlots,
+                    size_t _requiredNumSlots);
 
             /// \brief Initialization of structure from an XML file
             //            void initFromXML(const std::string& _filepath);
@@ -42,12 +46,16 @@ namespace odc::core
             friend std::ostream& operator<<(std::ostream& _os, const SParams& _params);
         };
 
+        CDDSSubmit();
+
         using Ptr_t = std::shared_ptr<CDDSSubmit>;
 
         void registerPlugin(const std::string& _plugin, const std::string& _path);
         SParams makeParams(const std::string& _plugin, const std::string& _resources);
 
       private:
+        void registerDefaultPlugin(const std::string& _name);
+
         // Plugin map <plugin name, path>
         using PluginMap_t = std::map<std::string, std::string>;
         PluginMap_t m_plugins; ///< Plugins

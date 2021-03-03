@@ -105,12 +105,11 @@ void CCliHelper::addOptions(bpo::options_description& _options, SUpdateParams& _
 void CCliHelper::addOptions(bpo::options_description& _options, SSubmitParams& _params)
 {
     _options.add_options()(
-        "plugin,p", bpo::value<string>(&_params.m_plugin)->default_value("odc-same"), "ODC resource plugin name.");
+        "plugin,p", bpo::value<string>(&_params.m_plugin)->default_value("odc-rp-same"), "ODC resource plugin name.");
     _options.add_options()(
         "resources,r",
         bpo::value<string>(&_params.m_resources)
-            ->default_value(
-                "<res><rms>localhost</rms><agents>1</agents><slots>36</slots><requiredSlots>36</requiredSlots></res>"),
+            ->default_value("<rms>localhost</rms><agents>1</agents><slots>36</slots><requiredSlots>36</requiredSlots>"),
         "A resource description for a corresponding ODC resource plugin.");
 }
 
