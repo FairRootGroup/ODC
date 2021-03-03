@@ -1,6 +1,11 @@
 # ODC Release Notes
 
-## v0.16 (NOT YET RELEASED)
+## v0.18 (NOT YET RELEASED)
+### Examples
+Modified: Update topology creation example.    
+
+
+## v0.16 (2021-02-19)
 ### gRPC
 Added: set severity for gRPC library. Setting severity to dbg, inf, err also sets corresponding value of GRPC_VERBOSITY. For command line use `--severity` option of `odc-grpc-server` and `odc-grpc-client`. Resolves GH-14.    
 
