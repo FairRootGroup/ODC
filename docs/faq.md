@@ -1,12 +1,13 @@
 # Frequently Asked Questions
 
-### Does ODC support multiple active topologies in a single session?
+### Does ODC support multiple active topologies?
 
-No, ODC as well as [DDS](http://dds.gsi.de) have only one active topology at a time. Actually there is no reason to have a multiple topologies. A number of features in ODC/[DDS](https://github.com/FairRootGroup/DDS)/[FairMQ](https://github.com/FairRootGroup/FairMQ) allow to support a different use case scenarios. 
+Yes. ODC is able to manage multiple DDS sessions concurrently. In this case, each DDS session is an independent active topology. But [DDS](http://dds.gsi.de) itself can have only one active topology at a time. Moreover, a number of features in ODC/[DDS](https://github.com/FairRootGroup/DDS)/[FairMQ](https://github.com/FairRootGroup/FairMQ) allow to support a different use case scenarios. 
 
   * DDS topology API allows to create a topology either by editing an XML file or programmatically using C++ or even combining these two approaches. For instance, we have a DDS topology exported from DPL and another topology describing Data Distribution. We can programmatically combine these two topologies into a single topology which can be activated by ODC. [Here](../examples/src/odc-topo.cpp) is an example of how to do it in a couple of lines of code.
 
   * [FairMQ SDK](https://github.com/FairRootGroup/FairMQ/tree/master/fairmq/sdk), as well as ODC, allow to address only a part of the topology when changing the states. This is done by providing a regular expression of the task paths which states has to be changed. For instance, you can change only the states of `TfBuilder` task.
+
 
 ### What is a path in DDS topology?
 
