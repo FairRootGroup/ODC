@@ -4,7 +4,9 @@
 
 // ODC
 #include "DDSSubmit.h"
+#include "BuildConstants.h"
 #include "Logger.h"
+#include "Process.h"
 // STD
 #include <cstdlib>
 #include <iomanip>
@@ -29,11 +31,13 @@ CDDSSubmit::SParams::SParams()
 {
 }
 
-CDDSSubmit::SParams::SParams(const string& _rmsPlugin, const string& _configFile, size_t _numAgents, size_t _numSlots)
+CDDSSubmit::SParams::SParams(
+    const string& _rmsPlugin, const string& _configFile, size_t _numAgents, size_t _numSlots, size_t _requiredNumSlots)
     : m_rmsPlugin(_rmsPlugin)
     , m_configFile(_configFile)
     , m_numAgents(_numAgents)
     , m_numSlots(_numSlots)
+    , m_requiredNumSlots(_requiredNumSlots)
 {
 }
 
@@ -61,16 +65,41 @@ void CDDSSubmit::SParams::initFromPT(const pt::ptree& _pt)
     // TODO: FIXME: <configContent> is not yet defined
     // To support it we need to create a temporary file with configuration content and use it as config file.
 
-    m_rmsPlugin = _pt.get<string>("res.rms", "");
-    m_configFile = _pt.get<string>("res.configFile", "");
-    m_numAgents = _pt.get<size_t>("res.agents", 0);
-    m_numSlots = _pt.get<size_t>("res.slots", 0);
-    m_requiredNumSlots = _pt.get<size_t>("res.requiredSlots", 0);
+    // Do some basic validation of the input tree.
+    // Only valid tags are allowed.
+    set<string> validTags{ "rms", "configFile", "agents", "slots", "requiredSlots" };
+    for (const auto& v : _pt)
+    {
+        if (validTags.count(v.first.data()) == 0)
+        {
+            stringstream ss;
+            ss << "Failed to init from property tree. Unknown key " << quoted(v.first.data());
+            throw runtime_error(ss.str());
+        }
+    }
+    m_rmsPlugin = _pt.get<string>("rms", "");
+    m_configFile = _pt.get<string>("configFile", "");
+    m_numAgents = _pt.get<size_t>("agents", 0);
+    m_numSlots = _pt.get<size_t>("slots", 0);
+    m_requiredNumSlots = _pt.get<size_t>("requiredSlots", 0);
 }
 
 //
 // CDDSSubmit
 //
+
+CDDSSubmit::CDDSSubmit()
+{
+    // Register default plugins
+    registerDefaultPlugin("odc-rp-same");
+}
+
+void CDDSSubmit::registerDefaultPlugin(const std::string& _name)
+{
+    fs::path pluginPath{ kODCBinDir };
+    pluginPath /= _name;
+    registerPlugin(_name, pluginPath.string());
+}
 
 void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _path)
 {
@@ -84,7 +113,7 @@ void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _
         throw runtime_error(ss.str());
     }
 
-    // Check if plugin axists at path and not a directory
+    // Check if plugin exists at path and not a directory
     // Throws an exception if path doesn't exist
     const fs::path pluginPath(fs::canonical(fs::path(_path)));
 
@@ -103,30 +132,32 @@ void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _
 
 CDDSSubmit::SParams CDDSSubmit::makeParams(const string& _plugin, const string& _resources)
 {
-    // TODO: FIXME: initial implementation assumes that _resources already containes XML description in the proper
-    // format.
+    // Check if plugin exists
+    auto it = m_plugins.find(_plugin);
+    if (it == m_plugins.end())
+    {
+        stringstream ss;
+        ss << "Failed to execute resource plugin " << quoted(_plugin) << ". Plugin not found.";
+        throw runtime_error(ss.str());
+    }
 
-    // TODO: FIXME:
-    // Check if plugin with the same name has already been registered
-    // Check if path exists and is executable
-    // Execute plugin and wait for an answer
-    // Implement timeout for plugin execution
-    // Save configuration to a local temporary file if <configContent> if present or use file directly if <configFile>
-    // is present.
+    // Execute plugin
+    const string cmd{ it->second + " --res " + "\"" + _resources + "\"" };
+    const std::chrono::seconds timeout{ 30 };
+    string out;
+    string err;
+    int exitCode{ EXIT_SUCCESS };
+    execute(cmd, timeout, &out, &err, &exitCode);
 
-    //    // Check if plugin exists
-    //    auto it = m_plugins.find(_plugin);
-    //    if (it == m_plugins.end())
-    //    {
-    //        stringstream ss;
-    //        ss << "Failed to execute resource plugin " << quoted(_plugin) << ". Plugin not found.";
-    //        throw runtime_error(ss.str());
-    //    }
-    //
-    //    const string cmd {it->second + " --res " + "\"" + _resources + "\""};
+    if (exitCode != EXIT_SUCCESS)
+    {
+        stringstream ss;
+        ss << "Plugin execution failed with exit code: " << exitCode << "; error message: " << err;
+        throw runtime_error(ss.str());
+    }
 
     CDDSSubmit::SParams params;
-    stringstream ss{ _resources };
+    stringstream ss{ out };
     params.initFromXML(ss);
 
     return params;

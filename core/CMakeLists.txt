@@ -4,6 +4,7 @@
 
 # BuildConstants header
 set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
+set(ODC_BINDIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}")
 configure_file(src/BuildConstants.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/BuildConstants.h @ONLY)
 
 # Version header
@@ -26,6 +27,7 @@ add_library(odc_core_lib
     "src/MiscUtils.h"
     "src/DDSSubmit.h"
     "src/DDSSubmit.cpp"
+    "src/Process.h"
 )
 target_link_libraries(odc_core_lib
   DDS::dds_topology_lib

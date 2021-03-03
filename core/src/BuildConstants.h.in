@@ -11,6 +11,7 @@ namespace odc::core
 {
     const std::string kBuildFairMQBinDir = "@FairMQ_BINDIR@";
     const std::string kBuildFairMQDataDir = "@FairMQ_DATADIR@";
+    const std::string kODCBinDir = "@ODC_BINDIR@";
     const std::string kODCDataDir = "@ODC_DATADIR@";
 } // namespace odc::core
 

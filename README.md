@@ -65,6 +65,7 @@ In order to build without `Protobuf` and `gRPC` dependencies one has to explicit
   * `-DBUILD_GRPC_SERVER=OFF` disables building of gRPC server.
   * `-DBUILD_CLI_SERVER=OFF` disables building of CLI server.
   * `-DBUILD_EXAMPLES=OFF` disables building of examples.
+  * `-DBUILD_PLUGINS=OFF` disables building of plugins.
 
 ## Installation with aliBuild
 
