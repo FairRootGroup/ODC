@@ -120,21 +120,28 @@ void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _
         throw runtime_error(ss.str());
     }
 
-    // Check if plugin exists at path and not a directory
-    // Throws an exception if path doesn't exist
-    const fs::path pluginPath(fs::canonical(fs::path(_path)));
-
-    if (fs::is_directory(pluginPath))
+    try
+    {
+        // Throws an exception if path doesn't exist
+        // Check if plugin exists at path and not a directory
+        const fs::path pluginPath(fs::canonical(fs::path(_path)));
+        if (fs::is_directory(pluginPath))
+        {
+            stringstream ss;
+            ss << "Failed to register resource plugin " << quoted(_plugin) << ". Specified path " << pluginPath
+               << " is a directory.";
+            throw runtime_error(ss.str());
+        }
+        OLOG(ESeverity::info) << "Register resource plugin " << quoted(_plugin) << " at path "
+                              << quoted(pluginPath.string());
+        m_plugins.insert(make_pair(_plugin, pluginPath.string()));
+    }
+    catch (const exception& _e)
     {
         stringstream ss;
-        ss << "Failed to register resource plugin " << quoted(_plugin) << ". Specified path " << pluginPath
-           << " is a directory.";
+        ss << "Failed to register resource plugin " << quoted(_plugin) << ": " << _e.what();
         throw runtime_error(ss.str());
     }
-
-    OLOG(ESeverity::info) << "Register resource plugin " << quoted(_plugin) << " at path "
-                          << quoted(pluginPath.string());
-    m_plugins.insert(make_pair(_plugin, pluginPath.string()));
 }
 
 CDDSSubmit::SParams CDDSSubmit::makeParams(const string& _plugin, const string& _resources)

@@ -56,6 +56,8 @@ struct CControlService::SImpl
         m_timeout = _timeout;
     }
 
+    void registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap);
+
     // Core API calls
     SReturnValue execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params);
     SReturnValue execSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params);
@@ -145,6 +147,14 @@ struct CControlService::SImpl
     chrono::seconds m_timeout{ 30 };                         ///< Request timeout in sec
     CDDSSubmit::Ptr_t m_submit{ make_shared<CDDSSubmit>() }; ///< ODC to DDS submit resource converter
 };
+
+void CControlService::SImpl::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
+{
+    for (const auto& v : _pluginMap)
+    {
+        m_submit->registerPlugin(v.first, v.second);
+    }
+}
 
 SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)
 {
@@ -1031,6 +1041,11 @@ CControlService::CControlService()
 void CControlService::setTimeout(const chrono::seconds& _timeout)
 {
     m_impl->setTimeout(_timeout);
+}
+
+void CControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
+{
+    m_impl->registerResourcePlugins(_pluginMap);
 }
 
 SReturnValue CControlService::execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)

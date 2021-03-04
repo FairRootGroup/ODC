@@ -20,6 +20,11 @@ void CGrpcControlService::setTimeout(const std::chrono::seconds& _timeout)
     m_service->setTimeout(_timeout);
 }
 
+void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
+{
+    m_service->registerResourcePlugins(_pluginMap);
+}
+
 ::grpc::Status CGrpcControlService::Initialize(::grpc::ServerContext* context,
                                                const odc::InitializeRequest* request,
                                                odc::GeneralReply* response)

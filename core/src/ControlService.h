@@ -11,6 +11,8 @@
 #include <system_error>
 // FairMQ
 #include <fairmq/sdk/Topology.h>
+// ODC
+#include "DDSSubmit.h"
 
 namespace odc::core
 {
@@ -243,6 +245,10 @@ namespace odc::core
         /// \brief Set timeout of requests
         /// \param [in] _timeout Timeout in seconds
         void setTimeout(const std::chrono::seconds& _timeout);
+
+        /// \brief Register resource plugins
+        /// \param [in] _pluginMap Map of plugin name to path
+        void registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap);
 
         //
         // DDS topology and session requests

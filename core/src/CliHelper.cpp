@@ -138,6 +138,17 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
 }
 
 //
+// Resource plugins
+//
+
+void CCliHelper::addResourcePluginOptions(boost::program_options::options_description& _options,
+                                          CDDSSubmit::PluginMap_t& _pluginMap)
+{
+    _options.add_options()(
+        "rp", bpo::value<vector<string>>()->multitoken(), "Register resource plugins ( name1:path1 name2:path2 )");
+}
+
+//
 // Extra step of options parsing
 //
 
@@ -165,5 +176,32 @@ void CCliHelper::parseOptions(const boost::program_options::variables_map& _vm, 
     else
     {
         _params.m_properties = { { "key1", "value1" }, { "key2", "value2" } };
+    }
+}
+
+void CCliHelper::parseResourcePluginOptions(const boost::program_options::variables_map& _vm,
+                                            CDDSSubmit::PluginMap_t& _pluginMap)
+{
+    if (_vm.count("rp"))
+    {
+        const auto& kvp(_vm["rp"].as<vector<string>>());
+        _pluginMap.clear();
+        for (const auto& v : kvp)
+        {
+            vector<string> strs;
+            boost::split(strs, v, boost::is_any_of(":"));
+            if (strs.size() == 2)
+            {
+                _pluginMap.insert(make_pair(strs[0], strs[1]));
+            }
+            else
+            {
+                throw runtime_error("Wrong resource plugin format for string '" + v + "'. Use 'name:path'.");
+            }
+        }
+    }
+    else
+    {
+        _pluginMap.clear();
     }
 }

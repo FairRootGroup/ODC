@@ -7,7 +7,7 @@
 
 // ODC
 #include "ControlService.h"
-
+#include "DDSSubmit.h"
 // GRPC
 #include "odc.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
@@ -20,6 +20,7 @@ namespace odc::grpc
         CGrpcControlService();
 
         void setTimeout(const std::chrono::seconds& _timeout);
+        void registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap);
 
       private:
         ::grpc::Status Initialize(::grpc::ServerContext* context,

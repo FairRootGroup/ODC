@@ -7,6 +7,7 @@
 
 // ODC
 #include "ControlService.h"
+#include "DDSSubmit.h"
 #include "Logger.h"
 // BOOST
 #include <boost/program_options/options_description.hpp>
@@ -29,6 +30,14 @@ namespace odc::core
                                     std::vector<std::string>& _cmds,
                                     bool& _batch,
                                     std::vector<partitionID_t>& _partitions);
+        static void addResourcePluginOptions(boost::program_options::options_description& _options,
+                                             CDDSSubmit::PluginMap_t& _pluginMap);
+
+        //
+        // Option Parsing
+        //
+        static void parseResourcePluginOptions(const boost::program_options::variables_map& _vm,
+                                               CDDSSubmit::PluginMap_t& _pluginMap);
 
         //
         // Request specific options
