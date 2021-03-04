@@ -149,3 +149,4 @@ of your system.
 1. [Frequently Asked Questions](docs/faq.md)
 2. [Examples](examples)
 3. [Release notes](ReleaseNotes.md)
+4. [Resource plugins](docs/rp.md)
