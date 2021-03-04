@@ -8,6 +8,7 @@
 // STD
 #include <string>
 // ODC
+#include "DDSSubmit.h"
 #include "GrpcControlService.h"
 
 namespace odc::grpc
@@ -20,6 +21,7 @@ namespace odc::grpc
         void Run(const std::string& _host);
 
         void setTimeout(const std::chrono::seconds& _timeout);
+        void registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap);
 
       private:
         std::shared_ptr<CGrpcControlService> m_service; ///< Service for request processing

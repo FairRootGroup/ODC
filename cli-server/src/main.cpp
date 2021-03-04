@@ -32,6 +32,7 @@ int main(int argc, char** argv)
         vector<string> cmds;
         bool batch;
         vector<partitionID_t> partitionIDs;
+        CDDSSubmit::PluginMap_t pluginMap;
 
         // Generic options
         bpo::options_description options("odc-cli-server options");
@@ -40,6 +41,7 @@ int main(int argc, char** argv)
         CCliHelper::addTimeoutOptions(options, timeout);
         CCliHelper::addLogOptions(options, logConfig);
         CCliHelper::addBatchOptions(options, cmds, batch, partitionIDs);
+        CCliHelper::addResourcePluginOptions(options, pluginMap);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -68,6 +70,8 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
+        CCliHelper::parseResourcePluginOptions(vm, pluginMap);
+
         {
             // Equivalent to calling source DDS_env.sh
             fair::mq::sdk::DDSEnv env;
@@ -88,6 +92,7 @@ int main(int argc, char** argv)
 
         odc::cli::CCliControlService control;
         control.setTimeout(chrono::seconds(timeout));
+        control.registerResourcePlugins(pluginMap);
         control.run((batch) ? cmds : vector<string>(), partitionIDs, std::chrono::milliseconds(1000));
     }
     catch (exception& _e)

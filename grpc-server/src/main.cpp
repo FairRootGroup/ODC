@@ -31,6 +31,7 @@ int main(int argc, char** argv)
         size_t timeout;
         string host;
         CLogger::SConfig logConfig;
+        CDDSSubmit::PluginMap_t pluginMap;
 
         // Generic options
         bpo::options_description options("dds-control-server options");
@@ -39,6 +40,7 @@ int main(int argc, char** argv)
         CCliHelper::addTimeoutOptions(options, timeout);
         CCliHelper::addHostOptions(options, host);
         CCliHelper::addLogOptions(options, logConfig);
+        CCliHelper::addResourcePluginOptions(options, pluginMap);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -69,6 +71,8 @@ int main(int argc, char** argv)
 
         setupGrpcVerbosity(logConfig);
 
+        CCliHelper::parseResourcePluginOptions(vm, pluginMap);
+
         {
             // Equivalent to calling source DDS_env.sh
             fair::mq::sdk::DDSEnv env;
@@ -89,15 +93,18 @@ int main(int argc, char** argv)
 
         odc::grpc::CGrpcControlServer server;
         server.setTimeout(chrono::seconds(timeout));
+        server.registerResourcePlugins(pluginMap);
         server.Run(host);
     }
     catch (exception& _e)
     {
+        OLOG(ESeverity::clean) << _e.what();
         OLOG(ESeverity::fatal) << _e.what();
         return EXIT_FAILURE;
     }
     catch (...)
     {
+        OLOG(ESeverity::clean) << "Unexpected Exception occurred.";
         OLOG(ESeverity::fatal) << "Unexpected Exception occurred.";
         return EXIT_FAILURE;
     }

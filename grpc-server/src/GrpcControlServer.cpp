@@ -9,6 +9,7 @@
 #include <grpcpp/grpcpp.h>
 
 using namespace odc::grpc;
+using namespace odc::core;
 using namespace std;
 
 CGrpcControlServer::CGrpcControlServer()
@@ -30,4 +31,9 @@ void CGrpcControlServer::Run(const std::string& _host)
 void CGrpcControlServer::setTimeout(const std::chrono::seconds& _timeout)
 {
     m_service->setTimeout(_timeout);
+}
+
+void CGrpcControlServer::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
+{
+    m_service->registerResourcePlugins(_pluginMap);
 }

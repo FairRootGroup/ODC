@@ -8,6 +8,7 @@
 // ODC
 #include "CliServiceHelper.h"
 #include "ControlService.h"
+#include "DDSSubmit.h"
 
 namespace odc::cli
 {
@@ -15,6 +16,8 @@ namespace odc::cli
     {
       public:
         CCliControlService();
+
+        void registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap);
 
         std::string requestInitialize(const odc::core::partitionID_t& _partitionID,
                                       const odc::core::SInitializeParams& _params);

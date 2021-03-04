@@ -76,6 +76,7 @@ int main(int argc, char** argv)
     }
     catch (...)
     {
+        OLOG(ESeverity::clean) << "Unexpected Exception occurred.";
         OLOG(ESeverity::fatal) << "Unexpected Exception occurred.";
         return EXIT_FAILURE;
     }

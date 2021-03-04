@@ -48,7 +48,10 @@ namespace odc::core
 
         CDDSSubmit();
 
+        // Shared pointer
         using Ptr_t = std::shared_ptr<CDDSSubmit>;
+        // Plugin map <plugin name, path>
+        using PluginMap_t = std::map<std::string, std::string>;
 
         void registerPlugin(const std::string& _plugin, const std::string& _path);
         SParams makeParams(const std::string& _plugin, const std::string& _resources);
@@ -56,8 +59,6 @@ namespace odc::core
       private:
         void registerDefaultPlugin(const std::string& _name);
 
-        // Plugin map <plugin name, path>
-        using PluginMap_t = std::map<std::string, std::string>;
         PluginMap_t m_plugins; ///< Plugins
     };
 } // namespace odc::core

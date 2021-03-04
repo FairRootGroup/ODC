@@ -17,6 +17,11 @@ CCliControlService::CCliControlService()
 {
 }
 
+void CCliControlService::registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap)
+{
+    m_service->registerResourcePlugins(_pluginMap);
+}
+
 std::string CCliControlService::requestInitialize(const odc::core::partitionID_t& _partitionID,
                                                   const odc::core::SInitializeParams& _params)
 {
