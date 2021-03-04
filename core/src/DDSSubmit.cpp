@@ -96,9 +96,16 @@ CDDSSubmit::CDDSSubmit()
 
 void CDDSSubmit::registerDefaultPlugin(const std::string& _name)
 {
-    fs::path pluginPath{ kODCBinDir };
-    pluginPath /= _name;
-    registerPlugin(_name, pluginPath.string());
+    try
+    {
+        fs::path pluginPath{ kODCBinDir };
+        pluginPath /= _name;
+        registerPlugin(_name, pluginPath.string());
+    }
+    catch (const exception& _e)
+    {
+        OLOG(ESeverity::error) << "Unable to register default resource plugin " << quoted(_name) << ": " << _e.what();
+    }
 }
 
 void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _path)
