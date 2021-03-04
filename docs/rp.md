@@ -1,6 +1,6 @@
 # Resource Plugins
 
-Resource plugin is an executable or script which generates RMS configuration for `dds-submit`. It can be written in any programming language and doesn’t depend on ODC.
+Resource plugin is an executable or script which generates RMS configuration for [`dds-submit`](http://dds.gsi.de/doc/nightly/dds-submit.html). It can be written in any programming language and doesn’t depend on ODC.
 
 The contract between resource plugin and ODC:
  * **Input:** a resource description string. For example, it can be in JSON ar XML format or any other format. ODC executes plugin and provides a resource string via `--res` command line option:
@@ -25,4 +25,4 @@ ODC uses XML with the following top level tags:
  
 Each tag (except `<requiredSlots>`) corresponds to the command line option used by [`dds-submit`](http://dds.gsi.de/doc/nightly/dds-submit.html). Not all tags are required. A set of required tags depends on the used [DDS RMS plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html).
 
-`Submit` request (as well as `dds-submit`) is async meaning that it doesn't wait for agents to appear online. In order to make it sync one can optionally define the number of required active slots using  `<requiredSlots>` tag.
+[`SubmitRequest`](grpc-proto/odc.proto) (as well as [`dds-submit`](http://dds.gsi.de/doc/nightly/dds-submit.html)) is async meaning that it doesn't wait for DDS agents to appear online. In order to make it sync one can optionally define the number of required active slots using `<requiredSlots>` tag.
