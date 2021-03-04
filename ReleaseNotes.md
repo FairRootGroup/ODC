@@ -1,6 +1,9 @@
 # ODC Release Notes
 
 ## v0.18 (NOT YET RELEASED)
+### ODC common
+Added: [Resource plugins](docs/rp.md).   
+
 ### Examples
 Modified: Update topology creation example.    
 
