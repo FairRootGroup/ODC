@@ -50,18 +50,6 @@ void CDDSSubmit::SParams::initFromXML(istream& _stream)
 
 void CDDSSubmit::SParams::initFromPT(const pt::ptree& _pt)
 {
-    // TODO: FIXME: define required fields?
-
-    // Resource description format.
-    // Top tag is <res>
-    // XML tags:
-    // <rms> - name of the DDS RMS plugin
-    // <configFile> - path to the configuration file
-    // <configContent> - content of the configuration file
-    // <agents> - number of agents
-    // <slots> - number of slots per agent
-    // <requiredSlots> - required number of total active slots
-
     // TODO: FIXME: <configContent> is not yet defined
     // To support it we need to create a temporary file with configuration content and use it as config file.
 
