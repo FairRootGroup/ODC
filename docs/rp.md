@@ -34,3 +34,9 @@ In order to use custom resource plugin one need to register it in ODC server. `o
 odc-grpc-server --rp my_plugin:/path/to/my_plugin another_plugin:/path/to/another_plugin
 ```
 Registered plugins can be addressed by using `plugin` field of [`SubmitRequest`](grpc-proto/odc.proto) or [`RunRequest`](grpc-proto/odc.proto).
+
+### Resource plugin examples
+
+ODC containes two examples of resource plugins:
+ * A built-in [`odc-rp-same`](../plugins/rp-same/src/odc-rp-same.cpp) plugin implemented in `C++`.
+ * A [DDS SSH configuration plugin](../examples/src/odc-rp-example.sh) implemented as a `bash` script.
