@@ -1,6 +1,9 @@
 # ODC Release Notes
 
-## v0.18 (NOT YET RELEASED)
+## v0.20 (NOT YET RELEASED)
+
+
+## v0.18 (2021-03-10)
 ### ODC common
 Added: [Resource plugins](docs/rp.md).   
 
