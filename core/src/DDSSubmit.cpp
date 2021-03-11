@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <iomanip>
 #include <ostream>
+#include <set>
 #include <sstream>
 // BOOST
 #include <boost/filesystem.hpp>
