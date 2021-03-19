@@ -4,6 +4,7 @@
 
 // DDS
 #include "GrpcControlService.h"
+#include "Logger.h"
 
 using namespace odc;
 using namespace odc::core;
@@ -29,9 +30,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                                const odc::InitializeRequest* request,
                                                odc::GeneralReply* response)
 {
+    OLOG(ESeverity::info) << "Initialize request:\n" << request->DebugString();
     SInitializeParams params{ request->sessionid() };
     SReturnValue value = m_service->execInitialize(request->partitionid(), params);
     setupGeneralReply(response, value);
+    OLOG(ESeverity::info) << "Initialize response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -39,9 +42,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                            const odc::SubmitRequest* request,
                                            odc::GeneralReply* response)
 {
+    OLOG(ESeverity::info) << "Submit request:\n" << request->DebugString();
     SSubmitParams params{ request->plugin(), request->resources() };
     SReturnValue value = m_service->execSubmit(request->partitionid(), params);
     setupGeneralReply(response, value);
+    OLOG(ESeverity::info) << "Submit response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -49,9 +54,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                              const odc::ActivateRequest* request,
                                              odc::GeneralReply* response)
 {
+    OLOG(ESeverity::info) << "Activate request:\n" << request->DebugString();
     SActivateParams params{ request->topology() };
     SReturnValue value = m_service->execActivate(request->partitionid(), params);
     setupGeneralReply(response, value);
+    OLOG(ESeverity::info) << "Activate response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -59,11 +66,13 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                         const odc::RunRequest* request,
                                         odc::GeneralReply* response)
 {
+    OLOG(ESeverity::info) << "Run request:\n" << request->DebugString();
     SInitializeParams initializeParams{ "" };
     SSubmitParams submitParams{ request->plugin(), request->resources() };
     SActivateParams activateParams{ request->topology() };
     SReturnValue value = m_service->execRun(request->partitionid(), initializeParams, submitParams, activateParams);
     setupGeneralReply(response, value);
+    OLOG(ESeverity::info) << "Run response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -71,9 +80,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                            const odc::UpdateRequest* request,
                                            odc::GeneralReply* response)
 {
+    OLOG(ESeverity::info) << "Update request:\n" << request->DebugString();
     SUpdateParams params{ request->topology() };
     SReturnValue value = m_service->execUpdate(request->partitionid(), params);
     setupGeneralReply(response, value);
+    OLOG(ESeverity::info) << "Update response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -81,9 +92,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                              const odc::StateRequest* request,
                                              odc::StateReply* response)
 {
+    OLOG(ESeverity::info) << "GetState request:\n" << request->DebugString();
     SDeviceParams params{ request->path(), request->detailed() };
     SReturnValue value = m_service->execGetState(request->partitionid(), params);
     setupStateReply(response, value);
+    OLOG(ESeverity::info) << "GetState response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -91,6 +104,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                                   const odc::SetPropertiesRequest* request,
                                                   odc::GeneralReply* response)
 {
+    OLOG(ESeverity::info) << "SetProperties request:\n" << request->DebugString();
     // Convert from protobuf to ODC format
     SSetPropertiesParams::Properties_t props;
     for (size_t i = 0; i < request->properties_size(); i++)
@@ -102,6 +116,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     SSetPropertiesParams params{ props, request->path() };
     SReturnValue value = m_service->execSetProperties(request->partitionid(), params);
     setupGeneralReply(response, value);
+    OLOG(ESeverity::info) << "SetProperties response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -109,9 +124,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                               const odc::ConfigureRequest* request,
                                               odc::StateReply* response)
 {
+    OLOG(ESeverity::info) << "Configure request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execConfigure(request->request().partitionid(), params);
     setupStateReply(response, value);
+    OLOG(ESeverity::info) << "Configure response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -119,9 +136,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                           const odc::StartRequest* request,
                                           odc::StateReply* response)
 {
+    OLOG(ESeverity::info) << "Start request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execStart(request->request().partitionid(), params);
     setupStateReply(response, value);
+    OLOG(ESeverity::info) << "Start response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -129,9 +148,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                          const odc::StopRequest* request,
                                          odc::StateReply* response)
 {
+    OLOG(ESeverity::info) << "Stop request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execStop(request->request().partitionid(), params);
     setupStateReply(response, value);
+    OLOG(ESeverity::info) << "Stop response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -139,9 +160,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                           const odc::ResetRequest* request,
                                           odc::StateReply* response)
 {
+    OLOG(ESeverity::info) << "Reset request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execReset(request->request().partitionid(), params);
     setupStateReply(response, value);
+    OLOG(ESeverity::info) << "Reset response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -149,9 +172,11 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                               const odc::TerminateRequest* request,
                                               odc::StateReply* response)
 {
+    OLOG(ESeverity::info) << "Terminate request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execTerminate(request->request().partitionid(), params);
     setupStateReply(response, value);
+    OLOG(ESeverity::info) << "Terminate response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -159,8 +184,10 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
                                              const odc::ShutdownRequest* request,
                                              odc::GeneralReply* response)
 {
+    OLOG(ESeverity::info) << "Shutdown request:\n" << request->DebugString();
     SReturnValue value = m_service->execShutdown(request->partitionid());
     setupGeneralReply(response, value);
+    OLOG(ESeverity::info) << "Shutdown response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
