@@ -6,8 +6,7 @@ ODC provides several examples of [DDS topologies](http://dds.gsi.de/doc/nightly/
 
 Source DDS environment script before starting ODC server:
 ```
-> cd DDS_INSTALL_DIR
-> source DDS_env.sh
+> cd DDS_INSTALL_DIR && source DDS_env.sh
 ```
 
 Start ODC gRPC server:
@@ -36,8 +35,7 @@ By default this example uses [localhost plugin](http://dds.gsi.de/doc/nightly/RM
 Installation of ODC and its dependencies using [aliBuild](https://github.com/alisw/alibuild):
 
 ```
-> mkdir INSTALL_DIR
-> cd INSTALL_DIR
+> mkdir -p INSTALL_DIR && cd INSTALL_DIR
 > git clone https://github.com/alisw/alidist.git
 > aliBuild --default o2-dataflow build ODC
 ```
@@ -48,10 +46,7 @@ Create file `hosts.cfg` with the following content:
 
 ```
 @bash_begin@
-export PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/opt/ibutils/bin:$PATH
-cd INSTALL_DIR/
-eval `alienv --no-refresh load ODC/latest-o2-dataflow`
-cd -
+cd INSTALL_DIR && eval `alienv --no-refresh load ODC/latest-o2-dataflow` && cd -
 @bash_end@
 
 wn_epn002, epn002, , WRK_DIR,  12
@@ -63,21 +58,19 @@ Replace `INSTALL_DIR` and `WRK_DIR` with the real directory names. Important pre
 
 Open two terminal windows. In each of the terminal first initialize the environment:
 ```
-> cd INSTALL_DIR
-> alienv enter ODC/latest-o2-dataflow
+> cd INSTALL_DIR && alienv enter ODC/latest-o2-dataflow
 > export LC_ALL=C; unset LANGUAGE
-> cd INSTALL_DIR/sw/slc8_x86-64/DDS/latest
-> source DDS_env.sh
+> cd sw/slc8_x86-64/DDS/latest && source DDS_env.sh
 ```
 
 Start ODC gRPC server:
 ```
-> odc-grpc-server --rms ssh --config PATH_TO_HOSTS/hosts.cfg --agents 3 --slots 12
+> odc-grpc-server
 ```
 
 Start ODC gRPC client:
 ```
-> odc-grpc-client --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml --uptopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-up.xml --downtopo INSTALL_DIR/share/odc/ex-dds-topology-infinite-down.xml
+> odc-grpc-client
 ```
 
 ### Data Distribution example
@@ -101,22 +94,22 @@ For a Data Distribution example create a topology file `ex-dd-topology.xml` with
 `tfbuilder.sh` is a bash script which initializes the environment and starts `TfBuilder`:
 ```
 #!/usr/bin/env bash
-eval `aliswmod load DataDistribution/v0.7.7-3`
-TfBuilder -P dds --severity debug --session=epnsrecosession --shm-segment-size=$((2 << 30)) --id tfb --discovery-id=$(hostname -s) --discovery-net-if=ib1 --discovery-endpoint=http://epn-vs020-ib:8500 --discovery-partition=odctestpart --stand-alone
+module load DataDistribution/v0.9.7-5
+TfBuilder -P dds --transport shmem --session default --io-threads=24 --severity debug --id tfb --tf-memory-size=$((128 * 1024)) --discovery-net-if=ib0 --discovery-endpoint=http://epn000-ib:8500 --stand-alone
 ```
 Start ODC gRPC server:
 ```
-odc-grpc-server --rms ssh --config hosts.cfg --agents 3 --slots 1
+odc-grpc-server --host "*:PORT"
 ```
 Start ODC gRPC client:
 ```
-odc-grpc-client --topo ex-dd-topology.xml 
+odc-grpc-client --host "HOST:PORT"
 ```
 Use the following sequence of commands:
 ```
 .init
-.submit
-.activate
+.submit -p odc-rp-same -r "<rms>ssh</rms><configFile>hosts.cfg</configFile><requiredSlots>36</requiredSlots>"
+.activate --topo ex-dd-topology.xml 
 .config
 .start
 .stop
@@ -125,6 +118,7 @@ Use the following sequence of commands:
 .down
 .quit
 ```
+We use `hosts.cfg` file from previous example and built-in `odc-rp-same` resource plugin. 
 
 ## Run on GSI Virgo cluster
 
@@ -154,28 +148,33 @@ For this example we use [Slurm plugin](http://dds.gsi.de/doc/nightly/RMS-plugins
 
 Start ODC gRPC server:
 ```
-> odc-grpc-server --host "*:22334" --rms slurm --config PATH_TO_CFG/slurm.cfg --agents 3 --slots 12
+> odc-grpc-server --host "*:PORT"
 ```
 The number of agents (3) and slots (12) is required to test default topoloies of ODC. These numbers has to be adjusted if you want to test your own topology. 
 
 Start ODC gRPC client:
 ```
-> odc-grpc-client --host "{ODC_SERVER_HOSTNAME}:22334"
+> odc-grpc-client --host "{ODC_SERVER_HOSTNAME}:PORT"
 ```
 `{ODC_SERVER_HOSTNAME}` has to be replace with the real hostname. Port can be change.
+
+Submit request looks like:
+```
+.submit -p odc-rp-same -r "<rms>slurm</rms><configFile>PATH_TO_CFG/slurm.cfg</configFile><agents>3</agents><slots>12</slots><requiredSlots>36</requiredSlots>"
+```
 
 ## Standard sequence of requests
 ```
 .init
-.submit
-.activate
+.submit -p odc-rp-same -r "<rms>ssh</rms><configFile>hosts.cfg</configFile><requiredSlots>36</requiredSlots>"
+.activate --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml
 .config
 .start
 .stop
-.upscale (Scale topology up. From 12 to 36 devices.)
+.upscale --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite-up.xml
 .start
 .stop
-.downscale (Scale topology down. From 36 devices to 24.)
+.downscale --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite-down.xml
 .start
 .stop
 .reset
