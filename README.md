@@ -121,16 +121,20 @@ The standard sequence of requests for interactive mode:
 
 The default sequence of request can also be executed in batch mode using `--batch` option. The sequence of commands can be changed via `--cmds` option.
 
-Alternatively, start the server as a background daemon (in your user session):
+Alternatively, start the ODC server as a background daemon (in your user session):
 
 Linux:
 ```bash
 # After installation, execute once
 systemctl --user daemon-reload
 # Then control odc-grpc-server via
-systemctl --user start/stop/status odc-service
+systemctl --user start/stop/status odc
 # View server logs
-journalctl --user-unit odc-service [-f]
+journalctl --user-unit odc [-f]
+```
+One can also use `systemd-run` to start the ODC server:
+```bash
+systemd-run --user --unit=odc odc-grpc-server
 ```
 
 MacOS:
@@ -141,7 +145,7 @@ launchctl load/unload ~/Library/LaunchAgents/de.gsi.odc.plist
 launchctl start/stop de.gsi.odc-grpc-server
 ```
 
-Find more details on the usage of the `systemctl`/`launchctl` commands in the manpages
+Find more details on the usage of the `systemctl`/`systemd-run`/`launchctl` commands in the manpages
 of your system.
 
 ## Documentation
