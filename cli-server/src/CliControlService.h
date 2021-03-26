@@ -5,6 +5,8 @@
 #ifndef __ODC__CliControlService__
 #define __ODC__CliControlService__
 
+// STD
+#include <chrono>
 // ODC
 #include "CliServiceHelper.h"
 #include "ControlService.h"
@@ -16,6 +18,8 @@ namespace odc::cli
     {
       public:
         CCliControlService();
+
+        void setTimeout(const std::chrono::seconds& _timeout);
 
         void registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap);
 

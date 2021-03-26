@@ -10,7 +10,6 @@
 #include "ControlService.h"
 #include "Logger.h"
 // STD
-#include <chrono>
 #include <iostream>
 #include <tuple>
 // BOOST
@@ -71,11 +70,6 @@ namespace odc::core
                 // Exit at the end
                 exit(EXIT_SUCCESS);
             }
-        }
-
-        void setTimeout(const std::chrono::seconds& _timeout)
-        {
-            m_timeout = _timeout;
         }
 
       private:
@@ -248,9 +242,6 @@ namespace odc::core
                                    << ".term - Terminate request." << std::endl
                                    << ".down - Shutdown request." << std::endl;
         }
-
-      private:
-        std::chrono::seconds m_timeout; ///< Request timeout
     };
 } // namespace odc::core
 

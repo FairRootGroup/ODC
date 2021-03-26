@@ -17,6 +17,11 @@ CCliControlService::CCliControlService()
 {
 }
 
+void CCliControlService::setTimeout(const std::chrono::seconds& _timeout)
+{
+    m_service->setTimeout(_timeout);
+}
+
 void CCliControlService::registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap)
 {
     m_service->registerResourcePlugins(_pluginMap);
