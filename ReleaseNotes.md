@@ -1,6 +1,13 @@
 # ODC Release Notes
 
-## v0.20 (NOT YET RELEASED)
+## v0.22 (NOT YET RELEASED)
+
+
+
+## v0.20 (2021-04-12)
+### ODC common
+Added: request/response logs for `odc-grpc-server`.    
+Fixed: setting a timeout for odc-cli-server.    
 
 
 ## v0.18 (2021-03-10)
