@@ -25,8 +25,8 @@ int main(int argc, char** argv)
         string host;
         CLogger::SConfig logConfig;
         vector<string> cmds;
+        string cmdsFilepath;
         bool batch;
-        vector<partitionID_t> partitionIDs;
 
         // Generic options
         bpo::options_description options("grpc-client options");
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
         CCliHelper::addVersionOptions(options);
         CCliHelper::addHostOptions(options, host);
         CCliHelper::addLogOptions(options, logConfig);
-        CCliHelper::addBatchOptions(options, cmds, batch, partitionIDs);
+        CCliHelper::addBatchOptions(options, cmds, cmdsFilepath, batch);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -63,10 +63,12 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
+        const vector<string> inputCmds{ CCliHelper::batchCmds(vm, cmds, cmdsFilepath, batch) };
+
         setupGrpcVerbosity(logConfig);
 
         CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
-        control.run((batch) ? cmds : vector<string>(), partitionIDs, std::chrono::milliseconds(1000));
+        control.run(inputCmds, std::chrono::milliseconds(1000));
     }
     catch (exception& _e)
     {

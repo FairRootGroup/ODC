@@ -28,6 +28,8 @@ add_library(odc_core_lib
     "src/DDSSubmit.h"
     "src/DDSSubmit.cpp"
     "src/Process.h"
+    "src/CmdsFile.h"
+    "src/CmdsFile.cpp"
 )
 target_link_libraries(odc_core_lib
   DDS::dds_topology_lib

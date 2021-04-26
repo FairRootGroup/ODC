@@ -19,6 +19,19 @@ namespace odc::core
     {
       public:
         //
+        // Helpers
+        //
+        /// Function used to check that '_opt1' and '_opt2' are not specified at the same time
+        static void conflictingOptions(const boost::program_options::variables_map& _vm,
+                                       const std::string& _opt1,
+                                       const std::string& _opt2);
+
+        static std::vector<std::string> batchCmds(const boost::program_options::variables_map& _vm,
+                                                  const std::vector<std::string>& _cmds,
+                                                  const std::string& _cmdsFilepath,
+                                                  const bool _batch);
+
+        //
         // Generic options
         //
         static void addHelpOptions(boost::program_options::options_description& _options);
@@ -28,8 +41,8 @@ namespace odc::core
         static void addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout);
         static void addBatchOptions(boost::program_options::options_description& _options,
                                     std::vector<std::string>& _cmds,
-                                    bool& _batch,
-                                    std::vector<partitionID_t>& _partitions);
+                                    std::string& _cmdsFilepath,
+                                    bool& _batch);
         static void addResourcePluginOptions(boost::program_options::options_description& _options,
                                              CDDSSubmit::PluginMap_t& _pluginMap);
 

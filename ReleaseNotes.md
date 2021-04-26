@@ -1,7 +1,8 @@
 # ODC Release Notes
 
 ## v0.22 (NOT YET RELEASED)
-
+### ODC common
+Added: batch execution of requests from a configuration file. Filepath to a configuration file can be specified via `--cf` option added to `odc-grpc-client` and `odc-cli-server`.    
 
 
 ## v0.20 (2021-04-12)

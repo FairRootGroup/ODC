@@ -30,8 +30,8 @@ int main(int argc, char** argv)
         size_t timeout;
         CLogger::SConfig logConfig;
         vector<string> cmds;
+        string cmdsFilepath;
         bool batch;
-        vector<partitionID_t> partitionIDs;
         CDDSSubmit::PluginMap_t pluginMap;
 
         // Generic options
@@ -40,7 +40,7 @@ int main(int argc, char** argv)
         CCliHelper::addVersionOptions(options);
         CCliHelper::addTimeoutOptions(options, timeout);
         CCliHelper::addLogOptions(options, logConfig);
-        CCliHelper::addBatchOptions(options, cmds, batch, partitionIDs);
+        CCliHelper::addBatchOptions(options, cmds, cmdsFilepath, batch);
         CCliHelper::addResourcePluginOptions(options, pluginMap);
 
         // Parsing command-line
@@ -70,6 +70,8 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
+        const vector<string> inputCmds{ CCliHelper::batchCmds(vm, cmds, cmdsFilepath, batch) };
+
         CCliHelper::parseResourcePluginOptions(vm, pluginMap);
 
         {
@@ -93,7 +95,7 @@ int main(int argc, char** argv)
         odc::cli::CCliControlService control;
         control.setTimeout(chrono::seconds(timeout));
         control.registerResourcePlugins(pluginMap);
-        control.run((batch) ? cmds : vector<string>(), partitionIDs, std::chrono::milliseconds(1000));
+        control.run(inputCmds, std::chrono::milliseconds(1000));
     }
     catch (exception& _e)
     {

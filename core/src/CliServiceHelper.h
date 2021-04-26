@@ -30,7 +30,6 @@ namespace odc::core
         /// \param[in] _cmds Array of requests. If empty than command line input is required.
         /// \param[in] _delay Delay between command execution.
         void run(const std::vector<std::string>& _cmds = std::vector<std::string>(),
-                 const std::vector<partitionID_t>& _partitionIDs = std::vector<partitionID_t>(),
                  const std::chrono::milliseconds& _delay = std::chrono::milliseconds(1000))
         {
             printDescription();
@@ -52,18 +51,7 @@ namespace odc::core
                 for (const auto& cmd : _cmds)
                 {
                     OLOG(ESeverity::clean) << "Executing command " << std::quoted(cmd);
-
-                    if (_partitionIDs.empty())
-                    {
-                        processRequest(cmd);
-                    }
-                    else
-                    {
-                        for (auto v : _partitionIDs)
-                        {
-                            processRequest(cmd + " --id " + v);
-                        }
-                    }
+                    processRequest(cmd);
                     OLOG(ESeverity::clean) << "Waiting " << _delay.count() << " ms";
                     std::this_thread::sleep_for(_delay);
                 }

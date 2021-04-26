@@ -4,12 +4,42 @@
 
 #include "CliHelper.h"
 #include "BuildConstants.h"
+#include "CmdsFile.h"
 // BOOST
 #include <boost/algorithm/string.hpp>
 
 using namespace std;
 using namespace odc::core;
 namespace bpo = boost::program_options;
+
+void CCliHelper::conflictingOptions(const boost::program_options::variables_map& _vm,
+                                    const std::string& _opt1,
+                                    const std::string& _opt2)
+{
+    if (_vm.count(_opt1) && !_vm[_opt1].defaulted() && _vm.count(_opt2) && !_vm[_opt2].defaulted())
+    {
+        stringstream ss;
+        ss << "Conflicting options " << quoted(_opt1) << " and " << quoted(_opt2);
+        throw runtime_error(ss.str());
+    }
+}
+
+vector<string> CCliHelper::batchCmds(const boost::program_options::variables_map& _vm,
+                                     const std::vector<std::string>& _cmds,
+                                     const std::string& _cmdsFilepath,
+                                     const bool _batch)
+{
+    CCliHelper::conflictingOptions(_vm, "cmds", "cf");
+    if (_batch)
+    {
+        if ((_vm.count("cmds") && _vm["cmds"].defaulted() && _vm.count("cf") && _vm["cf"].defaulted()) ||
+            (_vm.count("cmds") && !_vm["cmds"].defaulted()))
+            return _cmds;
+        else if (_vm.count("cf") && !_vm["cf"].defaulted())
+            return CCmdsFile::getCmds(_cmdsFilepath);
+    }
+    return vector<string>();
+}
 
 //
 // Generic options
@@ -44,35 +74,40 @@ void CCliHelper::addLogOptions(boost::program_options::options_description& _opt
 
 void CCliHelper::addBatchOptions(boost::program_options::options_description& _options,
                                  std::vector<std::string>& _cmds,
-                                 bool& _batch,
-                                 std::vector<partitionID_t>& _partitions)
+                                 std::string& _cmdsFilepath,
+                                 bool& _batch)
 {
     using boost::algorithm::join;
 
     _options.add_options()("batch", bpo::bool_switch(&_batch)->default_value(false), "Non interactive batch mode");
 
-    string defaultUpTopo{ kODCDataDir + "/ex-dds-topology-infinite-up.xml" };
-    string defaultDownTopo{ kODCDataDir + "/ex-dds-topology-infinite-down.xml" };
-    stringstream ssUp;
-    ssUp << std::quoted(".upscale --topo " + defaultUpTopo);
-    stringstream ssDown;
-    ssDown << std::quoted(".downscale --topo " + defaultDownTopo);
-    vector<string> defaultCmds{ ".init", ".submit",    ".activate", ".config", ".start", ".stop", ssUp.str(), ".start",
-                                ".stop", ssDown.str(), ".start",    ".stop",   ".reset", ".term", ".down" };
-    string defaultCmdsStr{ join(defaultCmds, " ") };
-    _options.add_options()(
-        "cmds",
-        bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(defaultCmds, defaultCmdsStr),
-        "Array of command to be executed in batch mode");
+    const vector<partitionID_t> defaultPartitions{ "a1b2c3", "d4e5f6" };
+    const string defaultUpTopo{ kODCDataDir + "/ex-dds-topology-infinite-up.xml" };
+    const string defaultDownTopo{ kODCDataDir + "/ex-dds-topology-infinite-down.xml" };
+    const string upStr{ ".upscale --topo " + defaultUpTopo };
+    const string downStr{ ".downscale --topo " + defaultDownTopo };
+    const vector<string> defaultCmds{ ".init", ".submit", ".activate", ".config", ".start", ".stop", upStr,  ".start",
+                                      ".stop", downStr,   ".start",    ".stop",   ".reset", ".term", ".down" };
 
-    vector<partitionID_t> defaultPartitions{};
-    string defaultPartitionsStr{ join(defaultPartitions, " ") };
-    _options.add_options()(
-        "prts",
-        bpo::value<std::vector<partitionID_t>>(&_partitions)
-            ->multitoken()
-            ->default_value(defaultPartitions, defaultPartitionsStr),
-        "Array of partition IDs. If set than each command in batch mode will be executed for each partition.");
+    vector<string> cmds;
+    for (const auto& cmd : defaultCmds)
+    {
+        for (const auto& prt : defaultPartitions)
+        {
+            stringstream ss;
+            ss << cmd + " --id " + prt;
+            cmds.push_back(ss.str());
+        }
+    }
+
+    const string cmdsStr{ join(cmds, " ") };
+    _options.add_options()("cmds",
+                           bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(cmds, cmdsStr),
+                           "Array of command to be executed in batch mode");
+
+    _options.add_options()("cf",
+                           bpo::value<std::string>(&_cmdsFilepath)->default_value(""),
+                           "Config file containing an array of command to be executed in batch mode");
 }
 
 //
