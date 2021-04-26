@@ -53,10 +53,12 @@ void CCliHelper::addBatchOptions(boost::program_options::options_description& _o
 
     string defaultUpTopo{ kODCDataDir + "/ex-dds-topology-infinite-up.xml" };
     string defaultDownTopo{ kODCDataDir + "/ex-dds-topology-infinite-down.xml" };
-    string upCmd{ ".upscale --topo " + defaultUpTopo };
-    string downCmd{ ".downscale --topo " + defaultDownTopo };
-    vector<string> defaultCmds{ ".init", ".submit", ".activate", ".config", ".start", ".stop", upCmd,  ".start",
-                                ".stop", downCmd,   ".start",    ".stop",   ".reset", ".term", ".down" };
+    stringstream ssUp;
+    ssUp << std::quoted(".upscale --topo " + defaultUpTopo);
+    stringstream ssDown;
+    ssDown << std::quoted(".downscale --topo " + defaultDownTopo);
+    vector<string> defaultCmds{ ".init", ".submit",    ".activate", ".config", ".start", ".stop", ssUp.str(), ".start",
+                                ".stop", ssDown.str(), ".start",    ".stop",   ".reset", ".term", ".down" };
     string defaultCmdsStr{ join(defaultCmds, " ") };
     _options.add_options()(
         "cmds",
