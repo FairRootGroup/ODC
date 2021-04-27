@@ -105,8 +105,9 @@ void CCliHelper::addBatchOptions(boost::program_options::options_description& _o
                            bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(cmds, cmdsStr),
                            "Array of command to be executed in batch mode");
 
+    const string defaultConfig{ kODCDataDir + "/cmds.cfg" };
     _options.add_options()("cf",
-                           bpo::value<std::string>(&_cmdsFilepath)->default_value(""),
+                           bpo::value<std::string>(&_cmdsFilepath)->default_value(defaultConfig),
                            "Config file containing an array of command to be executed in batch mode");
 }
 
