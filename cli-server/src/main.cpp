@@ -93,7 +93,7 @@ int main(int argc, char** argv)
         odc::cli::CCliControlService control;
         control.setTimeout(chrono::seconds(timeout));
         control.registerResourcePlugins(pluginMap);
-        control.run(bopt.m_outputCmds, std::chrono::milliseconds(1000));
+        control.run(bopt.m_outputCmds);
     }
     catch (exception& _e)
     {

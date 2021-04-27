@@ -25,6 +25,11 @@ namespace odc::core
             std::vector<std::string> m_outputCmds; ///> Filled after parseOptions
         };
 
+        struct SSleepOptions
+        {
+            size_t m_ms; ///> Sleep time in milliseconds
+        };
+
         //
         // Helpers
         //
@@ -52,6 +57,7 @@ namespace odc::core
                                     bool& _batch);
         static void addResourcePluginOptions(boost::program_options::options_description& _options,
                                              CDDSSubmit::PluginMap_t& _pluginMap);
+        static void addOptions(boost::program_options::options_description& _options, SSleepOptions& _sleepOptions);
 
         //
         // Option Parsing

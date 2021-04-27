@@ -8,18 +8,21 @@
 .config --id f6e5d4
 .start --id c3b2a1
 .start --id f6e5d4
+.sleep --ms 3000
 .stop --id c3b2a1
 .stop --id f6e5d4
 .upscale --topo @ODC_DATADIR@/ex-dds-topology-infinite-up.xml --id c3b2a1
 .upscale --topo @ODC_DATADIR@/ex-dds-topology-infinite-up.xml --id f6e5d4
 .start --id c3b2a1
 .start --id f6e5d4
+.sleep --ms 3000
 .stop --id c3b2a1
 .stop --id f6e5d4
 .downscale --topo @ODC_DATADIR@/ex-dds-topology-infinite-down.xml --id c3b2a1
 .downscale --topo @ODC_DATADIR@/ex-dds-topology-infinite-down.xml --id f6e5d4
 .start --id c3b2a1
 .start --id f6e5d4
+.sleep --ms 3000
 .stop --id c3b2a1
 .stop --id f6e5d4
 .reset --id c3b2a1

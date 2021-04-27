@@ -28,9 +28,7 @@ namespace odc::core
       public:
         /// \brief Run the service
         /// \param[in] _cmds Array of requests. If empty than command line input is required.
-        /// \param[in] _delay Delay between command execution.
-        void run(const std::vector<std::string>& _cmds = std::vector<std::string>(),
-                 const std::chrono::milliseconds& _delay = std::chrono::milliseconds(1000))
+        void run(const std::vector<std::string>& _cmds = std::vector<std::string>())
         {
             printDescription();
 
@@ -48,24 +46,19 @@ namespace odc::core
             else
             {
                 // Execute consequently all commands
-                execCmds(_cmds, _delay);
+                execCmds(_cmds);
                 // Exit at the end
                 exit(EXIT_SUCCESS);
             }
         }
 
       private:
-        void execCmds(const std::vector<std::string>& _cmds, const std::chrono::milliseconds& _delay)
+        void execCmds(const std::vector<std::string>& _cmds)
         {
             for (const auto& cmd : _cmds)
             {
                 OLOG(ESeverity::clean) << "Executing command " << std::quoted(cmd);
                 processRequest(cmd);
-                OLOG(ESeverity::clean) << "Waiting " << _delay.count() << " ms";
-                if (_delay.count() > 0)
-                {
-                    std::this_thread::sleep_for(_delay);
-                }
             }
         }
 
@@ -74,7 +67,20 @@ namespace odc::core
             CCliHelper::SBatchOptions bopt;
             if (parseCommand(_args, bopt))
             {
-                execCmds(bopt.m_outputCmds, std::chrono::milliseconds(1000));
+                execCmds(bopt.m_outputCmds);
+            }
+        }
+
+        void execSleep(const std::vector<std::string>& _args)
+        {
+            CCliHelper::SSleepOptions sopt;
+            if (parseCommand(_args, sopt))
+            {
+                if (sopt.m_ms > 0)
+                {
+                    OLOG(ESeverity::clean) << "Sleeping " << sopt.m_ms << " ms";
+                    std::this_thread::sleep_for(std::chrono::milliseconds(sopt.m_ms));
+                }
             }
         }
 
@@ -212,6 +218,10 @@ namespace odc::core
             {
                 execBatch(args);
             }
+            else if (cmd == ".sleep")
+            {
+                execSleep(args);
+            }
             else
             {
                 OLOG(ESeverity::clean) << "Unknown command " << _cmd;
@@ -247,7 +257,8 @@ namespace odc::core
                                    << ".reset - Reset request." << std::endl
                                    << ".term - Terminate request." << std::endl
                                    << ".down - Shutdown request." << std::endl
-                                   << ".batch - Execute an array of requests." << std::endl;
+                                   << ".batch - Execute an array of requests." << std::endl
+                                   << ".sleep - Sleep for X ms." << std::endl;
         }
     };
 } // namespace odc::core

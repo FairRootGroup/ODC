@@ -66,7 +66,7 @@ int main(int argc, char** argv)
         setupGrpcVerbosity(logConfig);
 
         CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
-        control.run(bopt.m_outputCmds, std::chrono::milliseconds(1000));
+        control.run(bopt.m_outputCmds);
     }
     catch (exception& _e)
     {

@@ -87,11 +87,14 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
     vector<string> cmds;
     for (const auto& cmd : defaultCmds)
     {
+        // Give some time for processing before going to stop
+        if (boost::starts_with(cmd, ".stop"))
+        {
+            cmds.push_back(".sleep --ms 5000");
+        }
         for (const auto& prt : defaultPartitions)
         {
-            stringstream ss;
-            ss << cmd + " --id " + prt;
-            cmds.push_back(ss.str());
+            cmds.push_back(cmd + " --id " + prt);
         }
     }
 
@@ -114,6 +117,11 @@ void CCliHelper::addBatchOptions(boost::program_options::options_description& _o
     _options.add_options()("batch", bpo::bool_switch(&_batch)->default_value(false), "Non interactive batch mode");
 
     CCliHelper::addOptions(_options, _batchOptions);
+}
+
+void CCliHelper::addOptions(boost::program_options::options_description& _options, SSleepOptions& _sleepOptions)
+{
+    _options.add_options()("ms", bpo::value<size_t>(&_sleepOptions.m_ms)->default_value(1000), "Sleep time in ms");
 }
 
 //
