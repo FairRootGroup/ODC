@@ -29,6 +29,7 @@ odcConfigExampleTopo(3 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite-
 odcConfigExampleTopo(2 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite-down.xml)
 
 # Configure and install commands configuration example
+set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmds.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/cmds.cfg @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmds.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 

@@ -74,12 +74,9 @@ void CCliHelper::addLogOptions(boost::program_options::options_description& _opt
 
 void CCliHelper::addBatchOptions(boost::program_options::options_description& _options,
                                  std::vector<std::string>& _cmds,
-                                 std::string& _cmdsFilepath,
-                                 bool& _batch)
+                                 std::string& _cmdsFilepath)
 {
     using boost::algorithm::join;
-
-    _options.add_options()("batch", bpo::bool_switch(&_batch)->default_value(false), "Non interactive batch mode");
 
     const vector<partitionID_t> defaultPartitions{ "a1b2c3", "d4e5f6" };
     const string defaultUpTopo{ kODCDataDir + "/ex-dds-topology-infinite-up.xml" };
@@ -109,6 +106,16 @@ void CCliHelper::addBatchOptions(boost::program_options::options_description& _o
     _options.add_options()("cf",
                            bpo::value<std::string>(&_cmdsFilepath)->default_value(defaultConfig),
                            "Config file containing an array of command to be executed in batch mode");
+}
+
+void CCliHelper::addBatchOptions(boost::program_options::options_description& _options,
+                                 std::vector<std::string>& _cmds,
+                                 std::string& _cmdsFilepath,
+                                 bool& _batch)
+{
+    _options.add_options()("batch", bpo::bool_switch(&_batch)->default_value(false), "Non interactive batch mode");
+
+    CCliHelper::addBatchOptions(_options, _cmds, _cmdsFilepath);
 }
 
 //

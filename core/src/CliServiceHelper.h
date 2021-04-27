@@ -48,19 +48,56 @@ namespace odc::core
             else
             {
                 // Execute consequently all commands
-                for (const auto& cmd : _cmds)
-                {
-                    OLOG(ESeverity::clean) << "Executing command " << std::quoted(cmd);
-                    processRequest(cmd);
-                    OLOG(ESeverity::clean) << "Waiting " << _delay.count() << " ms";
-                    std::this_thread::sleep_for(_delay);
-                }
+                execCmds(_cmds, _delay);
                 // Exit at the end
                 exit(EXIT_SUCCESS);
             }
         }
 
       private:
+        void execCmds(const std::vector<std::string>& _cmds, const std::chrono::milliseconds& _delay)
+        {
+            for (const auto& cmd : _cmds)
+            {
+                OLOG(ESeverity::clean) << "Executing command " << std::quoted(cmd);
+                processRequest(cmd);
+                OLOG(ESeverity::clean) << "Waiting " << _delay.count() << " ms";
+                if (_delay.count() > 0)
+                {
+                    std::this_thread::sleep_for(_delay);
+                }
+            }
+        }
+
+        void execBatch(const std::vector<std::string>& _args)
+        {
+            try
+            {
+                std::vector<std::string> cmds;
+                std::string cmdsFilepath;
+
+                bpo::options_description options("Batch options");
+                CCliHelper::addHelpOptions(options);
+                CCliHelper::addBatchOptions(options, cmds, cmdsFilepath);
+
+                bpo::variables_map vm;
+                bpo::store(bpo::command_line_parser(_args).options(options).run(), vm);
+                bpo::notify(vm);
+
+                if (vm.count("help"))
+                {
+                    OLOG(ESeverity::clean) << options;
+                    return;
+                }
+
+                execCmds(CCliHelper::batchCmds(vm, cmds, cmdsFilepath, true), std::chrono::milliseconds(1000));
+            }
+            catch (std::exception& _e)
+            {
+                OLOG(ESeverity::clean) << "Error parsing options: " << _e.what();
+            }
+        }
+
         template <typename... RequestParams_t>
         bool parseCommand(const std::vector<std::string>& _args,
                           partitionID_t& _partitionID,
@@ -194,6 +231,10 @@ namespace odc::core
             {
                 replyString = request<>("sending Shutdown request...", args, &OwnerT::requestShutdown);
             }
+            else if (cmd == ".batch")
+            {
+                execBatch(args);
+            }
             else
             {
                 OLOG(ESeverity::clean) << "Unknown command " << _cmd;
@@ -228,7 +269,8 @@ namespace odc::core
                                    << ".stop - Stop request." << std::endl
                                    << ".reset - Reset request." << std::endl
                                    << ".term - Terminate request." << std::endl
-                                   << ".down - Shutdown request." << std::endl;
+                                   << ".down - Shutdown request." << std::endl
+                                   << ".batch - Execute an array of requests." << std::endl;
         }
     };
 } // namespace odc::core

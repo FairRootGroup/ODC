@@ -41,6 +41,9 @@ namespace odc::core
         static void addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout);
         static void addBatchOptions(boost::program_options::options_description& _options,
                                     std::vector<std::string>& _cmds,
+                                    std::string& _cmdsFilepath);
+        static void addBatchOptions(boost::program_options::options_description& _options,
+                                    std::vector<std::string>& _cmds,
                                     std::string& _cmdsFilepath,
                                     bool& _batch);
         static void addResourcePluginOptions(boost::program_options::options_description& _options,

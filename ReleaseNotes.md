@@ -3,6 +3,7 @@
 ## v0.22 (NOT YET RELEASED)
 ### ODC common
 Added: batch execution of requests from a configuration file. Filepath to a configuration file can be specified via `--cf` option added to `odc-grpc-client` and `odc-cli-server`.    
+Added: batch execution for interactive mode. The set of options is the same as for executable. Either `--cmds` containg an array of requests or `--cf` containig a filepath to commands configuration file.    
 
 
 ## v0.20 (2021-04-12)
