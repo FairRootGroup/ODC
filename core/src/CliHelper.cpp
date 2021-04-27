@@ -24,21 +24,21 @@ void CCliHelper::conflictingOptions(const boost::program_options::variables_map&
     }
 }
 
-vector<string> CCliHelper::batchCmds(const boost::program_options::variables_map& _vm,
-                                     const std::vector<std::string>& _cmds,
-                                     const std::string& _cmdsFilepath,
-                                     const bool _batch)
+void CCliHelper::batchCmds(const boost::program_options::variables_map& _vm, bool _batch, SBatchOptions& _batchOptions)
 {
     CCliHelper::conflictingOptions(_vm, "cmds", "cf");
     if (_batch)
     {
         if ((_vm.count("cmds") && _vm["cmds"].defaulted() && _vm.count("cf") && _vm["cf"].defaulted()) ||
             (_vm.count("cmds") && !_vm["cmds"].defaulted()))
-            return _cmds;
+            _batchOptions.m_outputCmds = _batchOptions.m_cmds;
         else if (_vm.count("cf") && !_vm["cf"].defaulted())
-            return CCmdsFile::getCmds(_cmdsFilepath);
+            _batchOptions.m_outputCmds = CCmdsFile::getCmds(_batchOptions.m_cmdsFilepath);
     }
-    return vector<string>();
+    else
+    {
+        _batchOptions.m_outputCmds = vector<string>();
+    }
 }
 
 //
@@ -72,9 +72,7 @@ void CCliHelper::addLogOptions(boost::program_options::options_description& _opt
         "severity", bpo::value<ESeverity>(&_config.m_severity)->default_value(ESeverity::info), "Log severity level");
 }
 
-void CCliHelper::addBatchOptions(boost::program_options::options_description& _options,
-                                 std::vector<std::string>& _cmds,
-                                 std::string& _cmdsFilepath)
+void CCliHelper::addOptions(boost::program_options::options_description& _options, SBatchOptions& _batchOptions)
 {
     using boost::algorithm::join;
 
@@ -98,24 +96,24 @@ void CCliHelper::addBatchOptions(boost::program_options::options_description& _o
     }
 
     const string cmdsStr{ join(cmds, " ") };
-    _options.add_options()("cmds",
-                           bpo::value<std::vector<std::string>>(&_cmds)->multitoken()->default_value(cmds, cmdsStr),
-                           "Array of command to be executed in batch mode");
+    _options.add_options()(
+        "cmds",
+        bpo::value<std::vector<std::string>>(&_batchOptions.m_cmds)->multitoken()->default_value(cmds, cmdsStr),
+        "Array of command to be executed in batch mode");
 
     const string defaultConfig{ kODCDataDir + "/cmds.cfg" };
     _options.add_options()("cf",
-                           bpo::value<std::string>(&_cmdsFilepath)->default_value(defaultConfig),
+                           bpo::value<std::string>(&_batchOptions.m_cmdsFilepath)->default_value(defaultConfig),
                            "Config file containing an array of command to be executed in batch mode");
 }
 
 void CCliHelper::addBatchOptions(boost::program_options::options_description& _options,
-                                 std::vector<std::string>& _cmds,
-                                 std::string& _cmdsFilepath,
+                                 SBatchOptions& _batchOptions,
                                  bool& _batch)
 {
     _options.add_options()("batch", bpo::bool_switch(&_batch)->default_value(false), "Non interactive batch mode");
 
-    CCliHelper::addBatchOptions(_options, _cmds, _cmdsFilepath);
+    CCliHelper::addOptions(_options, _batchOptions);
 }
 
 //
@@ -249,4 +247,9 @@ void CCliHelper::parseResourcePluginOptions(const boost::program_options::variab
     {
         _pluginMap.clear();
     }
+}
+
+void CCliHelper::parseOptions(const boost::program_options::variables_map& _vm, CCliHelper::SBatchOptions& _params)
+{
+    CCliHelper::batchCmds(_vm, true, _params);
 }

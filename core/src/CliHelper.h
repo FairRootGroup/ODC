@@ -18,6 +18,13 @@ namespace odc::core
     class CCliHelper
     {
       public:
+        struct SBatchOptions
+        {
+            std::vector<std::string> m_cmds;
+            std::string m_cmdsFilepath;
+            std::vector<std::string> m_outputCmds; ///> Filled after parseOptions
+        };
+
         //
         // Helpers
         //
@@ -26,10 +33,10 @@ namespace odc::core
                                        const std::string& _opt1,
                                        const std::string& _opt2);
 
-        static std::vector<std::string> batchCmds(const boost::program_options::variables_map& _vm,
-                                                  const std::vector<std::string>& _cmds,
-                                                  const std::string& _cmdsFilepath,
-                                                  const bool _batch);
+        /// \brief Fills `CCliHelper::SBatchOptions::m_outputCmds`
+        static void batchCmds(const boost::program_options::variables_map& _vm,
+                              bool _batch,
+                              SBatchOptions& _batchOptions);
 
         //
         // Generic options
@@ -39,12 +46,9 @@ namespace odc::core
         static void addHostOptions(boost::program_options::options_description& _options, std::string& _host);
         static void addLogOptions(boost::program_options::options_description& _options, CLogger::SConfig& _config);
         static void addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout);
+        static void addOptions(boost::program_options::options_description& _options, SBatchOptions& _batchOptions);
         static void addBatchOptions(boost::program_options::options_description& _options,
-                                    std::vector<std::string>& _cmds,
-                                    std::string& _cmdsFilepath);
-        static void addBatchOptions(boost::program_options::options_description& _options,
-                                    std::vector<std::string>& _cmds,
-                                    std::string& _cmdsFilepath,
+                                    SBatchOptions& _batchOptions,
                                     bool& _batch);
         static void addResourcePluginOptions(boost::program_options::options_description& _options,
                                              CDDSSubmit::PluginMap_t& _pluginMap);
@@ -76,6 +80,7 @@ namespace odc::core
         }
 
         static void parseOptions(const boost::program_options::variables_map& _vm, SSetPropertiesParams& _params);
+        static void parseOptions(const boost::program_options::variables_map& _vm, CCliHelper::SBatchOptions& _params);
     };
 } // namespace odc::core
 

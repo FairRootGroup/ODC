@@ -71,44 +71,21 @@ namespace odc::core
 
         void execBatch(const std::vector<std::string>& _args)
         {
-            try
+            CCliHelper::SBatchOptions bopt;
+            if (parseCommand(_args, bopt))
             {
-                std::vector<std::string> cmds;
-                std::string cmdsFilepath;
-
-                bpo::options_description options("Batch options");
-                CCliHelper::addHelpOptions(options);
-                CCliHelper::addBatchOptions(options, cmds, cmdsFilepath);
-
-                bpo::variables_map vm;
-                bpo::store(bpo::command_line_parser(_args).options(options).run(), vm);
-                bpo::notify(vm);
-
-                if (vm.count("help"))
-                {
-                    OLOG(ESeverity::clean) << options;
-                    return;
-                }
-
-                execCmds(CCliHelper::batchCmds(vm, cmds, cmdsFilepath, true), std::chrono::milliseconds(1000));
-            }
-            catch (std::exception& _e)
-            {
-                OLOG(ESeverity::clean) << "Error parsing options: " << _e.what();
+                execCmds(bopt.m_outputCmds, std::chrono::milliseconds(1000));
             }
         }
 
         template <typename... RequestParams_t>
-        bool parseCommand(const std::vector<std::string>& _args,
-                          partitionID_t& _partitionID,
-                          RequestParams_t&&... _params)
+        bool parseCommand(const std::vector<std::string>& _args, RequestParams_t&&... _params)
         {
             try
             {
                 // Options description: generic + request specific
                 bpo::options_description options("Request options");
                 CCliHelper::addHelpOptions(options);
-                CCliHelper::addOptions(options, _partitionID);
 
                 // Loop over input parameters and add program options
                 std::apply([&options](auto&&... args) { ((CCliHelper::addOptions(options, args)), ...); },
