@@ -78,34 +78,27 @@ Alternatively, ODC and 3-rd party dependencies can be installed using [aliBuild]
 > aliBuild --default o2-dataflow build ODC
 ```
 
-## Usage
-Source DDS environment script before starting ODC server:
-```
-> cd DDS_INSTALL_DIR
-> source DDS_env.sh
-```
-
-Start the gRPC server in foreground:
+## Basic usage
+Source DDS environment script and start `odc-grpc-server` in foreground:
 ```bash
-export PATH=[INSTALL_DIR]/bin:$PATH
-odc-grpc-server
+cd DDS_INSTALL_DIR && source DDS_env.sh
+export PATH=[INSTALL_DIR]/bin:$PATH && odc-grpc-server
 ```
 
-Start the sample gRPC client in a different terminal:
+Start `odc-grpc-client` in a different terminal:
 ```bash
-export PATH=[INSTALL_DIR]/bin:$PATH
-odc-grpc-client
+export PATH=[INSTALL_DIR]/bin:$PATH && odc-grpc-client
 ```
 
-Alternatively, if gRPC is not installed, start CLI server in foreground:
+Alternatively, if gRPC is not installed, start `odc-cli-server` in foreground:
 ```bash
-export PATH=[INSTALL_DIR]/bin:$PATH
-odc-cli-server
+cd DDS_INSTALL_DIR && source DDS_env.sh
+export PATH=[INSTALL_DIR]/bin:$PATH && odc-cli-server
 ```
 
-By default this example uses [localhost plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#localhost-plugin) of [DDS](https://github.com/FairRootGroup/DDS) and a topology which is installed in `INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml`.
+By default this example uses [localhost plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#localhost-plugin) of [DDS](https://github.com/FairRootGroup/DDS) and topologies installed in `INSTALL_DIR/share/odc`.
 
-The standard sequence of requests for interactive mode:
+The basic sequence of commands for interactive mode:
 ```
 .init
 .submit
@@ -118,8 +111,21 @@ The standard sequence of requests for interactive mode:
 .down
 .quit
 ```
+The full list of available commands is printed on start of `odc-grpc-client` and `odc-cli-server`. Most of the commands have additional options. Use `--help` to print help message with a list of available options, i.e. `.start --help`. 
 
-The default sequence of request can also be executed in batch mode using `--batch` option. The sequence of commands can be changed via `--cmds` option.
+A sequence of request can also be executed in a batch mode using `--batch` option of `odc-grpc-client` and `odc-cli-server`. The sequence of commands can be changed via `--cmds` or `--cf` options. `--cmds` accepts an array of commands together with command line options seperated by space. For example, initializing and shutting down two partitions (sessions) in batch mode:
+```bash
+odc-grpc-client --batch --cmds ".init --id a1b2" ".init --id c3d4" ".down --id a1b2" ".down --id c3d4"
+```
+`--cf` accepts a filepath to the confiuration file with a list of commands, i.e.:
+```bash
+odc-grpc-client --batch --cf /path/to/my/file.cfg
+```
+Each line in a configuration file represents a single command. An example can be found [here](examples/cmds.cfg.in).
+
+`.batch` command is also available in interactive mode allowing to execute a common set of command pipelines with less typing. The command also accepts either `--cmds` or `--cf` options.
+
+## Daemon
 
 Alternatively, start the ODC server as a background daemon (in your user session):
 
