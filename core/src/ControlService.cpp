@@ -246,7 +246,7 @@ SReturnValue CControlService::SImpl::execRun(const partitionID_t& _partitionID,
     }
     else
     {
-        SError error{ execInitialize(_partitionID, _initializeParams).m_error };
+        error = execInitialize(_partitionID, _initializeParams).m_error;
         if (!error.m_code)
         {
             error = execSubmit(_partitionID, _submitParams).m_error;
