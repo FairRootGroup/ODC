@@ -26,7 +26,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     m_service->registerResourcePlugins(_pluginMap);
 }
 
-::grpc::Status CGrpcControlService::Initialize(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Initialize(::grpc::ServerContext* /*context*/,
                                                const odc::InitializeRequest* request,
                                                odc::GeneralReply* response)
 {
@@ -38,7 +38,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Submit(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Submit(::grpc::ServerContext* /*context*/,
                                            const odc::SubmitRequest* request,
                                            odc::GeneralReply* response)
 {
@@ -50,7 +50,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Activate(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Activate(::grpc::ServerContext* /*context*/,
                                              const odc::ActivateRequest* request,
                                              odc::GeneralReply* response)
 {
@@ -62,7 +62,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Run(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Run(::grpc::ServerContext* /*context*/,
                                         const odc::RunRequest* request,
                                         odc::GeneralReply* response)
 {
@@ -76,7 +76,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Update(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Update(::grpc::ServerContext* /*context*/,
                                            const odc::UpdateRequest* request,
                                            odc::GeneralReply* response)
 {
@@ -88,7 +88,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::GetState(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::GetState(::grpc::ServerContext* /*context*/,
                                              const odc::StateRequest* request,
                                              odc::StateReply* response)
 {
@@ -100,14 +100,14 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::SetProperties(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::SetProperties(::grpc::ServerContext* /*context*/,
                                                   const odc::SetPropertiesRequest* request,
                                                   odc::GeneralReply* response)
 {
     OLOG(ESeverity::info) << "SetProperties request:\n" << request->DebugString();
     // Convert from protobuf to ODC format
     SSetPropertiesParams::Properties_t props;
-    for (size_t i = 0; i < request->properties_size(); i++)
+    for (int i = 0; i < request->properties_size(); i++)
     {
         auto prop{ request->properties(i) };
         props.push_back(SSetPropertiesParams::Property_t(prop.key(), prop.value()));
@@ -120,7 +120,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Configure(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Configure(::grpc::ServerContext* /*context*/,
                                               const odc::ConfigureRequest* request,
                                               odc::StateReply* response)
 {
@@ -132,7 +132,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Start(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Start(::grpc::ServerContext* /*context*/,
                                           const odc::StartRequest* request,
                                           odc::StateReply* response)
 {
@@ -144,7 +144,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Stop(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Stop(::grpc::ServerContext* /*context*/,
                                          const odc::StopRequest* request,
                                          odc::StateReply* response)
 {
@@ -156,7 +156,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Reset(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Reset(::grpc::ServerContext* /*context*/,
                                           const odc::ResetRequest* request,
                                           odc::StateReply* response)
 {
@@ -168,7 +168,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Terminate(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Terminate(::grpc::ServerContext* /*context*/,
                                               const odc::TerminateRequest* request,
                                               odc::StateReply* response)
 {
@@ -180,7 +180,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Shutdown(::grpc::ServerContext* context,
+::grpc::Status CGrpcControlService::Shutdown(::grpc::ServerContext* /*context*/,
                                              const odc::ShutdownRequest* request,
                                              odc::GeneralReply* response)
 {

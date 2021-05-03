@@ -104,7 +104,7 @@ namespace odc::core
         }
 
       private:
-        void createConsoleSink(const SConfig& _config) const
+        void createConsoleSink(const SConfig& /*_config*/) const
         {
             using namespace boost::log;
             using ostreamSink_t = boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>>;

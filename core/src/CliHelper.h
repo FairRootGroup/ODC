@@ -80,7 +80,7 @@ namespace odc::core
         // Extra step of options parsing
         //
         template <typename... RequestParams_t>
-        static void parseOptions(const boost::program_options::variables_map& _vm, RequestParams_t&&... _params)
+        static void parseOptions(const boost::program_options::variables_map& /*_vm*/, RequestParams_t&&... /*_params*/)
         {
             // Default implementation does nothing
         }

@@ -193,7 +193,7 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
 //
 
 void CCliHelper::addResourcePluginOptions(boost::program_options::options_description& _options,
-                                          CDDSSubmit::PluginMap_t& _pluginMap)
+                                          CDDSSubmit::PluginMap_t& /*_pluginMap*/)
 {
     _options.add_options()(
         "rp", bpo::value<vector<string>>()->multitoken(), "Register resource plugins ( name1:path1 name2:path2 )");

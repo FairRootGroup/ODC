@@ -530,7 +530,7 @@ bool CControlService::SImpl::activateDDSTopology(const partitionID_t& _partition
 
     std::condition_variable cv;
 
-    STopologyRequest::ptr_t requestPtr = STopologyRequest::makeRequest(topoInfo);
+    STopologyRequest::ptr_t requestPtr{ STopologyRequest::makeRequest(topoInfo) };
 
     requestPtr->setMessageCallback([&success, &_error, this](const SMessageResponseData& _message) {
         if (_message.m_severity == dds::intercom_api::EMsgSeverity::error)
@@ -545,7 +545,7 @@ bool CControlService::SImpl::activateDDSTopology(const partitionID_t& _partition
     });
 
     requestPtr->setProgressCallback([](const SProgressResponseData& _progress) {
-        int completed = _progress.m_completed + _progress.m_errors;
+        uint32_t completed{ _progress.m_completed + _progress.m_errors };
         if (completed == _progress.m_total)
         {
             OLOG(ESeverity::info) << "Activated tasks: " << _progress.m_completed << "\nErrors: " << _progress.m_errors
@@ -563,7 +563,7 @@ bool CControlService::SImpl::activateDDSTopology(const partitionID_t& _partition
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus = cv.wait_for(lock, m_timeout);
+    std::cv_status waitStatus{ cv.wait_for(lock, m_timeout) };
 
     if (waitStatus == std::cv_status::timeout)
     {

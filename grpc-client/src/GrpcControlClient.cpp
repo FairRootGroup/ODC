@@ -53,8 +53,8 @@ std::string CGrpcControlClient::requestActivate(const odc::core::partitionID_t& 
 }
 
 std::string CGrpcControlClient::requestRun(const odc::core::partitionID_t& _partitionID,
-                                           const odc::core::SInitializeParams& _initializeParams,
-                                           const odc::core::SSubmitParams& _submitParams,
+                                           const odc::core::SInitializeParams& /*_initializeParams*/,
+                                           const odc::core::SSubmitParams& /*_submitParams*/,
                                            const odc::core::SActivateParams& _activateParams)
 {
     odc::RunRequest request;

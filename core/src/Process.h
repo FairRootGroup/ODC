@@ -57,7 +57,7 @@ namespace odc::core
                         bp::std_out > outPipe,
                         bp::std_err > errPipe,
                         ios,
-                        bp::on_exit([&](int exit, const std::error_code& ec_in) {
+                        bp::on_exit([&](int /*exit*/, const std::error_code& /*ec*/) {
                             outPipe.close();
                             errPipe.close();
                             watchdog.cancel();
@@ -67,8 +67,8 @@ namespace odc::core
             if (!c.valid())
                 throw std::runtime_error("Can't execute the given process.");
 
-            bio::async_read(outPipe, outBuf, [](const boost::system::error_code& ec, std::size_t size) {});
-            bio::async_read(errPipe, errBuf, [](const boost::system::error_code& ec, std::size_t size) {});
+            bio::async_read(outPipe, outBuf, [](const boost::system::error_code& /*ec*/, std::size_t /*size*/) {});
+            bio::async_read(errPipe, errBuf, [](const boost::system::error_code& /*ec*/, std::size_t /*size*/) {});
 
             bool errorFlag(false);
             watchdog.async_wait([&](boost::system::error_code ec) {

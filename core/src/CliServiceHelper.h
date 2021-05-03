@@ -135,7 +135,7 @@ namespace odc::core
                     if (parseCommand(_args, partitionID, params...))
                     {
                         OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: " << _msg;
-                        std::apply([this](auto&&... args) { ((print(args)), ...); }, std::tie(params...));
+                        std::apply([this](auto&&... args) { ((this->print(args)), ...); }, std::tie(params...));
                         OwnerT* p = reinterpret_cast<OwnerT*>(this);
                         result = (p->*_stubFunc)(partitionID, params...);
                     }
