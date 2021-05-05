@@ -78,6 +78,9 @@ foreach(dep IN LISTS FairLogger_PACKAGE_DEPENDENCIES)
   find_package(${dep} ${FairLogger_${dep}_VERSION})
 endforeach()
 
+# Find optional readline package
+find_package(readline)
+
 # https://cmake.org/Wiki/CMake_RPATH_handling
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}" isSystemDir)

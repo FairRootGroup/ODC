@@ -43,4 +43,8 @@ target_include_directories(odc_core_lib PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
 )
+if(readline_FOUND)
+    target_compile_definitions(odc_core_lib PUBLIC READLINE_AVAIL)
+    target_link_libraries(odc_core_lib readline::readline)
+endif()
 install(TARGETS odc_core_lib EXPORT ${PROJECT_NAME}Targets LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR})

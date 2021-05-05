@@ -17,6 +17,11 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
+// READLINE
+#ifdef READLINE_AVAIL
+#include <readline/history.h>
+#include <readline/readline.h>
+#endif
 
 namespace bpo = boost::program_options;
 
@@ -35,11 +40,37 @@ namespace odc::core
             // Read the input from commnad line
             if (_cmds.empty())
             {
+#ifdef READLINE_AVAIL
+                // Register command completion handler
+                rl_attempted_completion_function = &CCliServiceHelper::commandCompleter;
+#endif
                 while (true)
                 {
                     std::string cmd;
+#ifdef READLINE_AVAIL
+                    char* buf{ readline(">> ") };
+                    if (buf != nullptr)
+                    {
+                        cmd = std::string(buf);
+                        free(buf);
+                    }
+                    else
+                    {
+                        OLOG(ESeverity::clean) << std::endl;
+                        break; // ^D
+                    }
+
+                    if (!cmd.empty())
+                    {
+                        add_history(cmd.c_str());
+                    }
+#else
                     OLOG(ESeverity::clean) << "Please enter command: ";
                     getline(std::cin, cmd);
+#endif
+
+                    boost::trim_right(cmd);
+
                     processRequest(cmd);
                 }
             }
@@ -53,6 +84,49 @@ namespace odc::core
         }
 
       private:
+#ifdef READLINE_AVAIL
+        static char* commandGenerator(const char* text, int index)
+        {
+            static const std::vector<std::string> commands{ ".quit",  ".init",    ".submit",    ".activate", ".run",
+                                                            ".prop",  ".upscale", ".downscale", ".state",    ".config",
+                                                            ".start", ".stop",    ".reset",     ".term",     ".down",
+                                                            ".batch", ".sleep" };
+            static std::vector<std::string> matches;
+
+            if (index == 0)
+            {
+                matches.clear();
+                for (const auto& cmd : commands)
+                {
+                    if (boost::starts_with(cmd, text))
+                    {
+                        matches.push_back(cmd);
+                    }
+                }
+            }
+
+            if (index < int(matches.size()))
+            {
+                return strdup(matches[index].c_str());
+            }
+            return nullptr;
+        }
+
+        static char** commandCompleter(const char* text, int start, int /*end*/)
+        {
+            // Uncomment to disable filename completion
+            // rl_attempted_completion_over = 1;
+
+            // Use command completion only for the first position
+            if (start == 0)
+            {
+                return rl_completion_matches(text, &CCliServiceHelper::commandGenerator);
+            }
+            // Returning nullptr here will make readline use the default filename completer
+            return nullptr;
+        }
+#endif
+
         void execCmds(const std::vector<std::string>& _cmds)
         {
             for (const auto& cmd : _cmds)
