@@ -152,3 +152,7 @@ endif()
 install(FILES ${daemon_file} DESTINATION ${daemon_destination})
 
 odc_install_cmake_package()
+
+include(CTest)
+
+add_test(NAME dummy COMMAND bash sw_vers)
