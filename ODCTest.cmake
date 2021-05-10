@@ -48,7 +48,7 @@ ctest_configure(OPTIONS "${optionsstr}")
 
 # ctest_submit()
 
-ctest_build(FLAGS "-j${NCPUS}")
+ctest_build(FLAGS "-j${NCPUS} install")
 
 # ctest_submit()
 
