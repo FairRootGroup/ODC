@@ -6,6 +6,7 @@
 #include "CmdsFile.h"
 // STD
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 
 using namespace std;
