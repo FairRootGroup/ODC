@@ -3,13 +3,20 @@
 #
 project(odc-tests)
 
+if(APPLE)
+   set(TEST_ENV "DYLD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$ENV{DYLD_LIBRARY_PATH}")
+else()
+   set(TEST_ENV "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}")
+endif()
+
 #
 # Test odc-cli-server with default set of options
 #
-add_test(NAME odc-cli-server_default COMMAND odc-cli-server --batch)
+add_test(NAME odc-cli-server_default COMMAND "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/odc-cli-server" --batch)
 set_tests_properties(odc-cli-server_default PROPERTIES
     TIMEOUT 60
     FAIL_REGULAR_EXPRESSION "Status code: ERROR"
+    ENVIRONMENT ${TEST_ENV}
 )
 
 #
@@ -23,9 +30,10 @@ target_link_libraries(
     Boost::unit_test_framework
 )
 install(TARGETS odc_core_lib-tests EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_TESTS})
-add_test(NAME odc_core_lib COMMAND odc_core_lib-tests)
+add_test(NAME odc_core_lib COMMAND "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_TESTS}/odc_core_lib-tests")
 set_tests_properties(odc_core_lib PROPERTIES
     TIMEOUT 10
+    ENVIRONMENT ${TEST_ENV}
 )
 
 #

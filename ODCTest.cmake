@@ -13,6 +13,7 @@ set(CTEST_BINARY_DIRECTORY build)
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 set(CTEST_USE_LAUNCHERS ON)
 set(CTEST_CONFIGURATION_TYPE "RelWithDebInfo")
+set(CTEST_BUILD_TARGET install)
 
 if(NOT NCPUS)
   if(ENV{SLURM_CPUS_PER_TASK})
@@ -48,7 +49,7 @@ ctest_configure(OPTIONS "${optionsstr}")
 
 # ctest_submit()
 
-ctest_build(FLAGS "-j${NCPUS} install")
+ctest_build(FLAGS "-j${NCPUS}")
 
 # ctest_submit()
 
