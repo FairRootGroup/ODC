@@ -12,6 +12,9 @@ set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 # ODC utilities
 include(ODCUtils)
 
+# CTest
+include(CTest)
+
 odc_get_version()
 
 message(STATUS "Building ${PROJECT_NAME} ${PROJECT_VERSION} ...")
@@ -152,5 +155,3 @@ endif()
 install(FILES ${daemon_file} DESTINATION ${daemon_destination})
 
 odc_install_cmake_package()
-
-include(CTest)

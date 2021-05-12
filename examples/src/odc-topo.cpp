@@ -60,8 +60,14 @@ int main(int argc, char** argv)
         auto dplGroup{ creator.getMainGroup()->addElement<CTopoGroup>("DPLGroup") };
         // Set required number of DPL collections
         dplGroup->setN(numDpl);
-        // Add new EPN collection to EPN group and initialize it from XML topology file
-        dplGroup->addElement<CTopoCollection>("DPL")->initFromXML(dplTopoFilepath);
+        // Add new EPN collection to EPN group
+        auto dplC{ dplGroup->addElement<CTopoCollection>("DPL") };
+        // Initialize collection from XML topology file
+        dplC->initFromXML(dplTopoFilepath);
+        // Add new requirement - one DPL collection per host
+        auto dplR{ dplC->addRequirement("DPLRequirement") };
+        dplR->setRequirementType(CTopoRequirement::EType::MaxInstancesPerHost);
+        dplR->setValue("1");
         // New Data Distribution group containing DD tasks
         auto ddGroup{ creator.getMainGroup()->addElement<CTopoGroup>("DDGroup") };
         // Set required number of Data Distribution tasks
