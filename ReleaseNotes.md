@@ -1,7 +1,14 @@
 # ODC Release Notes
 
-## v0.24 (NOT YET RELEASED)
+## v0.26 (NOT YET RELEASED)
 
+
+
+## v0.24 (2021-05-17)
+### ODC common
+Fixed: Linux compilation error.    
+Added: `odc-topo` adds a single instance requirement for DPL collection.    
+Added: initial version of `alfa-ci` integration.    
 
 
 ## v0.22 (2021-05-05)
