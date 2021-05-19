@@ -133,6 +133,8 @@ struct CControlService::SImpl
 
     SSessionInfo::Ptr_t getOrCreateSessionInfo(const partitionID_t& _partitionID);
 
+    SError checkSessionIsRunning(const partitionID_t& _partitionID, ErrorCode _errorCode);
+
     // Disable copy constructors and assignment operators
     SImpl(const SImpl&) = delete;
     SImpl(SImpl&&) = delete;
@@ -190,16 +192,20 @@ SReturnValue CControlService::SImpl::execSubmit(const partitionID_t& _partitionI
 {
     STimeMeasure<std::chrono::milliseconds> measure;
 
+    SError error{ checkSessionIsRunning(_partitionID, ErrorCode::DDSSubmitAgentsFailed) };
+
     // Get DDS submit parameters from ODC resource plugin
-    SError error;
     CDDSSubmit::SParams ddsParams;
-    try
+    if (!error.m_code)
     {
-        ddsParams = m_submit->makeParams(_params.m_plugin, _params.m_resources);
-    }
-    catch (exception& _e)
-    {
-        fillError(error, ErrorCode::ResourcePluginFailed, string("Resource plugin failed: ") + _e.what());
+        try
+        {
+            ddsParams = m_submit->makeParams(_params.m_plugin, _params.m_resources);
+        }
+        catch (exception& _e)
+        {
+            fillError(error, ErrorCode::ResourcePluginFailed, string("Resource plugin failed: ") + _e.what());
+        }
     }
 
     if (!error.m_code)
@@ -219,11 +225,14 @@ SReturnValue CControlService::SImpl::execActivate(const partitionID_t& _partitio
     STimeMeasure<std::chrono::milliseconds> measure;
     // Activate DDS topology
     // Create fair::mq::sdk::Topology
-    SError error;
-    activateDDSTopology(
-        _partitionID, error, _params.m_topologyFile, STopologyRequest::request_t::EUpdateType::ACTIVATE) &&
-        createTopo(_partitionID, error, _params.m_topologyFile) &&
-        createFairMQTopo(_partitionID, error, _params.m_topologyFile);
+    SError error{ checkSessionIsRunning(_partitionID, ErrorCode::DDSActivateTopologyFailed) };
+    if (!error.m_code)
+    {
+        activateDDSTopology(
+            _partitionID, error, _params.m_topologyFile, STopologyRequest::request_t::EUpdateType::ACTIVATE) &&
+            createTopo(_partitionID, error, _params.m_topologyFile) &&
+            createFairMQTopo(_partitionID, error, _params.m_topologyFile);
+    }
     fair::mq::sdk::AggregatedTopologyState state{ !error.m_code ? fair::mq::sdk::AggregatedTopologyState::Idle
                                                                 : fair::mq::sdk::AggregatedTopologyState::Undefined };
     return createReturnValue(_partitionID, error, "Activate done", measure.duration(), state);
@@ -972,6 +981,17 @@ CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateS
         return newSessionInfo;
     }
     return it->second;
+}
+
+SError CControlService::SImpl::checkSessionIsRunning(const partitionID_t& _partitionID, ErrorCode _errorCode)
+{
+    SError error;
+    auto info{ getOrCreateSessionInfo(_partitionID) };
+    if (!info->m_session->IsRunning())
+    {
+        fillError(error, _errorCode, "DDS session is not running. Use Init or Run to start the session.");
+    }
+    return error;
 }
 
 //
