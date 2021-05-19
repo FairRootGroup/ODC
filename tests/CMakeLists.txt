@@ -20,6 +20,17 @@ set_tests_properties(odc-cli-server_default PROPERTIES
 )
 
 #
+# Test odc-cli-server by sending different commands without running session
+#
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmds_test_1.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+add_test(NAME odc-cli-server_test_1 COMMAND "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/odc-cli-server" --batch --cf "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/cmds_test_1.cfg")
+set_tests_properties(odc-cli-server_test_1 PROPERTIES
+    TIMEOUT 10
+    PASS_REGULAR_EXPRESSION "Sleeping 100 ms"
+    ENVIRONMENT ${TEST_ENV}
+)
+
+#
 # odc_core_lib tests
 #
 add_executable(odc_core_lib-tests src/odc_core_lib-tests.cpp)
