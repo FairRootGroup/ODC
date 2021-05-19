@@ -298,7 +298,8 @@ namespace odc::core
             }
             else
             {
-                OLOG(ESeverity::clean) << "Unknown command " << _cmd;
+                if (cmd.length() > 0)
+                    OLOG(ESeverity::clean) << "Unknown command " << _cmd;
             }
 
             if (!replyString.empty())
