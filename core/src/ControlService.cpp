@@ -122,8 +122,6 @@ struct CControlService::SImpl
                           fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
                           TopologyState* _topologyState = nullptr);
 
-    void resetTopology(const partitionID_t& _partitionID);
-
     void fillError(SError& _error, ErrorCode _errorCode, const string& _msg);
 
     fair::mq::sdk::AggregatedTopologyState aggregateStateForPath(const DDSTopologyPtr_t& _topo,
@@ -582,11 +580,13 @@ bool CControlService::SImpl::shutdownDDSSession(const partitionID_t& _partitionI
 {
     try
     {
-        // Reset topology on shutdown
-        resetTopology(_partitionID);
-
         auto info{ getOrCreateSessionInfo(_partitionID) };
-        if (info->m_session->IsRunning())
+        info->m_topo.reset();
+        info->m_fairmqTopology.reset();
+        // We stop the session anyway if session ID is not nil.
+        // Session can already be stopped by `dds-session stop` but session ID is not yet reset to nil.
+        // If session is already stopped CSession::shutdown will reset pointers.
+        if (info->m_session->getSessionID() != boost::uuids::nil_uuid())
         {
             info->m_session->shutdown();
             if (info->m_session->getSessionID() == boost::uuids::nil_uuid())
@@ -647,13 +647,6 @@ bool CControlService::SImpl::createFairMQTopo(const partitionID_t& _partitionID,
                   string("Failed to initialize FairMQ topology: ") + _e.what());
     }
     return info->m_fairmqTopology != nullptr;
-}
-
-void CControlService::SImpl::resetTopology(const partitionID_t& _partitionID)
-{
-    auto info{ getOrCreateSessionInfo(_partitionID) };
-    info->m_topo.reset();
-    info->m_fairmqTopology.reset();
 }
 
 bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
