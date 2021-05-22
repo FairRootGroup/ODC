@@ -1,7 +1,13 @@
 # ODC Release Notes
 
 ## v0.26 (NOT YET RELEASED)
+### ODC common
+Fixed: crash of `Activate` and `Submit` requests for empty session.    
+Fixed: `Shutdown` request in case session was stopped by `dds-session` or `dds-commander` was killed.    
+Added: More functional tests.    
 
+### gRPC
+Added: async server implementation. Async server allows better control of threads. Only a single request is processed at a time. Multiple connections to the server are allowed. Async is a default for `odc-grpc-server`. Use `--sync` option to set sync mode.    
 
 
 ## v0.24 (2021-05-17)

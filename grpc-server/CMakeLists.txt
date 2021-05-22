@@ -5,10 +5,12 @@
 # odc-grpc-server executable
 add_executable(odc-grpc-server
     "src/main.cpp"
-    "src/GrpcControlServer.h"
-    "src/GrpcControlServer.cpp"
-    "src/GrpcControlService.h"
-    "src/GrpcControlService.cpp"
+    "src/GrpcService.h"
+    "src/GrpcService.cpp"
+    "src/GrpcSyncService.h"
+    "src/GrpcSyncService.cpp"
+    "src/GrpcAsyncService.h"
+    "src/GrpcAsyncService.cpp"
 )
 target_link_libraries(odc-grpc-server
   Boost::boost

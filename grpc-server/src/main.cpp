@@ -5,8 +5,8 @@
 // ODC
 #include "BuildConstants.h"
 #include "CliHelper.h"
-#include "GrpcControlServer.h"
-#include "GrpcControlService.h"
+#include "GrpcAsyncService.h"
+#include "GrpcSyncService.h"
 #include "Logger.h"
 #include "MiscUtils.h"
 #include "Version.h"
@@ -28,6 +28,7 @@ int main(int argc, char** argv)
 {
     try
     {
+        bool sync;
         size_t timeout;
         string host;
         CLogger::SConfig logConfig;
@@ -37,6 +38,7 @@ int main(int argc, char** argv)
         bpo::options_description options("dds-control-server options");
         CCliHelper::addHelpOptions(options);
         CCliHelper::addVersionOptions(options);
+        CCliHelper::addSyncOptions(options, sync);
         CCliHelper::addTimeoutOptions(options, timeout);
         CCliHelper::addHostOptions(options, host);
         CCliHelper::addLogOptions(options, logConfig);
@@ -91,10 +93,20 @@ int main(int argc, char** argv)
         }
         setenv("PATH", new_path.c_str(), 1);
 
-        odc::grpc::CGrpcControlServer server;
-        server.setTimeout(chrono::seconds(timeout));
-        server.registerResourcePlugins(pluginMap);
-        server.Run(host);
+        if (sync)
+        {
+            odc::grpc::CGrpcSyncService server;
+            server.setTimeout(chrono::seconds(timeout));
+            server.registerResourcePlugins(pluginMap);
+            server.run(host);
+        }
+        else
+        {
+            odc::grpc::CGrpcAsyncService server;
+            server.setTimeout(chrono::seconds(timeout));
+            server.registerResourcePlugins(pluginMap);
+            server.run(host);
+        }
     }
     catch (exception& _e)
     {

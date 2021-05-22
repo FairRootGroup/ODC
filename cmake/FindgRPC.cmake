@@ -83,13 +83,17 @@ endif()
 find_path(GRPC_INCLUDE_DIR grpc/grpc.h)
 mark_as_advanced(GRPC_INCLUDE_DIR)
 
+# Find gpr library
+find_library(GPR_LIBRARY NAMES gpr)
+mark_as_advanced(GPR_LIBRARY)
+
 # Find gRPC library
 find_library(GRPC_LIBRARY NAMES grpc)
 mark_as_advanced(GRPC_LIBRARY)
 add_library(gRPC::grpc UNKNOWN IMPORTED)
 set_target_properties(gRPC::grpc PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES ${GRPC_INCLUDE_DIR}
-    INTERFACE_LINK_LIBRARIES "-lpthread;-ldl"
+    INTERFACE_LINK_LIBRARIES "-lpthread;-ldl;${GPR_LIBRARY}"
     IMPORTED_LOCATION ${GRPC_LIBRARY}
 )
 

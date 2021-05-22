@@ -55,6 +55,12 @@ void CCliHelper::addVersionOptions(boost::program_options::options_description& 
     _options.add_options()("version,v", "Print version");
 }
 
+void CCliHelper::addSyncOptions(boost::program_options::options_description& _options, bool& _sync)
+{
+    _options.add_options()(
+        "sync", bpo::bool_switch(&_sync)->default_value(false), "Use sync implementation of the gRPC server");
+}
+
 void CCliHelper::addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout)
 {
     _options.add_options()("timeout", bpo::value<size_t>(&_timeout)->default_value(30), "Timeout of requests in sec");

@@ -48,6 +48,7 @@ namespace odc::core
         //
         static void addHelpOptions(boost::program_options::options_description& _options);
         static void addVersionOptions(boost::program_options::options_description& _options);
+        static void addSyncOptions(boost::program_options::options_description& _options, bool& _sync);
         static void addHostOptions(boost::program_options::options_description& _options, std::string& _host);
         static void addLogOptions(boost::program_options::options_description& _options, CLogger::SConfig& _config);
         static void addTimeoutOptions(boost::program_options::options_description& _options, size_t& _timeout);

@@ -3,7 +3,7 @@
 //
 
 // DDS
-#include "GrpcControlService.h"
+#include "GrpcService.h"
 #include "Logger.h"
 
 using namespace odc;
@@ -11,24 +11,24 @@ using namespace odc::core;
 using namespace odc::grpc;
 using namespace std;
 
-CGrpcControlService::CGrpcControlService()
+CGrpcService::CGrpcService()
     : m_service(make_shared<CControlService>())
 {
 }
 
-void CGrpcControlService::setTimeout(const std::chrono::seconds& _timeout)
+void CGrpcService::setTimeout(const std::chrono::seconds& _timeout)
 {
     m_service->setTimeout(_timeout);
 }
 
-void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
+void CGrpcService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
 {
     m_service->registerResourcePlugins(_pluginMap);
 }
 
-::grpc::Status CGrpcControlService::Initialize(::grpc::ServerContext* /*context*/,
-                                               const odc::InitializeRequest* request,
-                                               odc::GeneralReply* response)
+::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* /*context*/,
+                                        const odc::InitializeRequest* request,
+                                        odc::GeneralReply* response)
 {
     OLOG(ESeverity::info) << "Initialize request:\n" << request->DebugString();
     SInitializeParams params{ request->sessionid() };
@@ -38,9 +38,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Submit(::grpc::ServerContext* /*context*/,
-                                           const odc::SubmitRequest* request,
-                                           odc::GeneralReply* response)
+::grpc::Status CGrpcService::Submit(::grpc::ServerContext* /*context*/,
+                                    const odc::SubmitRequest* request,
+                                    odc::GeneralReply* response)
 {
     OLOG(ESeverity::info) << "Submit request:\n" << request->DebugString();
     SSubmitParams params{ request->plugin(), request->resources() };
@@ -50,9 +50,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Activate(::grpc::ServerContext* /*context*/,
-                                             const odc::ActivateRequest* request,
-                                             odc::GeneralReply* response)
+::grpc::Status CGrpcService::Activate(::grpc::ServerContext* /*context*/,
+                                      const odc::ActivateRequest* request,
+                                      odc::GeneralReply* response)
 {
     OLOG(ESeverity::info) << "Activate request:\n" << request->DebugString();
     SActivateParams params{ request->topology() };
@@ -62,9 +62,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Run(::grpc::ServerContext* /*context*/,
-                                        const odc::RunRequest* request,
-                                        odc::GeneralReply* response)
+::grpc::Status CGrpcService::Run(::grpc::ServerContext* /*context*/,
+                                 const odc::RunRequest* request,
+                                 odc::GeneralReply* response)
 {
     OLOG(ESeverity::info) << "Run request:\n" << request->DebugString();
     SInitializeParams initializeParams{ "" };
@@ -76,9 +76,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Update(::grpc::ServerContext* /*context*/,
-                                           const odc::UpdateRequest* request,
-                                           odc::GeneralReply* response)
+::grpc::Status CGrpcService::Update(::grpc::ServerContext* /*context*/,
+                                    const odc::UpdateRequest* request,
+                                    odc::GeneralReply* response)
 {
     OLOG(ESeverity::info) << "Update request:\n" << request->DebugString();
     SUpdateParams params{ request->topology() };
@@ -88,9 +88,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::GetState(::grpc::ServerContext* /*context*/,
-                                             const odc::StateRequest* request,
-                                             odc::StateReply* response)
+::grpc::Status CGrpcService::GetState(::grpc::ServerContext* /*context*/,
+                                      const odc::StateRequest* request,
+                                      odc::StateReply* response)
 {
     OLOG(ESeverity::info) << "GetState request:\n" << request->DebugString();
     SDeviceParams params{ request->path(), request->detailed() };
@@ -100,9 +100,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::SetProperties(::grpc::ServerContext* /*context*/,
-                                                  const odc::SetPropertiesRequest* request,
-                                                  odc::GeneralReply* response)
+::grpc::Status CGrpcService::SetProperties(::grpc::ServerContext* /*context*/,
+                                           const odc::SetPropertiesRequest* request,
+                                           odc::GeneralReply* response)
 {
     OLOG(ESeverity::info) << "SetProperties request:\n" << request->DebugString();
     // Convert from protobuf to ODC format
@@ -120,9 +120,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Configure(::grpc::ServerContext* /*context*/,
-                                              const odc::ConfigureRequest* request,
-                                              odc::StateReply* response)
+::grpc::Status CGrpcService::Configure(::grpc::ServerContext* /*context*/,
+                                       const odc::ConfigureRequest* request,
+                                       odc::StateReply* response)
 {
     OLOG(ESeverity::info) << "Configure request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
@@ -132,9 +132,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Start(::grpc::ServerContext* /*context*/,
-                                          const odc::StartRequest* request,
-                                          odc::StateReply* response)
+::grpc::Status CGrpcService::Start(::grpc::ServerContext* /*context*/,
+                                   const odc::StartRequest* request,
+                                   odc::StateReply* response)
 {
     OLOG(ESeverity::info) << "Start request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
@@ -144,9 +144,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Stop(::grpc::ServerContext* /*context*/,
-                                         const odc::StopRequest* request,
-                                         odc::StateReply* response)
+::grpc::Status CGrpcService::Stop(::grpc::ServerContext* /*context*/,
+                                  const odc::StopRequest* request,
+                                  odc::StateReply* response)
 {
     OLOG(ESeverity::info) << "Stop request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
@@ -156,9 +156,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Reset(::grpc::ServerContext* /*context*/,
-                                          const odc::ResetRequest* request,
-                                          odc::StateReply* response)
+::grpc::Status CGrpcService::Reset(::grpc::ServerContext* /*context*/,
+                                   const odc::ResetRequest* request,
+                                   odc::StateReply* response)
 {
     OLOG(ESeverity::info) << "Reset request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
@@ -168,9 +168,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Terminate(::grpc::ServerContext* /*context*/,
-                                              const odc::TerminateRequest* request,
-                                              odc::StateReply* response)
+::grpc::Status CGrpcService::Terminate(::grpc::ServerContext* /*context*/,
+                                       const odc::TerminateRequest* request,
+                                       odc::StateReply* response)
 {
     OLOG(ESeverity::info) << "Terminate request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
@@ -180,9 +180,9 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcControlService::Shutdown(::grpc::ServerContext* /*context*/,
-                                             const odc::ShutdownRequest* request,
-                                             odc::GeneralReply* response)
+::grpc::Status CGrpcService::Shutdown(::grpc::ServerContext* /*context*/,
+                                      const odc::ShutdownRequest* request,
+                                      odc::GeneralReply* response)
 {
     OLOG(ESeverity::info) << "Shutdown request:\n" << request->DebugString();
     SReturnValue value = m_service->execShutdown(request->partitionid());
@@ -191,7 +191,7 @@ void CGrpcControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t&
     return ::grpc::Status::OK;
 }
 
-void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const SReturnValue& _value)
+void CGrpcService::setupGeneralReply(odc::GeneralReply* _response, const SReturnValue& _value)
 {
     if (_value.m_statusCode == EStatusCode::ok)
     {
@@ -214,7 +214,7 @@ void CGrpcControlService::setupGeneralReply(odc::GeneralReply* _response, const 
     _response->set_state(GetAggregatedTopologyStateName(_value.m_aggregatedState));
 }
 
-void CGrpcControlService::setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value)
+void CGrpcService::setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value)
 {
     // Protobuf message takes the ownership and deletes the object
     odc::GeneralReply* generalResponse = new odc::GeneralReply();
