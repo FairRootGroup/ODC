@@ -551,19 +551,17 @@ bool CControlService::SImpl::activateDDSTopology(const partitionID_t& _partition
         }
     });
 
-    requestPtr->setProgressCallback([](const SProgressResponseData& _progress) {
+    requestPtr->setProgressCallback([&_partitionID](const SProgressResponseData& _progress) {
         uint32_t completed{ _progress.m_completed + _progress.m_errors };
         if (completed == _progress.m_total)
         {
-            OLOG(ESeverity::info) << "Activated tasks: " << _progress.m_completed << "\nErrors: " << _progress.m_errors
-                                  << "\nTotal: " << _progress.m_total;
+            OLOG(ESeverity::info) << "Partition " << quoted(_partitionID) << " containes activated tasks("
+                                  << _progress.m_completed << "), errors (" << _progress.m_errors << "), total ("
+                                  << _progress.m_total << ")";
         }
     });
 
-    requestPtr->setDoneCallback([&cv]() {
-        OLOG(ESeverity::info) << "Topology activation done";
-        cv.notify_all();
-    });
+    requestPtr->setDoneCallback([&cv]() { cv.notify_all(); });
 
     auto info{ getOrCreateSessionInfo(_partitionID) };
     info->m_session->sendRequest<STopologyRequest>(requestPtr);
@@ -580,7 +578,8 @@ bool CControlService::SImpl::activateDDSTopology(const partitionID_t& _partition
     }
     else
     {
-        OLOG(ESeverity::info) << "Topology activation done successfully";
+        OLOG(ESeverity::info) << "Topology " << quoted(_topologyFile) << " for partition " << quoted(_partitionID)
+                              << " activated successfully";
     }
     return success;
 }
@@ -625,6 +624,8 @@ bool CControlService::SImpl::createTopo(const partitionID_t& _partitionID,
     {
         auto info{ getOrCreateSessionInfo(_partitionID) };
         info->m_topo = make_shared<dds::topology_api::CTopology>(_topologyFile);
+        OLOG(ESeverity::info) << "DDS topology " << std::quoted(_topologyFile) << " for partition "
+                              << std::quoted(_partitionID) << " created successfully";
     }
     catch (exception& _e)
     {
@@ -690,7 +691,6 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
                     try
                     {
                         _aggregatedState = fair::mq::sdk::AggregateState(_state);
-                        OLOG(ESeverity::info) << "Aggregated topology state";
                     }
                     catch (exception& _e)
                     {
@@ -724,7 +724,8 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
         }
         else
         {
-            OLOG(ESeverity::info) << "Change state done successfully " << _transition;
+            OLOG(ESeverity::info) << "Changed state to " << _aggregatedState << " via " << _transition
+                                  << " transition for partition " << std::quoted(_partitionID);
         }
     }
     catch (exception& _e)
