@@ -97,6 +97,7 @@ struct CControlService::SImpl
                               SError& _error,
                               SCommanderInfoRequest::response_t& _commanderInfo);
     bool shutdownDDSSession(const partitionID_t& _partitionID, SError& _error);
+    bool resetFairMQTopo(const partitionID_t& _partitionID);
     bool createFairMQTopo(const partitionID_t& _partitionID, SError& _error, const std::string& _topologyFile);
     bool createTopo(const partitionID_t& _partitionID, SError& _error, const std::string& _topologyFile);
     bool setProperties(const partitionID_t& _partitionID, SError& _error, const SSetPropertiesParams& _params);
@@ -277,7 +278,7 @@ SReturnValue CControlService::SImpl::execUpdate(const partitionID_t& _partitionI
     // Create fair::mq::sdk::Topology
     // Configure devices' state
     SError error;
-    changeStateReset(_partitionID, error, "", state) &&
+    changeStateReset(_partitionID, error, "", state) && resetFairMQTopo(_partitionID) &&
         activateDDSTopology(
             _partitionID, error, _params.m_topologyFile, STopologyRequest::request_t::EUpdateType::UPDATE) &&
         createTopo(_partitionID, error, _params.m_topologyFile) &&
@@ -633,6 +634,13 @@ bool CControlService::SImpl::createTopo(const partitionID_t& _partitionID,
             _error, ErrorCode::DDSCreateTopologyFailed, string("Failed to initialize DDS topology: ") + _e.what());
         return false;
     }
+    return true;
+}
+
+bool CControlService::SImpl::resetFairMQTopo(const partitionID_t& _partitionID)
+{
+    auto info{ getOrCreateSessionInfo(_partitionID) };
+    info->m_fairmqTopology.reset();
     return true;
 }
 
