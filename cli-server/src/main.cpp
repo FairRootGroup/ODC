@@ -77,19 +77,6 @@ int main(int argc, char** argv)
         CCliHelper::batchCmds(vm, batch, bopt);
         CCliHelper::parseResourcePluginOptions(vm, pluginMap);
 
-        // Prepend FairMQ bin dir to the path
-        auto current_path(std::getenv("PATH"));
-        string new_path;
-        if (current_path != nullptr)
-        {
-            new_path = kBuildFairMQBinDir + string(":") + string(current_path);
-        }
-        else
-        {
-            new_path = kBuildFairMQBinDir;
-        }
-        setenv("PATH", new_path.c_str(), 1);
-
         odc::cli::CCliControlService control;
         control.setTimeout(chrono::seconds(timeout));
         control.registerResourcePlugins(pluginMap);
