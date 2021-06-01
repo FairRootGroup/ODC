@@ -17,8 +17,8 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-// FairMQ SDK
-#include <fairmq/sdk/DDSEnvironment.h>
+// DDS
+#include <dds/Tools.h>
 
 using namespace std;
 using namespace odc::core;
@@ -49,6 +49,11 @@ int main(int argc, char** argv)
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
         bpo::notify(vm);
 
+        // A workaround to setup environment before fair::mq::DDSEnv does.
+        // Since DDS introduces it's own environment setup, fair::mq::DDSEnv is no longer needed.
+        // The following line can be removed when fair::mq::DDSEnv is removed.
+        dds::tools_api::CSession::setupEnv();
+
         try
         {
             CLogger::instance().init(logConfig);
@@ -74,11 +79,6 @@ int main(int argc, char** argv)
         setupGrpcVerbosity(logConfig);
 
         CCliHelper::parseResourcePluginOptions(vm, pluginMap);
-
-        {
-            // Equivalent to calling source DDS_env.sh
-            fair::mq::sdk::DDSEnv env;
-        }
 
         // Prepend FairMQ bin dir to the path
         auto current_path(std::getenv("PATH"));
