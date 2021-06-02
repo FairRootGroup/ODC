@@ -50,7 +50,7 @@ int main(int argc, char** argv)
         // A workaround to setup environment before fair::mq::DDSEnv does.
         // Since DDS introduces it's own environment setup, fair::mq::DDSEnv is no longer needed.
         // The following line can be removed when fair::mq::DDSEnv is removed.
-        dds::tools_api::CSession::setupEnv();
+        dds::tools_api::CSession::setup();
 
         try
         {
