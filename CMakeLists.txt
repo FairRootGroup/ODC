@@ -66,19 +66,27 @@ if(BUILD_TESTS)
 endif(BUILD_TESTS)
 find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
 
-# Find FairMQ
-find_package(FairMQ 1.4.26 REQUIRED COMPONENTS sdk)
-message(STATUS "Using FairMQ ${FairMQ_GIT_VERSION}")
-if(FairMQ_CXX_STANDARD VERSION_GREATER CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD ${FairMQ_CXX_STANDARD})
-endif()
-
 # Find FairLogger
 find_package(FairLogger REQUIRED)
 message(STATUS "Using FairLogger ${FairLogger_VERSION}")
 message(STATUS "Looking for FairLogger dependencies: ${FairLogger_PACKAGE_DEPENDENCIES}" )
 foreach(dep IN LISTS FairLogger_PACKAGE_DEPENDENCIES)
   find_package(${dep} ${FairLogger_${dep}_VERSION})
+endforeach()
+
+# Find FairMQ
+find_package(FairMQ 1.4.26 REQUIRED COMPONENTS sdk)
+message(STATUS "Using FairMQ ${FairMQ_GIT_VERSION}")
+if(FairMQ_CXX_STANDARD VERSION_GREATER CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD ${FairMQ_CXX_STANDARD})
+endif()
+message(STATUS "Looking for FairMQ dependencies: ${FairMQ_PACKAGE_DEPENDENCIES}" )
+foreach(dep IN LISTS FairMQ_PACKAGE_DEPENDENCIES)
+    if(FairMQ_${dep}_COMPONENTS)
+      find_package(${dep} ${FairMQ_${dep}_VERSION} COMPONENTS ${FairMQ_${dep}_COMPONENTS})
+    else()
+      find_package(${dep} ${FairMQ_${dep}_VERSION})
+    endif()
 endforeach()
 
 # Find optional readline package
