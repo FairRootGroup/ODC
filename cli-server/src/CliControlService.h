@@ -49,9 +49,11 @@ namespace odc::cli
         std::string requestTerminate(const odc::core::partitionID_t& _partitionID,
                                      const odc::core::SDeviceParams& _params);
         std::string requestShutdown(const odc::core::partitionID_t& _partitionID);
+        std::string requestStatus(const odc::core::SStatusParams& _params);
 
       private:
         std::string generalReply(const odc::core::SReturnValue& _value);
+        std::string statusReply(const odc::core::SStatusReturnValue& _value);
 
       private:
         std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service

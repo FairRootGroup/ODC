@@ -52,6 +52,7 @@ void CGrpcAsyncService::run(const std::string& _host)
     make<CCallReset>(cq.get(), &service, &AS::RequestReset, &GS::Reset);
     make<CCallTerminate>(cq.get(), &service, &AS::RequestTerminate, &GS::Terminate);
     make<CCallShutdown>(cq.get(), &service, &AS::RequestShutdown, &GS::Shutdown);
+    make<CCallStatus>(cq.get(), &service, &AS::RequestStatus, &GS::Status);
 
     void* tag;
     bool ok;

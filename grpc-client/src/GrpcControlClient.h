@@ -41,6 +41,7 @@ class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClien
     std::string requestReset(const odc::core::partitionID_t& _partitionID, const odc::core::SDeviceParams& _params);
     std::string requestTerminate(const odc::core::partitionID_t& _partitionID, const odc::core::SDeviceParams& _params);
     std::string requestShutdown(const odc::core::partitionID_t& _partitionID);
+    std::string requestStatus(const odc::core::SStatusParams& _params);
 
   private:
     std::string updateRequest(const odc::core::partitionID_t& _partitionID, const odc::core::SUpdateParams& _params);

@@ -146,6 +146,15 @@ std::string CGrpcControlClient::requestShutdown(const odc::core::partitionID_t& 
     return GetReplyString(status, reply);
 }
 
+std::string CGrpcControlClient::requestStatus(const odc::core::SStatusParams& /*_params*/)
+{
+    odc::StatusRequest request;
+    odc::StatusReply reply;
+    grpc::ClientContext context;
+    grpc::Status status = m_stub->Status(&context, request, &reply);
+    return GetReplyString(status, reply);
+}
+
 template <typename Reply_t>
 std::string CGrpcControlClient::GetReplyString(const grpc::Status& _status, const Reply_t& _reply)
 {

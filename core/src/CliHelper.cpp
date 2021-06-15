@@ -87,8 +87,9 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
     const string defaultDownTopo{ kODCDataDir + "/ex-dds-topology-infinite-down.xml" };
     const string upStr{ ".upscale --topo " + defaultUpTopo };
     const string downStr{ ".downscale --topo " + defaultDownTopo };
-    const vector<string> defaultCmds{ ".init", ".submit", ".activate", ".config", ".start", ".stop", upStr,  ".start",
-                                      ".stop", downStr,   ".start",    ".stop",   ".reset", ".term", ".down" };
+    const vector<string> defaultCmds{ ".status", ".init",   ".status", ".submit", ".activate", ".config", ".start",
+                                      ".status", ".stop",   upStr,     ".start",  ".status",   ".stop",   downStr,
+                                      ".start",  ".status", ".stop",   ".reset",  ".term",     ".down",   ".status" };
 
     vector<string> cmds;
     for (const auto& cmd : defaultCmds)
@@ -98,9 +99,16 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
         {
             cmds.push_back(".sleep --ms 5000");
         }
-        for (const auto& prt : defaultPartitions)
+        if (boost::starts_with(cmd, ".status"))
         {
-            cmds.push_back(cmd + " --id " + prt);
+            cmds.push_back(cmd);
+        }
+        else
+        {
+            for (const auto& prt : defaultPartitions)
+            {
+                cmds.push_back(cmd + " --id " + prt);
+            }
         }
     }
 
@@ -192,6 +200,10 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
     _options.add_options()("prop",
                            bpo::value<vector<string>>()->multitoken()->default_value(defaults, defaultsStr),
                            "Key-value pairs for a set properties request ( key1:value1 key2:value2 )");
+}
+
+void CCliHelper::addOptions(boost::program_options::options_description& /*_options*/, SStatusParams& /*_params*/)
+{
 }
 
 //

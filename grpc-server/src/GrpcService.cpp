@@ -191,6 +191,25 @@ void CGrpcService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _plugi
     return ::grpc::Status::OK;
 }
 
+::grpc::Status CGrpcService::Status(::grpc::ServerContext* /*context*/,
+                                    const odc::StatusRequest* request,
+                                    odc::StatusReply* response)
+{
+    OLOG(ESeverity::info) << "Status request:\n" << request->DebugString();
+    SStatusReturnValue value{ m_service->execStatus(SStatusParams()) };
+    setupStatusReply(response, value);
+    OLOG(ESeverity::info) << "Status response:\n" << response->DebugString();
+    return ::grpc::Status::OK;
+}
+
+odc::Error* CGrpcService::newError(const SBaseReturnValue& _value)
+{
+    odc::Error* error{ new odc::Error() };
+    error->set_code(_value.m_error.m_code.value());
+    error->set_msg(_value.m_error.m_code.message() + " (" + _value.m_error.m_details + ")");
+    return error;
+}
+
 void CGrpcService::setupGeneralReply(odc::GeneralReply* _response, const SReturnValue& _value)
 {
     if (_value.m_statusCode == EStatusCode::ok)
@@ -201,12 +220,7 @@ void CGrpcService::setupGeneralReply(odc::GeneralReply* _response, const SReturn
     else
     {
         _response->set_status(odc::ReplyStatus::ERROR);
-        //_response->set_msg("");
-        // Protobuf message takes the ownership and deletes the object
-        odc::Error* error = new odc::Error();
-        error->set_code(_value.m_error.m_code.value());
-        error->set_msg(_value.m_error.m_code.message() + " (" + _value.m_error.m_details + ")");
-        _response->set_allocated_error(error);
+        _response->set_allocated_error(newError(_value));
     }
     _response->set_partitionid(_value.m_partitionID);
     _response->set_sessionid(_value.m_sessionID);
@@ -217,7 +231,7 @@ void CGrpcService::setupGeneralReply(odc::GeneralReply* _response, const SReturn
 void CGrpcService::setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value)
 {
     // Protobuf message takes the ownership and deletes the object
-    odc::GeneralReply* generalResponse = new odc::GeneralReply();
+    odc::GeneralReply* generalResponse{ new odc::GeneralReply() };
     setupGeneralReply(generalResponse, _value);
     _response->set_allocated_reply(generalResponse);
 
@@ -226,10 +240,34 @@ void CGrpcService::setupStateReply(odc::StateReply* _response, const odc::core::
         const auto& topologyState = _value.m_details->m_topologyState;
         for (const auto& state : topologyState)
         {
-            auto device = _response->add_devices();
+            auto device{ _response->add_devices() };
             device->set_path(state.m_path);
             device->set_id(state.m_status.taskId);
             device->set_state(fair::mq::GetStateName(state.m_status.state));
         }
+    }
+}
+
+void CGrpcService::setupStatusReply(odc::StatusReply* _response, const odc::core::SStatusReturnValue& _value)
+{
+    if (_value.m_statusCode == EStatusCode::ok)
+    {
+        _response->set_status(odc::ReplyStatus::SUCCESS);
+        _response->set_msg(_value.m_msg);
+    }
+    else
+    {
+        _response->set_status(odc::ReplyStatus::ERROR);
+        _response->set_allocated_error(newError(_value));
+    }
+    _response->set_exectime(_value.m_execTime);
+    for (const auto& p : _value.m_partitions)
+    {
+        auto partition{ _response->add_partitions() };
+        partition->set_partitionid(p.m_partitionID);
+        partition->set_sessionid(p.m_sessionID);
+        partition->set_status(
+            (p.m_sessionStatus == ESessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
+        partition->set_state(fair::mq::sdk::GetAggregatedTopologyStateName(p.m_aggregatedState));
     }
 }

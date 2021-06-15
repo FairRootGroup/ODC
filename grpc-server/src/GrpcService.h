@@ -57,10 +57,15 @@ namespace odc::grpc
         ::grpc::Status Shutdown(::grpc::ServerContext* context,
                                 const odc::ShutdownRequest* request,
                                 odc::GeneralReply* response);
+        ::grpc::Status Status(::grpc::ServerContext* context,
+                              const odc::StatusRequest* request,
+                              odc::StatusReply* response);
 
       private:
+        odc::Error* newError(const odc::core::SBaseReturnValue& _value);
         void setupGeneralReply(odc::GeneralReply* _response, const odc::core::SReturnValue& _value);
         void setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value);
+        void setupStatusReply(odc::StatusReply* _response, const odc::core::SStatusReturnValue& _value);
 
         std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
     };

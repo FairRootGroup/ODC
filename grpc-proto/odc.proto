@@ -35,6 +35,8 @@ service ODC {
     rpc Terminate (TerminateRequest) returns (StateReply) {}
     // Shutdown DDS session.
     rpc Shutdown (ShutdownRequest) returns (GeneralReply) {}
+    // Status request.
+    rpc Status (StatusRequest) returns (StatusReply) {}
 }
 
 // Request status
@@ -42,6 +44,13 @@ enum ReplyStatus {
     UNKNOWN = 0; // Status is unknown
     SUCCESS = 1; // Request performed successfully
     ERROR = 2; // Failed to perform request
+}
+
+// Session status as defined by DDS
+enum SessionStatus {
+    UNKNOWN_ = 0; // Status is unknown
+    RUNNING = 1; // DDS session is running
+    STOPPED = 2; // DDS session is stopped
 }
 
 // General error
@@ -83,6 +92,23 @@ message StateRequest {
 message StateReply {
     GeneralReply reply = 1; // General reply. See GeneralReply message for details.
     repeated Device devices = 2; // If detailed reply is requested then this field contains a list of affected devices otherwise it's empty.
+}
+
+// Status of each partition
+message PartitionStatus {
+    string partitionid = 1; // Partition ID from ECS
+    string sessionid = 2; // DDS session ID
+    SessionStatus status = 3; // DDS session status
+    string state = 4; // If successful and applicable to a request then contains an aggregated FairMQ device state, otherwise UNDEFINED.
+}
+
+// ODC status reply
+message StatusReply {
+    string msg = 1; // Detailed reply message
+    ReplyStatus status = 2; // Request status code (UNKNOWN, SUCCESS, ERROR)
+    Error error = 3; // If status is ERROR than this field contains error description otherwise it's empty
+    int32 exectime = 4; // Request execution time in ms
+    repeated PartitionStatus partitions = 5; // Status of each partition
 }
 
 //
@@ -168,3 +194,14 @@ message ResetRequest {
 message TerminateRequest {
     StateRequest request = 1; // State change request. See StateRequest for details.
 }
+
+//
+// Generic requests
+//
+
+// Status request
+message StatusRequest
+{
+    // No information is required to perform the request
+}
+

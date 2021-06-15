@@ -68,6 +68,59 @@ namespace odc::core
     /// \brief Aggregated topology state
     using TopologyState = SDeviceStatus::container_t;
 
+    enum class ESessionStatus
+    {
+        unknown = 0,
+        running = 1,
+        stopped = 2
+    };
+
+    struct SPartitionStatus
+    {
+        using container_t = std::vector<SPartitionStatus>;
+
+        SPartitionStatus()
+        {
+        }
+
+        SPartitionStatus(const partitionID_t& _partitionID,
+                         const std::string& _sessionID,
+                         ESessionStatus _sessionStatus,
+                         fair::mq::sdk::AggregatedTopologyState _aggregatedState)
+            : m_partitionID(_partitionID)
+            , m_sessionID(_sessionID)
+            , m_sessionStatus(_sessionStatus)
+            , m_aggregatedState(_aggregatedState)
+        {
+        }
+
+        partitionID_t m_partitionID;                               ///< Partition ID
+        std::string m_sessionID;                                   ///< Session ID of DDS
+        ESessionStatus m_sessionStatus{ ESessionStatus::unknown }; ///< DDS session status
+        fair::mq::sdk::AggregatedTopologyState m_aggregatedState{
+            fair::mq::sdk::AggregatedTopologyState::Undefined
+        }; ///< Aggregated state of the affected divices
+    };
+
+    struct SBaseReturnValue
+    {
+        SBaseReturnValue()
+        {
+        }
+
+        SBaseReturnValue(EStatusCode _statusCode, const std::string& _msg, size_t _execTime, const SError& _error)
+            : m_statusCode(_statusCode)
+            , m_msg(_msg)
+            , m_execTime(_execTime)
+            , m_error(_error)
+        {
+        }
+        EStatusCode m_statusCode{ EStatusCode::unknown }; ///< Operation status code
+        std::string m_msg;                                ///< General message about the status
+        size_t m_execTime{ 0 };                           ///< Execution time in milliseconds
+        SError m_error;                                   ///< In case of error containes information about the error
+    };
+
     struct SReturnDetails
     {
         using ptr_t = std::shared_ptr<SReturnDetails>;
@@ -85,7 +138,7 @@ namespace odc::core
     };
 
     /// \brief Structure holds return value of the request
-    struct SReturnValue
+    struct SReturnValue : public SBaseReturnValue
     {
         SReturnValue()
         {
@@ -99,10 +152,7 @@ namespace odc::core
                      const std::string& _sessionID,
                      fair::mq::sdk::AggregatedTopologyState _aggregatedState,
                      SReturnDetails::ptr_t _details = nullptr)
-            : m_statusCode(_statusCode)
-            , m_msg(_msg)
-            , m_execTime(_execTime)
-            , m_error(_error)
+            : SBaseReturnValue(_statusCode, _msg, _execTime, _error)
             , m_partitionID(_partitionID)
             , m_sessionID(_sessionID)
             , m_aggregatedState(_aggregatedState)
@@ -110,18 +160,29 @@ namespace odc::core
         {
         }
 
-        EStatusCode m_statusCode{ EStatusCode::unknown }; ///< Operation status code
-        std::string m_msg;                                ///< General message about the status
-        size_t m_execTime{ 0 };                           ///< Execution time in milliseconds
-        SError m_error;                                   ///< In case of error containes information about the error
-        partitionID_t m_partitionID;                      ///< Partition ID
-        std::string m_sessionID;                          ///< Session ID of DDS
+        partitionID_t m_partitionID; ///< Partition ID
+        std::string m_sessionID;     ///< Session ID of DDS
         fair::mq::sdk::AggregatedTopologyState m_aggregatedState{
             fair::mq::sdk::AggregatedTopologyState::Undefined
         }; ///< Aggregated state of the affected divices
 
         // Optional parameters
         SReturnDetails::ptr_t m_details; ///< Details of the return value. Stored only if requested.
+    };
+
+    /// \brief Structure holds information about return status
+    struct SStatusReturnValue : public SBaseReturnValue
+    {
+        SStatusReturnValue()
+        {
+        }
+
+        SStatusReturnValue(EStatusCode _statusCode, const std::string& _msg, size_t _execTime, const SError& _error)
+            : SBaseReturnValue(_statusCode, _msg, _execTime, _error)
+        {
+        }
+
+        SPartitionStatus::container_t m_partitions; ///< Statuses of partitions
     };
 
     /// \brief Structure holds configuration parameters of the Initiaalize request
@@ -236,6 +297,17 @@ namespace odc::core
         friend std::ostream& operator<<(std::ostream& _os, const SDeviceParams& _params);
     };
 
+    /// \brief Parameters of status request
+    struct SStatusParams
+    {
+        SStatusParams()
+        {
+        }
+
+        // \brief ostream operator.
+        friend std::ostream& operator<<(std::ostream& _os, const SStatusParams& _params);
+    };
+
     class CControlService
     {
       public:
@@ -289,6 +361,13 @@ namespace odc::core
         SReturnValue execReset(const partitionID_t& _partitionID, const SDeviceParams& _params);
         /// \brief Terminate devices: End
         SReturnValue execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params);
+
+        //
+        // Generic requests
+        //
+
+        /// \brief Status request
+        SStatusReturnValue execStatus(const SStatusParams& _params);
 
       private:
         struct SImpl;

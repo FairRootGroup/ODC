@@ -112,6 +112,11 @@ std::string CCliControlService::requestShutdown(const odc::core::partitionID_t& 
     return generalReply(m_service->execShutdown(_partitionID));
 }
 
+std::string CCliControlService::requestStatus(const odc::core::SStatusParams& _params)
+{
+    return statusReply(m_service->execStatus(_params));
+}
+
 string CCliControlService::generalReply(const SReturnValue& _value)
 {
     stringstream ss;
@@ -145,5 +150,29 @@ string CCliControlService::generalReply(const SReturnValue& _value)
 
     ss << "  Execution time: " << _value.m_execTime << " msec" << endl;
 
+    return ss.str();
+}
+
+std::string CCliControlService::statusReply(const odc::core::SStatusReturnValue& _value)
+{
+    stringstream ss;
+    if (_value.m_statusCode == EStatusCode::ok)
+    {
+        ss << "  Status code: SUCCESS\n  Message: " << _value.m_msg << endl;
+    }
+    else
+    {
+        ss << "  Status code: ERROR\n  Error code: " << _value.m_error.m_code.value()
+           << "\n  Error message: " << _value.m_error.m_code.message() << " (" << _value.m_error.m_details << ")"
+           << endl;
+    }
+    ss << "  Partitions: " << endl;
+    for (const auto& p : _value.m_partitions)
+    {
+        ss << "    { partition ID: " << p.m_partitionID << "; session ID: " << p.m_sessionID
+           << "; status: " << ((p.m_sessionStatus == ESessionStatus::running) ? "RUNNING" : "STOPPED")
+           << "; state: " << fair::mq::sdk::GetAggregatedTopologyStateName(p.m_aggregatedState) << " }" << endl;
+    }
+    ss << "  Execution time: " << _value.m_execTime << " msec" << endl;
     return ss.str();
 }

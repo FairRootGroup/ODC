@@ -126,3 +126,10 @@ void CGrpcSyncService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _p
 {
     return m_service->Shutdown(context, request, response);
 }
+
+::grpc::Status CGrpcSyncService::Status(::grpc::ServerContext* context,
+                                        const odc::StatusRequest* request,
+                                        odc::StatusReply* response)
+{
+    return m_service->Status(context, request, response);
+}

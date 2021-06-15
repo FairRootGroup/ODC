@@ -87,10 +87,10 @@ namespace odc::core
 #ifdef READLINE_AVAIL
         static char* commandGenerator(const char* text, int index)
         {
-            static const std::vector<std::string> commands{ ".quit",  ".init",    ".submit",    ".activate", ".run",
-                                                            ".prop",  ".upscale", ".downscale", ".state",    ".config",
-                                                            ".start", ".stop",    ".reset",     ".term",     ".down",
-                                                            ".batch", ".sleep" };
+            static const std::vector<std::string> commands{ ".quit",   ".init",    ".submit",    ".activate", ".run",
+                                                            ".prop",   ".upscale", ".downscale", ".state",    ".config",
+                                                            ".start",  ".stop",    ".reset",     ".term",     ".down",
+                                                            ".status", ".batch",   ".sleep" };
             static std::vector<std::string> matches;
 
             if (index == 0)
@@ -198,6 +198,11 @@ namespace odc::core
             OLOG(ESeverity::clean) << _value;
         }
 
+        void print(const partitionID_t& _value)
+        {
+            OLOG(ESeverity::clean) << "Partition ID: " << std::quoted(_value);
+        }
+
         template <typename... RequestParams_t, typename StubFunc_t>
         std::string request(const std::string& _msg, const std::vector<std::string>& _args, StubFunc_t _stubFunc)
         {
@@ -206,13 +211,12 @@ namespace odc::core
             std::apply(
                 [&result, &_msg, &_args, &_stubFunc, this](auto&&... params)
                 {
-                    partitionID_t partitionID;
-                    if (parseCommand(_args, partitionID, params...))
+                    if (parseCommand(_args, params...))
                     {
-                        OLOG(ESeverity::clean) << "Partition <" << partitionID << ">: " << _msg;
+                        OLOG(ESeverity::clean) << _msg;
                         std::apply([this](auto&&... args) { ((this->print(args)), ...); }, std::tie(params...));
                         OwnerT* p = reinterpret_cast<OwnerT*>(this);
-                        result = (p->*_stubFunc)(partitionID, params...);
+                        result = (p->*_stubFunc)(params...);
                     }
                 },
                 tuple);
@@ -232,62 +236,76 @@ namespace odc::core
 
             if (cmd == ".init")
             {
-                replyString =
-                    request<SInitializeParams>("sending Initialize request...", args, &OwnerT::requestInitialize);
+                replyString = request<partitionID_t, SInitializeParams>(
+                    "Sending Initialize request...", args, &OwnerT::requestInitialize);
             }
             else if (cmd == ".submit")
             {
-                replyString = request<SSubmitParams>("sending Submit request...", args, &OwnerT::requestSubmit);
+                replyString =
+                    request<partitionID_t, SSubmitParams>("Sending Submit request...", args, &OwnerT::requestSubmit);
             }
             else if (cmd == ".activate")
             {
-                replyString = request<SActivateParams>("sending Activate request...", args, &OwnerT::requestActivate);
+                replyString = request<partitionID_t, SActivateParams>(
+                    "Sending Activate request...", args, &OwnerT::requestActivate);
             }
             else if (cmd == ".run")
             {
-                replyString = request<SInitializeParams, SSubmitParams, SActivateParams>(
-                    "sending Run request...", args, &OwnerT::requestRun);
+                replyString = request<partitionID_t, SInitializeParams, SSubmitParams, SActivateParams>(
+                    "Sending Run request...", args, &OwnerT::requestRun);
             }
             else if (cmd == ".upscale")
             {
-                replyString = request<SUpdateParams>("sending Upscale request...", args, &OwnerT::requestUpscale);
+                replyString =
+                    request<partitionID_t, SUpdateParams>("Sending Upscale request...", args, &OwnerT::requestUpscale);
             }
             else if (cmd == ".downscale")
             {
-                replyString = request<SUpdateParams>("sending Downscale request...", args, &OwnerT::requestDownscale);
+                replyString = request<partitionID_t, SUpdateParams>(
+                    "Sending Downscale request...", args, &OwnerT::requestDownscale);
             }
             else if (cmd == ".config")
             {
-                replyString = request<SDeviceParams>("sending Configure request...", args, &OwnerT::requestConfigure);
+                replyString = request<partitionID_t, SDeviceParams>(
+                    "Sending Configure request...", args, &OwnerT::requestConfigure);
             }
             else if (cmd == ".state")
             {
-                replyString = request<SDeviceParams>("sending GetState request...", args, &OwnerT::requestGetState);
+                replyString = request<partitionID_t, SDeviceParams>(
+                    "Sending GetState request...", args, &OwnerT::requestGetState);
             }
             else if (cmd == ".prop")
             {
-                replyString = request<SSetPropertiesParams>(
-                    "sending SetProperties request...", args, &OwnerT::requestSetProperties);
+                replyString = request<partitionID_t, SSetPropertiesParams>(
+                    "Sending SetProperties request...", args, &OwnerT::requestSetProperties);
             }
             else if (cmd == ".start")
             {
-                replyString = request<SDeviceParams>("sending Start request...", args, &OwnerT::requestStart);
+                replyString =
+                    request<partitionID_t, SDeviceParams>("Sending Start request...", args, &OwnerT::requestStart);
             }
             else if (cmd == ".stop")
             {
-                replyString = request<SDeviceParams>("sending Stop request...", args, &OwnerT::requestStop);
+                replyString =
+                    request<partitionID_t, SDeviceParams>("Sending Stop request...", args, &OwnerT::requestStop);
             }
             else if (cmd == ".reset")
             {
-                replyString = request<SDeviceParams>("sending Reset request...", args, &OwnerT::requestReset);
+                replyString =
+                    request<partitionID_t, SDeviceParams>("Sending Reset request...", args, &OwnerT::requestReset);
             }
             else if (cmd == ".term")
             {
-                replyString = request<SDeviceParams>("sending Terminate request...", args, &OwnerT::requestTerminate);
+                replyString = request<partitionID_t, SDeviceParams>(
+                    "Sending Terminate request...", args, &OwnerT::requestTerminate);
             }
             else if (cmd == ".down")
             {
-                replyString = request<>("sending Shutdown request...", args, &OwnerT::requestShutdown);
+                replyString = request<partitionID_t>("Sending Shutdown request...", args, &OwnerT::requestShutdown);
+            }
+            else if (cmd == ".status")
+            {
+                replyString = request<SStatusParams>("Sending Status request...", args, &OwnerT::requestStatus);
             }
             else if (cmd == ".batch")
             {
@@ -333,6 +351,7 @@ namespace odc::core
                                    << ".reset - Reset request." << std::endl
                                    << ".term - Terminate request." << std::endl
                                    << ".down - Shutdown request." << std::endl
+                                   << ".status - Status request." << std::endl
                                    << ".batch - Execute an array of requests." << std::endl
                                    << ".sleep - Sleep for X ms." << std::endl;
         }

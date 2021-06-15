@@ -63,6 +63,9 @@ namespace odc::grpc
         ::grpc::Status Shutdown(::grpc::ServerContext* context,
                                 const odc::ShutdownRequest* request,
                                 odc::GeneralReply* response) override;
+        ::grpc::Status Status(::grpc::ServerContext* context,
+                              const odc::StatusRequest* request,
+                              odc::StatusReply* response) override;
 
         std::shared_ptr<odc::grpc::CGrpcService> m_service; ///< Core gRPC service
     };

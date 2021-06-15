@@ -76,6 +76,7 @@ namespace odc::core
         static void addOptions(boost::program_options::options_description& _options, SSubmitParams& _params);
         static void addOptions(boost::program_options::options_description& _options, SDeviceParams& _params);
         static void addOptions(boost::program_options::options_description& _options, SSetPropertiesParams& _params);
+        static void addOptions(boost::program_options::options_description& _options, SStatusParams& _params);
 
         //
         // Extra step of options parsing

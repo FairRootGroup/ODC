@@ -116,6 +116,7 @@ namespace odc::grpc
         using CCallReset = CCallData<ResetRequest, StateReply>;
         using CCallTerminate = CCallData<TerminateRequest, StateReply>;
         using CCallShutdown = CCallData<ShutdownRequest, GeneralReply>;
+        using CCallStatus = CCallData<StatusRequest, StatusReply>;
 
       private:
         template <class Call_t, class RequestFunc_t, class ProcessFunc_t>

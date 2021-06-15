@@ -78,6 +78,8 @@ struct CControlService::SImpl
     SReturnValue execReset(const partitionID_t& _partitionID, const SDeviceParams& _params);
     SReturnValue execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params);
 
+    SStatusReturnValue execStatus(const SStatusParams& _params);
+
   private:
     SReturnValue createReturnValue(const partitionID_t& _partitionID,
                                    const SError& _error,
@@ -384,6 +386,45 @@ SReturnValue CControlService::SImpl::execTerminate(const partitionID_t& _partiti
                 state,
                 ((details == nullptr) ? nullptr : &details->m_topologyState));
     return createReturnValue(_partitionID, error, "Terminate done", measure.duration(), state, details);
+}
+
+SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& /* _params */)
+{
+    STimeMeasure<std::chrono::milliseconds> measure;
+    SStatusReturnValue result;
+    for (const auto& v : m_sessions)
+    {
+        const auto& info{ v.second };
+        SPartitionStatus status;
+        status.m_partitionID = info->m_partitionID;
+        try
+        {
+            status.m_sessionID = to_string(info->m_session->getSessionID());
+            status.m_sessionStatus = (info->m_session->IsRunning()) ? ESessionStatus::running : ESessionStatus::stopped;
+        }
+        catch (exception& _e)
+        {
+            OLOG(ESeverity::warning) << "Failed to get session ID or session status of " << quoted(status.m_partitionID)
+                                     << " partition: " << _e.what();
+        }
+        try
+        {
+            status.m_aggregatedState =
+                (info->m_fairmqTopology != nullptr && info->m_topo != nullptr)
+                    ? aggregateStateForPath(info->m_topo, info->m_fairmqTopology->GetCurrentState(), "")
+                    : fair::mq::sdk::AggregatedTopologyState::Undefined;
+        }
+        catch (exception& _e)
+        {
+            OLOG(ESeverity::warning) << "Failed to get an aggregated state of " << quoted(status.m_partitionID)
+                                     << " partition: " << _e.what();
+        }
+        result.m_partitions.push_back(status);
+    }
+    result.m_statusCode = EStatusCode::ok;
+    result.m_msg = "Status done";
+    result.m_execTime = measure.duration();
+    return result;
 }
 
 SReturnValue CControlService::SImpl::createReturnValue(const partitionID_t& _partitionID,
@@ -1060,6 +1101,11 @@ namespace odc::core
     {
         return _os << "DeviceParams: path=" << quoted(_params.m_path) << "; detailed=" << _params.m_detailed;
     }
+
+    std::ostream& operator<<(std::ostream& _os, const SStatusParams& /* _params */)
+    {
+        return _os << "StatusParams";
+    }
 } // namespace odc::core
 
 //
@@ -1147,4 +1193,9 @@ SReturnValue CControlService::execReset(const partitionID_t& _partitionID, const
 SReturnValue CControlService::execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return m_impl->execTerminate(_partitionID, _params);
+}
+
+SStatusReturnValue CControlService::execStatus(const SStatusParams& _params)
+{
+    return m_impl->execStatus(_params);
 }
