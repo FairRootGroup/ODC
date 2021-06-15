@@ -184,10 +184,10 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
 
     const SSetPropertiesParams::Properties_t props{ { "key1", "value1" }, { "key2", "value2" } };
     vector<string> defaults;
-    transform(
-        props.begin(), props.end(), back_inserter(defaults), [](const SSetPropertiesParams::Property_t& _p) -> string {
-            return _p.first + ":" + _p.second;
-        });
+    transform(props.begin(),
+              props.end(),
+              back_inserter(defaults),
+              [](const SSetPropertiesParams::Property_t& _p) -> string { return _p.first + ":" + _p.second; });
     string defaultsStr{ boost::algorithm::join(defaults, " ") };
     _options.add_options()("prop",
                            bpo::value<vector<string>>()->multitoken()->default_value(defaults, defaultsStr),

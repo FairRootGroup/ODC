@@ -450,22 +450,26 @@ bool CControlService::SImpl::submitDDSAgents(const partitionID_t& _partitionID,
 
     SSubmitRequest::ptr_t requestPtr = SSubmitRequest::makeRequest(requestInfo);
 
-    requestPtr->setMessageCallback([&success, &_error, this](const SMessageResponseData& _message) {
-        if (_message.m_severity == dds::intercom_api::EMsgSeverity::error)
+    requestPtr->setMessageCallback(
+        [&success, &_error, this](const SMessageResponseData& _message)
         {
-            success = false;
-            fillError(_error, ErrorCode::DDSSubmitAgentsFailed, string("Server reports error: ") + _message.m_msg);
-        }
-        else
-        {
-            OLOG(ESeverity::debug) << "Server reports: " << _message.m_msg;
-        }
-    });
+            if (_message.m_severity == dds::intercom_api::EMsgSeverity::error)
+            {
+                success = false;
+                fillError(_error, ErrorCode::DDSSubmitAgentsFailed, string("Server reports error: ") + _message.m_msg);
+            }
+            else
+            {
+                OLOG(ESeverity::debug) << "Server reports: " << _message.m_msg;
+            }
+        });
 
-    requestPtr->setDoneCallback([&cv]() {
-        OLOG(ESeverity::info) << "Agent submission done";
-        cv.notify_all();
-    });
+    requestPtr->setDoneCallback(
+        [&cv]()
+        {
+            OLOG(ESeverity::info) << "Agent submission done";
+            cv.notify_all();
+        });
 
     auto info{ getOrCreateSessionInfo(_partitionID) };
     info->m_session->sendRequest<SSubmitRequest>(requestPtr);
@@ -540,27 +544,32 @@ bool CControlService::SImpl::activateDDSTopology(const partitionID_t& _partition
 
     STopologyRequest::ptr_t requestPtr{ STopologyRequest::makeRequest(topoInfo) };
 
-    requestPtr->setMessageCallback([&success, &_error, this](const SMessageResponseData& _message) {
-        if (_message.m_severity == dds::intercom_api::EMsgSeverity::error)
+    requestPtr->setMessageCallback(
+        [&success, &_error, this](const SMessageResponseData& _message)
         {
-            success = false;
-            fillError(_error, ErrorCode::DDSActivateTopologyFailed, string("Server reports error: ") + _message.m_msg);
-        }
-        else
-        {
-            OLOG(ESeverity::debug) << "Server reports: " << _message.m_msg;
-        }
-    });
+            if (_message.m_severity == dds::intercom_api::EMsgSeverity::error)
+            {
+                success = false;
+                fillError(
+                    _error, ErrorCode::DDSActivateTopologyFailed, string("Server reports error: ") + _message.m_msg);
+            }
+            else
+            {
+                OLOG(ESeverity::debug) << "Server reports: " << _message.m_msg;
+            }
+        });
 
-    requestPtr->setProgressCallback([&_partitionID](const SProgressResponseData& _progress) {
-        uint32_t completed{ _progress.m_completed + _progress.m_errors };
-        if (completed == _progress.m_total)
+    requestPtr->setProgressCallback(
+        [&_partitionID](const SProgressResponseData& _progress)
         {
-            OLOG(ESeverity::info) << "Partition " << quoted(_partitionID) << " containes activated tasks("
-                                  << _progress.m_completed << "), errors (" << _progress.m_errors << "), total ("
-                                  << _progress.m_total << ")";
-        }
-    });
+            uint32_t completed{ _progress.m_completed + _progress.m_errors };
+            if (completed == _progress.m_total)
+            {
+                OLOG(ESeverity::info) << "Partition " << quoted(_partitionID) << " containes activated tasks("
+                                      << _progress.m_completed << "), errors (" << _progress.m_errors << "), total ("
+                                      << _progress.m_total << ")";
+            }
+        });
 
     requestPtr->setDoneCallback([&cv]() { cv.notify_all(); });
 
@@ -692,7 +701,8 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
             _path,
             m_timeout,
             [&cv, &success, &_aggregatedState, &_topologyState, &_error, &info, this](
-                std::error_code _ec, fair::mq::sdk::TopologyState _state) {
+                std::error_code _ec, fair::mq::sdk::TopologyState _state)
+            {
                 success = !_ec;
                 if (success)
                 {
@@ -855,7 +865,8 @@ bool CControlService::SImpl::setProperties(const partitionID_t& _partitionID,
             _params.m_properties,
             _params.m_path,
             m_timeout,
-            [&cv, &success, &_error, this](std::error_code _ec, fair::mq::sdk::FailedDevices) {
+            [&cv, &success, &_error, this](std::error_code _ec, fair::mq::sdk::FailedDevices)
+            {
                 success = !_ec;
                 if (success)
                 {
@@ -909,10 +920,10 @@ fair::mq::sdk::AggregatedTopologyState CControlService::SImpl::aggregateStateFor
 
         // Throws if task not found for path
         const auto& task{ _topo->getRuntimeTask(_path) };
-        auto it{ find_if(
-            _topoState.cbegin(), _topoState.cend(), [&](const fair::mq::sdk::TopologyState::value_type& _v) {
-                return _v.taskId == task.m_taskId;
-            }) };
+        auto it{ find_if(_topoState.cbegin(),
+                         _topoState.cend(),
+                         [&](const fair::mq::sdk::TopologyState::value_type& _v)
+                         { return _v.taskId == task.m_taskId; }) };
         if (it != _topoState.cend())
             return static_cast<fair::mq::sdk::AggregatedTopologyState>(it->state);
 
@@ -925,28 +936,28 @@ fair::mq::sdk::AggregatedTopologyState CControlService::SImpl::aggregateStateFor
         // Collect all task IDs to a set for fast search
         set<Id_t> taskIds;
         auto it{ _topo->getRuntimeTaskIteratorMatchingPath(_path) };
-        for_each(it.first, it.second, [&](const STopoRuntimeTask::FilterIterator_t::value_type& _v) {
-            taskIds.insert(_v.second.m_taskId);
-        });
+        for_each(it.first,
+                 it.second,
+                 [&](const STopoRuntimeTask::FilterIterator_t::value_type& _v) { taskIds.insert(_v.second.m_taskId); });
 
         if (taskIds.empty())
             throw runtime_error("No tasks found matching the path " + _path);
 
         // Find a state of a first task
-        auto firstIt{ find_if(
-            _topoState.cbegin(), _topoState.cend(), [&](const fair::mq::sdk::TopologyState::value_type& _v) {
-                return _v.taskId == *(taskIds.begin());
-            }) };
+        auto firstIt{ find_if(_topoState.cbegin(),
+                              _topoState.cend(),
+                              [&](const fair::mq::sdk::TopologyState::value_type& _v)
+                              { return _v.taskId == *(taskIds.begin()); }) };
         if (firstIt == _topoState.cend())
             throw runtime_error("No states found for path " + _path);
 
         // Check that all selected devices have the same state
         fair::mq::sdk::AggregatedTopologyState first{ static_cast<fair::mq::sdk::AggregatedTopologyState>(
             firstIt->state) };
-        if (std::all_of(
-                _topoState.cbegin(), _topoState.cend(), [&](const fair::mq::sdk::TopologyState::value_type& _v) {
-                    return (taskIds.count(_v.taskId) > 0) ? _v.state == first : true;
-                }))
+        if (std::all_of(_topoState.cbegin(),
+                        _topoState.cend(),
+                        [&](const fair::mq::sdk::TopologyState::value_type& _v)
+                        { return (taskIds.count(_v.taskId) > 0) ? _v.state == first : true; }))
         {
             return first;
         }

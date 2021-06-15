@@ -57,12 +57,14 @@ namespace odc::core
                         bp::std_out > outPipe,
                         bp::std_err > errPipe,
                         ios,
-                        bp::on_exit([&](int /*exit*/, const std::error_code& /*ec*/) {
-                            outPipe.close();
-                            errPipe.close();
-                            watchdog.cancel();
-                            ios.stop();
-                        }));
+                        bp::on_exit(
+                            [&](int /*exit*/, const std::error_code& /*ec*/)
+                            {
+                                outPipe.close();
+                                errPipe.close();
+                                watchdog.cancel();
+                                ios.stop();
+                            }));
 
             if (!c.valid())
                 throw std::runtime_error("Can't execute the given process.");
@@ -71,19 +73,21 @@ namespace odc::core
             bio::async_read(errPipe, errBuf, [](const boost::system::error_code& /*ec*/, std::size_t /*size*/) {});
 
             bool errorFlag(false);
-            watchdog.async_wait([&](boost::system::error_code ec) {
-                // Workaround we can't use boost::process::child::wait_for because it's buged in Boost 1.70 and not yet
-                // fixed. We therefore use a deadline timer.
-                if (!ec)
+            watchdog.async_wait(
+                [&](boost::system::error_code ec)
                 {
-                    errorFlag = true;
-                    outPipe.close();
-                    errPipe.close();
-                    ios.stop();
-                    // Child didn't yet finish. Terminating it...
-                    c.terminate();
-                }
-            });
+                    // Workaround we can't use boost::process::child::wait_for because it's buged in Boost 1.70 and not
+                    // yet fixed. We therefore use a deadline timer.
+                    if (!ec)
+                    {
+                        errorFlag = true;
+                        outPipe.close();
+                        errPipe.close();
+                        ios.stop();
+                        // Child didn't yet finish. Terminating it...
+                        c.terminate();
+                    }
+                });
 
             ios.run();
             // prevent leaving a zombie process

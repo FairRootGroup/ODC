@@ -204,7 +204,8 @@ namespace odc::core
             std::string result;
             std::tuple<RequestParams_t...> tuple;
             std::apply(
-                [&result, &_msg, &_args, &_stubFunc, this](auto&&... params) {
+                [&result, &_msg, &_args, &_stubFunc, this](auto&&... params)
+                {
                     partitionID_t partitionID;
                     if (parseCommand(_args, partitionID, params...))
                     {
