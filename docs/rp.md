@@ -30,7 +30,7 @@ ODC provides the `odc-rp-same` plugin out of the box. The plugin prints to `stdo
 ### Register custom plugins
 
 In order to use custom resource plugin one need to register it in ODC server. `odc-grpc-server` and `odc-cli-server` have `--rp` command line option which allows to register custom plugins. For example:
-```
+```bash
 odc-grpc-server --rp my_plugin:/path/to/my_plugin another_plugin:/path/to/another_plugin
 ```
 Registered plugins can be addressed by using `plugin` field of [`SubmitRequest`](grpc-proto/odc.proto) or [`RunRequest`](grpc-proto/odc.proto).

@@ -14,7 +14,7 @@ Yes. ODC is able to manage multiple DDS sessions concurrently. In this case, eac
 Each task in a DDS topology can be referenced by a path. A topology has a hierarchical structure which is reflected in the path. It is similar to a filesystem path. There are two types of topology paths. First type is used to identify declared topology elements. Second type is used during a runtime. For instance, "main/group1/collection1/task1" is a path for a `task1` task declaration. And `main/group1/collection1_4/task1_0` is a runtime path of one of the `task1` tasks. Note `_X`. It's an index of a particular task or collection which is assigned to task during the runtime. Each collection and task has a unique path during a runtime.
 
 Having a topology like this:
-```
+```xml
 <topology name="topo1">
     <decltask name="task1">
         <exe>task1.exe</exe>

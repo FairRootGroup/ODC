@@ -28,6 +28,7 @@ Communication between `odc-grpc-server` and `odc-grpc-client` is done via [gRPC]
 | Reset | Transition devices into `Idle` state (via `ResetTask` -> `ResetDevice` transitions) |
 | Terminate | Shut devices down via `End` transition |
 | Shutdown | Shutdown DDS session |
+| Status | Show statuses of managed partitions/sessions |
 
 
 ## 3-rd party dependencies
@@ -48,8 +49,7 @@ brew install grpc
 
 ```bash
 git clone https://github.com/FairRootGroup/ODC
-cd ODC
-mkdir build && cd build
+cd ODC && mkdir build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=[INSTALL_DIR] ..
 make install
 ```
@@ -71,17 +71,15 @@ In order to build without `Protobuf` and `gRPC` dependencies one has to explicit
 
 Alternatively, ODC and 3-rd party dependencies can be installed using [aliBuild](https://github.com/alisw/alibuild):
 
-```
-> mkdir INSTALL_DIR
-> cd INSTALL_DIR
-> git clone https://github.com/alisw/alidist.git
-> aliBuild --default o2-dataflow build ODC
+```bash
+mkdir INSTALL_DIR && cd INSTALL_DIR
+git clone https://github.com/alisw/alidist.git
+aliBuild --default o2-dataflow build ODC
 ```
 
 ## Basic usage
-Source DDS environment script and start `odc-grpc-server` in foreground:
+Start `odc-grpc-server` in foreground:
 ```bash
-cd DDS_INSTALL_DIR && source DDS_env.sh
 export PATH=[INSTALL_DIR]/bin:$PATH && odc-grpc-server
 ```
 
@@ -92,7 +90,6 @@ export PATH=[INSTALL_DIR]/bin:$PATH && odc-grpc-client
 
 Alternatively, if gRPC is not installed, start `odc-cli-server` in foreground:
 ```bash
-cd DDS_INSTALL_DIR && source DDS_env.sh
 export PATH=[INSTALL_DIR]/bin:$PATH && odc-cli-server
 ```
 
