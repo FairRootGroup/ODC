@@ -23,6 +23,7 @@ namespace odc::core
         DDSCommanderInfoFailed,
         DDSSubmitAgentsFailed,
         DDSActivateTopologyFailed,
+        DDSSubscribeToSessionFailed,
 
         FairMQCreateTopologyFailed = 300,
         FairMQChangeStateFailed,

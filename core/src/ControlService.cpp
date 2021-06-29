@@ -142,6 +142,8 @@ struct CControlService::SImpl
                               fair::mq::sdk::DeviceState _expectedState,
                               DDSTopologyPtr_t _topo);
 
+    bool subscribeToDDSSession(const partitionID_t& _partitionID, SError& _error);
+
     // Disable copy constructors and assignment operators
     SImpl(const SImpl&) = delete;
     SImpl(SImpl&&) = delete;
@@ -172,14 +174,16 @@ SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partit
     {
         // Shutdown DDS session if it is running already
         // Create new DDS session
-        shutdownDDSSession(_partitionID, error) && createDDSSession(_partitionID, error);
+        shutdownDDSSession(_partitionID, error) && createDDSSession(_partitionID, error) &&
+            subscribeToDDSSession(_partitionID, error);
     }
     else
     {
         // Shutdown DDS session if it is running already
         // Attach to an existing DDS session
         bool success{ shutdownDDSSession(_partitionID, error) &&
-                      attachToDDSSession(_partitionID, error, _params.m_sessionID) };
+                      attachToDDSSession(_partitionID, error, _params.m_sessionID) &&
+                      subscribeToDDSSession(_partitionID, error) };
 
         // Request current active topology, if any
         // If topology is active, create DDS and FairMQ topology
@@ -1121,6 +1125,47 @@ string CControlService::SImpl::stateSummaryString(const fair::mq::sdk::TopologyS
        << "): total/success/failed devices (" << totalCount << "/" << successCount << "/" << failedCount << ")";
 
     return ss.str();
+}
+
+bool CControlService::SImpl::subscribeToDDSSession(const partitionID_t& _partitionID, SError& _error)
+{
+    try
+    {
+        auto info{ getOrCreateSessionInfo(_partitionID) };
+        if (info->m_session->IsRunning())
+        {
+            // Subscrube on TaskDone events
+            auto request{ SOnTaskDoneRequest::makeRequest(SOnTaskDoneRequest::request_t()) };
+            request->setResponseCallback(
+                [_partitionID](const SOnTaskDoneResponseData& _info)
+                {
+                    ESeverity severity{ (_info.m_exitCode != 0 || _info.m_signal != 0) ? ESeverity::error
+                                                                                       : ESeverity::debug };
+                    OLOG(severity) << "Partition " << quoted(_partitionID) << ": task (" << _info.m_taskID
+                                   << ") exited with code (" << _info.m_exitCode << ") and signal (" << _info.m_signal
+                                   << ")";
+                });
+            info->m_session->sendRequest<SOnTaskDoneRequest>(request);
+            OLOG(ESeverity::info) << "Partition " << std::quoted(_partitionID)
+                                  << " subscribed to task done event from session "
+                                  << quoted(to_string(info->m_session->getSessionID()));
+        }
+        else
+        {
+            fillError(_error,
+                      ErrorCode::DDSSubscribeToSessionFailed,
+                      "Failed to subscribe to task done events: session is not running");
+            return false;
+        }
+    }
+    catch (exception& _e)
+    {
+        fillError(_error,
+                  ErrorCode::DDSSubscribeToSessionFailed,
+                  string("Failed to subscribe to task done events: ") + _e.what());
+        return false;
+    }
+    return true;
 }
 
 //
