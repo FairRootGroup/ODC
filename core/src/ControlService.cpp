@@ -138,6 +138,10 @@ struct CControlService::SImpl
 
     SError checkSessionIsRunning(const partitionID_t& _partitionID, ErrorCode _errorCode);
 
+    string stateSummaryString(const fair::mq::sdk::TopologyState& _topologyState,
+                              fair::mq::sdk::DeviceState _expectedState,
+                              DDSTopologyPtr_t _topo);
+
     // Disable copy constructors and assignment operators
     SImpl(const SImpl&) = delete;
     SImpl(SImpl&&) = delete;
@@ -731,6 +735,18 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
         return false;
     }
 
+    auto it{ fair::mq::sdk::expectedState.find(_transition) };
+    fair::mq::sdk::DeviceState expectedState{ it != fair::mq::sdk::expectedState.end()
+                                                  ? it->second
+                                                  : fair::mq::sdk::DeviceState::Undefined };
+    if (expectedState == fair::mq::sdk::DeviceState::Undefined)
+    {
+        fillError(_error,
+                  ErrorCode::FairMQChangeStateFailed,
+                  string("Unexpected FairMQ transition " + fair::mq::GetTransitionName(_transition)));
+        return false;
+    }
+
     bool success(true);
 
     try
@@ -741,7 +757,7 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
             _transition,
             _path,
             m_timeout,
-            [&cv, &success, &_aggregatedState, &_topologyState, &_error, &info, this](
+            [&cv, &success, &_aggregatedState, &_topologyState, &_error, &info, &expectedState, this](
                 std::error_code _ec, fair::mq::sdk::TopologyState _state)
             {
                 success = !_ec;
@@ -757,6 +773,7 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
                         fillError(_error,
                                   ErrorCode::FairMQChangeStateFailed,
                                   string("Aggregate topology state failed: ") + _e.what());
+                        OLOG(ESeverity::error) << stateSummaryString(_state, expectedState, info->m_topo);
                     }
                     if (_topologyState != nullptr)
                         fairMQToODCTopologyState(info->m_topo, _state, _topologyState);
@@ -766,6 +783,7 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
                     fillError(_error,
                               ErrorCode::FairMQChangeStateFailed,
                               string("FairMQ change state failed: ") + _ec.message());
+                    OLOG(ESeverity::error) << stateSummaryString(_state, expectedState, info->m_topo);
                 }
                 cv.notify_all();
             });
@@ -777,9 +795,11 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
         if (waitStatus == std::cv_status::timeout)
         {
             success = false;
-            fillError(_error,
-                      ErrorCode::RequestTimeout,
-                      "Timed out waiting for change state " + fair::mq::GetTransitionName(_transition));
+            string msg{ "Timed out waiting for change state " + fair::mq::GetTransitionName(_transition) };
+            fillError(_error, ErrorCode::RequestTimeout, msg);
+            OLOG(ESeverity::error) << msg << endl
+                                   << stateSummaryString(
+                                          info->m_fairmqTopology->GetCurrentState(), expectedState, info->m_topo);
         }
         else
         {
@@ -791,6 +811,8 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
     {
         success = false;
         fillError(_error, ErrorCode::FairMQChangeStateFailed, string("Change state failed: ") + _e.what());
+        OLOG(ESeverity::error) << stateSummaryString(
+            info->m_fairmqTopology->GetCurrentState(), expectedState, info->m_topo);
     }
 
     return success;
@@ -1053,6 +1075,52 @@ SError CControlService::SImpl::checkSessionIsRunning(const partitionID_t& _parti
         fillError(error, _errorCode, "DDS session is not running. Use Init or Run to start the session.");
     }
     return error;
+}
+
+string CControlService::SImpl::stateSummaryString(const fair::mq::sdk::TopologyState& _topologyState,
+                                                  fair::mq::sdk::DeviceState _expectedState,
+                                                  DDSTopologyPtr_t _topo)
+{
+    size_t totalCount{ _topologyState.size() };
+    size_t failedCount{ 0 };
+    stringstream ss;
+    for (const auto& status : _topologyState)
+    {
+        // Print only failed devices
+        if (status.state == _expectedState)
+            continue;
+
+        failedCount++;
+        if (failedCount == 1)
+        {
+            ss << "List of failed devices for an expected state " << fair::mq::GetStateName(_expectedState) << ":";
+        }
+        ss << endl
+           << "  "
+           << "Device: state (" << status.state << "), last state (" << status.lastState << "), task ID ("
+           << status.taskId << "), collection ID (" << status.collectionId << "), "
+           << "subscribed (" << status.subscribed_to_state_changes << ")";
+        try
+        {
+            if (_topo != nullptr)
+            {
+                auto task{ _topo->getRuntimeTaskById(status.taskId) };
+                ss << ", task path (" << task.m_taskPath << ")";
+            }
+        }
+        catch (const exception& _e)
+        {
+            OLOG(ESeverity::error) << "Failed to get task with ID (" << status.taskId << ") from topology ("
+                                   << _topo->getName() << ") at filepath " << std::quoted(_topo->getFilepath())
+                                   << ". Error: " << _e.what();
+        }
+    }
+    size_t successCount{ totalCount - failedCount };
+    ss << endl
+       << "Device status summary for expected state (" << fair::mq::GetStateName(_expectedState)
+       << "): total/success/failed devices (" << totalCount << "/" << successCount << "/" << failedCount << ")";
+
+    return ss.str();
 }
 
 //
