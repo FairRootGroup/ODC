@@ -39,6 +39,7 @@ Communication between `odc-grpc-server` and `odc-grpc-client` is done via [gRPC]
   * [gRPC](https://grpc.io/)
   * [FairMQ](https://github.com/FairRootGroup/FairMQ)
   * [FairLogger](https://github.com/FairRootGroup/FairLogger)
+  * [InfoLogger](https://github.com/AliceO2Group/InfoLogger/) (optional)
 
 For macOS we recommend to install gRPC via `brew` which also installs `Protobuf` and other dependencies:
 ```bash
@@ -66,6 +67,7 @@ In order to build without `Protobuf` and `gRPC` dependencies one has to explicit
   * `-DBUILD_CLI_SERVER=OFF` disables building of CLI server.
   * `-DBUILD_EXAMPLES=OFF` disables building of examples.
   * `-DBUILD_PLUGINS=OFF` disables building of plugins.
+  * `-DBUILD_INFOLOGGER=ON` enables `InfoLogger` support.
 
 ## Installation with aliBuild
 
