@@ -22,6 +22,8 @@ add_library(odc_core_lib
     "src/CliHelper.cpp"
     "src/CliServiceHelper.h"
     "src/Logger.h"
+    "src/LoggerSeverity.h"
+    "src/InfoLogger.h"
     "src/Error.h"
     "src/Error.cpp"
     "src/MiscUtils.h"
@@ -46,5 +48,9 @@ target_include_directories(odc_core_lib PUBLIC
 if(readline_FOUND)
     target_compile_definitions(odc_core_lib PUBLIC READLINE_AVAIL)
     target_link_libraries(odc_core_lib readline::readline)
+endif()
+if (InfoLogger_FOUND)
+    target_compile_definitions(odc_core_lib PUBLIC INFOLOGGER_AVAIL)
+    target_link_libraries(odc_core_lib AliceO2::InfoLogger)
 endif()
 install(TARGETS odc_core_lib EXPORT ${PROJECT_NAME}Targets LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR})

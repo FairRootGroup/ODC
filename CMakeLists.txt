@@ -27,6 +27,7 @@ option(BUILD_GRPC_SERVER "Build gRPC server of ODC" ON)
 option(BUILD_CLI_SERVER "Build CLI server of ODC" ON)
 option(BUILD_PLUGINS "Build plugins of ODC" ON)
 option(BUILD_EXAMPLES "Build ODC examples" ON)
+option(BUILD_INFOLOGGER "Build with InfoLogger support" OFF)
 
 # Define CMAKE_INSTALL_*DIR variables
 include(GNUInstallDirs)
@@ -91,6 +92,12 @@ endforeach()
 
 # Find optional readline package
 find_package(readline)
+
+if(BUILD_INFOLOGGER)
+    # Find InfoLogger installation
+    find_package(InfoLogger REQUIRED)
+    message(STATUS "Using InfoLogger ${InfoLogger_VERSION}")
+endif()
 
 # https://cmake.org/Wiki/CMake_RPATH_handling
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)

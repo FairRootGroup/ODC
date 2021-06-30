@@ -76,6 +76,9 @@ void CCliHelper::addLogOptions(boost::program_options::options_description& _opt
     _options.add_options()("logdir", bpo::value<string>(&_config.m_logDir)->default_value(""), "Log files directory");
     _options.add_options()(
         "severity", bpo::value<ESeverity>(&_config.m_severity)->default_value(ESeverity::info), "Log severity level");
+    _options.add_options()("infologger",
+                           bpo::bool_switch(&_config.m_infologger)->default_value(false),
+                           "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)");
 }
 
 void CCliHelper::addOptions(boost::program_options::options_description& _options, SBatchOptions& _batchOptions)

@@ -25,6 +25,9 @@
 // STD
 #include <fstream>
 #include <ostream>
+// ODC
+#include "InfoLogger.h"
+#include "LoggerSeverity.h"
 
 // Main macro to be used for logging in ODC
 // Example: LOG(info) << "My message";
@@ -34,39 +37,21 @@
 
 namespace odc::core
 {
-    /// Log Severity levels
-    enum class ESeverity
-    {
-        debug,
-        info,
-        warning,
-        error,
-        fatal,
-        stdout,
-        clean, // nothing will be pre-append to the output
-        stderr
-    };
-
-    /// Array of log severity names
-    static constexpr std::array<const char*, 8> gSeverityNames{
-        { "dbg", "inf", "wrn", "err", "fat", "cout", "cout", "cerr" }
-    };
-
-    BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", ESeverity)
-
     class CLogger
     {
       public:
         struct SConfig
         {
-            SConfig(ESeverity _severity = ESeverity::info, const std::string& _logDir = "")
+            SConfig(ESeverity _severity = ESeverity::info, const std::string& _logDir = "", bool _infologger = false)
                 : m_severity(_severity)
                 , m_logDir(_logDir)
+                , m_infologger(_infologger)
             {
             }
 
             ESeverity m_severity{ ESeverity::info };
             std::string m_logDir;
+            bool m_infologger{ false };
         };
 
       public:
@@ -96,6 +81,8 @@ namespace odc::core
             createFileSink(_config);
             // Logging to console
             createConsoleSink(_config);
+            // Optional InfoLogger sink
+            CInfoLogger::instance().registerSink(_config.m_severity, _config.m_infologger);
 
             boost::log::add_common_attributes();
             boost::log::core::get()->add_global_attribute("Process", boost::log::attributes::current_process_name());
@@ -168,28 +155,6 @@ namespace odc::core
       private:
         logger_t m_logger; ///> Main logger object
     };
-
-    // A custom streamer to convert string to odc::core::ESeverity
-    inline std::istream& operator>>(std::istream& _in, ESeverity& _severity)
-    {
-        std::string token;
-        _in >> token;
-        boost::algorithm::to_lower(token);
-
-        auto found = std::find(gSeverityNames.begin(), gSeverityNames.end(), token);
-        if (found == gSeverityNames.end())
-            throw std::runtime_error(std::string("Can't convert string ") + token + " to ODC log severity");
-
-        _severity = static_cast<ESeverity>(std::distance(gSeverityNames.begin(), found));
-        return _in;
-    }
-    // A custom streamer to convert odc::core::ESeverity to string
-    inline std::ostream& operator<<(std::ostream& _out, ESeverity _severity)
-    {
-        const size_t idx{ static_cast<size_t>(_severity) };
-        _out << gSeverityNames.at(idx);
-        return _out;
-    }
 }; // namespace odc::core
 
 #endif // __ODC__LOGGER__
