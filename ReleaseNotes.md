@@ -1,7 +1,10 @@
 # ODC Release Notes
 
 ## v0.28 (NOT YET RELEASED)
-
+### ODC common
+Added: optional `InfoLogger` support.    
+Added:  Subscribe to DDS TaskDone events.    
+Added: Improve device state change logging.    
 
 
 ## v0.26 (2021-06-16)
