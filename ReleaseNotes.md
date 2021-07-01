@@ -5,6 +5,7 @@
 Added: optional `InfoLogger` support.    
 Added:  Subscribe to DDS TaskDone events.    
 Added: Improve device state change logging.    
+Modified: require DDS 3.5.14.    
 
 
 ## v0.26 (2021-06-16)

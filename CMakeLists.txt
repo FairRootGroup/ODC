@@ -57,7 +57,7 @@ if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
 endif()
 
 # Find DDS installation
-find_package(DDS 3.5.13 CONFIG REQUIRED)
+find_package(DDS 3.5.14 CONFIG REQUIRED)
 message(STATUS "Using DDS ${DDS_VERSION}")
 
 # Find Boost installation
