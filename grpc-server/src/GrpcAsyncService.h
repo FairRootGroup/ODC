@@ -125,10 +125,20 @@ namespace odc::grpc
                   RequestFunc_t _requestFunc,
                   ProcessFunc_t _processFunc)
         {
-            using namespace std::placeholders;
             new Call_t(_cq,
-                       std::bind(_requestFunc, _service, _1, _2, _3, _4, _5, _6),
-                       std::bind(_processFunc, m_service, _1, _2, _3));
+                       std::bind(_requestFunc,
+                                 _service,
+                                 std::placeholders::_1,
+                                 std::placeholders::_2,
+                                 std::placeholders::_3,
+                                 std::placeholders::_4,
+                                 std::placeholders::_5,
+                                 std::placeholders::_6),
+                       std::bind(_processFunc,
+                                 m_service,
+                                 std::placeholders::_1,
+                                 std::placeholders::_2,
+                                 std::placeholders::_3));
         }
 
         std::shared_ptr<odc::grpc::CGrpcService> m_service; ///< Core gRPC service
