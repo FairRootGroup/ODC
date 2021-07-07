@@ -2,8 +2,8 @@
 //
 //
 
-// DDS
 #include "CliControlService.h"
+#include "Topology.h"
 // STD
 #include <sstream>
 
@@ -143,7 +143,7 @@ string CCliControlService::generalReply(const SReturnValue& _value)
         for (const auto& state : topologyState)
         {
             ss << "    { id: " << state.m_status.taskId << "; path: " << state.m_path
-               << "; state: " << fair::mq::GetStateName(state.m_status.state) << " }" << endl;
+               << "; state: " << state.m_status.state << " }" << endl;
         }
         ss << endl;
     }
@@ -171,7 +171,7 @@ std::string CCliControlService::statusReply(const odc::core::SStatusReturnValue&
     {
         ss << "    { partition ID: " << p.m_partitionID << "; session ID: " << p.m_sessionID
            << "; status: " << ((p.m_sessionStatus == ESessionStatus::running) ? "RUNNING" : "STOPPED")
-           << "; state: " << fair::mq::sdk::GetAggregatedTopologyStateName(p.m_aggregatedState) << " }" << endl;
+           << "; state: " << GetAggregatedTopologyStateName(p.m_aggregatedState) << " }" << endl;
     }
     ss << "  Execution time: " << _value.m_execTime << " msec" << endl;
     return ss.str();

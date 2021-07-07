@@ -12,7 +12,7 @@ add_executable(odc-grpc-server
     "src/GrpcAsyncService.h"
     "src/GrpcAsyncService.cpp"
 )
-target_link_libraries(odc-grpc-server
+target_link_libraries(odc-grpc-server PUBLIC
   Boost::boost
   Boost::program_options
   odc_core_lib

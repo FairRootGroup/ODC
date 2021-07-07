@@ -49,11 +49,6 @@ int main(int argc, char** argv)
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
         bpo::notify(vm);
 
-        // A workaround to setup environment before fair::mq::DDSEnv does.
-        // Since DDS introduces it's own environment setup, fair::mq::DDSEnv is no longer needed.
-        // The following line can be removed when fair::mq::DDSEnv is removed.
-        dds::tools_api::CSession::setup();
-
         try
         {
             CLogger::instance().init(logConfig);

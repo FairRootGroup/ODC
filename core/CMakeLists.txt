@@ -32,14 +32,20 @@ add_library(odc_core_lib
     "src/Process.h"
     "src/CmdsFile.h"
     "src/CmdsFile.cpp"
+    "src/AsioAsyncOp.h"
+    "src/AsioBase.h"
+    "src/Topology.h"
+    "src/Semaphore.h"
+    "src/Semaphore.cpp"
 )
-target_link_libraries(odc_core_lib
+target_link_libraries(odc_core_lib PUBLIC
   DDS::dds_topology_lib
   DDS::dds_intercom_lib
   DDS::dds_tools_lib
   Boost::boost
   Boost::filesystem
-  FairMQ::SDK
+  odc_custom_commands
+  FairMQ::FairMQ
 )
 target_include_directories(odc_core_lib PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
@@ -47,10 +53,10 @@ target_include_directories(odc_core_lib PUBLIC
 )
 if(readline_FOUND)
     target_compile_definitions(odc_core_lib PUBLIC READLINE_AVAIL)
-    target_link_libraries(odc_core_lib readline::readline)
+    target_link_libraries(odc_core_lib PUBLIC readline::readline)
 endif()
 if (InfoLogger_FOUND)
     target_compile_definitions(odc_core_lib PUBLIC INFOLOGGER_AVAIL)
-    target_link_libraries(odc_core_lib AliceO2::InfoLogger)
+    target_link_libraries(odc_core_lib PUBLIC AliceO2::InfoLogger)
 endif()
 install(TARGETS odc_core_lib EXPORT ${PROJECT_NAME}Targets LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR})
