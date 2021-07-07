@@ -1,15 +1,15 @@
 <topology name="o2-dataflow">
    <decltask name="A">
-       <exe reachable="true">foo --id A --control static --shm-monitor false --log-color false --color false --jobs 4 --severity info --session dpl_workflow-id --plugin-search-path $FAIRMQ_ROOT/lib --plugin odc</exe>
+       <exe reachable="true">foo --id A --control static --shm-monitor false --log-color false --color false --jobs 4 --severity info --session dpl_workflow-id --plugin odc</exe>
    </decltask>
    <decltask name="B">
-       <exe reachable="true">foo --id B --control static --shm-monitor false --log-color false --color false --jobs 4 --severity info --session dpl_workflow-id --plugin-search-path $FAIRMQ_ROOT/lib --plugin odc</exe>
+       <exe reachable="true">foo --id B --control static --shm-monitor false --log-color false --color false --jobs 4 --severity info --session dpl_workflow-id --plugin odc</exe>
    </decltask>
    <decltask name="C">
-       <exe reachable="true">foo --id C --control static --shm-monitor false --log-color false --color false --jobs 4 --severity info --session dpl_workflow-id --plugin-search-path $FAIRMQ_ROOT/lib --plugin odc</exe>
+       <exe reachable="true">foo --id C --control static --shm-monitor false --log-color false --color false --jobs 4 --severity info --session dpl_workflow-id --plugin odc</exe>
    </decltask>
    <decltask name="D">
-       <exe reachable="true">foo --id D --control static --shm-monitor false --log-color false --color false --jobs 4 --severity info --session dpl_workflow-id --plugin-search-path $FAIRMQ_ROOT/lib --plugin odc</exe>
+       <exe reachable="true">foo --id D --control static --shm-monitor false --log-color false --color false --jobs 4 --severity info --session dpl_workflow-id --plugin odc</exe>
    </decltask>
    <declcollection name="DPL">
        <tasks>
