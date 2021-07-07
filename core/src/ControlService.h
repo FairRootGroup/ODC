@@ -9,10 +9,9 @@
 #include <memory>
 #include <string>
 #include <system_error>
-// FairMQ
-#include <fairmq/sdk/Topology.h>
 // ODC
 #include "DDSSubmit.h"
+#include "Topology.h"
 
 namespace odc::core
 {
@@ -55,13 +54,13 @@ namespace odc::core
         {
         }
 
-        SDeviceStatus(const fair::mq::sdk::DeviceStatus& _status, const std::string& _path)
+        SDeviceStatus(const DeviceStatus& _status, const std::string& _path)
             : m_status(_status)
             , m_path(_path)
         {
         }
 
-        fair::mq::sdk::DeviceStatus m_status;
+        DeviceStatus m_status;
         std::string m_path;
     };
 
@@ -86,7 +85,7 @@ namespace odc::core
         SPartitionStatus(const partitionID_t& _partitionID,
                          const std::string& _sessionID,
                          ESessionStatus _sessionStatus,
-                         fair::mq::sdk::AggregatedTopologyState _aggregatedState)
+                         AggregatedTopologyState _aggregatedState)
             : m_partitionID(_partitionID)
             , m_sessionID(_sessionID)
             , m_sessionStatus(_sessionStatus)
@@ -97,8 +96,8 @@ namespace odc::core
         partitionID_t m_partitionID;                               ///< Partition ID
         std::string m_sessionID;                                   ///< Session ID of DDS
         ESessionStatus m_sessionStatus{ ESessionStatus::unknown }; ///< DDS session status
-        fair::mq::sdk::AggregatedTopologyState m_aggregatedState{
-            fair::mq::sdk::AggregatedTopologyState::Undefined
+        AggregatedTopologyState m_aggregatedState{
+            AggregatedTopologyState::Undefined
         }; ///< Aggregated state of the affected divices
     };
 
@@ -150,7 +149,7 @@ namespace odc::core
                      const SError& _error,
                      const partitionID_t& _partitionID,
                      const std::string& _sessionID,
-                     fair::mq::sdk::AggregatedTopologyState _aggregatedState,
+                     AggregatedTopologyState _aggregatedState,
                      SReturnDetails::ptr_t _details = nullptr)
             : SBaseReturnValue(_statusCode, _msg, _execTime, _error)
             , m_partitionID(_partitionID)
@@ -162,8 +161,8 @@ namespace odc::core
 
         partitionID_t m_partitionID; ///< Partition ID
         std::string m_sessionID;     ///< Session ID of DDS
-        fair::mq::sdk::AggregatedTopologyState m_aggregatedState{
-            fair::mq::sdk::AggregatedTopologyState::Undefined
+        AggregatedTopologyState m_aggregatedState{
+            AggregatedTopologyState::Undefined
         }; ///< Aggregated state of the affected divices
 
         // Optional parameters

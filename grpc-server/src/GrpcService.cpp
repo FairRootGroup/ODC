@@ -2,9 +2,10 @@
 //
 //
 
-// DDS
+// ODC
 #include "GrpcService.h"
 #include "Logger.h"
+#include "Topology.h"
 
 using namespace odc;
 using namespace odc::core;
@@ -268,6 +269,6 @@ void CGrpcService::setupStatusReply(odc::StatusReply* _response, const odc::core
         partition->set_sessionid(p.m_sessionID);
         partition->set_status(
             (p.m_sessionStatus == ESessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
-        partition->set_state(fair::mq::sdk::GetAggregatedTopologyStateName(p.m_aggregatedState));
+        partition->set_state(GetAggregatedTopologyStateName(p.m_aggregatedState));
     }
 }

@@ -5,16 +5,33 @@
 #ifndef __ODC__Error__
 #define __ODC__Error__
 
+// ODC
+#include "MiscUtils.h"
 // STD
+#include <stdexcept>
 #include <system_error>
 
 namespace odc::core
 {
+    struct RuntimeError : ::std::runtime_error
+    {
+        template<typename... T>
+        explicit RuntimeError(T&&... t)
+            : ::std::runtime_error::runtime_error(toString(std::forward<T>(t)...))
+        {}
+    };
+
     enum class ErrorCode
     {
         RequestNotSupported = 100,
         RequestTimeout,
         ResourcePluginFailed,
+        OperationInProgress,
+        OperationTimeout,
+        OperationCanceled,
+        DeviceChangeStateFailed,
+        DeviceGetPropertiesFailed,
+        DeviceSetPropertiesFailed,
 
         DDSCreateSessionFailed = 200,
         DDSShutdownSessionFailed,

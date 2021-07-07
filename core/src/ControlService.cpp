@@ -8,9 +8,7 @@
 #include "Error.h"
 #include "Logger.h"
 #include "TimeMeasure.h"
-// FairMQ
-#include <fairmq/SDK.h>
-#include <fairmq/sdk/Topology.h>
+#include "Topology.h"
 // DDS
 #include <dds/Tools.h>
 #include <dds/Topology.h>
@@ -29,7 +27,7 @@ struct CControlService::SImpl
 {
     using DDSTopologyPtr_t = std::shared_ptr<dds::topology_api::CTopology>;
     using DDSSessionPtr_t = std::shared_ptr<dds::tools_api::CSession>;
-    using FairMQTopologyPtr_t = std::shared_ptr<fair::mq::sdk::Topology>;
+    using FairMQTopologyPtr_t = std::shared_ptr<Topology>;
 
     struct SSessionInfo
     {
@@ -85,7 +83,7 @@ struct CControlService::SImpl
                                    const SError& _error,
                                    const std::string& _msg,
                                    size_t _execTime,
-                                   fair::mq::sdk::AggregatedTopologyState _aggregatedState,
+                                   AggregatedTopologyState _aggregatedState,
                                    SReturnDetails::ptr_t _details = nullptr);
     bool createDDSSession(const partitionID_t& _partitionID, SError& _error);
     bool attachToDDSSession(const partitionID_t& _partitionID, SError& _error, const std::string& _sessionID);
@@ -105,41 +103,41 @@ struct CControlService::SImpl
     bool setProperties(const partitionID_t& _partitionID, SError& _error, const SSetPropertiesParams& _params);
     bool changeState(const partitionID_t& _partitionID,
                      SError& _error,
-                     fair::mq::sdk::TopologyTransition _transition,
+                     TopologyTransition _transition,
                      const std::string& _path,
-                     fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
+                     AggregatedTopologyState& _aggregatedState,
                      TopologyState* _topologyState = nullptr);
     bool getState(const partitionID_t& _partitionID,
                   SError& _error,
                   const string& _path,
-                  fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
+                  AggregatedTopologyState& _aggregatedState,
                   TopologyState* _topologyState = nullptr);
     bool changeStateConfigure(const partitionID_t& _partitionID,
                               SError& _error,
                               const std::string& _path,
-                              fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
+                              AggregatedTopologyState& _aggregatedState,
                               TopologyState* _topologyState = nullptr);
     bool changeStateReset(const partitionID_t& _partitionID,
                           SError& _error,
                           const std::string& _path,
-                          fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
+                          AggregatedTopologyState& _aggregatedState,
                           TopologyState* _topologyState = nullptr);
 
     void fillError(SError& _error, ErrorCode _errorCode, const string& _msg);
 
-    fair::mq::sdk::AggregatedTopologyState aggregateStateForPath(const DDSTopologyPtr_t& _topo,
-                                                                 const fair::mq::sdk::TopologyState& _fairmq,
+    AggregatedTopologyState aggregateStateForPath(const DDSTopologyPtr_t& _topo,
+                                                                 const FairMQTopologyState& _fairmq,
                                                                  const string& _path);
     void fairMQToODCTopologyState(const DDSTopologyPtr_t& _topo,
-                                  const fair::mq::sdk::TopologyState& _fairmq,
+                                  const FairMQTopologyState& _fairmq,
                                   TopologyState* _odc);
 
     SSessionInfo::Ptr_t getOrCreateSessionInfo(const partitionID_t& _partitionID);
 
     SError checkSessionIsRunning(const partitionID_t& _partitionID, ErrorCode _errorCode);
 
-    string stateSummaryString(const fair::mq::sdk::TopologyState& _topologyState,
-                              fair::mq::sdk::DeviceState _expectedState,
+    string stateSummaryString(const FairMQTopologyState& _topologyState,
+                              DeviceState _expectedState,
                               DDSTopologyPtr_t _topo);
 
     bool subscribeToDDSSession(const partitionID_t& _partitionID, SError& _error);
@@ -150,8 +148,6 @@ struct CControlService::SImpl
     SImpl& operator=(const SImpl&) = delete;
     SImpl& operator=(SImpl&&) = delete;
 
-    fair::mq::sdk::DDSEnv
-        m_fairmqEnv; ///< FairMQ environment. We store it globally because only one instance per process is allowed.
     SSessionInfo::Map_t m_sessions;                          ///< Map of partition ID to session info
     chrono::seconds m_timeout{ 30 };                         ///< Request timeout in sec
     CDDSSubmit::Ptr_t m_submit{ make_shared<CDDSSubmit>() }; ///< ODC to DDS submit resource converter
@@ -196,7 +192,7 @@ SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partit
         }
     }
     return createReturnValue(
-        _partitionID, error, "Initialize done", measure.duration(), fair::mq::sdk::AggregatedTopologyState::Undefined);
+        _partitionID, error, "Initialize done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
 SReturnValue CControlService::SImpl::execSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params)
@@ -228,14 +224,14 @@ SReturnValue CControlService::SImpl::execSubmit(const partitionID_t& _partitionI
     }
 
     return createReturnValue(
-        _partitionID, error, "Submit done", measure.duration(), fair::mq::sdk::AggregatedTopologyState::Undefined);
+        _partitionID, error, "Submit done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
 SReturnValue CControlService::SImpl::execActivate(const partitionID_t& _partitionID, const SActivateParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     // Activate DDS topology
-    // Create fair::mq::sdk::Topology
+    // Create Topology
     SError error{ checkSessionIsRunning(_partitionID, ErrorCode::DDSActivateTopologyFailed) };
     if (!error.m_code)
     {
@@ -244,8 +240,8 @@ SReturnValue CControlService::SImpl::execActivate(const partitionID_t& _partitio
             createTopo(_partitionID, error, _params.m_topologyFile) &&
             createFairMQTopo(_partitionID, error, _params.m_topologyFile);
     }
-    fair::mq::sdk::AggregatedTopologyState state{ !error.m_code ? fair::mq::sdk::AggregatedTopologyState::Idle
-                                                                : fair::mq::sdk::AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle
+                                                 : AggregatedTopologyState::Undefined };
     return createReturnValue(_partitionID, error, "Activate done", measure.duration(), state);
 }
 
@@ -274,18 +270,18 @@ SReturnValue CControlService::SImpl::execRun(const partitionID_t& _partitionID,
             }
         }
     }
-    fair::mq::sdk::AggregatedTopologyState state{ !error.m_code ? fair::mq::sdk::AggregatedTopologyState::Idle
-                                                                : fair::mq::sdk::AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle
+                                                 : AggregatedTopologyState::Undefined };
     return createReturnValue(_partitionID, error, "Run done", measure.duration(), state);
 }
 
 SReturnValue CControlService::SImpl::execUpdate(const partitionID_t& _partitionID, const SUpdateParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
     // Reset devices' state
     // Update DDS topology
-    // Create fair::mq::sdk::Topology
+    // Create Topology
     // Configure devices' state
     SError error;
     changeStateReset(_partitionID, error, "", state) && resetFairMQTopo(_partitionID) &&
@@ -303,7 +299,7 @@ SReturnValue CControlService::SImpl::execShutdown(const partitionID_t& _partitio
     SError error;
     shutdownDDSSession(_partitionID, error);
     return createReturnValue(
-        _partitionID, error, "Shutdown done", measure.duration(), fair::mq::sdk::AggregatedTopologyState::Undefined);
+        _partitionID, error, "Shutdown done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
 SReturnValue CControlService::SImpl::execSetProperties(const partitionID_t& _partitionID,
@@ -316,13 +312,13 @@ SReturnValue CControlService::SImpl::execSetProperties(const partitionID_t& _par
                              error,
                              "SetProperties done",
                              measure.duration(),
-                             fair::mq::sdk::AggregatedTopologyState::Undefined);
+                             AggregatedTopologyState::Undefined);
 }
 
 SReturnValue CControlService::SImpl::execGetState(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
     SError error;
     getState(_partitionID, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
@@ -332,7 +328,7 @@ SReturnValue CControlService::SImpl::execGetState(const partitionID_t& _partitio
 SReturnValue CControlService::SImpl::execConfigure(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
     SError error;
     changeStateConfigure(
@@ -343,12 +339,12 @@ SReturnValue CControlService::SImpl::execConfigure(const partitionID_t& _partiti
 SReturnValue CControlService::SImpl::execStart(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
     SError error;
     changeState(_partitionID,
                 error,
-                fair::mq::sdk::TopologyTransition::Run,
+                TopologyTransition::Run,
                 _params.m_path,
                 state,
                 ((details == nullptr) ? nullptr : &details->m_topologyState));
@@ -358,12 +354,12 @@ SReturnValue CControlService::SImpl::execStart(const partitionID_t& _partitionID
 SReturnValue CControlService::SImpl::execStop(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
     SError error;
     changeState(_partitionID,
                 error,
-                fair::mq::sdk::TopologyTransition::Stop,
+                TopologyTransition::Stop,
                 _params.m_path,
                 state,
                 ((details == nullptr) ? nullptr : &details->m_topologyState));
@@ -373,7 +369,7 @@ SReturnValue CControlService::SImpl::execStop(const partitionID_t& _partitionID,
 SReturnValue CControlService::SImpl::execReset(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
     SError error;
     changeStateReset(
@@ -384,12 +380,12 @@ SReturnValue CControlService::SImpl::execReset(const partitionID_t& _partitionID
 SReturnValue CControlService::SImpl::execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
-    fair::mq::sdk::AggregatedTopologyState state{ fair::mq::sdk::AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
     SError error;
     changeState(_partitionID,
                 error,
-                fair::mq::sdk::TopologyTransition::End,
+                TopologyTransition::End,
                 _params.m_path,
                 state,
                 ((details == nullptr) ? nullptr : &details->m_topologyState));
@@ -420,7 +416,7 @@ SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& /* _p
             status.m_aggregatedState =
                 (info->m_fairmqTopology != nullptr && info->m_topo != nullptr)
                     ? aggregateStateForPath(info->m_topo, info->m_fairmqTopology->GetCurrentState(), "")
-                    : fair::mq::sdk::AggregatedTopologyState::Undefined;
+                    : AggregatedTopologyState::Undefined;
         }
         catch (exception& _e)
         {
@@ -439,7 +435,7 @@ SReturnValue CControlService::SImpl::createReturnValue(const partitionID_t& _par
                                                        const SError& _error,
                                                        const std::string& _msg,
                                                        size_t _execTime,
-                                                       fair::mq::sdk::AggregatedTopologyState _aggregatedState,
+                                                       AggregatedTopologyState _aggregatedState,
                                                        SReturnDetails::ptr_t _details)
 {
     auto info{ getOrCreateSessionInfo(_partitionID) };
@@ -710,10 +706,8 @@ bool CControlService::SImpl::createFairMQTopo(const partitionID_t& _partitionID,
     try
     {
         info->m_fairmqTopology.reset();
-        fair::mq::sdk::DDSSession session(info->m_session, m_fairmqEnv);
-        session.StopOnDestruction(false);
-        fair::mq::sdk::DDSTopo topo(fair::mq::sdk::DDSTopo::Path(_topologyFile), m_fairmqEnv);
-        info->m_fairmqTopology = make_shared<fair::mq::sdk::Topology>(topo, session);
+        info->m_fairmqTopology = make_shared<Topology>(dds::topology_api::CTopology(_topologyFile),
+                                                       info->m_session);
     }
     catch (exception& _e)
     {
@@ -727,9 +721,9 @@ bool CControlService::SImpl::createFairMQTopo(const partitionID_t& _partitionID,
 
 bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
                                          SError& _error,
-                                         fair::mq::sdk::TopologyTransition _transition,
+                                         TopologyTransition _transition,
                                          const string& _path,
-                                         fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
+                                         AggregatedTopologyState& _aggregatedState,
                                          TopologyState* _topologyState)
 {
     auto info{ getOrCreateSessionInfo(_partitionID) };
@@ -739,15 +733,13 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
         return false;
     }
 
-    auto it{ fair::mq::sdk::expectedState.find(_transition) };
-    fair::mq::sdk::DeviceState expectedState{ it != fair::mq::sdk::expectedState.end()
-                                                  ? it->second
-                                                  : fair::mq::sdk::DeviceState::Undefined };
-    if (expectedState == fair::mq::sdk::DeviceState::Undefined)
+    auto it{ expectedState.find(_transition) };
+    DeviceState _expectedState{ it != expectedState.end() ? it->second : DeviceState::Undefined };
+    if (_expectedState == DeviceState::Undefined)
     {
         fillError(_error,
                   ErrorCode::FairMQChangeStateFailed,
-                  string("Unexpected FairMQ transition " + fair::mq::GetTransitionName(_transition)));
+                  toString("Unexpected FairMQ transition ", _transition));
         return false;
     }
 
@@ -761,15 +753,15 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
             _transition,
             _path,
             m_timeout,
-            [&cv, &success, &_aggregatedState, &_topologyState, &_error, &info, &expectedState, this](
-                std::error_code _ec, fair::mq::sdk::TopologyState _state)
+            [&cv, &success, &_aggregatedState, &_topologyState, &_error, &info, &_expectedState, this](
+                std::error_code _ec, FairMQTopologyState _state)
             {
                 success = !_ec;
                 if (success)
                 {
                     try
                     {
-                        _aggregatedState = fair::mq::sdk::AggregateState(_state);
+                        _aggregatedState = AggregateState(_state);
                     }
                     catch (exception& _e)
                     {
@@ -777,7 +769,7 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
                         fillError(_error,
                                   ErrorCode::FairMQChangeStateFailed,
                                   string("Aggregate topology state failed: ") + _e.what());
-                        OLOG(ESeverity::error) << stateSummaryString(_state, expectedState, info->m_topo);
+                        OLOG(ESeverity::error) << stateSummaryString(_state, _expectedState, info->m_topo);
                     }
                     if (_topologyState != nullptr)
                         fairMQToODCTopologyState(info->m_topo, _state, _topologyState);
@@ -787,7 +779,7 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
                     fillError(_error,
                               ErrorCode::FairMQChangeStateFailed,
                               string("FairMQ change state failed: ") + _ec.message());
-                    OLOG(ESeverity::error) << stateSummaryString(_state, expectedState, info->m_topo);
+                    OLOG(ESeverity::error) << stateSummaryString(_state, _expectedState, info->m_topo);
                 }
                 cv.notify_all();
             });
@@ -799,11 +791,11 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
         if (waitStatus == std::cv_status::timeout)
         {
             success = false;
-            string msg{ "Timed out waiting for change state " + fair::mq::GetTransitionName(_transition) };
+            string msg{ toString("Timed out waiting for change state ", _transition) };
             fillError(_error, ErrorCode::RequestTimeout, msg);
             OLOG(ESeverity::error) << msg << endl
                                    << stateSummaryString(
-                                          info->m_fairmqTopology->GetCurrentState(), expectedState, info->m_topo);
+                                          info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
         }
         else
         {
@@ -816,7 +808,7 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
         success = false;
         fillError(_error, ErrorCode::FairMQChangeStateFailed, string("Change state failed: ") + _e.what());
         OLOG(ESeverity::error) << stateSummaryString(
-            info->m_fairmqTopology->GetCurrentState(), expectedState, info->m_topo);
+            info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
     }
 
     return success;
@@ -825,36 +817,36 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
 bool CControlService::SImpl::changeStateConfigure(const partitionID_t& _partitionID,
                                                   SError& _error,
                                                   const string& _path,
-                                                  fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
+                                                  AggregatedTopologyState& _aggregatedState,
                                                   TopologyState* _topologyState)
 {
     return changeState(_partitionID,
                        _error,
-                       fair::mq::sdk::TopologyTransition::InitDevice,
+                       TopologyTransition::InitDevice,
                        _path,
                        _aggregatedState,
                        _topologyState) &&
            changeState(_partitionID,
                        _error,
-                       fair::mq::sdk::TopologyTransition::CompleteInit,
+                       TopologyTransition::CompleteInit,
                        _path,
                        _aggregatedState,
                        _topologyState) &&
            changeState(_partitionID,
                        _error,
-                       fair::mq::sdk::TopologyTransition::Bind,
+                       TopologyTransition::Bind,
                        _path,
                        _aggregatedState,
                        _topologyState) &&
            changeState(_partitionID,
                        _error,
-                       fair::mq::sdk::TopologyTransition::Connect,
+                       TopologyTransition::Connect,
                        _path,
                        _aggregatedState,
                        _topologyState) &&
            changeState(_partitionID,
                        _error,
-                       fair::mq::sdk::TopologyTransition::InitTask,
+                       TopologyTransition::InitTask,
                        _path,
                        _aggregatedState,
                        _topologyState);
@@ -863,18 +855,18 @@ bool CControlService::SImpl::changeStateConfigure(const partitionID_t& _partitio
 bool CControlService::SImpl::changeStateReset(const partitionID_t& _partitionID,
                                               SError& _error,
                                               const string& _path,
-                                              fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
+                                              AggregatedTopologyState& _aggregatedState,
                                               TopologyState* _topologyState)
 {
     return changeState(_partitionID,
                        _error,
-                       fair::mq::sdk::TopologyTransition::ResetTask,
+                       TopologyTransition::ResetTask,
                        _path,
                        _aggregatedState,
                        _topologyState) &&
            changeState(_partitionID,
                        _error,
-                       fair::mq::sdk::TopologyTransition::ResetDevice,
+                       TopologyTransition::ResetDevice,
                        _path,
                        _aggregatedState,
                        _topologyState);
@@ -883,7 +875,7 @@ bool CControlService::SImpl::changeStateReset(const partitionID_t& _partitionID,
 bool CControlService::SImpl::getState(const partitionID_t& _partitionID,
                                       SError& _error,
                                       const string& _path,
-                                      fair::mq::sdk::AggregatedTopologyState& _aggregatedState,
+                                      AggregatedTopologyState& _aggregatedState,
                                       TopologyState* _topologyState)
 {
     auto info{ getOrCreateSessionInfo(_partitionID) };
@@ -932,7 +924,7 @@ bool CControlService::SImpl::setProperties(const partitionID_t& _partitionID,
             _params.m_properties,
             _params.m_path,
             m_timeout,
-            [&cv, &success, &_error, this](std::error_code _ec, fair::mq::sdk::FailedDevices)
+            [&cv, &success, &_error, this](std::error_code _ec, FailedDevices)
             {
                 success = !_ec;
                 if (success)
@@ -971,11 +963,11 @@ bool CControlService::SImpl::setProperties(const partitionID_t& _partitionID,
     return success;
 }
 
-fair::mq::sdk::AggregatedTopologyState CControlService::SImpl::aggregateStateForPath(
-    const DDSTopologyPtr_t& _topo, const fair::mq::sdk::TopologyState& _topoState, const string& _path)
+AggregatedTopologyState CControlService::SImpl::aggregateStateForPath(
+    const DDSTopologyPtr_t& _topo, const FairMQTopologyState& _topoState, const string& _path)
 {
     if (_path.empty())
-        return fair::mq::sdk::AggregateState(_topoState);
+        return AggregateState(_topoState);
 
     if (_topo == nullptr)
         throw runtime_error("DDS topology is not initialized");
@@ -989,10 +981,10 @@ fair::mq::sdk::AggregatedTopologyState CControlService::SImpl::aggregateStateFor
         const auto& task{ _topo->getRuntimeTask(_path) };
         auto it{ find_if(_topoState.cbegin(),
                          _topoState.cend(),
-                         [&](const fair::mq::sdk::TopologyState::value_type& _v)
+                         [&](const FairMQTopologyState::value_type& _v)
                          { return _v.taskId == task.m_taskId; }) };
         if (it != _topoState.cend())
-            return static_cast<fair::mq::sdk::AggregatedTopologyState>(it->state);
+            return static_cast<AggregatedTopologyState>(it->state);
 
         throw runtime_error("Device not found for path " + _path);
     }
@@ -1013,28 +1005,28 @@ fair::mq::sdk::AggregatedTopologyState CControlService::SImpl::aggregateStateFor
         // Find a state of a first task
         auto firstIt{ find_if(_topoState.cbegin(),
                               _topoState.cend(),
-                              [&](const fair::mq::sdk::TopologyState::value_type& _v)
+                              [&](const FairMQTopologyState::value_type& _v)
                               { return _v.taskId == *(taskIds.begin()); }) };
         if (firstIt == _topoState.cend())
             throw runtime_error("No states found for path " + _path);
 
         // Check that all selected devices have the same state
-        fair::mq::sdk::AggregatedTopologyState first{ static_cast<fair::mq::sdk::AggregatedTopologyState>(
+        AggregatedTopologyState first{ static_cast<AggregatedTopologyState>(
             firstIt->state) };
         if (std::all_of(_topoState.cbegin(),
                         _topoState.cend(),
-                        [&](const fair::mq::sdk::TopologyState::value_type& _v)
+                        [&](const FairMQTopologyState::value_type& _v)
                         { return (taskIds.count(_v.taskId) > 0) ? _v.state == first : true; }))
         {
             return first;
         }
 
-        return fair::mq::sdk::AggregatedTopologyState::Mixed;
+        return AggregatedTopologyState::Mixed;
     }
 }
 
 void CControlService::SImpl::fairMQToODCTopologyState(const DDSTopologyPtr_t& _topo,
-                                                      const fair::mq::sdk::TopologyState& _fairmq,
+                                                      const FairMQTopologyState& _fairmq,
                                                       TopologyState* _odc)
 {
     if (_odc == nullptr || _topo == nullptr)
@@ -1081,8 +1073,8 @@ SError CControlService::SImpl::checkSessionIsRunning(const partitionID_t& _parti
     return error;
 }
 
-string CControlService::SImpl::stateSummaryString(const fair::mq::sdk::TopologyState& _topologyState,
-                                                  fair::mq::sdk::DeviceState _expectedState,
+string CControlService::SImpl::stateSummaryString(const FairMQTopologyState& _topologyState,
+                                                  DeviceState _expectedState,
                                                   DDSTopologyPtr_t _topo)
 {
     size_t totalCount{ _topologyState.size() };
@@ -1097,7 +1089,7 @@ string CControlService::SImpl::stateSummaryString(const fair::mq::sdk::TopologyS
         failedCount++;
         if (failedCount == 1)
         {
-            ss << "List of failed devices for an expected state " << fair::mq::GetStateName(_expectedState) << ":";
+            ss << "List of failed devices for an expected state " << _expectedState << ":";
         }
         ss << endl
            << "  "
@@ -1121,7 +1113,7 @@ string CControlService::SImpl::stateSummaryString(const fair::mq::sdk::TopologyS
     }
     size_t successCount{ totalCount - failedCount };
     ss << endl
-       << "Device status summary for expected state (" << fair::mq::GetStateName(_expectedState)
+       << "Device status summary for expected state (" << _expectedState
        << "): total/success/failed devices (" << totalCount << "/" << successCount << "/" << failedCount << ")";
 
     return ss.str();

@@ -23,6 +23,18 @@ namespace odc::core
                 return "Request timeout";
             case ErrorCode::ResourcePluginFailed:
                 return "Resource plugin failed";
+            case ErrorCode::OperationInProgress:
+                return "async operation already in progress";
+            case ErrorCode::OperationTimeout:
+                return "async operation timed out";
+            case ErrorCode::OperationCanceled:
+                return "async operation canceled";
+            case ErrorCode::DeviceChangeStateFailed:
+                return "failed to change state of a FairMQ device";
+            case ErrorCode::DeviceGetPropertiesFailed:
+                return "failed to get FairMQ device properties";
+            case ErrorCode::DeviceSetPropertiesFailed:
+                return "failed to set FairMQ device properties";
             case ErrorCode::DDSCreateSessionFailed:
                 return "Failed to create a DDS session";
             case ErrorCode::DDSShutdownSessionFailed:
