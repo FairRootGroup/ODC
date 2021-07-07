@@ -45,6 +45,7 @@ set(BUILD_SHARED_LIBS ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options(-Wall -Wextra)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
     # Find Protobuf installation
@@ -76,7 +77,7 @@ foreach(dep IN LISTS FairLogger_PACKAGE_DEPENDENCIES)
 endforeach()
 
 # Find FairMQ
-find_package(FairMQ 1.4.26 REQUIRED COMPONENTS sdk)
+find_package(FairMQ 1.4.26 REQUIRED COMPONENTS fairmq)
 message(STATUS "Using FairMQ ${FairMQ_GIT_VERSION}")
 if(FairMQ_CXX_STANDARD VERSION_GREATER CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD ${FairMQ_CXX_STANDARD})
@@ -89,6 +90,9 @@ foreach(dep IN LISTS FairMQ_PACKAGE_DEPENDENCIES)
       find_package(${dep} ${FairMQ_${dep}_VERSION})
     endif()
 endforeach()
+
+# Find Flatbuffers
+find_package(Flatbuffers REQUIRED)
 
 # Find optional readline package
 find_package(readline)
@@ -120,6 +124,7 @@ add_custom_target(format-code
        COMMENT "Updating source code formatting.")
 
 # Targets
+add_subdirectory(custom-commands)
 add_subdirectory(core)
 if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
    add_subdirectory(grpc-proto)

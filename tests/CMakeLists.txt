@@ -48,6 +48,19 @@ set_tests_properties(odc_core_lib PROPERTIES
 )
 
 #
+#  odc_custom_commands tests
+#
+set(name "odc_custom_commands")
+add_executable(${name}-tests src/${name}-tests.cpp)
+target_link_libraries(${name}-tests PUBLIC ${name} Boost::unit_test_framework)
+install(TARGETS ${name}-tests EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_TESTS})
+add_test(NAME ${name} COMMAND "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_TESTS}/${name}-tests")
+set_tests_properties(${name} PROPERTIES
+    TIMEOUT 10
+    ENVIRONMENT ${TEST_ENV}
+)
+
+#
 # Configure and install run_tests.sh
 #
 configure_file(run_tests.sh.in ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh @ONLY)
