@@ -4,7 +4,7 @@
     <property name="fmqchan_data2" />
 
     <decltask name="Sampler">
-        <exe>fairmq-ex-dds-sampler --color false --channel-config name=data1,type=push,method=bind --rate 100 -P dds</exe>
+        <exe>fairmq-ex-dds-sampler --color false --channel-config name=data1,type=push,method=bind --rate 100 -P odc</exe>
         <env reachable="false">@FairMQ_BINDIR@/fairmq-ex-dds-env.sh</env>
         <properties>
             <name access="write">fmqchan_data1</name>
@@ -12,7 +12,7 @@
     </decltask>
 
     <decltask name="Processor">
-        <exe>fairmq-ex-dds-processor --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P dds</exe>
+        <exe>fairmq-ex-dds-processor --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P odc</exe>
         <env reachable="false">@FairMQ_BINDIR@/fairmq-ex-dds-env.sh</env>
         <properties>
             <name access="read">fmqchan_data1</name>
@@ -21,13 +21,13 @@
     </decltask>
 
     <decltask name="Sink">
-        <exe>fairmq-ex-dds-sink --color false --channel-config name=data2,type=pull,method=bind -P dds</exe>
+        <exe>fairmq-ex-dds-sink --color false --channel-config name=data2,type=pull,method=bind -P odc</exe>
         <env reachable="false">@FairMQ_BINDIR@/fairmq-ex-dds-env.sh</env>
         <properties>
             <name access="write">fmqchan_data2</name>
         </properties>
     </decltask>
-	
+
     <declcollection name="EPNCollection">
        <tasks>
            <name>Sampler</name>
