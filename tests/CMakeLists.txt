@@ -1,63 +1,56 @@
-# Copyright 2014 GSI, Inc. All rights reserved.
+# Copyright 2014-2021 GSI, Inc. All rights reserved.
 #
 #
 project(odc-tests)
 
+include(ODCUtils)
+
+set(TEST_ENV)
 if(APPLE)
-   set(TEST_ENV "DYLD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$ENV{DYLD_LIBRARY_PATH}")
+   list(APPEND TEST_ENV "DYLD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$DYLD_LIBRARY_PATH")
 else()
-   set(TEST_ENV "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}")
+   list(APPEND TEST_ENV "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$LD_LIBRARY_PATH")
 endif()
+list(APPEND TEST_ENV "PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}:$PATH")
+
 
 #
 # Test odc-cli-server with default set of options
 #
-add_test(NAME odc-cli-server_default COMMAND "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/odc-cli-server" --batch)
-set_tests_properties(odc-cli-server_default PROPERTIES
+set(target odc-cli-server)
+set(test ${target}::default)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch)
+set_tests_properties(${test} PROPERTIES
     TIMEOUT 60
     FAIL_REGULAR_EXPRESSION "Status code: ERROR"
-    ENVIRONMENT ${TEST_ENV}
+    ENVIRONMENT "${TEST_ENV}"
 )
 
 #
 # Test odc-cli-server by sending different commands without running session
 #
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/cmds_test_1.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
-add_test(NAME odc-cli-server_test_1 COMMAND "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}/odc-cli-server" --batch --cf "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/cmds_test_1.cfg")
-set_tests_properties(odc-cli-server_test_1 PROPERTIES
+install(FILES cmds_test_1.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+set(target odc-cli-server)
+set(test ${target}::test_1)
+add_test(NAME ${test}
+         COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_SOURCE_DIR}/cmds_test_1.cfg
+)
+set_tests_properties(${test} PROPERTIES
     TIMEOUT 10
     PASS_REGULAR_EXPRESSION "Sleeping 100 ms"
-    ENVIRONMENT ${TEST_ENV}
+    ENVIRONMENT "${TEST_ENV}"
 )
 
 #
-# odc_core_lib tests
+# Boost.UTF tests
 #
-add_executable(odc_core_lib-tests src/odc_core_lib-tests.cpp)
-target_link_libraries(
-    odc_core_lib-tests
-    PUBLIC
-    odc_core_lib
-    Boost::unit_test_framework
-)
-install(TARGETS odc_core_lib-tests EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_TESTS})
-add_test(NAME odc_core_lib COMMAND "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_TESTS}/odc_core_lib-tests")
-set_tests_properties(odc_core_lib PROPERTIES
-    TIMEOUT 10
-    ENVIRONMENT ${TEST_ENV}
-)
+odc_add_boost_tests(SUITE odc_custom_commands
+  TESTS
+  format/construction
+  format/serialization_binary
+  format/serialization_json
 
-#
-#  odc_custom_commands tests
-#
-set(name "odc_custom_commands")
-add_executable(${name}-tests src/${name}-tests.cpp)
-target_link_libraries(${name}-tests PUBLIC ${name} Boost::unit_test_framework)
-install(TARGETS ${name}-tests EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_TESTS})
-add_test(NAME ${name} COMMAND "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_TESTS}/${name}-tests")
-set_tests_properties(${name} PROPERTIES
-    TIMEOUT 10
-    ENVIRONMENT ${TEST_ENV}
+  PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
 )
 
 #

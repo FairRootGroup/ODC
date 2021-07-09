@@ -6,23 +6,21 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "CustomCommands.h"
+#define BOOST_TEST_MODULE(odc_custom_commands)
+#define BOOST_TEST_DYN_LINK
+#include <boost/test/included/unit_test.hpp>
 
+#include "CustomCommands.h"
 #include <string>
 
-#define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MAIN
+using namespace boost::unit_test;
 
-// BOOST
-#include <boost/test/unit_test.hpp>
-
-using boost::unit_test::test_suite;
 using namespace odc::cc;
 using namespace fair::mq;
 
-BOOST_AUTO_TEST_SUITE(odc_custom_commands);
+BOOST_AUTO_TEST_SUITE(format);
 
-BOOST_AUTO_TEST_CASE(format_construction)
+BOOST_AUTO_TEST_CASE(construction)
 {
     auto const props(std::vector<std::pair<std::string, std::string>>({{"k1", "v1"}, {"k2", "v2"}}));
 
@@ -221,7 +219,7 @@ void checkCommands(Cmds& cmds)
     BOOST_TEST(count == 17);
 }
 
-BOOST_AUTO_TEST_CASE(format_serialization_binary)
+BOOST_AUTO_TEST_CASE(serialization_binary)
 {
     Cmds outCmds;
     fillCommands(outCmds);
@@ -232,7 +230,7 @@ BOOST_AUTO_TEST_CASE(format_serialization_binary)
     checkCommands(inCmds);
 }
 
-BOOST_AUTO_TEST_CASE(format_serialization_json)
+BOOST_AUTO_TEST_CASE(serialization_json)
 {
     Cmds outCmds;
     fillCommands(outCmds);

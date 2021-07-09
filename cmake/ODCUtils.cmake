@@ -2,6 +2,8 @@
 #
 #
 
+include_guard()
+
 find_package(Git)
 
 # Sets PROJECT_VERSION
@@ -51,3 +53,60 @@ macro(odc_install_cmake_package)
     DESTINATION ${PACKAGE_INSTALL_DESTINATION}
   )
 endmacro()
+
+
+# odc_add_boost_tests(SUITE <suite>
+#                     [TESTS <test1> [<test2> ...]]
+#                     [SOURCES <source1> [<source2> ...]]
+#                     [DEPS <dep1> [<dep2> ...]])
+#                     [PROPERTIES <prop1> [<prop2> ...]])
+#                     [EXTRA_ARGS <arg1> [<arg2> ...]]
+#
+# Declares new CTests based on Boost.UTF executables.
+#
+function(odc_add_boost_tests)
+    cmake_parse_arguments(PARSE_ARGV 0 ARG "" "SUITE" "TESTS;SOURCES;DEPS;PROPERTIES;EXTRA_ARGS")
+
+    if(NOT ARG_SUITE)
+        message(AUTHOR_WARNING "SUITE arg is requied. Skipping.")
+        return()
+    endif()
+
+    if(NOT ARG_SOURCES)
+        # guess cpp file name
+        list(APPEND ARG_SOURCES src/${ARG_SUITE}-tests.cpp)
+    endif()
+
+    if(NOT ARG_DEPS)
+        # guess dependencies
+        list(APPEND ARG_DEPS ${ARG_SUITE})
+    endif()
+    # always add Boost.UTF
+    list(APPEND ARG_DEPS Boost::unit_test_framework)
+
+    set(suite_target "${ARG_SUITE}-tests")
+
+    add_executable(${suite_target} ${ARG_SOURCES})
+    target_link_libraries(${suite_target} PRIVATE ${ARG_DEPS})
+    install(TARGETS ${suite_target} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_TESTS})
+
+    if(NOT ARG_TESTS)
+        # declare the whole suite as a single ctest by default
+        add_test(NAME ${ARG_SUITE}
+                 COMMAND $<TARGET_FILE:${suite_target}> --log_level=message ${ARG_EXTRA_ARGS}
+                 COMMAND_EXPAND_LISTS)
+        if(ARG_PROPERTIES)
+            set_tests_properties(${ARG_SUITE} PROPERTIES ${ARG_PROPERTIES})
+        endif()
+    else()
+        foreach(test IN LISTS ARG_TESTS)
+            set(name "${ARG_SUITE}::${test}")
+            add_test(NAME ${name}
+                     COMMAND $<TARGET_FILE:${suite_target}> --log_level=message --run_test=${test} ${ARG_EXTRA_ARGS}
+                     COMMAND_EXPAND_LISTS)
+            if(ARG_PROPERTIES)
+                set_tests_properties(${name} PROPERTIES ${ARG_PROPERTIES})
+            endif()
+        endforeach()
+    endif()
+endfunction()
