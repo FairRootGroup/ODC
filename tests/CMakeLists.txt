@@ -7,11 +7,11 @@ include(ODCUtils)
 
 set(TEST_ENV)
 if(APPLE)
-   list(APPEND TEST_ENV "DYLD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$DYLD_LIBRARY_PATH")
+   list(APPEND TEST_ENV "DYLD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$ENV{DYLD_LIBRARY_PATH}")
 else()
-   list(APPEND TEST_ENV "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$LD_LIBRARY_PATH")
+  list(APPEND TEST_ENV "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:$ENV{LD_LIBRARY_PATH}")
 endif()
-list(APPEND TEST_ENV "PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}:$PATH")
+list(APPEND TEST_ENV "PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}:$ENV{PATH}")
 
 
 #
@@ -44,6 +44,42 @@ set_tests_properties(${test} PROPERTIES
 #
 # Boost.UTF tests
 #
+install(FILES odc_core_lib-tests-topo.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
+odc_add_boost_tests(SUITE odc_core_lib
+  TESTS
+  async_op/cancel
+  async_op/complete
+  async_op/construction_with_handler
+  async_op/default_construction
+  async_op/timeout
+  async_op/timeout2
+  # multiple_topologies/change_state_full_lifecycle_concurrent # unstable
+  multiple_topologies/change_state_full_lifecycle_interleaved
+  multiple_topologies/change_state_full_lifecycle_serial
+  topology/aggregated_topology_state_comparison
+  topology/async_change_state
+  topology/async_change_state_collection_view
+  topology/async_change_state_concurrent
+  topology/async_change_state_future
+  topology/async_change_state_timeout
+  topology/async_change_state_with_executor
+  topology/async_set_properties_concurrent
+  topology/async_set_properties_timeout
+  topology/change_state
+  topology/change_state_full_device_lifecycle
+  topology/change_state_full_device_lifecycle2
+  topology/construction
+  topology/construction2
+  topology/get_properties
+  topology/mixed_state
+  topology/set_and_get_properties
+  topology/set_properties
+  topology/set_properties_mixed
+  topology/wait_for_state_full_device_lifecycle
+
+  EXTRA_ARGS -- --topo-file ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/odc_core_lib-tests-topo.xml
+  PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
+)
 odc_add_boost_tests(SUITE odc_custom_commands
   TESTS
   format/construction
