@@ -1,0 +1,58 @@
+<topology name="odc_core_lib-tests">
+
+    <property name="fmqchan_data1" />
+    <property name="fmqchan_data2" />
+
+    <declrequirement name="SamplerWorker" type="wnname" value="sampler"/>
+    <declrequirement name="ProcessorWorker" type="wnname" value="processor"/>
+    <declrequirement name="SinkWorker" type="wnname" value="sink"/>
+
+    <decltask name="Sampler">
+        <exe reachable="true">odc-ex-sampler --color false --channel-config name=data1,type=push,method=bind -P odc --iterations 0 --severity trace --verbosity veryhigh</exe>
+        <env reachable="false">odc-ex-env.sh</env>
+        <requirements>
+            <name>SamplerWorker</name>
+        </requirements>
+        <properties>
+            <name access="write">fmqchan_data1</name>
+        </properties>
+    </decltask>
+
+
+    <decltask name="Processor">
+        <exe reachable="true">odc-ex-processor --color false --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P odc --severity trace --verbosity veryhigh</exe>
+        <env reachable="false">odc-ex-env.sh</env>
+        <requirements>
+            <name>ProcessorWorker</name>
+        </requirements>
+        <properties>
+            <name access="read">fmqchan_data1</name>
+            <name access="read">fmqchan_data2</name>
+        </properties>
+    </decltask>
+
+    <decltask name="Sink">
+        <exe reachable="true">odc-ex-sink --color false --channel-config name=data2,type=pull,method=bind -P odc --severity trace --verbosity veryhigh</exe>
+        <env reachable="false">odc-ex-env.sh</env>
+        <requirements>
+            <name>SinkWorker</name>
+        </requirements>
+        <properties>
+            <name access="write">fmqchan_data2</name>
+        </properties>
+    </decltask>
+
+    <declcollection name="Pipeline">
+        <tasks>
+            <name>Sampler</name>
+            <name n="4">Processor</name>
+            <name>Sink</name>
+        </tasks>
+    </declcollection>
+
+    <main name="main">
+        <collection>Pipeline</collection>
+    </main>
+
+</topology>
+
