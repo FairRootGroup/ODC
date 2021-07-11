@@ -10,9 +10,13 @@ cmake_host_system_information(RESULT fqdn QUERY FQDN)
 
 set(CTEST_SOURCE_DIRECTORY .)
 set(CTEST_BINARY_DIRECTORY build)
-set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
+set(CTEST_CMAKE_GENERATOR "Ninja")
 set(CTEST_USE_LAUNCHERS ON)
-set(CTEST_CONFIGURATION_TYPE "RelWithDebInfo")
+if(CMAKE_CXX_FLAGS)
+  set(CTEST_CONFIGURATION_TYPE "Debug")
+else()
+  set(CTEST_CONFIGURATION_TYPE "RelWithDebInfo")
+endif()
 set(CTEST_BUILD_TARGET install)
 
 if(NOT NCPUS)
@@ -41,9 +45,11 @@ endif()
 
 ctest_start(Continuous)
 
-list(APPEND options
-  "-DCMAKE_INSTALL_PREFIX=install"
-)
+list(APPEND options "-DCMAKE_INSTALL_PREFIX=install")
+if(ENABLE_SANITIZERS)
+  list(APPEND options "-DCMAKE_CXX_FLAGS='-O1 -fsanitize=address,leak,undefined -fno-omit-frame-pointer'")
+endif()
+list(REMOVE_DUPLICATES options)
 list(JOIN options ";" optionsstr)
 ctest_configure(OPTIONS "${optionsstr}")
 
