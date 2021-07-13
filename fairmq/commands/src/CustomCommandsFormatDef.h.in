@@ -8,8 +8,9 @@
 
 #include <string>
 
-namespace odc::cc {
+namespace odc::cc
+{
 
-constexpr auto customCommandsFormatDefFbs = R"(@commands_format_def_fbs@)";
+    constexpr auto customCommandsFormatDefFbs = R"(@commands_format_def_fbs@)";
 
 } // namespace odc::cc

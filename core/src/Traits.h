@@ -13,35 +13,32 @@
 #include <boost/asio/associated_executor.hpp>
 #include <type_traits>
 
-namespace boost::asio::detail {
-
-/// Specialize to match our coding conventions
-template<typename T, typename Executor>
-struct associated_executor_impl<T,
-                                Executor,
-                                std::enable_if_t<is_executor<typename T::ExecutorType>::value>>
+namespace boost::asio::detail
 {
-    using type = typename T::ExecutorType;
 
-    static auto get(const T& obj, const Executor& /*ex = Executor()*/) noexcept -> type
+    /// Specialize to match our coding conventions
+    template <typename T, typename Executor>
+    struct associated_executor_impl<T, Executor, std::enable_if_t<is_executor<typename T::ExecutorType>::value>>
     {
-        return obj.GetExecutor();
-    }
-};
+        using type = typename T::ExecutorType;
 
-/// Specialize to match our coding conventions
-template<typename T, typename Allocator>
-struct associated_allocator_impl<T,
-                                Allocator,
-                                std::enable_if_t<T::AllocatorType>>
-{
-    using type = typename T::AllocatorType;
+        static auto get(const T& obj, const Executor& /*ex = Executor()*/) noexcept -> type
+        {
+            return obj.GetExecutor();
+        }
+    };
 
-    static auto get(const T& obj, const Allocator& /*alloc = Allocator()*/) noexcept -> type
+    /// Specialize to match our coding conventions
+    template <typename T, typename Allocator>
+    struct associated_allocator_impl<T, Allocator, std::enable_if_t<T::AllocatorType>>
     {
-        return obj.GetAllocator();
-    }
-};
+        using type = typename T::AllocatorType;
+
+        static auto get(const T& obj, const Allocator& /*alloc = Allocator()*/) noexcept -> type
+        {
+            return obj.GetAllocator();
+        }
+    };
 
 } /* namespace boost::asio::detail */
 

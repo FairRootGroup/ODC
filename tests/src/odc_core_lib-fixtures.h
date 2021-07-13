@@ -44,16 +44,16 @@ struct TopologyFixture
 
         SharedSemaphore blocker;
         auto submitRequest = SSubmitRequest::makeRequest(submitInfo);
-        submitRequest->setMessageCallback([](const SMessageResponseData& message){
-            BOOST_TEST_MESSAGE(message.m_msg);
-        });
+        submitRequest->setMessageCallback([](const SMessageResponseData& message)
+                                          { BOOST_TEST_MESSAGE(message.m_msg); });
         submitRequest->setDoneCallback([blocker]() mutable { blocker.Signal(); });
         mDDSSession->sendRequest<SSubmitRequest>(submitRequest);
         blocker.Wait();
 
         std::size_t idleSlotsCount(0);
         int interval(8);
-        while(idleSlotsCount < mSlots) {
+        while (idleSlotsCount < mSlots)
+        {
             std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             interval = std::min(256, interval * 2);
             SAgentCountRequest::response_t res;
@@ -66,16 +66,16 @@ struct TopologyFixture
         topologyInfo.m_topologyFile = mDDSTopo.getFilepath();
 
         auto topologyRequest = STopologyRequest::makeRequest(topologyInfo);
-        topologyRequest->setMessageCallback([](const SMessageResponseData& message) {
-            BOOST_TEST_MESSAGE(message.m_msg);
-        });
+        topologyRequest->setMessageCallback([](const SMessageResponseData& message)
+                                            { BOOST_TEST_MESSAGE(message.m_msg); });
         topologyRequest->setDoneCallback([blocker]() mutable { blocker.Signal(); });
         mDDSSession->sendRequest<STopologyRequest>(topologyRequest);
         blocker.Wait();
 
         std::size_t execSlotsCount(0);
         interval = 8;
-        while(execSlotsCount < mSlots) {
+        while (execSlotsCount < mSlots)
+        {
             std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             interval = std::min(256, interval * 2);
             SAgentCountRequest::response_t res;
@@ -86,7 +86,8 @@ struct TopologyFixture
 
     ~TopologyFixture()
     {
-        if(mDDSSession->IsRunning()) {
+        if (mDDSSession->IsRunning())
+        {
             mDDSSession->shutdown();
         }
     }
