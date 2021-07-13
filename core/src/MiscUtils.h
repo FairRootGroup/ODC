@@ -53,11 +53,11 @@ namespace odc::core
     /// @brief concatenates a variable number of args with the << operator via a stringstream
     /// @param t objects to be concatenated
     /// @return concatenated string
-    template<typename ... T>
+    template <typename... T>
     auto toString(T&&... t) -> std::string
     {
         std::stringstream ss;
-        (void)std::initializer_list<int>{(ss << t, 0)...};
+        (void)std::initializer_list<int>{ (ss << t, 0)... };
         return ss.str();
     }
 

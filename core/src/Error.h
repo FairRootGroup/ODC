@@ -15,10 +15,11 @@ namespace odc::core
 {
     struct RuntimeError : ::std::runtime_error
     {
-        template<typename... T>
+        template <typename... T>
         explicit RuntimeError(T&&... t)
             : ::std::runtime_error::runtime_error(toString(std::forward<T>(t)...))
-        {}
+        {
+        }
     };
 
     enum class ErrorCode

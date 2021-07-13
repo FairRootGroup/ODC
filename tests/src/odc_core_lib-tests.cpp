@@ -6,8 +6,8 @@
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/included/unit_test.hpp>
 
-#include "AsioBase.h"
 #include "AsioAsyncOp.h"
+#include "AsioBase.h"
 #include "Topology.h"
 #include "odc_core_lib-fixtures.h"
 
@@ -28,15 +28,15 @@ BOOST_AUTO_TEST_CASE(default_construction)
 
 BOOST_AUTO_TEST_CASE(construction_with_handler)
 {
-    AsioAsyncOp<DefaultExecutor, DefaultAllocator, void(std::error_code, int)> op(
-        [](std::error_code, int) {});
+    AsioAsyncOp<DefaultExecutor, DefaultAllocator, void(std::error_code, int)> op([](std::error_code, int) {});
     BOOST_REQUIRE(!op.IsCompleted());
 }
 
 BOOST_AUTO_TEST_CASE(complete)
 {
     AsioAsyncOp<DefaultExecutor, DefaultAllocator, void(std::error_code, int)> op(
-        [](std::error_code ec, int v) {
+        [](std::error_code ec, int v)
+        {
             BOOST_CHECK(!ec); // success
             BOOST_CHECK_EQUAL(v, 42);
         });
@@ -51,7 +51,8 @@ BOOST_AUTO_TEST_CASE(complete)
 BOOST_AUTO_TEST_CASE(cancel)
 {
     AsioAsyncOp<DefaultExecutor, DefaultAllocator, void(std::error_code)> op(
-        [](std::error_code ec) {
+        [](std::error_code ec)
+        {
             BOOST_CHECK(ec); // error
             BOOST_CHECK_EQUAL(ec, MakeErrorCode(ErrorCode::OperationCanceled));
         });
@@ -65,18 +66,22 @@ BOOST_AUTO_TEST_CASE(timeout)
     boost::asio::steady_timer timer(f.mIoContext.get_executor(), std::chrono::milliseconds(50));
     AsioAsyncOp<DefaultExecutor, DefaultAllocator, void(std::error_code)> op(
         f.mIoContext.get_executor(),
-        [&timer](std::error_code ec) {
+        [&timer](std::error_code ec)
+        {
             timer.cancel();
             BOOST_TEST_MESSAGE("Completion with: " << ec.message());
             BOOST_CHECK(ec); // error
             BOOST_CHECK_EQUAL(ec, MakeErrorCode(ErrorCode::OperationTimeout));
         });
-    timer.async_wait([&op](boost::system::error_code ec) {
-        BOOST_TEST_MESSAGE("Timer event");
-        if (ec != boost::asio::error::operation_aborted) {
-            op.Timeout();
-        }
-    });
+    timer.async_wait(
+        [&op](boost::system::error_code ec)
+        {
+            BOOST_TEST_MESSAGE("Timer event");
+            if (ec != boost::asio::error::operation_aborted)
+            {
+                op.Timeout();
+            }
+        });
 
     f.mIoContext.run();
     BOOST_CHECK_THROW(op.Complete(), RuntimeError);
@@ -88,18 +93,22 @@ BOOST_AUTO_TEST_CASE(timeout2)
     boost::asio::steady_timer timer(f.mIoContext.get_executor(), std::chrono::milliseconds(50));
     AsioAsyncOp<DefaultExecutor, DefaultAllocator, void(std::error_code)> op(
         f.mIoContext.get_executor(),
-        [&timer](std::error_code ec) {
+        [&timer](std::error_code ec)
+        {
             timer.cancel();
             BOOST_TEST_MESSAGE("Completion with: " << ec.message());
             BOOST_CHECK(!ec); // success
         });
     op.Complete(); // Complete before timer
-    timer.async_wait([&op](boost::system::error_code ec) {
-        BOOST_TEST_MESSAGE("Timer event");
-        if (ec != boost::asio::error::operation_aborted) {
-            op.Timeout();
-        }
-    });
+    timer.async_wait(
+        [&op](boost::system::error_code ec)
+        {
+            BOOST_TEST_MESSAGE("Timer event");
+            if (ec != boost::asio::error::operation_aborted)
+            {
+                op.Timeout();
+            }
+        });
 
     f.mIoContext.run();
     BOOST_CHECK_THROW(op.Complete(), RuntimeError);
@@ -107,19 +116,20 @@ BOOST_AUTO_TEST_CASE(timeout2)
 
 BOOST_AUTO_TEST_SUITE_END(); // async_op
 
-template<typename Functor>
+template <typename Functor>
 void full_device_lifecycle(Functor&& functor)
 {
-    for (auto transition : {TopologyTransition::InitDevice,
-                            TopologyTransition::CompleteInit,
-                            TopologyTransition::Bind,
-                            TopologyTransition::Connect,
-                            TopologyTransition::InitTask,
-                            TopologyTransition::Run,
-                            TopologyTransition::Stop,
-                            TopologyTransition::ResetTask,
-                            TopologyTransition::ResetDevice,
-                            TopologyTransition::End}) {
+    for (auto transition : { TopologyTransition::InitDevice,
+                             TopologyTransition::CompleteInit,
+                             TopologyTransition::Bind,
+                             TopologyTransition::Connect,
+                             TopologyTransition::InitTask,
+                             TopologyTransition::Run,
+                             TopologyTransition::Stop,
+                             TopologyTransition::ResetTask,
+                             TopologyTransition::ResetDevice,
+                             TopologyTransition::End })
+    {
         functor(transition);
     }
 }
@@ -152,13 +162,13 @@ BOOST_AUTO_TEST_CASE(async_change_state)
 
     SharedSemaphore blocker;
     Topology topo(f.mDDSTopo, f.mDDSSession);
-    topo.AsyncChangeState(
-        TopologyTransition::InitDevice,
-        [=](std::error_code ec, FairMQTopologyState) mutable {
-            BOOST_TEST_MESSAGE(ec);
-            BOOST_CHECK_EQUAL(ec, std::error_code());
-            blocker.Signal();
-        });
+    topo.AsyncChangeState(TopologyTransition::InitDevice,
+                          [=](std::error_code ec, FairMQTopologyState) mutable
+                          {
+                              BOOST_TEST_MESSAGE(ec);
+                              BOOST_CHECK_EQUAL(ec, std::error_code());
+                              blocker.Signal();
+                          });
     blocker.Wait();
 }
 
@@ -169,12 +179,12 @@ BOOST_AUTO_TEST_CASE(async_change_state_with_executor)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession);
-    topo.AsyncChangeState(
-        TopologyTransition::InitDevice,
-        [](std::error_code ec, FairMQTopologyState) {
-            BOOST_TEST_MESSAGE(ec);
-            BOOST_CHECK_EQUAL(ec, std::error_code());
-        });
+    topo.AsyncChangeState(TopologyTransition::InitDevice,
+                          [](std::error_code ec, FairMQTopologyState)
+                          {
+                              BOOST_TEST_MESSAGE(ec);
+                              BOOST_CHECK_EQUAL(ec, std::error_code());
+                          });
 
     f.mIoContext.run();
 }
@@ -214,14 +224,18 @@ BOOST_AUTO_TEST_CASE(async_change_state_coroutine)
     bool success(false);
     boost::asio::co_spawn(
         f.mIoContext.get_executor(),
-        [&]() mutable -> boost::asio::awaitable<void> {
+        [&]() mutable -> boost::asio::awaitable<void>
+        {
             auto executor = co_await boost::asio::this_coro::executor;
             Topology topo(executor, f.mDDSTopo, f.mDDSSession);
-            try {
-                FairMQTopologyState state = co_await topo.AsyncChangeState(
-                    TopologyTransition::InitDevice, asio::use_awaitable);
+            try
+            {
+                FairMQTopologyState state =
+                    co_await topo.AsyncChangeState(TopologyTransition::InitDevice, asio::use_awaitable);
                 success = true;
-            } catch (const std::system_error& ex) {
+            }
+            catch (const std::system_error& ex)
+            {
                 BOOST_TEST_MESSAGE(ex.what());
             }
         },
@@ -285,13 +299,17 @@ BOOST_AUTO_TEST_CASE(async_change_state_concurrent)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mDDSTopo, f.mDDSSession);
-    topo.AsyncChangeState(TopologyTransition::InitDevice, ".*/(Sampler|Sink).*",
-                          [](std::error_code ec, FairMQTopologyState) mutable {
+    topo.AsyncChangeState(TopologyTransition::InitDevice,
+                          ".*/(Sampler|Sink).*",
+                          [](std::error_code ec, FairMQTopologyState) mutable
+                          {
                               BOOST_TEST_MESSAGE("ChangeState for Sampler|Sink: " << ec);
                               BOOST_CHECK_EQUAL(ec, std::error_code());
                           });
-    topo.AsyncChangeState(TopologyTransition::InitDevice, ".*/Processor.*",
-                          [](std::error_code ec, FairMQTopologyState) mutable {
+    topo.AsyncChangeState(TopologyTransition::InitDevice,
+                          ".*/Processor.*",
+                          [](std::error_code ec, FairMQTopologyState) mutable
+                          {
                               BOOST_TEST_MESSAGE("ChangeState for Processors: " << ec);
                               BOOST_CHECK_EQUAL(ec, std::error_code());
                           });
@@ -311,7 +329,8 @@ BOOST_AUTO_TEST_CASE(async_change_state_timeout)
     Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession);
     topo.AsyncChangeState(TopologyTransition::InitDevice,
                           std::chrono::milliseconds(1),
-                          [](std::error_code ec, FairMQTopologyState) {
+                          [](std::error_code ec, FairMQTopologyState)
+                          {
                               BOOST_TEST_MESSAGE(ec);
                               BOOST_CHECK_EQUAL(ec, MakeErrorCode(ErrorCode::OperationTimeout));
                           });
@@ -327,26 +346,29 @@ BOOST_AUTO_TEST_CASE(async_change_state_collection_view)
 
     SharedSemaphore blocker;
     Topology topo(f.mDDSTopo, f.mDDSSession);
-    topo.AsyncChangeState(
-        TopologyTransition::InitDevice,
-        [=](std::error_code ec, FairMQTopologyState state) mutable {
-            BOOST_TEST_MESSAGE(ec);
-            FairMQTopologyStateByCollection cstate(GroupByCollectionId(state));
-            BOOST_TEST_MESSAGE("num collections: " << cstate.size());
-            BOOST_REQUIRE_EQUAL(cstate.size(), 1);
-            for (const auto& c : cstate) {
-                BOOST_TEST_MESSAGE("\t" << c.first);
-                AggregatedTopologyState s;
-                BOOST_REQUIRE_NO_THROW(s = AggregateState(c.second));
-                BOOST_REQUIRE_EQUAL(s, static_cast<AggregatedTopologyState>(fair::mq::State::InitializingDevice));
-                BOOST_TEST_MESSAGE("\tAggregated state: " << s);
-                for (const auto& ds : c.second) {
-                    BOOST_TEST_MESSAGE("\t\t" << ds.state);
-                }
-            }
-            BOOST_CHECK_EQUAL(ec, std::error_code());
-            blocker.Signal();
-        });
+    topo.AsyncChangeState(TopologyTransition::InitDevice,
+                          [=](std::error_code ec, FairMQTopologyState state) mutable
+                          {
+                              BOOST_TEST_MESSAGE(ec);
+                              FairMQTopologyStateByCollection cstate(GroupByCollectionId(state));
+                              BOOST_TEST_MESSAGE("num collections: " << cstate.size());
+                              BOOST_REQUIRE_EQUAL(cstate.size(), 1);
+                              for (const auto& c : cstate)
+                              {
+                                  BOOST_TEST_MESSAGE("\t" << c.first);
+                                  AggregatedTopologyState s;
+                                  BOOST_REQUIRE_NO_THROW(s = AggregateState(c.second));
+                                  BOOST_REQUIRE_EQUAL(
+                                      s, static_cast<AggregatedTopologyState>(fair::mq::State::InitializingDevice));
+                                  BOOST_TEST_MESSAGE("\tAggregated state: " << s);
+                                  for (const auto& ds : c.second)
+                                  {
+                                      BOOST_TEST_MESSAGE("\t\t" << ds.state);
+                                  }
+                              }
+                              BOOST_CHECK_EQUAL(ec, std::error_code());
+                              blocker.Signal();
+                          });
     blocker.Wait();
 }
 
@@ -357,9 +379,8 @@ BOOST_AUTO_TEST_CASE(change_state_full_device_lifecycle)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mDDSTopo, f.mDDSSession);
-    full_device_lifecycle([&](TopologyTransition transition){
-        BOOST_CHECK_EQUAL(topo.ChangeState(transition).first, std::error_code());
-    });
+    full_device_lifecycle([&](TopologyTransition transition)
+                          { BOOST_CHECK_EQUAL(topo.ChangeState(transition).first, std::error_code()); });
 }
 
 BOOST_AUTO_TEST_CASE(wait_for_state_full_device_lifecycle)
@@ -369,13 +390,14 @@ BOOST_AUTO_TEST_CASE(wait_for_state_full_device_lifecycle)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mDDSTopo, f.mDDSSession);
-    topo.AsyncWaitForState(DeviceState::ResettingDevice, [](std::error_code ec){
-        BOOST_REQUIRE_EQUAL(ec, std::error_code());
-    });
-    full_device_lifecycle([&](TopologyTransition transition){
-        topo.ChangeState(transition);
-        BOOST_REQUIRE_EQUAL(topo.WaitForState(expectedState.at(transition)), std::error_code());
-    });
+    topo.AsyncWaitForState(DeviceState::ResettingDevice,
+                           [](std::error_code ec) { BOOST_REQUIRE_EQUAL(ec, std::error_code()); });
+    full_device_lifecycle(
+        [&](TopologyTransition transition)
+        {
+            topo.ChangeState(transition);
+            BOOST_REQUIRE_EQUAL(topo.WaitForState(expectedState.at(transition)), std::error_code());
+        });
 }
 
 BOOST_AUTO_TEST_CASE(change_state_full_device_lifecycle2)
@@ -385,19 +407,21 @@ BOOST_AUTO_TEST_CASE(change_state_full_device_lifecycle2)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mDDSTopo, f.mDDSSession);
-    for (int i(0); i < 10; ++i) {
-        for (auto transition : {TopologyTransition::InitDevice,
-                                TopologyTransition::CompleteInit,
-                                TopologyTransition::Bind,
-                                TopologyTransition::Connect,
-                                TopologyTransition::InitTask,
-                                TopologyTransition::Run}) {
+    for (int i(0); i < 10; ++i)
+    {
+        for (auto transition : { TopologyTransition::InitDevice,
+                                 TopologyTransition::CompleteInit,
+                                 TopologyTransition::Bind,
+                                 TopologyTransition::Connect,
+                                 TopologyTransition::InitTask,
+                                 TopologyTransition::Run })
+        {
             BOOST_REQUIRE_EQUAL(topo.ChangeState(transition).first, std::error_code());
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        for (auto transition : {TopologyTransition::Stop,
-                                TopologyTransition::ResetTask,
-                                TopologyTransition::ResetDevice}) {
+        for (auto transition :
+             { TopologyTransition::Stop, TopologyTransition::ResetTask, TopologyTransition::ResetDevice })
+        {
             BOOST_REQUIRE_EQUAL(topo.ChangeState(transition).first, std::error_code());
         }
     }
@@ -412,11 +436,11 @@ BOOST_AUTO_TEST_CASE(set_properties)
     Topology topo(f.mDDSTopo, f.mDDSSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
 
-    auto const result1 = topo.SetProperties({{"key1", "val1"}});
+    auto const result1 = topo.SetProperties({ { "key1", "val1" } });
     BOOST_TEST_MESSAGE(result1.first);
     BOOST_REQUIRE_EQUAL(result1.first, std::error_code());
     BOOST_REQUIRE_EQUAL(result1.second.size(), 0);
-    auto const result2 = topo.SetProperties({{"key2", "val2"}, {"key3", "val3"}});
+    auto const result2 = topo.SetProperties({ { "key2", "val2" }, { "key3", "val3" } });
     BOOST_TEST_MESSAGE(result2.first);
     BOOST_REQUIRE_EQUAL(result2.first, std::error_code());
     BOOST_REQUIRE_EQUAL(result2.second.size(), 0);
@@ -435,22 +459,22 @@ BOOST_AUTO_TEST_CASE(async_set_properties_concurrent)
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
 
     SharedSemaphore blocker(2);
-    topo.AsyncSetProperties(
-        {{"key1", "val1"}},
-        [=](std::error_code ec, FailedDevices failed) mutable {
-            BOOST_TEST_MESSAGE(ec);
-            BOOST_REQUIRE_EQUAL(ec, std::error_code());
-            BOOST_REQUIRE_EQUAL(failed.size(), 0);
-            blocker.Signal();
-        });
-    topo.AsyncSetProperties(
-        {{"key2", "val2"}, {"key3", "val3"}},
-        [=](std::error_code ec, FailedDevices failed) mutable {
-            BOOST_TEST_MESSAGE(ec);
-            BOOST_REQUIRE_EQUAL(ec, std::error_code());
-            BOOST_REQUIRE_EQUAL(failed.size(), 0);
-            blocker.Signal();
-        });
+    topo.AsyncSetProperties({ { "key1", "val1" } },
+                            [=](std::error_code ec, FailedDevices failed) mutable
+                            {
+                                BOOST_TEST_MESSAGE(ec);
+                                BOOST_REQUIRE_EQUAL(ec, std::error_code());
+                                BOOST_REQUIRE_EQUAL(failed.size(), 0);
+                                blocker.Signal();
+                            });
+    topo.AsyncSetProperties({ { "key2", "val2" }, { "key3", "val3" } },
+                            [=](std::error_code ec, FailedDevices failed) mutable
+                            {
+                                BOOST_TEST_MESSAGE(ec);
+                                BOOST_REQUIRE_EQUAL(ec, std::error_code());
+                                BOOST_REQUIRE_EQUAL(failed.size(), 0);
+                                blocker.Signal();
+                            });
     blocker.Wait();
 
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
@@ -466,10 +490,11 @@ BOOST_AUTO_TEST_CASE(async_set_properties_timeout)
     Topology topo(f.mDDSTopo, f.mDDSSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
 
-    topo.AsyncSetProperties({{"key1", "val1"}},
+    topo.AsyncSetProperties({ { "key1", "val1" } },
                             "",
                             std::chrono::microseconds(1),
-                            [=](std::error_code ec, FailedDevices) mutable {
+                            [=](std::error_code ec, FailedDevices) mutable
+                            {
                                 BOOST_TEST_MESSAGE(ec);
                                 BOOST_CHECK_EQUAL(ec, MakeErrorCode(ErrorCode::OperationTimeout));
                             });
@@ -488,16 +513,16 @@ BOOST_AUTO_TEST_CASE(set_properties_mixed)
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
 
     SharedSemaphore blocker;
-    topo.AsyncSetProperties(
-        {{"key1", "val1"}},
-        [=](std::error_code ec, FailedDevices failed) mutable {
-            BOOST_TEST_MESSAGE(ec);
-            BOOST_REQUIRE_EQUAL(ec, std::error_code());
-            BOOST_REQUIRE_EQUAL(failed.size(), 0);
-            blocker.Signal();
-        });
+    topo.AsyncSetProperties({ { "key1", "val1" } },
+                            [=](std::error_code ec, FailedDevices failed) mutable
+                            {
+                                BOOST_TEST_MESSAGE(ec);
+                                BOOST_REQUIRE_EQUAL(ec, std::error_code());
+                                BOOST_REQUIRE_EQUAL(failed.size(), 0);
+                                blocker.Signal();
+                            });
 
-    auto result = topo.SetProperties({{"key2", "val2"}});
+    auto result = topo.SetProperties({ { "key2", "val2" } });
     BOOST_TEST_MESSAGE(result.first);
     BOOST_REQUIRE_EQUAL(result.first, std::error_code());
     BOOST_REQUIRE_EQUAL(result.second.size(), 0);
@@ -521,10 +546,12 @@ BOOST_AUTO_TEST_CASE(get_properties)
     BOOST_TEST_MESSAGE(result.first);
     BOOST_REQUIRE_EQUAL(result.first, std::error_code());
     BOOST_REQUIRE_EQUAL(result.second.failed.size(), 0);
-    for (auto const& d : result.second.devices) {
+    for (auto const& d : result.second.devices)
+    {
         BOOST_TEST_MESSAGE(d.first);
         BOOST_REQUIRE_EQUAL(d.second.props.size(), 2);
-        for (auto const& p : d.second.props) {
+        for (auto const& p : d.second.props)
+        {
             BOOST_TEST_MESSAGE(" " << p.first << " : " << p.second);
         }
     }
@@ -542,7 +569,7 @@ BOOST_AUTO_TEST_CASE(set_and_get_properties)
     Topology topo(f.mDDSTopo, f.mDDSSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
 
-    DeviceProperties const props{{"key1", "val1"}, {"key2", "val2"}};
+    DeviceProperties const props{ { "key1", "val1" }, { "key2", "val2" } };
 
     auto const result1 = topo.SetProperties(props);
     BOOST_TEST_MESSAGE(result1.first);
@@ -554,7 +581,8 @@ BOOST_AUTO_TEST_CASE(set_and_get_properties)
     BOOST_REQUIRE_EQUAL(result2.first, std::error_code());
     BOOST_REQUIRE_EQUAL(result2.second.failed.size(), 0);
     BOOST_REQUIRE_EQUAL(result2.second.devices.size(), 6);
-    for (auto const& d : result2.second.devices) {
+    for (auto const& d : result2.second.devices)
+    {
         BOOST_REQUIRE(d.second.props == props);
     }
 
@@ -629,11 +657,9 @@ BOOST_AUTO_TEST_CASE(construction)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
 
     constexpr auto num(3);
-    std::array<TopologyFixture, num> f{
-        TopologyFixture(framework::master_test_suite().argv[2]),
-        TopologyFixture(framework::master_test_suite().argv[2]),
-        TopologyFixture(framework::master_test_suite().argv[2])
-    };
+    std::array<TopologyFixture, num> f{ TopologyFixture(framework::master_test_suite().argv[2]),
+                                        TopologyFixture(framework::master_test_suite().argv[2]),
+                                        TopologyFixture(framework::master_test_suite().argv[2]) };
 
     boost::asio::io_context ioContext;
     std::array<Topology, num> topos{
@@ -650,11 +676,9 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_serial)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
 
     constexpr auto num(3);
-    std::array<TopologyFixture, num> f{
-        TopologyFixture(framework::master_test_suite().argv[2]),
-        TopologyFixture(framework::master_test_suite().argv[2]),
-        TopologyFixture(framework::master_test_suite().argv[2])
-    };
+    std::array<TopologyFixture, num> f{ TopologyFixture(framework::master_test_suite().argv[2]),
+                                        TopologyFixture(framework::master_test_suite().argv[2]),
+                                        TopologyFixture(framework::master_test_suite().argv[2]) };
 
     std::array<Topology, num> topos{
         Topology(f[0].mDDSTopo, f[0].mDDSSession),
@@ -664,15 +688,20 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_serial)
 
     boost::asio::io_context ioContext;
     // schedule transitions serial
-    for (int i = 0; i < num; ++i) {
-        full_device_lifecycle([&](TopologyTransition transition) {
-            ioContext.post([&f, &topos, i, transition](){
-                auto [ec, state] = topos[i].ChangeState(transition);
-                BOOST_REQUIRE_EQUAL(ec, std::error_code());
-                BOOST_TEST_MESSAGE(f[i].mDDSSession->getSessionID()
-                    << ": " << AggregateState(state) << " -> " << ec);
+    for (int i = 0; i < num; ++i)
+    {
+        full_device_lifecycle(
+            [&](TopologyTransition transition)
+            {
+                ioContext.post(
+                    [&f, &topos, i, transition]()
+                    {
+                        auto [ec, state] = topos[i].ChangeState(transition);
+                        BOOST_REQUIRE_EQUAL(ec, std::error_code());
+                        BOOST_TEST_MESSAGE(f[i].mDDSSession->getSessionID()
+                                           << ": " << AggregateState(state) << " -> " << ec);
+                    });
             });
-        });
     }
     ioContext.run();
 }
@@ -683,11 +712,9 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_interleaved)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
 
     constexpr auto num(3);
-    std::array<TopologyFixture, num> f{
-        TopologyFixture(framework::master_test_suite().argv[2]),
-        TopologyFixture(framework::master_test_suite().argv[2]),
-        TopologyFixture(framework::master_test_suite().argv[2])
-    };
+    std::array<TopologyFixture, num> f{ TopologyFixture(framework::master_test_suite().argv[2]),
+                                        TopologyFixture(framework::master_test_suite().argv[2]),
+                                        TopologyFixture(framework::master_test_suite().argv[2]) };
 
     std::array<Topology, num> topos{
         Topology(f[0].mDDSTopo, f[0].mDDSSession),
@@ -697,16 +724,21 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_interleaved)
 
     boost::asio::io_context ioContext;
     // schedule transitions interleaved
-    full_device_lifecycle([&](TopologyTransition transition) {
-        for (int i = 0; i < num; ++i) {
-            ioContext.post([&f, &topos, i, transition](){
-                auto [ec, state] = topos[i].ChangeState(transition);
-                BOOST_REQUIRE_EQUAL(ec, std::error_code());
-                BOOST_TEST_MESSAGE(f[i].mDDSSession->getSessionID()
-                    << ": " << AggregateState(state) << " -> " << ec);
-            });
-        }
-    });
+    full_device_lifecycle(
+        [&](TopologyTransition transition)
+        {
+            for (int i = 0; i < num; ++i)
+            {
+                ioContext.post(
+                    [&f, &topos, i, transition]()
+                    {
+                        auto [ec, state] = topos[i].ChangeState(transition);
+                        BOOST_REQUIRE_EQUAL(ec, std::error_code());
+                        BOOST_TEST_MESSAGE(f[i].mDDSSession->getSessionID()
+                                           << ": " << AggregateState(state) << " -> " << ec);
+                    });
+            }
+        });
     ioContext.run();
 }
 
@@ -717,9 +749,8 @@ auto run_full_cycle()
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mDDSTopo, f.mDDSSession);
-    full_device_lifecycle([&](TopologyTransition transition){
-        BOOST_REQUIRE_EQUAL(topo.ChangeState(transition).first, std::error_code());
-    });
+    full_device_lifecycle([&](TopologyTransition transition)
+                          { BOOST_REQUIRE_EQUAL(topo.ChangeState(transition).first, std::error_code()); });
 }
 
 BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_concurrent)

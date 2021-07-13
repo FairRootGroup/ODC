@@ -18,39 +18,39 @@
 namespace odc::core
 {
 
-/**
- * @brief A simple blocking semaphore.
- */
-struct Semaphore
-{
-  Semaphore();
-  explicit Semaphore(std::size_t initial_count);
+    /**
+     * @brief A simple blocking semaphore.
+     */
+    struct Semaphore
+    {
+        Semaphore();
+        explicit Semaphore(std::size_t initial_count);
 
-  auto Wait() -> void;
-  auto Signal() -> void;
-  auto GetCount() const -> std::size_t;
+        auto Wait() -> void;
+        auto Signal() -> void;
+        auto GetCount() const -> std::size_t;
 
-private:
-  std::size_t fCount;
-  mutable std::mutex fMutex;
-  std::condition_variable fCv;
-};
+      private:
+        std::size_t fCount;
+        mutable std::mutex fMutex;
+        std::condition_variable fCv;
+    };
 
-/**
- * @brief A simple copyable blocking semaphore.
- */
-struct SharedSemaphore
-{
-  SharedSemaphore();
-  explicit SharedSemaphore(std::size_t initial_count);
+    /**
+     * @brief A simple copyable blocking semaphore.
+     */
+    struct SharedSemaphore
+    {
+        SharedSemaphore();
+        explicit SharedSemaphore(std::size_t initial_count);
 
-  auto Wait() -> void;
-  auto Signal() -> void;
-  auto GetCount() const -> std::size_t;
+        auto Wait() -> void;
+        auto Signal() -> void;
+        auto GetCount() const -> std::size_t;
 
-private:
-  std::shared_ptr<Semaphore> fSemaphore;
-};
+      private:
+        std::shared_ptr<Semaphore> fSemaphore;
+    };
 
 } // namespace odc::core
 

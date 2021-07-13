@@ -22,21 +22,24 @@ struct Sampler : fair::mq::Device
 
     bool ConditionalRun() override
     {
-        // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes place).
-        // Should only be used for small data because of the cost of an additional copy
+        // NewSimpleMessage creates a copy of the data and takes care of its destruction (after the transfer takes
+        // place). Should only be used for small data because of the cost of an additional copy
         FairMQMessagePtr msg(NewSimpleMessage("Data"));
 
         LOG(info) << "Sending \"Data\"";
 
         // in case of error or transfer interruption, return false to go to IDLE state
         // successfull transfer will return number of bytes transfered (can be 0 if sending an empty message).
-        if (Send(msg, "data1") < 0) {
+        if (Send(msg, "data1") < 0)
+        {
             return false;
         }
 
-        if (fIterations > 0) {
+        if (fIterations > 0)
+        {
             ++fCounter;
-            if (fCounter >= fIterations) {
+            if (fCounter >= fIterations)
+            {
                 LOG(info) << "Sent " << fCounter << " messages. Finished.";
                 return false;
             }
@@ -52,10 +55,9 @@ struct Sampler : fair::mq::Device
 
 void addCustomOptions(bpo::options_description& options)
 {
-    options.add_options()(
-        "iterations,i",
-        bpo::value<uint64_t>()->default_value(1000),
-        "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
+    options.add_options()("iterations,i",
+                          bpo::value<uint64_t>()->default_value(1000),
+                          "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
 }
 
 std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)

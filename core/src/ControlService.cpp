@@ -126,8 +126,8 @@ struct CControlService::SImpl
     void fillError(SError& _error, ErrorCode _errorCode, const string& _msg);
 
     AggregatedTopologyState aggregateStateForPath(const DDSTopologyPtr_t& _topo,
-                                                                 const FairMQTopologyState& _fairmq,
-                                                                 const string& _path);
+                                                  const FairMQTopologyState& _fairmq,
+                                                  const string& _path);
     void fairMQToODCTopologyState(const DDSTopologyPtr_t& _topo,
                                   const FairMQTopologyState& _fairmq,
                                   TopologyState* _odc);
@@ -240,8 +240,7 @@ SReturnValue CControlService::SImpl::execActivate(const partitionID_t& _partitio
             createTopo(_partitionID, error, _params.m_topologyFile) &&
             createFairMQTopo(_partitionID, error, _params.m_topologyFile);
     }
-    AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle
-                                                 : AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle : AggregatedTopologyState::Undefined };
     return createReturnValue(_partitionID, error, "Activate done", measure.duration(), state);
 }
 
@@ -270,8 +269,7 @@ SReturnValue CControlService::SImpl::execRun(const partitionID_t& _partitionID,
             }
         }
     }
-    AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle
-                                                 : AggregatedTopologyState::Undefined };
+    AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle : AggregatedTopologyState::Undefined };
     return createReturnValue(_partitionID, error, "Run done", measure.duration(), state);
 }
 
@@ -308,11 +306,8 @@ SReturnValue CControlService::SImpl::execSetProperties(const partitionID_t& _par
     STimeMeasure<std::chrono::milliseconds> measure;
     SError error;
     setProperties(_partitionID, error, _params);
-    return createReturnValue(_partitionID,
-                             error,
-                             "SetProperties done",
-                             measure.duration(),
-                             AggregatedTopologyState::Undefined);
+    return createReturnValue(
+        _partitionID, error, "SetProperties done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
 SReturnValue CControlService::SImpl::execGetState(const partitionID_t& _partitionID, const SDeviceParams& _params)
@@ -706,8 +701,7 @@ bool CControlService::SImpl::createFairMQTopo(const partitionID_t& _partitionID,
     try
     {
         info->m_fairmqTopology.reset();
-        info->m_fairmqTopology = make_shared<Topology>(dds::topology_api::CTopology(_topologyFile),
-                                                       info->m_session);
+        info->m_fairmqTopology = make_shared<Topology>(dds::topology_api::CTopology(_topologyFile), info->m_session);
     }
     catch (exception& _e)
     {
@@ -737,9 +731,7 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
     DeviceState _expectedState{ it != expectedState.end() ? it->second : DeviceState::Undefined };
     if (_expectedState == DeviceState::Undefined)
     {
-        fillError(_error,
-                  ErrorCode::FairMQChangeStateFailed,
-                  toString("Unexpected FairMQ transition ", _transition));
+        fillError(_error, ErrorCode::FairMQChangeStateFailed, toString("Unexpected FairMQ transition ", _transition));
         return false;
     }
 
@@ -820,36 +812,12 @@ bool CControlService::SImpl::changeStateConfigure(const partitionID_t& _partitio
                                                   AggregatedTopologyState& _aggregatedState,
                                                   TopologyState* _topologyState)
 {
-    return changeState(_partitionID,
-                       _error,
-                       TopologyTransition::InitDevice,
-                       _path,
-                       _aggregatedState,
-                       _topologyState) &&
-           changeState(_partitionID,
-                       _error,
-                       TopologyTransition::CompleteInit,
-                       _path,
-                       _aggregatedState,
-                       _topologyState) &&
-           changeState(_partitionID,
-                       _error,
-                       TopologyTransition::Bind,
-                       _path,
-                       _aggregatedState,
-                       _topologyState) &&
-           changeState(_partitionID,
-                       _error,
-                       TopologyTransition::Connect,
-                       _path,
-                       _aggregatedState,
-                       _topologyState) &&
-           changeState(_partitionID,
-                       _error,
-                       TopologyTransition::InitTask,
-                       _path,
-                       _aggregatedState,
-                       _topologyState);
+    return changeState(_partitionID, _error, TopologyTransition::InitDevice, _path, _aggregatedState, _topologyState) &&
+           changeState(
+               _partitionID, _error, TopologyTransition::CompleteInit, _path, _aggregatedState, _topologyState) &&
+           changeState(_partitionID, _error, TopologyTransition::Bind, _path, _aggregatedState, _topologyState) &&
+           changeState(_partitionID, _error, TopologyTransition::Connect, _path, _aggregatedState, _topologyState) &&
+           changeState(_partitionID, _error, TopologyTransition::InitTask, _path, _aggregatedState, _topologyState);
 }
 
 bool CControlService::SImpl::changeStateReset(const partitionID_t& _partitionID,
@@ -858,18 +826,8 @@ bool CControlService::SImpl::changeStateReset(const partitionID_t& _partitionID,
                                               AggregatedTopologyState& _aggregatedState,
                                               TopologyState* _topologyState)
 {
-    return changeState(_partitionID,
-                       _error,
-                       TopologyTransition::ResetTask,
-                       _path,
-                       _aggregatedState,
-                       _topologyState) &&
-           changeState(_partitionID,
-                       _error,
-                       TopologyTransition::ResetDevice,
-                       _path,
-                       _aggregatedState,
-                       _topologyState);
+    return changeState(_partitionID, _error, TopologyTransition::ResetTask, _path, _aggregatedState, _topologyState) &&
+           changeState(_partitionID, _error, TopologyTransition::ResetDevice, _path, _aggregatedState, _topologyState);
 }
 
 bool CControlService::SImpl::getState(const partitionID_t& _partitionID,
@@ -963,8 +921,9 @@ bool CControlService::SImpl::setProperties(const partitionID_t& _partitionID,
     return success;
 }
 
-AggregatedTopologyState CControlService::SImpl::aggregateStateForPath(
-    const DDSTopologyPtr_t& _topo, const FairMQTopologyState& _topoState, const string& _path)
+AggregatedTopologyState CControlService::SImpl::aggregateStateForPath(const DDSTopologyPtr_t& _topo,
+                                                                      const FairMQTopologyState& _topoState,
+                                                                      const string& _path)
 {
     if (_path.empty())
         return AggregateState(_topoState);
@@ -981,8 +940,7 @@ AggregatedTopologyState CControlService::SImpl::aggregateStateForPath(
         const auto& task{ _topo->getRuntimeTask(_path) };
         auto it{ find_if(_topoState.cbegin(),
                          _topoState.cend(),
-                         [&](const FairMQTopologyState::value_type& _v)
-                         { return _v.taskId == task.m_taskId; }) };
+                         [&](const FairMQTopologyState::value_type& _v) { return _v.taskId == task.m_taskId; }) };
         if (it != _topoState.cend())
             return static_cast<AggregatedTopologyState>(it->state);
 
@@ -1011,8 +969,7 @@ AggregatedTopologyState CControlService::SImpl::aggregateStateForPath(
             throw runtime_error("No states found for path " + _path);
 
         // Check that all selected devices have the same state
-        AggregatedTopologyState first{ static_cast<AggregatedTopologyState>(
-            firstIt->state) };
+        AggregatedTopologyState first{ static_cast<AggregatedTopologyState>(firstIt->state) };
         if (std::all_of(_topoState.cbegin(),
                         _topoState.cend(),
                         [&](const FairMQTopologyState::value_type& _v)
@@ -1113,8 +1070,8 @@ string CControlService::SImpl::stateSummaryString(const FairMQTopologyState& _to
     }
     size_t successCount{ totalCount - failedCount };
     ss << endl
-       << "Device status summary for expected state (" << _expectedState
-       << "): total/success/failed devices (" << totalCount << "/" << successCount << "/" << failedCount << ")";
+       << "Device status summary for expected state (" << _expectedState << "): total/success/failed devices ("
+       << totalCount << "/" << successCount << "/" << failedCount << ")";
 
     return ss.str();
 }
