@@ -80,7 +80,7 @@ odc_add_boost_tests(SUITE odc_core_lib
   EXTRA_ARGS -- --topo-file ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/odc_core_lib-tests-topo.xml
   PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
 )
-odc_add_boost_tests(SUITE odc_custom_commands
+odc_add_boost_tests(SUITE odc_custom_commands_lib
   TESTS
   format/construction
   format/serialization_binary
