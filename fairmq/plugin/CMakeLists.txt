@@ -16,7 +16,7 @@ target_link_libraries(${plugin} PRIVATE
   DDS::dds_intercom_lib
   DDS::dds_protocol_lib
   FairMQ::FairMQ
-  odc_custom_commands
+  odc_custom_commands_lib
 )
 target_include_directories(${plugin} PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>

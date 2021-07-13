@@ -124,8 +124,8 @@ add_custom_target(format-code
        COMMENT "Updating source code formatting.")
 
 # Targets
-add_subdirectory(custom-commands)
 add_subdirectory(core)
+add_subdirectory(fairmq)
 if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
    add_subdirectory(grpc-proto)
 endif()
@@ -139,7 +139,6 @@ if(BUILD_CLI_SERVER)
    add_subdirectory(cli-server)
 endif()
 if(BUILD_PLUGINS)
-   add_subdirectory(plugins/fairmq-odc)
    add_subdirectory(plugins/rp-same)
 endif()
 if(BUILD_EXAMPLES)

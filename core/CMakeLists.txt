@@ -44,7 +44,7 @@ target_link_libraries(odc_core_lib PUBLIC
   DDS::dds_tools_lib
   Boost::boost
   Boost::filesystem
-  odc_custom_commands
+  odc_custom_commands_lib
   FairMQ::FairMQ
 )
 target_include_directories(odc_core_lib PUBLIC

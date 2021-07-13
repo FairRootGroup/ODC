@@ -6,7 +6,7 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-set(target odc_custom_commands)
+set(target odc_custom_commands_lib)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/src/CustomCommandsFormat.h
