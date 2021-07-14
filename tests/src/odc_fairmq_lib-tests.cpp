@@ -9,7 +9,7 @@
 #include "AsioAsyncOp.h"
 #include "AsioBase.h"
 #include "Topology.h"
-#include "odc_core_lib-fixtures.h"
+#include "odc_fairmq_lib-fixtures.h"
 
 #include <array>
 #include <boost/asio.hpp>
