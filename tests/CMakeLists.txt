@@ -44,8 +44,8 @@ set_tests_properties(${test} PROPERTIES
 #
 # Boost.UTF tests
 #
-install(FILES odc_core_lib-tests-topo.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
-odc_add_boost_tests(SUITE odc_core_lib
+install(FILES odc_fairmq_lib-tests-topo.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
+odc_add_boost_tests(SUITE odc_fairmq_lib
   TESTS
   async_op/cancel
   async_op/complete
@@ -76,8 +76,10 @@ odc_add_boost_tests(SUITE odc_core_lib
   topology/set_properties
   topology/set_properties_mixed
   topology/wait_for_state_full_device_lifecycle
+  
+  DEPS odc_core_lib
 
-  EXTRA_ARGS -- --topo-file ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/odc_core_lib-tests-topo.xml
+  EXTRA_ARGS -- --topo-file ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/odc_fairmq_lib-tests-topo.xml
   PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
 )
 odc_add_boost_tests(SUITE odc_custom_commands_lib
