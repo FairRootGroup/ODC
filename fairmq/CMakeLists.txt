@@ -8,3 +8,4 @@
 
 add_subdirectory(commands)
 add_subdirectory(plugin)
+add_subdirectory(fairmq)

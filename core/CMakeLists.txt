@@ -32,11 +32,6 @@ add_library(odc_core_lib
     "src/Process.h"
     "src/CmdsFile.h"
     "src/CmdsFile.cpp"
-    "src/AsioAsyncOp.h"
-    "src/AsioBase.h"
-    "src/Topology.h"
-    "src/Semaphore.h"
-    "src/Semaphore.cpp"
 )
 target_link_libraries(odc_core_lib PUBLIC
   DDS::dds_topology_lib
@@ -44,7 +39,7 @@ target_link_libraries(odc_core_lib PUBLIC
   DDS::dds_tools_lib
   Boost::boost
   Boost::filesystem
-  odc_custom_commands_lib
+  odc_fairmq_lib
   FairMQ::FairMQ
 )
 target_include_directories(odc_core_lib PUBLIC
