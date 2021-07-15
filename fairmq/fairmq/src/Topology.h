@@ -207,6 +207,8 @@ namespace odc::core
         DeviceState state;
         DDSTask::Id taskId;
         DDSCollection::Id collectionId;
+        int exitCode;
+        int signal;
     };
 
     using DeviceProperty = std::pair<std::string, std::string>; /// pair := (key, value)
@@ -358,6 +360,7 @@ namespace odc::core
             // }
 
             SubscribeToCommands();
+            SubscribeToTaskDoneEvents();
 
             fDDSService.start(to_string(fDDSSession->getSessionID()));
             SubscribeToStateChanges();
@@ -404,10 +407,42 @@ namespace odc::core
                 std::bind(&BasicTopology::SendSubscriptionHeartbeats, this, std::placeholders::_1));
         }
 
+        void SubscribeToTaskDoneEvents()
+        {
+            using namespace dds::tools_api;
+            SOnTaskDoneRequest::request_t request;
+            SOnTaskDoneRequest::ptr_t requestPtr = SOnTaskDoneRequest::makeRequest(request);
+            requestPtr->setResponseCallback(
+                [&](const SOnTaskDoneResponseData& _info)
+                {
+                    std::unique_lock<std::mutex> lk(*fMtx);
+                    DeviceStatus& task = fStateData.at(fStateIndex.at(_info.m_taskID));
+                    if (task.subscribed_to_state_changes)
+                    {
+                        task.subscribed_to_state_changes = false;
+                        --fNumStateChangePublishers;
+                    }
+                    task.exitCode = _info.m_exitCode;
+                    task.signal = _info.m_signal;
+                    task.lastState = task.state;
+                    task.state = DeviceState::Error;
+                });
+            fDDSSession->sendRequest<SOnTaskDoneRequest>(requestPtr);
+        }
+
         void WaitForPublisherCount(unsigned int number)
         {
+            using namespace std::chrono_literals;
             std::unique_lock<std::mutex> lk(*fMtx);
-            fStateChangeSubscriptionsCV->wait(lk, [&]() { return fNumStateChangePublishers == number; });
+            auto publisherCountReached = [&]() { return fNumStateChangePublishers == number; };
+            auto count(0);
+            constexpr auto checkInterval(50ms);
+            constexpr auto maxCount(30s / checkInterval);
+            while (!publisherCountReached() && fDDSSession->IsRunning() && count < maxCount)
+            {
+                fStateChangeSubscriptionsCV->wait_for(lk, checkInterval, publisherCountReached);
+                ++count;
+            }
         }
 
         void SendSubscriptionHeartbeats(const boost::system::error_code& ec)
@@ -1646,7 +1681,7 @@ namespace odc::core
             for (const auto& task : GetTasks())
             {
                 fStateData.push_back(DeviceStatus{
-                    false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId() });
+                    false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId(), -1, -1 });
                 fStateIndex.emplace(task.GetId(), index);
                 index++;
             }

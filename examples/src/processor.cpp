@@ -8,7 +8,9 @@
 
 #include <fairmq/Device.h>
 #include <fairmq/runDevice.h>
+#include <fairlogger/Logger.h>
 
+#include <cstdlib>
 #include <string>
 
 namespace bpo = boost::program_options;
@@ -18,6 +20,20 @@ struct Processor : fair::mq::Device
     Processor()
     {
         OnData("data1", &Processor::HandleData);
+    }
+
+    void Init() override
+    {
+        GetConfig()->SetProperty<std::string>("crash", "no");
+        GetConfig()->SubscribeAsString("device",
+                                       [](auto key, auto value)
+                                       {
+                                           if (key == "crash" && value == "yes")
+                                           {
+                                               LOG(warn) << "<<< CRASH >>>";
+                                               std::abort();
+                                           }
+                                       });
     }
 
     bool HandleData(FairMQMessagePtr& msg, int)
