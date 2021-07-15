@@ -260,15 +260,15 @@ void CCliHelper::parseResourcePluginOptions(const boost::program_options::variab
         _pluginMap.clear();
         for (const auto& v : kvp)
         {
-            vector<string> strs;
-            boost::split(strs, v, boost::is_any_of(":"));
-            if (strs.size() == 2)
+            const auto idx{ v.find_first_of(':') };
+            if (std::string::npos != idx)
             {
-                _pluginMap.insert(make_pair(strs[0], strs[1]));
+                _pluginMap.insert(make_pair(v.substr(0, idx), v.substr(idx + 1)));
             }
             else
             {
-                throw runtime_error("Wrong resource plugin format for string '" + v + "'. Use 'name:path'.");
+                throw runtime_error(
+                    toString("Wrong resource plugin format for string ", quoted(v), ". Use ", quoted("name:cmd")));
             }
         }
     }

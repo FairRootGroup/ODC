@@ -9,6 +9,7 @@ add_executable(odc-rp-same
 target_link_libraries(odc-rp-same
   Boost::boost
   Boost::program_options
+  odc_core_lib
 )
 target_include_directories(odc-rp-same PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"

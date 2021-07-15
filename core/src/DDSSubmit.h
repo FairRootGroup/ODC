@@ -11,6 +11,8 @@
 #include <string>
 // BOOST
 #include <boost/property_tree/ptree.hpp>
+// ODC
+#include "Def.h"
 
 namespace odc::core
 {
@@ -50,11 +52,13 @@ namespace odc::core
 
         // Shared pointer
         using Ptr_t = std::shared_ptr<CDDSSubmit>;
-        // Plugin map <plugin name, path>
+        // Plugin map <plugin name, cmd>
         using PluginMap_t = std::map<std::string, std::string>;
 
-        void registerPlugin(const std::string& _plugin, const std::string& _path);
-        SParams makeParams(const std::string& _plugin, const std::string& _resources);
+        void registerPlugin(const std::string& _plugin, const std::string& _cmd);
+        SParams makeParams(const std::string& _plugin,
+                           const std::string& _resources,
+                           const partitionID_t& _partitionID);
 
       private:
         void registerDefaultPlugin(const std::string& _name);

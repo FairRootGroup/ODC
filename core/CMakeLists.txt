@@ -32,6 +32,7 @@ add_library(odc_core_lib
     "src/Process.h"
     "src/CmdsFile.h"
     "src/CmdsFile.cpp"
+    "src/Def.h"
 )
 target_link_libraries(odc_core_lib PUBLIC
   DDS::dds_topology_lib

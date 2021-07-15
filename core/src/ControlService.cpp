@@ -207,7 +207,7 @@ SReturnValue CControlService::SImpl::execSubmit(const partitionID_t& _partitionI
     {
         try
         {
-            ddsParams = m_submit->makeParams(_params.m_plugin, _params.m_resources);
+            ddsParams = m_submit->makeParams(_params.m_plugin, _params.m_resources, _partitionID);
         }
         catch (exception& _e)
         {

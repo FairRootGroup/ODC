@@ -6,6 +6,7 @@
 #include "DDSSubmit.h"
 #include "BuildConstants.h"
 #include "Logger.h"
+#include "MiscUtils.h"
 #include "Process.h"
 // STD
 #include <cstdlib>
@@ -15,6 +16,7 @@
 #include <sstream>
 // BOOST
 #include <boost/filesystem.hpp>
+#include <boost/program_options/parsers.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
@@ -23,6 +25,8 @@ using namespace odc::core;
 using namespace std;
 namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
+namespace bpo = boost::program_options;
+namespace ba = boost::algorithm;
 
 //
 // CDDSSubmit::SParams
@@ -97,7 +101,7 @@ void CDDSSubmit::registerDefaultPlugin(const std::string& _name)
     }
 }
 
-void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _path)
+void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _cmd)
 {
     // Check if plugin already registered
     auto it = m_plugins.find(_plugin);
@@ -109,11 +113,15 @@ void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _
         throw runtime_error(ss.str());
     }
 
+    // Extract the path from command line
+    std::vector<std::string> args{ bpo::split_unix(_cmd) };
+    std::string path{ args.empty() ? "" : args.front() };
+
     try
     {
         // Throws an exception if path doesn't exist
         // Check if plugin exists at path and not a directory
-        const fs::path pluginPath(fs::canonical(fs::path(_path)));
+        const fs::path pluginPath(fs::canonical(fs::path(path)));
         if (fs::is_directory(pluginPath))
         {
             stringstream ss;
@@ -121,9 +129,11 @@ void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _
                << " is a directory.";
             throw runtime_error(ss.str());
         }
-        OLOG(ESeverity::info) << "Register resource plugin " << quoted(_plugin) << " at path "
-                              << quoted(pluginPath.string());
-        m_plugins.insert(make_pair(_plugin, pluginPath.string()));
+
+        string correctedCmd{ _cmd };
+        ba::replace_first(correctedCmd, path, pluginPath.string());
+        OLOG(ESeverity::info) << "Register resource plugin " << quoted(_plugin) << " as " << quoted(correctedCmd);
+        m_plugins.insert(make_pair(_plugin, correctedCmd));
     }
     catch (const exception& _e)
     {
@@ -133,7 +143,9 @@ void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _
     }
 }
 
-CDDSSubmit::SParams CDDSSubmit::makeParams(const string& _plugin, const string& _resources)
+CDDSSubmit::SParams CDDSSubmit::makeParams(const string& _plugin,
+                                           const string& _resources,
+                                           const partitionID_t& _partitionID)
 {
     // Check if plugin exists
     auto it = m_plugins.find(_plugin);
@@ -145,7 +157,7 @@ CDDSSubmit::SParams CDDSSubmit::makeParams(const string& _plugin, const string& 
     }
 
     // Execute plugin
-    const string cmd{ it->second + " --res " + "\"" + _resources + "\"" };
+    const string cmd{ toString(it->second, " --res ", std::quoted(_resources), " --id ", std::quoted(_partitionID)) };
     const std::chrono::seconds timeout{ 30 };
     string out;
     string err;

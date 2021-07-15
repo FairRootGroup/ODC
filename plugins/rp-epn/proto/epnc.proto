@@ -1,0 +1,47 @@
+syntax = "proto3";
+package epnc;
+
+
+service EPNController {
+    rpc AllocateNodes(AllocationRequest) returns (NodeList) { }
+
+    rpc ReleaseNode(ReleaseNodeRequest) returns (EPNControllerReply) { }
+    rpc ReleasePartition(Partition) returns (EPNControllerReply) { }
+}
+
+message Partition {
+    string zone                    = 1; // e.g. "online", "offline"
+    string id                      = 2;
+}
+
+message AllocationRequest {
+    Partition partition            = 1;
+    uint32 node_count              = 2;
+}
+
+enum EPNControllerStatus {
+    IGNORE___               = 0;
+    OK                      = 1;
+    ERROR_UNKNOWN_ZONE      = 2;
+    ERROR_UNKNOWN_PARTITION = 3;
+    ERROR_UNKNOWN_NODE      = 4;
+    ERROR                   = 100;
+}
+
+message EPNControllerReply {
+    EPNControllerStatus  status = 1;
+}
+
+message NodeList {
+    Partition partition       = 1;
+    repeated string nodes     = 2; // list of EPN host names
+
+    EPNControllerReply status = 3; // return value; ignored on input
+}
+
+
+message ReleaseNodeRequest {
+    Partition partition            = 1; //[required]
+    string    node                 = 2; //[required]
+    string    message              = 3; //[optional] failure message or information for EPN admins.
+}

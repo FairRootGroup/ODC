@@ -11,12 +11,11 @@
 #include <system_error>
 // ODC
 #include "DDSSubmit.h"
+#include "Def.h"
 #include "Topology.h"
 
 namespace odc::core
 {
-    using partitionID_t = std::string;
-
     /// \brief Return status code of request
     enum EStatusCode
     {
