@@ -647,6 +647,43 @@ BOOST_AUTO_TEST_CASE(aggregated_topology_state_comparison)
     BOOST_REQUIRE("MIXED" == GetAggregatedTopologyStateName(AggregatedTopologyState::Mixed));
 }
 
+BOOST_AUTO_TEST_CASE(device_crashed)
+{
+    using namespace std::chrono_literals;
+    BOOST_REQUIRE(framework::master_test_suite().argc >= 3);
+    BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
+    TopologyFixture f(framework::master_test_suite().argv[2]);
+
+    {
+        Topology topo(f.mDDSTopo, f.mDDSSession);
+        BOOST_CHECK_EQUAL(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
+        BOOST_CHECK_EQUAL(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
+        try {
+            topo.SetProperties({ { "crash", "yes" } }, "", 10ms);
+        } catch (std::system_error const& e) {
+            BOOST_TEST_MESSAGE("system_error >> code: " << e.code() << ", what: " << e.what());
+        }
+        BOOST_TEST_CHECKPOINT("Processors crashed.");
+    }
+    BOOST_TEST_CHECKPOINT("Topology destructed.");
+}
+
+BOOST_AUTO_TEST_CASE(underlying_session_terminated)
+{
+    BOOST_REQUIRE(framework::master_test_suite().argc >= 3);
+    BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
+    TopologyFixture f(framework::master_test_suite().argv[2]);
+
+    {
+        Topology topo(f.mDDSTopo, f.mDDSSession);
+        BOOST_CHECK_EQUAL(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
+        BOOST_CHECK_EQUAL(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
+        f.mDDSSession->shutdown();
+        BOOST_TEST_CHECKPOINT("Session shut down.");
+    }
+    BOOST_TEST_CHECKPOINT("Topology destructed.");
+}
+
 BOOST_AUTO_TEST_SUITE_END(); // topology
 
 BOOST_AUTO_TEST_SUITE(multiple_topologies);
