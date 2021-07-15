@@ -33,11 +33,9 @@ add_library(${target} STATIC
   ${CMAKE_CURRENT_BINARY_DIR}/src/CustomCommandsFormatDef.h
 )
 
-# Some distros may not package the static library (e.g. Fedora), so we pick up
-# the dynamic library instead
-set(_flatbuffers flatbuffers::flatbuffers)
-if(NOT TARGET flatbuffers::flatbuffers AND TARGET flatbuffers::flatbuffers_shared)
-  set(_flatbuffers flatbuffers::flatbuffers_shared)
+set(_flatbuffers flatbuffers::flatbuffers_shared)
+if(NOT TARGET flatbuffers::flatbuffers_shared AND TARGET flatbuffers::flatbuffers)
+  set(_flatbuffers flatbuffers::flatbuffers)
 endif()
 
 target_link_libraries(${target} PUBLIC FairMQ::FairMQ ${_flatbuffers})
