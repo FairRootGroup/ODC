@@ -360,7 +360,7 @@ namespace odc::core
             // }
 
             SubscribeToCommands();
-            SubscribeToTaskDoneEvents();
+            // SubscribeToTaskDoneEvents();
 
             fDDSService.start(to_string(fDDSSession->getSessionID()));
             SubscribeToStateChanges();
