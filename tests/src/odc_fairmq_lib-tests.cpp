@@ -658,9 +658,12 @@ BOOST_AUTO_TEST_CASE(device_crashed)
         Topology topo(f.mDDSTopo, f.mDDSSession);
         BOOST_CHECK_EQUAL(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
         BOOST_CHECK_EQUAL(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());
-        try {
+        try
+        {
             topo.SetProperties({ { "crash", "yes" } }, "", 10ms);
-        } catch (std::system_error const& e) {
+        }
+        catch (std::system_error const& e)
+        {
             BOOST_TEST_MESSAGE("system_error >> code: " << e.code() << ", what: " << e.what());
         }
         BOOST_TEST_CHECKPOINT("Processors crashed.");

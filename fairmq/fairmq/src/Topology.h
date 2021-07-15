@@ -1680,8 +1680,13 @@ namespace odc::core
 
             for (const auto& task : GetTasks())
             {
-                fStateData.push_back(DeviceStatus{
-                    false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId(), -1, -1 });
+                fStateData.push_back(DeviceStatus{ false,
+                                                   DeviceState::Undefined,
+                                                   DeviceState::Undefined,
+                                                   task.GetId(),
+                                                   task.GetCollectionId(),
+                                                   -1,
+                                                   -1 });
                 fStateIndex.emplace(task.GetId(), index);
                 index++;
             }

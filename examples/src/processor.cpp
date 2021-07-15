@@ -6,9 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
+#include <fairlogger/Logger.h>
 #include <fairmq/Device.h>
 #include <fairmq/runDevice.h>
-#include <fairlogger/Logger.h>
 
 #include <cstdlib>
 #include <string>
