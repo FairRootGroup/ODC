@@ -12,6 +12,8 @@
 // DDS
 #include <dds/Tools.h>
 #include <dds/Topology.h>
+// BOOST
+#include <boost/algorithm/string.hpp>
 
 using namespace odc;
 using namespace odc::core;
@@ -55,6 +57,8 @@ struct CControlService::SImpl
     }
 
     void registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap);
+    void registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap);
+    void execRequestTrigger(const string& _plugin, const partitionID_t& _partitionID);
 
     // Core API calls
     SReturnValue execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params);
@@ -148,9 +152,10 @@ struct CControlService::SImpl
     SImpl& operator=(const SImpl&) = delete;
     SImpl& operator=(SImpl&&) = delete;
 
-    SSessionInfo::Map_t m_sessions;                          ///< Map of partition ID to session info
-    chrono::seconds m_timeout{ 30 };                         ///< Request timeout in sec
-    CDDSSubmit::Ptr_t m_submit{ make_shared<CDDSSubmit>() }; ///< ODC to DDS submit resource converter
+    SSessionInfo::Map_t m_sessions;                                    ///< Map of partition ID to session info
+    chrono::seconds m_timeout{ 30 };                                   ///< Request timeout in sec
+    CDDSSubmit::Ptr_t m_submit{ make_shared<CDDSSubmit>() };           ///< ODC to DDS submit resource converter
+    CPluginManager::Ptr_t m_triggers{ make_shared<CPluginManager>() }; ///< Request triggers
 };
 
 void CControlService::SImpl::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
@@ -158,6 +163,43 @@ void CControlService::SImpl::registerResourcePlugins(const CDDSSubmit::PluginMap
     for (const auto& v : _pluginMap)
     {
         m_submit->registerPlugin(v.first, v.second);
+    }
+}
+
+void CControlService::SImpl::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap)
+{
+    const set<string> avail{ "Initialize", "Submit", "Activate", "Run",   "Update",    "Configure", "SetProperties",
+                             "GetState",   "Start",  "Stop",     "Reset", "Terminate", "Shutdown",  "Status" };
+    for (const auto& v : _triggerMap)
+    {
+        if (avail.count(v.first) == 0)
+        {
+            throw runtime_error(toString("Failed to add request trigger ",
+                                         quoted(v.first),
+                                         ". Invalid request name. Valid names are: ",
+                                         quoted(boost::algorithm::join(avail, ", "))));
+        }
+        m_triggers->registerPlugin(v.first, v.second);
+    }
+}
+
+void CControlService::SImpl::execRequestTrigger(const string& _plugin, const partitionID_t& _partitionID)
+{
+    if (m_triggers->isPluginRegistered(_plugin))
+    {
+        try
+        {
+            OLOG(ESeverity::debug) << "Executing request trigger " << quoted(_plugin) << " for partition "
+                                   << quoted(_partitionID);
+            string out{ m_triggers->execPlugin(_plugin, "", _partitionID) };
+            OLOG(ESeverity::debug) << "Request trigger " << quoted(_plugin) << " done for partition "
+                                   << quoted(_partitionID) << ": " << out;
+        }
+        catch (exception& _e)
+        {
+            OLOG(ESeverity::error) << "Request trigger " << quoted(_plugin) << " failed for partition "
+                                   << quoted(_partitionID) << ": " << _e.what();
+        }
     }
 }
 
@@ -191,6 +233,7 @@ SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partit
                 createFairMQTopo(_partitionID, error, commanderInfo.m_activeTopologyPath);
         }
     }
+    execRequestTrigger("Initialize", _partitionID);
     return createReturnValue(
         _partitionID, error, "Initialize done", measure.duration(), AggregatedTopologyState::Undefined);
 }
@@ -222,7 +265,7 @@ SReturnValue CControlService::SImpl::execSubmit(const partitionID_t& _partitionI
         // Wait until all agents are active
         submitDDSAgents(_partitionID, error, ddsParams) && waitForNumActiveAgents(_partitionID, error, requiredSlots);
     }
-
+    execRequestTrigger("Submit", _partitionID);
     return createReturnValue(
         _partitionID, error, "Submit done", measure.duration(), AggregatedTopologyState::Undefined);
 }
@@ -241,6 +284,7 @@ SReturnValue CControlService::SImpl::execActivate(const partitionID_t& _partitio
             createFairMQTopo(_partitionID, error, _params.m_topologyFile);
     }
     AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle : AggregatedTopologyState::Undefined };
+    execRequestTrigger("Activate", _partitionID);
     return createReturnValue(_partitionID, error, "Activate done", measure.duration(), state);
 }
 
@@ -270,6 +314,7 @@ SReturnValue CControlService::SImpl::execRun(const partitionID_t& _partitionID,
         }
     }
     AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle : AggregatedTopologyState::Undefined };
+    execRequestTrigger("Run", _partitionID);
     return createReturnValue(_partitionID, error, "Run done", measure.duration(), state);
 }
 
@@ -288,6 +333,7 @@ SReturnValue CControlService::SImpl::execUpdate(const partitionID_t& _partitionI
         createTopo(_partitionID, error, _params.m_topologyFile) &&
         createFairMQTopo(_partitionID, error, _params.m_topologyFile) &&
         changeStateConfigure(_partitionID, error, "", state);
+    execRequestTrigger("Update", _partitionID);
     return createReturnValue(_partitionID, error, "Update done", measure.duration(), state);
 }
 
@@ -296,6 +342,7 @@ SReturnValue CControlService::SImpl::execShutdown(const partitionID_t& _partitio
     STimeMeasure<std::chrono::milliseconds> measure;
     SError error;
     shutdownDDSSession(_partitionID, error);
+    execRequestTrigger("Shutdown", _partitionID);
     return createReturnValue(
         _partitionID, error, "Shutdown done", measure.duration(), AggregatedTopologyState::Undefined);
 }
@@ -306,6 +353,7 @@ SReturnValue CControlService::SImpl::execSetProperties(const partitionID_t& _par
     STimeMeasure<std::chrono::milliseconds> measure;
     SError error;
     setProperties(_partitionID, error, _params);
+    execRequestTrigger("SetProperties", _partitionID);
     return createReturnValue(
         _partitionID, error, "SetProperties done", measure.duration(), AggregatedTopologyState::Undefined);
 }
@@ -317,6 +365,7 @@ SReturnValue CControlService::SImpl::execGetState(const partitionID_t& _partitio
     SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
     SError error;
     getState(_partitionID, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    execRequestTrigger("GetState", _partitionID);
     return createReturnValue(_partitionID, error, "GetState done", measure.duration(), state, details);
 }
 
@@ -328,7 +377,8 @@ SReturnValue CControlService::SImpl::execConfigure(const partitionID_t& _partiti
     SError error;
     changeStateConfigure(
         _partitionID, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
-    return createReturnValue(_partitionID, error, "ConfigureRun done", measure.duration(), state, details);
+    execRequestTrigger("Configure", _partitionID);
+    return createReturnValue(_partitionID, error, "Configure done", measure.duration(), state, details);
 }
 
 SReturnValue CControlService::SImpl::execStart(const partitionID_t& _partitionID, const SDeviceParams& _params)
@@ -343,6 +393,7 @@ SReturnValue CControlService::SImpl::execStart(const partitionID_t& _partitionID
                 _params.m_path,
                 state,
                 ((details == nullptr) ? nullptr : &details->m_topologyState));
+    execRequestTrigger("Start", _partitionID);
     return createReturnValue(_partitionID, error, "Start done", measure.duration(), state, details);
 }
 
@@ -358,6 +409,7 @@ SReturnValue CControlService::SImpl::execStop(const partitionID_t& _partitionID,
                 _params.m_path,
                 state,
                 ((details == nullptr) ? nullptr : &details->m_topologyState));
+    execRequestTrigger("Stop", _partitionID);
     return createReturnValue(_partitionID, error, "Stop done", measure.duration(), state, details);
 }
 
@@ -369,6 +421,7 @@ SReturnValue CControlService::SImpl::execReset(const partitionID_t& _partitionID
     SError error;
     changeStateReset(
         _partitionID, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    execRequestTrigger("Reset", _partitionID);
     return createReturnValue(_partitionID, error, "Reset done", measure.duration(), state, details);
 }
 
@@ -384,6 +437,7 @@ SReturnValue CControlService::SImpl::execTerminate(const partitionID_t& _partiti
                 _params.m_path,
                 state,
                 ((details == nullptr) ? nullptr : &details->m_topologyState));
+    execRequestTrigger("Terminate", _partitionID);
     return createReturnValue(_partitionID, error, "Terminate done", measure.duration(), state, details);
 }
 
@@ -423,6 +477,7 @@ SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& /* _p
     result.m_statusCode = EStatusCode::ok;
     result.m_msg = "Status done";
     result.m_execTime = measure.duration();
+    execRequestTrigger("Status", "");
     return result;
 }
 
@@ -1187,6 +1242,11 @@ void CControlService::setTimeout(const chrono::seconds& _timeout)
 void CControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
 {
     m_impl->registerResourcePlugins(_pluginMap);
+}
+
+void CControlService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap)
+{
+    m_impl->registerRequestTriggers(_triggerMap);
 }
 
 SReturnValue CControlService::execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)

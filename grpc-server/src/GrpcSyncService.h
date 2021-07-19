@@ -6,8 +6,8 @@
 #define __ODC__GrpcSyncService__
 
 // ODC
-#include "DDSSubmit.h"
 #include "GrpcService.h"
+#include "PluginManager.h"
 // GRPC
 #include "odc.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
@@ -21,7 +21,8 @@ namespace odc::grpc
 
         void run(const std::string& _host);
         void setTimeout(const std::chrono::seconds& _timeout);
-        void registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap);
+        void registerResourcePlugins(const odc::core::CPluginManager::PluginMap_t& _pluginMap);
+        void registerRequestTriggers(const odc::core::CPluginManager::PluginMap_t& _triggerMap);
 
       private:
         ::grpc::Status Initialize(::grpc::ServerContext* context,

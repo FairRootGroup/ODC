@@ -318,7 +318,11 @@ namespace odc::core
 
         /// \brief Register resource plugins
         /// \param [in] _pluginMap Map of plugin name to path
-        void registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap);
+        void registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap);
+
+        /// \brief Register request triggers
+        /// \param [in] _triggerMap Map of plugin name to path
+        void registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap);
 
         //
         // DDS topology and session requests

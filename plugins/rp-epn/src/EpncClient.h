@@ -20,11 +20,8 @@ class CEpncClient
                        const std::string& _zone,
                        size_t _nodeCount,
                        std::vector<std::string>& _outputNodes);
-    void releaseNode(const std::string& _partitionID,
-                     const std::string& _zone,
-                     const std::string& _node,
-                     const std::string& _message);
-    void releasePartition(const std::string& _partitionID, const std::string& _zone);
+    void releaseNode(const std::string& _partitionID, const std::string& _node, const std::string& _message);
+    void releasePartition(const std::string& _partitionID);
 
   private:
     template <typename Reply_t>

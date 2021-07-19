@@ -214,10 +214,21 @@ void CCliHelper::addOptions(boost::program_options::options_description& /*_opti
 //
 
 void CCliHelper::addResourcePluginOptions(boost::program_options::options_description& _options,
-                                          CDDSSubmit::PluginMap_t& /*_pluginMap*/)
+                                          CPluginManager::PluginMap_t& /*_pluginMap*/)
 {
     _options.add_options()(
-        "rp", bpo::value<vector<string>>()->multitoken(), "Register resource plugins ( name1:path1 name2:path2 )");
+        "rp", bpo::value<vector<string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )");
+}
+
+//
+// Resource plugins
+//
+
+void CCliHelper::addRequestTriggersOptions(boost::program_options::options_description& _options,
+                                           CPluginManager::PluginMap_t& /*_pluginMap*/)
+{
+    _options.add_options()(
+        "rt", bpo::value<vector<string>>()->multitoken(), "Register request triggers ( name1:cmd1 name2:cmd2 )");
 }
 
 //
@@ -251,12 +262,13 @@ void CCliHelper::parseOptions(const boost::program_options::variables_map& _vm, 
     }
 }
 
-void CCliHelper::parseResourcePluginOptions(const boost::program_options::variables_map& _vm,
-                                            CDDSSubmit::PluginMap_t& _pluginMap)
+void CCliHelper::parsePluginMapOptions(const boost::program_options::variables_map& _vm,
+                                       CPluginManager::PluginMap_t& _pluginMap,
+                                       const std::string& _option)
 {
-    if (_vm.count("rp"))
+    if (_vm.count(_option))
     {
-        const auto& kvp(_vm["rp"].as<vector<string>>());
+        const auto& kvp(_vm[_option].as<vector<string>>());
         _pluginMap.clear();
         for (const auto& v : kvp)
         {
@@ -268,7 +280,7 @@ void CCliHelper::parseResourcePluginOptions(const boost::program_options::variab
             else
             {
                 throw runtime_error(
-                    toString("Wrong resource plugin format for string ", quoted(v), ". Use ", quoted("name:cmd")));
+                    toString("Wrong plugin map format for string ", quoted(v), ". Use ", quoted("name:value")));
             }
         }
     }

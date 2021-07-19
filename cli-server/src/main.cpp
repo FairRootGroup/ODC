@@ -31,7 +31,8 @@ int main(int argc, char** argv)
         CLogger::SConfig logConfig;
         CCliHelper::SBatchOptions bopt;
         bool batch;
-        CDDSSubmit::PluginMap_t pluginMap;
+        CPluginManager::PluginMap_t pluginMap;
+        CPluginManager::PluginMap_t triggerMap;
 
         // Generic options
         bpo::options_description options("odc-cli-server options");
@@ -41,6 +42,7 @@ int main(int argc, char** argv)
         CCliHelper::addLogOptions(options, logConfig);
         CCliHelper::addBatchOptions(options, bopt, batch);
         CCliHelper::addResourcePluginOptions(options, pluginMap);
+        CCliHelper::addRequestTriggersOptions(options, triggerMap);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -70,11 +72,13 @@ int main(int argc, char** argv)
         }
 
         CCliHelper::batchCmds(vm, batch, bopt);
-        CCliHelper::parseResourcePluginOptions(vm, pluginMap);
+        CCliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
+        CCliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
 
         odc::cli::CCliControlService control;
         control.setTimeout(chrono::seconds(timeout));
         control.registerResourcePlugins(pluginMap);
+        control.registerRequestTriggers(triggerMap);
         control.run(bopt.m_outputCmds);
     }
     catch (exception& _e)

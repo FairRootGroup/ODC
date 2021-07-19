@@ -6,17 +6,8 @@
 #include "DDSSubmit.h"
 #include "BuildConstants.h"
 #include "Logger.h"
-#include "MiscUtils.h"
-#include "Process.h"
-// STD
-#include <cstdlib>
-#include <iomanip>
-#include <ostream>
-#include <set>
-#include <sstream>
 // BOOST
 #include <boost/filesystem.hpp>
-#include <boost/program_options/parsers.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 
@@ -25,8 +16,6 @@ using namespace odc::core;
 using namespace std;
 namespace fs = boost::filesystem;
 namespace pt = boost::property_tree;
-namespace bpo = boost::program_options;
-namespace ba = boost::algorithm;
 
 //
 // CDDSSubmit::SParams
@@ -101,80 +90,13 @@ void CDDSSubmit::registerDefaultPlugin(const std::string& _name)
     }
 }
 
-void CDDSSubmit::registerPlugin(const std::string& _plugin, const std::string& _cmd)
-{
-    // Check if plugin already registered
-    auto it = m_plugins.find(_plugin);
-    if (it != m_plugins.end())
-    {
-        stringstream ss;
-        ss << "Failed to register resource plugin " << quoted(_plugin)
-           << ". A different plugin with the same name is already registered.";
-        throw runtime_error(ss.str());
-    }
-
-    // Extract the path from command line
-    std::vector<std::string> args{ bpo::split_unix(_cmd) };
-    std::string path{ args.empty() ? "" : args.front() };
-
-    try
-    {
-        // Throws an exception if path doesn't exist
-        // Check if plugin exists at path and not a directory
-        const fs::path pluginPath(fs::canonical(fs::path(path)));
-        if (fs::is_directory(pluginPath))
-        {
-            stringstream ss;
-            ss << "Failed to register resource plugin " << quoted(_plugin) << ". Specified path " << pluginPath
-               << " is a directory.";
-            throw runtime_error(ss.str());
-        }
-
-        string correctedCmd{ _cmd };
-        ba::replace_first(correctedCmd, path, pluginPath.string());
-        OLOG(ESeverity::info) << "Register resource plugin " << quoted(_plugin) << " as " << quoted(correctedCmd);
-        m_plugins.insert(make_pair(_plugin, correctedCmd));
-    }
-    catch (const exception& _e)
-    {
-        stringstream ss;
-        ss << "Failed to register resource plugin " << quoted(_plugin) << ": " << _e.what();
-        throw runtime_error(ss.str());
-    }
-}
-
 CDDSSubmit::SParams CDDSSubmit::makeParams(const string& _plugin,
                                            const string& _resources,
                                            const partitionID_t& _partitionID)
 {
-    // Check if plugin exists
-    auto it = m_plugins.find(_plugin);
-    if (it == m_plugins.end())
-    {
-        stringstream ss;
-        ss << "Failed to execute resource plugin " << quoted(_plugin) << ". Plugin not found.";
-        throw runtime_error(ss.str());
-    }
-
-    // Execute plugin
-    const string cmd{ toString(it->second, " --res ", std::quoted(_resources), " --id ", std::quoted(_partitionID)) };
-    const std::chrono::seconds timeout{ 30 };
-    string out;
-    string err;
-    int exitCode{ EXIT_SUCCESS };
-    execute(cmd, timeout, &out, &err, &exitCode);
-
-    if (exitCode != EXIT_SUCCESS)
-    {
-        stringstream ss;
-        ss << "Plugin execution failed with exit code: " << exitCode << "; error message: " << err;
-        throw runtime_error(ss.str());
-    }
-
     CDDSSubmit::SParams params;
-    stringstream ss{ out };
+    stringstream ss{ execPlugin(_plugin, _resources, _partitionID) };
     params.initFromXML(ss);
-
     return params;
 }
 

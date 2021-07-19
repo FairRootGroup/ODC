@@ -22,9 +22,14 @@ void CGrpcService::setTimeout(const std::chrono::seconds& _timeout)
     m_service->setTimeout(_timeout);
 }
 
-void CGrpcService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
+void CGrpcService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap)
 {
     m_service->registerResourcePlugins(_pluginMap);
+}
+
+void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap)
+{
+    m_service->registerRequestTriggers(_triggerMap);
 }
 
 ::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* /*context*/,

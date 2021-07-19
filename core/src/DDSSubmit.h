@@ -6,17 +6,16 @@
 #define __ODC__DDSSubmit__
 
 // STD
-#include <map>
 #include <ostream>
 #include <string>
 // BOOST
 #include <boost/property_tree/ptree.hpp>
 // ODC
-#include "Def.h"
+#include "PluginManager.h"
 
 namespace odc::core
 {
-    class CDDSSubmit
+    class CDDSSubmit : public CPluginManager
     {
       public:
         /// \brief DDS submit parameters
@@ -50,12 +49,6 @@ namespace odc::core
 
         CDDSSubmit();
 
-        // Shared pointer
-        using Ptr_t = std::shared_ptr<CDDSSubmit>;
-        // Plugin map <plugin name, cmd>
-        using PluginMap_t = std::map<std::string, std::string>;
-
-        void registerPlugin(const std::string& _plugin, const std::string& _cmd);
         SParams makeParams(const std::string& _plugin,
                            const std::string& _resources,
                            const partitionID_t& _partitionID);
@@ -63,7 +56,9 @@ namespace odc::core
       private:
         void registerDefaultPlugin(const std::string& _name);
 
-        PluginMap_t m_plugins; ///< Plugins
+      public:
+        // Shared pointer
+        using Ptr_t = std::shared_ptr<CDDSSubmit>;
     };
 } // namespace odc::core
 

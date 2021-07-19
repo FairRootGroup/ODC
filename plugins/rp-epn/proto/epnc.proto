@@ -6,7 +6,7 @@ service EPNController {
     rpc AllocateNodes(AllocationRequest) returns (NodeList) { }
 
     rpc ReleaseNode(ReleaseNodeRequest) returns (EPNControllerReply) { }
-    rpc ReleasePartition(Partition) returns (EPNControllerReply) { }
+    rpc ReleasePartition(ReleasePartitionRequest) returns (EPNControllerReply) { }
 }
 
 message Partition {
@@ -25,6 +25,7 @@ enum EPNControllerStatus {
     ERROR_UNKNOWN_ZONE      = 2;
     ERROR_UNKNOWN_PARTITION = 3;
     ERROR_UNKNOWN_NODE      = 4;
+    ERROR_NO_NODES_AVAIL    = 5;
     ERROR                   = 100;
 }
 
@@ -33,15 +34,20 @@ message EPNControllerReply {
 }
 
 message NodeList {
-    Partition partition       = 1;
-    repeated string nodes     = 2; // list of EPN host names
+    Partition partition        = 1;
+    repeated string nodes      = 2; // list of EPN host names
 
-    EPNControllerReply status = 3; // return value; ignored on input
+    EPNControllerStatus status = 3; // return code
 }
 
 
 message ReleaseNodeRequest {
-    Partition partition            = 1; //[required]
+    string    partition_id         = 1; //[required]
     string    node                 = 2; //[required]
     string    message              = 3; //[optional] failure message or information for EPN admins.
+}
+
+message ReleasePartitionRequest {
+    string partition_id = 1;
+
 }

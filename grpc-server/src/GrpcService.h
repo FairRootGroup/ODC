@@ -20,7 +20,8 @@ namespace odc::grpc
         CGrpcService();
 
         void setTimeout(const std::chrono::seconds& _timeout);
-        void registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap);
+        void registerResourcePlugins(const odc::core::CPluginManager::PluginMap_t& _pluginMap);
+        void registerRequestTriggers(const odc::core::CPluginManager::PluginMap_t& _triggerMap);
 
         ::grpc::Status Initialize(::grpc::ServerContext* context,
                                   const odc::InitializeRequest* request,

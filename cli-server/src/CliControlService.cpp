@@ -22,97 +22,91 @@ void CCliControlService::setTimeout(const std::chrono::seconds& _timeout)
     m_service->setTimeout(_timeout);
 }
 
-void CCliControlService::registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap)
+void CCliControlService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap)
 {
     m_service->registerResourcePlugins(_pluginMap);
 }
 
-std::string CCliControlService::requestInitialize(const odc::core::partitionID_t& _partitionID,
-                                                  const odc::core::SInitializeParams& _params)
+void CCliControlService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap)
+{
+    m_service->registerRequestTriggers(_triggerMap);
+}
+
+std::string CCliControlService::requestInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)
 {
     return generalReply(m_service->execInitialize(_partitionID, _params));
 }
 
-std::string CCliControlService::requestSubmit(const odc::core::partitionID_t& _partitionID,
-                                              const odc::core::SSubmitParams& _params)
+std::string CCliControlService::requestSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params)
 {
     return generalReply(m_service->execSubmit(_partitionID, _params));
 }
 
-std::string CCliControlService::requestActivate(const odc::core::partitionID_t& _partitionID,
-                                                const odc::core::SActivateParams& _params)
+std::string CCliControlService::requestActivate(const partitionID_t& _partitionID, const SActivateParams& _params)
 {
     return generalReply(m_service->execActivate(_partitionID, _params));
 }
 
-std::string CCliControlService::requestRun(const odc::core::partitionID_t& _partitionID,
-                                           const odc::core::SInitializeParams& _initializeParams,
-                                           const odc::core::SSubmitParams& _submitParams,
-                                           const odc::core::SActivateParams& _activateParams)
+std::string CCliControlService::requestRun(const partitionID_t& _partitionID,
+                                           const SInitializeParams& _initializeParams,
+                                           const SSubmitParams& _submitParams,
+                                           const SActivateParams& _activateParams)
 {
     return generalReply(m_service->execRun(_partitionID, _initializeParams, _submitParams, _activateParams));
 }
 
-std::string CCliControlService::requestUpscale(const odc::core::partitionID_t& _partitionID,
-                                               const odc::core::SUpdateParams& _params)
+std::string CCliControlService::requestUpscale(const partitionID_t& _partitionID, const SUpdateParams& _params)
 {
     return generalReply(m_service->execUpdate(_partitionID, _params));
 }
 
-std::string CCliControlService::requestDownscale(const odc::core::partitionID_t& _partitionID,
-                                                 const odc::core::SUpdateParams& _params)
+std::string CCliControlService::requestDownscale(const partitionID_t& _partitionID, const SUpdateParams& _params)
 {
     return generalReply(m_service->execUpdate(_partitionID, _params));
 }
 
-std::string CCliControlService::requestGetState(const odc::core::partitionID_t& _partitionID,
-                                                const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestGetState(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return generalReply(m_service->execGetState(_partitionID, _params));
 }
 
-std::string CCliControlService::requestSetProperties(const odc::core::partitionID_t& _partitionID,
-                                                     const odc::core::SSetPropertiesParams& _params)
+std::string CCliControlService::requestSetProperties(const partitionID_t& _partitionID,
+                                                     const SSetPropertiesParams& _params)
 {
     return generalReply(m_service->execSetProperties(_partitionID, _params));
 }
 
-std::string CCliControlService::requestConfigure(const odc::core::partitionID_t& _partitionID,
-                                                 const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestConfigure(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return generalReply(m_service->execConfigure(_partitionID, _params));
 }
 
-std::string CCliControlService::requestStart(const odc::core::partitionID_t& _partitionID,
-                                             const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestStart(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return generalReply(m_service->execStart(_partitionID, _params));
 }
 
-std::string CCliControlService::requestStop(const odc::core::partitionID_t& _partitionID,
-                                            const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestStop(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return generalReply(m_service->execStop(_partitionID, _params));
 }
 
-std::string CCliControlService::requestReset(const odc::core::partitionID_t& _partitionID,
-                                             const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestReset(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return generalReply(m_service->execReset(_partitionID, _params));
 }
 
-std::string CCliControlService::requestTerminate(const odc::core::partitionID_t& _partitionID,
-                                                 const odc::core::SDeviceParams& _params)
+std::string CCliControlService::requestTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params)
 {
     return generalReply(m_service->execTerminate(_partitionID, _params));
 }
 
-std::string CCliControlService::requestShutdown(const odc::core::partitionID_t& _partitionID)
+std::string CCliControlService::requestShutdown(const partitionID_t& _partitionID)
 {
     return generalReply(m_service->execShutdown(_partitionID));
 }
 
-std::string CCliControlService::requestStatus(const odc::core::SStatusParams& _params)
+std::string CCliControlService::requestStatus(const SStatusParams& _params)
 {
     return statusReply(m_service->execStatus(_params));
 }
@@ -153,7 +147,7 @@ string CCliControlService::generalReply(const SReturnValue& _value)
     return ss.str();
 }
 
-std::string CCliControlService::statusReply(const odc::core::SStatusReturnValue& _value)
+std::string CCliControlService::statusReply(const SStatusReturnValue& _value)
 {
     stringstream ss;
     if (_value.m_statusCode == EStatusCode::ok)

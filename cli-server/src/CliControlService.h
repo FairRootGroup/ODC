@@ -21,7 +21,8 @@ namespace odc::cli
 
         void setTimeout(const std::chrono::seconds& _timeout);
 
-        void registerResourcePlugins(const odc::core::CDDSSubmit::PluginMap_t& _pluginMap);
+        void registerResourcePlugins(const odc::core::CPluginManager::PluginMap_t& _pluginMap);
+        void registerRequestTriggers(const odc::core::CPluginManager::PluginMap_t& _triggerMap);
 
         std::string requestInitialize(const odc::core::partitionID_t& _partitionID,
                                       const odc::core::SInitializeParams& _params);

@@ -7,8 +7,8 @@
 
 // ODC
 #include "ControlService.h"
-#include "DDSSubmit.h"
 #include "Logger.h"
+#include "PluginManager.h"
 // BOOST
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -57,14 +57,17 @@ namespace odc::core
                                     SBatchOptions& _batchOptions,
                                     bool& _batch);
         static void addResourcePluginOptions(boost::program_options::options_description& _options,
-                                             CDDSSubmit::PluginMap_t& _pluginMap);
+                                             CPluginManager::PluginMap_t& _pluginMap);
+        static void addRequestTriggersOptions(boost::program_options::options_description& _options,
+                                              CPluginManager::PluginMap_t& _pluginMap);
         static void addOptions(boost::program_options::options_description& _options, SSleepOptions& _sleepOptions);
 
         //
         // Option Parsing
         //
-        static void parseResourcePluginOptions(const boost::program_options::variables_map& _vm,
-                                               CDDSSubmit::PluginMap_t& _pluginMap);
+        static void parsePluginMapOptions(const boost::program_options::variables_map& _vm,
+                                          CPluginManager::PluginMap_t& _pluginMap,
+                                          const std::string& _option);
 
         //
         // Request specific options

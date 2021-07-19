@@ -21,9 +21,14 @@ void CGrpcAsyncService::setTimeout(const std::chrono::seconds& _timeout)
     m_service->setTimeout(_timeout);
 }
 
-void CGrpcAsyncService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
+void CGrpcAsyncService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap)
 {
     m_service->registerResourcePlugins(_pluginMap);
+}
+
+void CGrpcAsyncService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap)
+{
+    m_service->registerRequestTriggers(_triggerMap);
 }
 
 void CGrpcAsyncService::run(const std::string& _host)

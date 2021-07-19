@@ -33,9 +33,8 @@ void CEpncClient::allocateNodes(const std::string& _partitionID,
     grpc::Status status = m_stub->AllocateNodes(&context, request, &reply);
     OLOG(ESeverity::debug) << "epnc: AllocateNodes reply: " << GetReplyString(status, reply);
 
-    // epnc::EPNControllerStatus epncStatus {reply.status().status()};
-    if (!status.ok())
-    { //} || epncStatus != epnc::EPNControllerStatus::OK) {
+    if (!status.ok() || reply.status() != epnc::EPNControllerStatus::OK)
+    {
         throw runtime_error("epnc: AllocateNodes request failed: " + GetReplyString(status, reply));
     }
 
@@ -48,17 +47,10 @@ void CEpncClient::allocateNodes(const std::string& _partitionID,
     }
 }
 
-void CEpncClient::releaseNode(const std::string& _partitionID,
-                              const std::string& _zone,
-                              const std::string& _node,
-                              const std::string& _message)
+void CEpncClient::releaseNode(const std::string& _partitionID, const std::string& _node, const std::string& _message)
 {
-    // Protobuf message takes the ownership and deletes the object
-    epnc::Partition* partition = new epnc::Partition();
-    partition->set_id(_partitionID);
-    partition->set_zone(_zone);
     epnc::ReleaseNodeRequest request;
-    request.set_allocated_partition(partition);
+    request.set_partition_id(_partitionID);
     request.set_node(_node);
     request.set_message(_message);
     OLOG(ESeverity::debug) << "epnc: ReleaseNode request: " << request.DebugString();
@@ -75,11 +67,10 @@ void CEpncClient::releaseNode(const std::string& _partitionID,
     }
 }
 
-void CEpncClient::releasePartition(const std::string& _partitionID, const std::string& _zone)
+void CEpncClient::releasePartition(const std::string& _partitionID)
 {
-    epnc::Partition request;
-    request.set_id(_partitionID);
-    request.set_zone(_zone);
+    epnc::ReleasePartitionRequest request;
+    request.set_partition_id(_partitionID);
     OLOG(ESeverity::debug) << "epnc: ReleasePartition request: " << request.DebugString();
 
     epnc::EPNControllerReply reply;

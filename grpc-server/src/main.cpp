@@ -32,7 +32,8 @@ int main(int argc, char** argv)
         size_t timeout;
         string host;
         CLogger::SConfig logConfig;
-        CDDSSubmit::PluginMap_t pluginMap;
+        CPluginManager::PluginMap_t pluginMap;
+        CPluginManager::PluginMap_t triggerMap;
 
         // Generic options
         bpo::options_description options("dds-control-server options");
@@ -43,6 +44,7 @@ int main(int argc, char** argv)
         CCliHelper::addHostOptions(options, host);
         CCliHelper::addLogOptions(options, logConfig);
         CCliHelper::addResourcePluginOptions(options, pluginMap);
+        CCliHelper::addRequestTriggersOptions(options, triggerMap);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -73,13 +75,15 @@ int main(int argc, char** argv)
 
         setupGrpcVerbosity(logConfig);
 
-        CCliHelper::parseResourcePluginOptions(vm, pluginMap);
+        CCliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
+        CCliHelper::parsePluginMapOptions(vm, pluginMap, "rt");
 
         if (sync)
         {
             odc::grpc::CGrpcSyncService server;
             server.setTimeout(chrono::seconds(timeout));
             server.registerResourcePlugins(pluginMap);
+            server.registerRequestTriggers(triggerMap);
             server.run(host);
         }
         else
@@ -87,6 +91,7 @@ int main(int argc, char** argv)
             odc::grpc::CGrpcAsyncService server;
             server.setTimeout(chrono::seconds(timeout));
             server.registerResourcePlugins(pluginMap);
+            server.registerRequestTriggers(triggerMap);
             server.run(host);
         }
     }

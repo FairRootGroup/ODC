@@ -33,6 +33,8 @@ add_library(odc_core_lib
     "src/CmdsFile.h"
     "src/CmdsFile.cpp"
     "src/Def.h"
+    "src/PluginManager.h"
+    "src/PluginManager.cpp"
 )
 target_link_libraries(odc_core_lib PUBLIC
   DDS::dds_topology_lib

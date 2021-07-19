@@ -80,7 +80,7 @@ int main(int argc, char** argv)
         options.add_options()(
             "host", bpo::value<string>(&host)->default_value("localhost:50001"), "EPN controller endpoint");
         options.add_options()(
-            "release", bpo::bool_switch(&release)->default_value(false), "If set then releasse allocation");
+            "release", bpo::bool_switch(&release)->default_value(false), "If set then release allocation");
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -104,12 +104,10 @@ int main(int argc, char** argv)
         }
 
         OLOG(ESeverity::info) << "Start epnc plugin";
-
         CEpncClient client(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
-        auto r{ SResources(res) };
-
         if (!release)
         {
+            auto r{ SResources(res) };
             vector<string> nodes;
             client.allocateNodes(partitionID, r.m_zone, r.m_n, nodes);
             OLOG(ESeverity::info) << "epnc: nodes requested (" << r.m_n << ") allocated (" << nodes.size() << ")"
@@ -138,9 +136,8 @@ int main(int argc, char** argv)
         }
         else
         {
-            client.releasePartition(partitionID, r.m_zone);
+            client.releasePartition(partitionID);
         }
-
         OLOG(ESeverity::info) << "Finish epnc plugin";
     }
     catch (exception& _e)
