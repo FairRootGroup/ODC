@@ -1,7 +1,14 @@
 # ODC Release Notes
 
 ## v0.30 (NOT YET RELEASED)
-
+### ODC common
+Modified: `fairmq::sdk::Topology` migrated to ODC.    
+Modified: FairMQ `DDS` plugin migrated to ODC and renamed to `ODC`.    
+Modified: DDS FairMQ examples migrated to ODC.    
+Added: Request triggers. Request trigger is an external executable which can be registered and started whenever a particular request is processed.  Add `--rt` option for `odc-cli-server` and `odc-grpc-server` allowing to register request triggers.    
+Added: New EPN resource plugin `odc-rp-epn` which gets a list of nodes via gRPC from `epnc` service and creates SSH config file.    
+Modified: Resource plugin can be registered as a command line, not only a path.    
+Fixed: Fix deadlocks in `Topology` dtor.    
 
 
 ## v0.28 (2021-07-01)
