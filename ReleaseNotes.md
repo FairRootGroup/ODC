@@ -9,6 +9,7 @@ Added: Request triggers. Request trigger is an external executable which can be 
 Added: New EPN resource plugin `odc-rp-epn` which gets a list of nodes via gRPC from `epnc` service and creates SSH config file.    
 Modified: Resource plugin can be registered as a command line, not only a path.    
 Fixed: Fix deadlocks in `Topology` dtor.    
+Modified: Require DDS 3.5.15.    
 
 
 ## v0.28 (2021-07-01)
