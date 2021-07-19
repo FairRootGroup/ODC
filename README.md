@@ -159,3 +159,4 @@ of your system.
 2. [Examples](examples)
 3. [Release notes](ReleaseNotes.md)
 4. [Resource plugins](docs/rp.md)
+5. [Request triggers](docs/rt.md)
