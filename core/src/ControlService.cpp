@@ -1147,7 +1147,7 @@ bool CControlService::SImpl::subscribeToDDSSession(const partitionID_t& _partiti
                                                                                        : ESeverity::debug };
                     OLOG(severity) << "Partition " << quoted(_partitionID) << ": task (" << _info.m_taskID
                                    << ") exited with code (" << _info.m_exitCode << ") and signal (" << _info.m_signal
-                                   << ")";
+                                   << ") on (" << _info.m_host << ") in working directory (" << _info.m_wrkDir << ")";
                 });
             info->m_session->sendRequest<SOnTaskDoneRequest>(request);
             OLOG(ESeverity::info) << "Partition " << std::quoted(_partitionID)
