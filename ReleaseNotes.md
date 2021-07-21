@@ -1,6 +1,9 @@
 # ODC Release Notes
 
-## v0.30 (NOT YET RELEASED)
+## v0.32 (NOT YET RELEASED)
+
+
+## v0.30 (2021-07-21)
 ### ODC common
 Modified: `fairmq::sdk::Topology` migrated to ODC.    
 Modified: FairMQ `DDS` plugin migrated to ODC and renamed to `ODC`.    
