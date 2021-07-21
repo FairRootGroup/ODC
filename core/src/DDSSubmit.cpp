@@ -10,6 +10,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
+// STD
+#include <set>
 
 using namespace odc;
 using namespace odc::core;

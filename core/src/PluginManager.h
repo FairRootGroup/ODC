@@ -7,6 +7,7 @@
 
 // STD
 #include <map>
+#include <memory>
 #include <string>
 // ODC
 #include "Def.h"
