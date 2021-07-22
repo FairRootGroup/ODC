@@ -76,7 +76,7 @@ int main(int argc, char** argv)
         setupGrpcVerbosity(logConfig);
 
         CCliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
-        CCliHelper::parsePluginMapOptions(vm, pluginMap, "rt");
+        CCliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
 
         if (sync)
         {

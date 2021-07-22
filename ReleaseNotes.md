@@ -1,6 +1,11 @@
 # ODC Release Notes
 
-## v0.32 (NOT YET RELEASED)
+## v0.34 (NOT YET RELEASED)
+
+
+## v0.32 (2021-07-22)
+### ODC common
+Fixed: registration of resource plugins
 
 
 ## v0.30 (2021-07-21)
