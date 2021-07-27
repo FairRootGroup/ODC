@@ -1,6 +1,11 @@
 # ODC Release Notes
 
-## v0.34 (NOT YET RELEASED)
+## v0.36 (NOT YET RELEASED)
+
+
+## v0.34 (2021-07-27)
+### ODC common
+Fixed: Prevent parallel execution of multiple requests per partition. Resolves GH-24.     
 
 
 ## v0.32 (2021-07-22)
