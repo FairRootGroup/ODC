@@ -36,6 +36,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                         const odc::InitializeRequest* request,
                                         odc::GeneralReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "Initialize request:\n" << request->DebugString();
     SInitializeParams params{ request->sessionid() };
     SReturnValue value = m_service->execInitialize(request->partitionid(), params);
@@ -48,6 +49,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                     const odc::SubmitRequest* request,
                                     odc::GeneralReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "Submit request:\n" << request->DebugString();
     SSubmitParams params{ request->plugin(), request->resources() };
     SReturnValue value = m_service->execSubmit(request->partitionid(), params);
@@ -60,6 +62,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                       const odc::ActivateRequest* request,
                                       odc::GeneralReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "Activate request:\n" << request->DebugString();
     SActivateParams params{ request->topology() };
     SReturnValue value = m_service->execActivate(request->partitionid(), params);
@@ -72,6 +75,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                  const odc::RunRequest* request,
                                  odc::GeneralReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "Run request:\n" << request->DebugString();
     SInitializeParams initializeParams{ "" };
     SSubmitParams submitParams{ request->plugin(), request->resources() };
@@ -86,6 +90,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                     const odc::UpdateRequest* request,
                                     odc::GeneralReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "Update request:\n" << request->DebugString();
     SUpdateParams params{ request->topology() };
     SReturnValue value = m_service->execUpdate(request->partitionid(), params);
@@ -98,6 +103,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                       const odc::StateRequest* request,
                                       odc::StateReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "GetState request:\n" << request->DebugString();
     SDeviceParams params{ request->path(), request->detailed() };
     SReturnValue value = m_service->execGetState(request->partitionid(), params);
@@ -110,6 +116,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                            const odc::SetPropertiesRequest* request,
                                            odc::GeneralReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "SetProperties request:\n" << request->DebugString();
     // Convert from protobuf to ODC format
     SSetPropertiesParams::Properties_t props;
@@ -130,6 +137,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                        const odc::ConfigureRequest* request,
                                        odc::StateReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->request().partitionid()));
     OLOG(ESeverity::info) << "Configure request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execConfigure(request->request().partitionid(), params);
@@ -142,6 +150,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                    const odc::StartRequest* request,
                                    odc::StateReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->request().partitionid()));
     OLOG(ESeverity::info) << "Start request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execStart(request->request().partitionid(), params);
@@ -154,6 +163,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                   const odc::StopRequest* request,
                                   odc::StateReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->request().partitionid()));
     OLOG(ESeverity::info) << "Stop request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execStop(request->request().partitionid(), params);
@@ -166,6 +176,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                    const odc::ResetRequest* request,
                                    odc::StateReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->request().partitionid()));
     OLOG(ESeverity::info) << "Reset request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execReset(request->request().partitionid(), params);
@@ -178,6 +189,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                        const odc::TerminateRequest* request,
                                        odc::StateReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->request().partitionid()));
     OLOG(ESeverity::info) << "Terminate request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value = m_service->execTerminate(request->request().partitionid(), params);
@@ -190,6 +202,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
                                       const odc::ShutdownRequest* request,
                                       odc::GeneralReply* response)
 {
+    lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "Shutdown request:\n" << request->DebugString();
     SReturnValue value = m_service->execShutdown(request->partitionid());
     setupGeneralReply(response, value);
@@ -276,4 +289,11 @@ void CGrpcService::setupStatusReply(odc::StatusReply* _response, const odc::core
             (p.m_sessionStatus == ESessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
         partition->set_state(GetAggregatedTopologyStateName(p.m_aggregatedState));
     }
+}
+
+std::mutex& CGrpcService::getMutex(const partitionID_t& _partitionID)
+{
+    std::lock_guard<std::mutex> lock(m_mutexMapMutex);
+    auto it{ m_mutexMap.find(_partitionID) };
+    return (it == m_mutexMap.end()) ? m_mutexMap[_partitionID] : it->second;
 }

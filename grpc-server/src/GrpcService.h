@@ -67,8 +67,14 @@ namespace odc::grpc
         void setupGeneralReply(odc::GeneralReply* _response, const odc::core::SReturnValue& _value);
         void setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value);
         void setupStatusReply(odc::StatusReply* _response, const odc::core::SStatusReturnValue& _value);
+        std::mutex& getMutex(const odc::core::partitionID_t& _partitionID);
 
         std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
+
+        // Mutex for each partition.
+        // All requests for a certain partition are processed sequentially.
+        std::map<std::string, std::mutex> m_mutexMap; ///< Mutex for each partition
+        std::mutex m_mutexMapMutex;                   ///< Mutex of global mutex map
     };
 } // namespace odc::grpc
 
