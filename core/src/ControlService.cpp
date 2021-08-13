@@ -153,6 +153,7 @@ struct CControlService::SImpl
     SImpl& operator=(SImpl&&) = delete;
 
     SSessionInfo::Map_t m_sessions;                                    ///< Map of partition ID to session info
+    mutex m_sessionsMutex;                                             ///< Mutex of sessions map
     chrono::seconds m_timeout{ 30 };                                   ///< Request timeout in sec
     CDDSSubmit::Ptr_t m_submit{ make_shared<CDDSSubmit>() };           ///< ODC to DDS submit resource converter
     CPluginManager::Ptr_t m_triggers{ make_shared<CPluginManager>() }; ///< Request triggers
@@ -443,6 +444,7 @@ SReturnValue CControlService::SImpl::execTerminate(const partitionID_t& _partiti
 
 SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& /* _params */)
 {
+    lock_guard<mutex> lock(m_sessionsMutex);
     STimeMeasure<std::chrono::milliseconds> measure;
     SStatusReturnValue result;
     for (const auto& v : m_sessions)
@@ -1062,6 +1064,7 @@ void CControlService::SImpl::fillError(SError& _error, ErrorCode _errorCode, con
 CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateSessionInfo(
     const partitionID_t& _partitionID)
 {
+    lock_guard<mutex> lock(m_sessionsMutex);
     auto it{ m_sessions.find(_partitionID) };
     if (it == m_sessions.end())
     {
