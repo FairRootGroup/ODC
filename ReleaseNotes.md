@@ -1,6 +1,9 @@
 # ODC Release Notes
 
-## v0.36 (NOT YET RELEASED)
+## v0.38 (NOT YET RELEASED)
+
+
+## v0.36 (2021-08-13)
 ### ODC common
 Added: new `cmake` option `BUILD_EPN_PLUGIN` which switch on/of building of EPN resource plugin.    
 Modified: `cmake` option `BUILD_PLUGINS` renamed to `BUILD_DEFAULT_PLUGINS`.    
