@@ -4,6 +4,7 @@
 ### ODC common
 Added: new `cmake` option `BUILD_EPN_PLUGIN` which switch on/of building of EPN resource plugin.    
 Modified: `cmake` option `BUILD_PLUGINS` renamed to `BUILD_DEFAULT_PLUGINS`.    
+Added: `odc-epn-topo` an EPN topology merging tool.    
 
 
 ## v0.34 (2021-07-27)

@@ -2,6 +2,20 @@
 #
 #
 
+# epn-topo executable
+add_executable(odc-epn-topo
+    "src/epn-topo.cpp"
+)
+target_link_libraries(odc-epn-topo
+  Boost::boost
+  Boost::program_options
+  DDS::dds_topology_lib
+)
+target_include_directories(odc-epn-topo PUBLIC
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
+)
+
 # odc-topo executable
 add_executable(odc-topo
     "src/odc-topo.cpp"
@@ -54,6 +68,7 @@ install(
 )
 
 # Install example executables
+install(TARGETS odc-epn-topo EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 install(TARGETS odc-topo EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 
 # Install example topologies
