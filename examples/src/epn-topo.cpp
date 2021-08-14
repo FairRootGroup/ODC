@@ -81,34 +81,45 @@ int main(int argc, char** argv)
         //
         // Reconstruction
         //
-        // New Reco group containing Reco DPL collections
-        auto recoGroup{ creator.getMainGroup()->addElement<CTopoGroup>("RecoGroup") };
-        // Set required number of Reco DPL collections
-        recoGroup->setN(recoN);
-        // New Reco DPL collection containing TfBuilder task and all tasks from Reco DPL collections
-        auto recoC{ recoGroup->addElement<CTopoCollection>("RecoDPL") };
-        // Add TfBuilder task and initialize it from XML topology file
-        auto ddTask{ recoC->addElement<CTopoTask>("TfBuilderTask") };
-        ddTask->initFromXML(ddTopo);
-        ddTask->setExe(prependExe + ddTask->getExe());
-        // Combine all tasks from reco DPL collections to a reco collection
-        combineDPLCollections(recoTopos, recoC, prependExe);
-        // Add new requirement - one Reco DPL collection per host
-        auto recoR{ recoC->addRequirement("RecoDPLRequirement") };
-        recoR->setRequirementType(CTopoRequirement::EType::MaxInstancesPerHost);
-        recoR->setValue("1");
+        if ((!ddTopo.empty() || recoTopos.size() > 0) && recoN > 0)
+        {
+            cout << "Creating reconstruction collection..." << endl;
+            // New Reco group containing Reco DPL collections
+            auto recoGroup{ creator.getMainGroup()->addElement<CTopoGroup>("RecoGroup") };
+            // Set required number of Reco DPL collections
+            recoGroup->setN(recoN);
+            // New Reco DPL collection containing TfBuilder task and all tasks from Reco DPL collections
+            auto recoC{ recoGroup->addElement<CTopoCollection>("RecoCollection") };
+            // Add TfBuilder task and initialize it from XML topology file
+            if (!ddTopo.empty())
+            {
+                auto ddTask{ recoC->addElement<CTopoTask>("TfBuilderTask") };
+                ddTask->initFromXML(ddTopo);
+                ddTask->setExe(prependExe + ddTask->getExe());
+            }
+            // Combine all tasks from reco DPL collections to a reco collection
+            combineDPLCollections(recoTopos, recoC, prependExe);
+            // Add new requirement - one Reco DPL collection per host
+            auto recoR{ recoC->addRequirement("RecoRequirement") };
+            recoR->setRequirementType(CTopoRequirement::EType::MaxInstancesPerHost);
+            recoR->setValue("1");
+        }
 
         //
         // Calibration
         //
-        // New calibration DPL collection containing all tasks from calibration DPL collections
-        auto calibC{ creator.getMainGroup()->addElement<CTopoCollection>("CalibDPL") };
-        // Combine all tasks from calobration DPL collections to a calibration collection
-        combineDPLCollections(calibTopos, calibC, prependExe);
-        // Add new requirement - calibration worker node name
-        auto calibR{ calibC->addRequirement("CalibDPLRequirement") };
-        recoR->setRequirementType(CTopoRequirement::EType::WnName);
-        recoR->setValue(calibwn);
+        if (calibTopos.size() > 0)
+        {
+            cout << "Creating calibration collection..." << endl;
+            // New calibration DPL collection containing all tasks from calibration DPL collections
+            auto calibC{ creator.getMainGroup()->addElement<CTopoCollection>("CalibCollection") };
+            // Combine all tasks from calobration DPL collections to a calibration collection
+            combineDPLCollections(calibTopos, calibC, prependExe);
+            // Add new requirement - calibration worker node name
+            auto calibR{ calibC->addRequirement("CalibRequirement") };
+            calibR->setRequirementType(CTopoRequirement::EType::WnName);
+            calibR->setValue(calibwn);
+        }
 
         // Save topology to the oputput file
         creator.save(outputTopo);
