@@ -27,12 +27,23 @@ Each tag (except `<requiredSlots>`) corresponds to the command line option used 
 
 ODC provides the `odc-rp-same` plugin out of the box. The plugin prints to `stdout` a received resource description string. It can be used, for example, if ODC client (or ECS) generates the RMS configuration itself.
 
-ODC also implemens `odc-rp-epn` plugin for `EPN` project of `ALICE`. The plugin queries node allocation info via a special `epnc` service using `gRPC` and generates SSH configuration file for DDS. Plugin expects JSON resource description provided via `--res` option:
+ODC also implemens `odc-rp-epn` plugin for `EPN` project of `ALICE`. The plugin queries node allocation info via a special `epnc` service using `gRPC` and generates SSH configuration file for DDS. Plugin expects JSON resource description provided via `--res` option. Either a single resource or an array of resources can be requested:
 ```JSON
 {
    "zone":"online",
    "n":10
 }
+```
+or
+```JSON
+[{
+   "zone":"online",
+   "n":10
+ },
+ {
+   "zone":"calib",
+   "n":1
+}]
 ```
 `zone` is the zone name (defaults to `online`). `n` is the number of EPN nodes (defaults to `1`).
 
