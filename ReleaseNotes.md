@@ -3,6 +3,7 @@
 ## v0.38 (NOT YET RELEASED)
 ### ODC common
 Added: new `content` parameter to `Activate`, `Update` and `Run` requests. One can set either a topology filepath or content.    
+Added: `odc-rp-epn` plugin supports array of resources.    
 
 
 ## v0.36 (2021-08-13)
