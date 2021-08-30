@@ -158,8 +158,12 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
 void CCliHelper::addOptions(bpo::options_description& _options, SActivateParams& _params)
 {
     string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
-    _options.add_options()(
-        "topo", bpo::value<string>(&_params.m_topologyFile)->default_value(defaultTopo), "Topology filepath");
+    _options.add_options()("topo",
+                           bpo::value<string>(&_params.m_topologyFile)->implicit_value("")->default_value(defaultTopo),
+                           "Topology filepath");
+    _options.add_options()("content",
+                           bpo::value<string>(&_params.m_topologyContent)->implicit_value("")->default_value(""),
+                           "Topology content");
 }
 
 void CCliHelper::addOptions(bpo::options_description& _options, SUpdateParams& _params)
@@ -168,6 +172,8 @@ void CCliHelper::addOptions(bpo::options_description& _options, SUpdateParams& _
     // string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-down.xml");
     _options.add_options()(
         "topo", bpo::value<string>(&_params.m_topologyFile)->default_value(defaultTopo), "Topology filepath");
+    _options.add_options()(
+        "content", bpo::value<string>(&_params.m_topologyContent)->default_value(""), "Topology content");
 }
 
 void CCliHelper::addOptions(bpo::options_description& _options, SSubmitParams& _params)

@@ -131,13 +131,17 @@ message SubmitRequest {
 // Activate request
 message ActivateRequest {
     string partitionid = 1; // Partition ID from ECS
-    string topology = 2; // Filepath to a DDS topology file
+    // Either `topology` or `content` has to be set. If both or none is set then an error is returned.
+    string topology = 2; // Filepath to the XML DDS topology file
+    string content = 3; // Content of the XML DDS topology
 }
 
 // Run request
 message RunRequest {
     string partitionid = 1; // Partition ID from ECS
-    string topology = 2; // Filepath to a DDS topology file
+    // Either `topology` or `content` has to be set. If both or none is set then an error is returned.
+    string topology = 2; // Filepath to the XML DDS topology file
+    string content = 5; // Content of the XML DDS topology
     string plugin = 3; // Name of the resource plugin registered in odc-server
     string resources = 4; // Resource description 
 }
@@ -145,7 +149,9 @@ message RunRequest {
 // Update request
 message UpdateRequest {
     string partitionid = 1; // Partition ID from ECS
-    string topology = 2; // Filepath to a DDS topology file
+    // Either `topology` or `content` has to be set. If both or none is set then an error is returned.
+    string topology = 2; // Filepath to the XML DDS topology file
+    string content = 3; // Content of the XML DDS topology
 }
 
 // Shutdown request

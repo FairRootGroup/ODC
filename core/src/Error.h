@@ -33,6 +33,7 @@ namespace odc::core
         DeviceChangeStateFailed,
         DeviceGetPropertiesFailed,
         DeviceSetPropertiesFailed,
+        TopologyFailed,
 
         DDSCreateSessionFailed = 200,
         DDSShutdownSessionFailed,

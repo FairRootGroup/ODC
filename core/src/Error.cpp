@@ -30,11 +30,13 @@ namespace odc::core
             case ErrorCode::OperationCanceled:
                 return "async operation canceled";
             case ErrorCode::DeviceChangeStateFailed:
-                return "failed to change state of a FairMQ device";
+                return "Failed to change state of a FairMQ device";
             case ErrorCode::DeviceGetPropertiesFailed:
-                return "failed to get FairMQ device properties";
+                return "Failed to get FairMQ device properties";
             case ErrorCode::DeviceSetPropertiesFailed:
-                return "failed to set FairMQ device properties";
+                return "Failed to set FairMQ device properties";
+            case ErrorCode::TopologyFailed:
+                return "Failed topology";
             case ErrorCode::DDSCreateSessionFailed:
                 return "Failed to create a DDS session";
             case ErrorCode::DDSShutdownSessionFailed:

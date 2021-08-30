@@ -227,11 +227,13 @@ namespace odc::core
         {
         }
 
-        SActivateParams(const std::string& _topologyFile)
+        SActivateParams(const std::string& _topologyFile, const std::string& _topologyContent)
             : m_topologyFile(_topologyFile)
+            , m_topologyContent(_topologyContent)
         {
         }
-        std::string m_topologyFile; ///< Path to the topoloy file
+        std::string m_topologyFile;    ///< Path to the topoloy file
+        std::string m_topologyContent; ///< Content of the XML topology
 
         // \brief ostream operator.
         friend std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params);
@@ -244,11 +246,13 @@ namespace odc::core
         {
         }
 
-        SUpdateParams(const std::string& _topologyFile)
+        SUpdateParams(const std::string& _topologyFile, const std::string& _topologyContent)
             : m_topologyFile(_topologyFile)
+            , m_topologyContent(_topologyContent)
         {
         }
-        std::string m_topologyFile; ///< Path to the topoloy file
+        std::string m_topologyFile;    ///< Path to the topoloy file
+        std::string m_topologyContent; ///< Content of the XML topology
 
         // \brief ostream operator.
         friend std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params);

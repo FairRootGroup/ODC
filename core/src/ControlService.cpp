@@ -14,6 +14,7 @@
 #include <dds/Topology.h>
 // BOOST
 #include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 
 using namespace odc;
 using namespace odc::core;
@@ -21,6 +22,7 @@ using namespace std;
 using namespace dds;
 using namespace dds::tools_api;
 using namespace dds::topology_api;
+namespace bfs = boost::filesystem;
 
 //
 // CControlService::SImpl
@@ -145,6 +147,9 @@ struct CControlService::SImpl
                               DDSTopologyPtr_t _topo);
 
     bool subscribeToDDSSession(const partitionID_t& _partitionID, SError& _error);
+
+    template <class Params_t>
+    string topoFilepath(const Params_t& _params);
 
     // Disable copy constructors and assignment operators
     SImpl(const SImpl&) = delete;
@@ -279,10 +284,20 @@ SReturnValue CControlService::SImpl::execActivate(const partitionID_t& _partitio
     SError error{ checkSessionIsRunning(_partitionID, ErrorCode::DDSActivateTopologyFailed) };
     if (!error.m_code)
     {
-        activateDDSTopology(
-            _partitionID, error, _params.m_topologyFile, STopologyRequest::request_t::EUpdateType::ACTIVATE) &&
-            createTopo(_partitionID, error, _params.m_topologyFile) &&
-            createFairMQTopo(_partitionID, error, _params.m_topologyFile);
+        string topo;
+        try
+        {
+            topo = topoFilepath(_params);
+        }
+        catch (exception& _e)
+        {
+            fillError(error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
+        }
+        if (!error.m_code)
+        {
+            activateDDSTopology(_partitionID, error, topo, STopologyRequest::request_t::EUpdateType::ACTIVATE) &&
+                createTopo(_partitionID, error, topo) && createFairMQTopo(_partitionID, error, topo);
+        }
     }
     AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle : AggregatedTopologyState::Undefined };
     execRequestTrigger("Activate", _partitionID);
@@ -328,12 +343,24 @@ SReturnValue CControlService::SImpl::execUpdate(const partitionID_t& _partitionI
     // Create Topology
     // Configure devices' state
     SError error;
-    changeStateReset(_partitionID, error, "", state) && resetFairMQTopo(_partitionID) &&
-        activateDDSTopology(
-            _partitionID, error, _params.m_topologyFile, STopologyRequest::request_t::EUpdateType::UPDATE) &&
-        createTopo(_partitionID, error, _params.m_topologyFile) &&
-        createFairMQTopo(_partitionID, error, _params.m_topologyFile) &&
-        changeStateConfigure(_partitionID, error, "", state);
+
+    string topo;
+    try
+    {
+        topo = topoFilepath(_params);
+    }
+    catch (exception& _e)
+    {
+        fillError(error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
+    }
+
+    if (!error.m_code)
+    {
+        changeStateReset(_partitionID, error, "", state) && resetFairMQTopo(_partitionID) &&
+            activateDDSTopology(_partitionID, error, topo, STopologyRequest::request_t::EUpdateType::UPDATE) &&
+            createTopo(_partitionID, error, topo) && createFairMQTopo(_partitionID, error, topo) &&
+            changeStateConfigure(_partitionID, error, "", state);
+    }
     execRequestTrigger("Update", _partitionID);
     return createReturnValue(_partitionID, error, "Update done", measure.duration(), state);
 }
@@ -1175,6 +1202,29 @@ bool CControlService::SImpl::subscribeToDDSSession(const partitionID_t& _partiti
     return true;
 }
 
+template <class Params_t>
+string CControlService::SImpl::topoFilepath(const Params_t& _params)
+{
+    if ((_params.m_topologyFile.empty() && _params.m_topologyContent.empty()) ||
+        (!_params.m_topologyFile.empty() && !_params.m_topologyContent.empty()))
+    {
+        throw runtime_error("Either topology filepath or content has to be set");
+    }
+    if (!_params.m_topologyFile.empty())
+        return _params.m_topologyFile;
+
+    const bfs::path tmpPath{ bfs::temp_directory_path() / bfs::unique_path() };
+    bfs::create_directories(tmpPath);
+    const bfs::path filepath{ tmpPath / "topology.xml" };
+    ofstream f(filepath.string());
+    if (!f.is_open())
+    {
+        throw runtime_error(toString("Failed to create tmp topology file ", quoted(filepath.string())));
+    }
+    f << _params.m_topologyContent;
+    return filepath.string();
+}
+
 //
 // Misc
 //
@@ -1199,12 +1249,14 @@ namespace odc::core
 
     std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params)
     {
-        return _os << "ActivateParams: topologyFile=" << quoted(_params.m_topologyFile);
+        return _os << "ActivateParams: topologyFile=" << quoted(_params.m_topologyFile)
+                   << "; topologyContent=" << quoted(_params.m_topologyContent);
     }
 
     std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params)
     {
-        return _os << "UpdateParams: topologyFile=" << quoted(_params.m_topologyFile);
+        return _os << "UpdateParams: topologyFile=" << quoted(_params.m_topologyFile)
+                   << "; topologyContent=" << quoted(_params.m_topologyContent);
     }
 
     std::ostream& operator<<(std::ostream& _os, const SSetPropertiesParams& _params)

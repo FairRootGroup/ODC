@@ -46,6 +46,7 @@ std::string CGrpcControlClient::requestActivate(const odc::core::partitionID_t& 
     odc::ActivateRequest request;
     request.set_partitionid(_partitionID);
     request.set_topology(_params.m_topologyFile);
+    request.set_content(_params.m_topologyContent);
     odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Activate(&context, request, &reply);
@@ -60,6 +61,7 @@ std::string CGrpcControlClient::requestRun(const odc::core::partitionID_t& _part
     odc::RunRequest request;
     request.set_partitionid(_partitionID);
     request.set_topology(_activateParams.m_topologyFile);
+    request.set_content(_activateParams.m_topologyContent);
     odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Run(&context, request, &reply);
