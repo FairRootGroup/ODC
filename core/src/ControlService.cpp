@@ -7,6 +7,7 @@
 #include "DDSSubmit.h"
 #include "Error.h"
 #include "Logger.h"
+#include "Process.h"
 #include "TimeMeasure.h"
 #include "Topology.h"
 // DDS
@@ -15,6 +16,9 @@
 // BOOST
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/process.hpp>
+// STD
+#include <algorithm>
 
 using namespace odc;
 using namespace odc::core;
@@ -23,6 +27,7 @@ using namespace dds;
 using namespace dds::tools_api;
 using namespace dds::topology_api;
 namespace bfs = boost::filesystem;
+namespace bp = boost::process;
 
 //
 // CControlService::SImpl
@@ -1205,23 +1210,58 @@ bool CControlService::SImpl::subscribeToDDSSession(const partitionID_t& _partiti
 template <class Params_t>
 string CControlService::SImpl::topoFilepath(const Params_t& _params)
 {
-    if ((_params.m_topologyFile.empty() && _params.m_topologyContent.empty()) ||
-        (!_params.m_topologyFile.empty() && !_params.m_topologyContent.empty()))
+    int count{ (_params.m_topologyFile.empty() ? 0 : 1) + (_params.m_topologyContent.empty() ? 0 : 1) +
+               (_params.m_topologyScript.empty() ? 0 : 1) };
+    if (count != 1)
     {
-        throw runtime_error("Either topology filepath or content has to be set");
+        throw runtime_error("Either topology filepath, content or script has to be set");
     }
     if (!_params.m_topologyFile.empty())
         return _params.m_topologyFile;
 
+    string content{ _params.m_topologyContent };
+
+    // Execute topology script if needed
+    if (!_params.m_topologyScript.empty())
+    {
+        stringstream ssCmd;
+        ssCmd << bp::search_path("bash").string() << " -c " << quoted(_params.m_topologyScript);
+        const std::chrono::seconds timeout{ 30 };
+        string out;
+        string err;
+        int exitCode{ EXIT_SUCCESS };
+        string cmd{ ssCmd.str() };
+        OLOG(ESeverity::info) << "Executing topology script " << std::quoted(cmd);
+        execute(cmd, timeout, &out, &err, &exitCode);
+
+        if (exitCode != EXIT_SUCCESS)
+        {
+            throw runtime_error(toString("Topology script ",
+                                         quoted(cmd),
+                                         " execution failed with exit code: ",
+                                         exitCode,
+                                         "; error message: ",
+                                         err));
+        }
+
+        const string sout{ out.substr(0, min(out.length(), size_t(20))) };
+        OLOG(ESeverity::info) << "Topology script executed successfully: stdout (" << quoted(sout) << "...) stderr ("
+                              << quoted(err) << ")";
+
+        content = out;
+    }
+
+    // Create temp topology file with `content`
     const bfs::path tmpPath{ bfs::temp_directory_path() / bfs::unique_path() };
     bfs::create_directories(tmpPath);
     const bfs::path filepath{ tmpPath / "topology.xml" };
     ofstream f(filepath.string());
     if (!f.is_open())
     {
-        throw runtime_error(toString("Failed to create tmp topology file ", quoted(filepath.string())));
+        throw runtime_error(toString("Failed to create temp topology file ", quoted(filepath.string())));
     }
-    f << _params.m_topologyContent;
+    f << content;
+    OLOG(ESeverity::info) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
     return filepath.string();
 }
 
@@ -1250,13 +1290,15 @@ namespace odc::core
     std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params)
     {
         return _os << "ActivateParams: topologyFile=" << quoted(_params.m_topologyFile)
-                   << "; topologyContent=" << quoted(_params.m_topologyContent);
+                   << "; topologyContent=" << quoted(_params.m_topologyContent)
+                   << "; topologyScript=" << quoted(_params.m_topologyScript);
     }
 
     std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params)
     {
         return _os << "UpdateParams: topologyFile=" << quoted(_params.m_topologyFile)
-                   << "; topologyContent=" << quoted(_params.m_topologyContent);
+                   << "; topologyContent=" << quoted(_params.m_topologyContent)
+                   << "; topologyScript=" << quoted(_params.m_topologyScript);
     }
 
     std::ostream& operator<<(std::ostream& _os, const SSetPropertiesParams& _params)

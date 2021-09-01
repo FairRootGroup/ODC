@@ -164,6 +164,9 @@ void CCliHelper::addOptions(bpo::options_description& _options, SActivateParams&
     _options.add_options()("content",
                            bpo::value<string>(&_params.m_topologyContent)->implicit_value("")->default_value(""),
                            "Topology content");
+    _options.add_options()("script",
+                           bpo::value<string>(&_params.m_topologyScript)->implicit_value("")->default_value(""),
+                           "Topology script");
 }
 
 void CCliHelper::addOptions(bpo::options_description& _options, SUpdateParams& _params)
@@ -174,6 +177,9 @@ void CCliHelper::addOptions(bpo::options_description& _options, SUpdateParams& _
         "topo", bpo::value<string>(&_params.m_topologyFile)->default_value(defaultTopo), "Topology filepath");
     _options.add_options()(
         "content", bpo::value<string>(&_params.m_topologyContent)->default_value(""), "Topology content");
+    _options.add_options()("script",
+                           bpo::value<string>(&_params.m_topologyScript)->implicit_value("")->default_value(""),
+                           "Topology script");
 }
 
 void CCliHelper::addOptions(bpo::options_description& _options, SSubmitParams& _params)

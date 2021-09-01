@@ -2,7 +2,7 @@
 
 ## v0.38 (NOT YET RELEASED)
 ### ODC common
-Added: new `content` parameter to `Activate`, `Update` and `Run` requests. One can set either a topology filepath or content.    
+Added: new `content` and `script` parameters to `Activate`, `Update` and `Run` requests. One can set either a topology filepath, content or shell commands. If `content` is set than ODC creates a temp topology file with that content. If `script` is set than ODC executes the script and saves stdout to a temp topology file.    
 Added: `odc-rp-epn` plugin supports array of resources.    
 
 

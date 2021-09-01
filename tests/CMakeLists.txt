@@ -42,6 +42,23 @@ set_tests_properties(${test} PROPERTIES
 )
 
 #
+# Test `--script` option of odc-cli-server
+#
+set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
+configure_file(cmds_test_2.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/cmds_test_2.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmds_test_2.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+set(target odc-cli-server)
+set(test ${target}::test_2)
+add_test(NAME ${test}
+         COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/cmds_test_2.cfg
+)
+set_tests_properties(${test} PROPERTIES
+    TIMEOUT 10
+    FAIL_REGULAR_EXPRESSION "Status code: ERROR"
+    ENVIRONMENT "${TEST_ENV}"
+)
+
+#
 # Boost.UTF tests
 #
 install(FILES odc_fairmq_lib-tests-topo.xml DESTINATION ${PROJECT_INSTALL_DATADIR})

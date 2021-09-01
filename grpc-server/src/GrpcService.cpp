@@ -64,7 +64,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
 {
     lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "Activate request:\n" << request->DebugString();
-    SActivateParams params{ request->topology(), request->content() };
+    SActivateParams params{ request->topology(), request->content(), request->script() };
     SReturnValue value = m_service->execActivate(request->partitionid(), params);
     setupGeneralReply(response, value);
     OLOG(ESeverity::info) << "Activate response:\n" << response->DebugString();
@@ -79,7 +79,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
     OLOG(ESeverity::info) << "Run request:\n" << request->DebugString();
     SInitializeParams initializeParams{ "" };
     SSubmitParams submitParams{ request->plugin(), request->resources() };
-    SActivateParams activateParams{ request->topology(), request->content() };
+    SActivateParams activateParams{ request->topology(), request->content(), request->script() };
     SReturnValue value = m_service->execRun(request->partitionid(), initializeParams, submitParams, activateParams);
     setupGeneralReply(response, value);
     OLOG(ESeverity::info) << "Run response:\n" << response->DebugString();
@@ -92,7 +92,7 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
 {
     lock_guard<mutex> lock(getMutex(request->partitionid()));
     OLOG(ESeverity::info) << "Update request:\n" << request->DebugString();
-    SUpdateParams params{ request->topology(), request->content() };
+    SUpdateParams params{ request->topology(), request->content(), request->script() };
     SReturnValue value = m_service->execUpdate(request->partitionid(), params);
     setupGeneralReply(response, value);
     OLOG(ESeverity::info) << "Update response:\n" << response->DebugString();
