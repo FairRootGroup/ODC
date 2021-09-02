@@ -64,7 +64,7 @@ namespace odc::plugins
             // subscribe for DDS service errors.
             fService.subscribeOnError(
                 [](const dds::intercom_api::EErrorCode errorCode, const std::string& errorMsg)
-                { LOG(error) << "DDS Error received: error code: " << errorCode << ", error message: " << errorMsg; });
+                { LOG(debug) << "DDS Error received: error code: " << errorCode << ", error message: " << errorMsg; });
 
             // fDDSCustomCmd.subscribe([](const std::string& cmd, const std::string& cond, uint64_t senderId) {
             // LOG(debug) << "cmd: " << cmd << ", cond: " << cond << ", senderId: " << senderId;
