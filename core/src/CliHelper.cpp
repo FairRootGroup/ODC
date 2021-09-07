@@ -247,7 +247,9 @@ void CCliHelper::addRequestTriggersOptions(boost::program_options::options_descr
 // Extra step of options parsing
 //
 
-void CCliHelper::parseOptions(const boost::program_options::variables_map& _vm, SSetPropertiesParams& _params)
+void CCliHelper::parseOptions(const boost::program_options::variables_map& _vm,
+                              partitionID_t& /* _partitionID */,
+                              SSetPropertiesParams& _params)
 {
     if (_vm.count("prop"))
     {

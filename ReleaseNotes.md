@@ -1,6 +1,12 @@
 # ODC Release Notes
 
-## v0.40 (NOT YET RELEASED)
+## v0.42 (NOT YET RELEASED)
+
+
+
+## v0.40 (2021-09-07)
+### ODC common
+Fixed: fix bug which prevents proper parsing of `.prop` request when using `odc-grpc-client`.     
 
 
 ## v0.38 (2021-09-01)

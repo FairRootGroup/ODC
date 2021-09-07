@@ -90,7 +90,9 @@ namespace odc::core
             // Default implementation does nothing
         }
 
-        static void parseOptions(const boost::program_options::variables_map& _vm, SSetPropertiesParams& _params);
+        static void parseOptions(const boost::program_options::variables_map& _vm,
+                                 partitionID_t& _partitionID,
+                                 SSetPropertiesParams& _params);
         static void parseOptions(const boost::program_options::variables_map& _vm, CCliHelper::SBatchOptions& _params);
     };
 } // namespace odc::core
