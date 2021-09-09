@@ -4,13 +4,12 @@ From: fedora:34
 %post
     dnf -y update
     dnf -y install https://alfa-ci.gsi.de/packages/rpm/fedora-34-x86_64/fairsoft-release-dev.rpm
-    dnf -y install asio-devel \
-                   boost-devel \
+    dnf -y install boost-devel \
                    ca-certificates \
                    clang-tools-extra \
                    cmake \
-                   faircmakemodules \
                    fairlogger-devel \
+                   fairmq-devel \
                    flatbuffers-devel \
                    gcc-c++ \
                    git \
@@ -22,24 +21,11 @@ From: fedora:34
                    libxml2 \
                    ninja-build \
                    patch \
-                   wget \
-                   zeromq-devel
+                   wget
     dnf -y clean all
 
-    git clone -b 3.5.14 https://github.com/FairRootGroup/DDS
-    cd DDS
-    wget https://git.gsi.de/SDE/packages/dds/-/raw/f33f1a6a95eecbfebc6042af382fcf2d3128ba15/fix_install_destinations.patch
-    wget https://git.gsi.de/SDE/packages/dds/-/raw/f33f1a6a95eecbfebc6042af382fcf2d3128ba15/strip_etc_version.patch
-    patch -p1 < fix_install_destinations.patch
-    patch -p1 < strip_etc_version.patch
-    cd ..
-    cmake -GNinja -S DDS -B DDS_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_dds-octopus=OFF -DBUILD_dds-tutorials=OFF -DBUILD_dds-test=OFF
+    git clone -b 3.5.16 https://github.com/FairRootGroup/DDS
+    cmake -GNinja -S DDS -B DDS_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_dds-tutorials=OFF
     cmake --build DDS_build --target wn_bin
     cmake --build DDS_build --target install
     rm -rf DDS DDS_build
-
-    git clone https://github.com/FairRootGroup/FairMQ
-    git -C FairMQ checkout 38f9870893d0fd1d85301a7f87d9db2557135593 # v1.4.38-58-g38f98708
-    cmake -GNinja -S FairMQ -B FairMQ_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
-    cmake --build FairMQ_build --target install
-    rm -rf FairMQ FairMQ_build
