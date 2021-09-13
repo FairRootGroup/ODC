@@ -151,7 +151,7 @@ int main(int argc, char** argv)
                 {
                     dds::configRecord_t record{ make_shared<dds::SConfigRecord>() };
                     record->m_id = "wn_" + v.m_zone + "_" + node;
-                    record->m_addr = host;
+                    record->m_addr = node;
                     record->m_sshOptions = "";
                     record->m_wrkDir = wrkDir;
                     record->m_nSlots = numSlots;

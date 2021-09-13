@@ -1,7 +1,12 @@
 # ODC Release Notes
 
-## v0.42 (NOT YET RELEASED)
+## v0.44 (NOT YET RELEASED)
 
+
+
+## v0.42 (2021-09-13)
+### odc-rp-epn
+Fixed: creation of DDS SSH config file.    
 
 
 ## v0.40 (2021-09-07)
