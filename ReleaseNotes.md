@@ -1,9 +1,13 @@
 # ODC Release Notes
 
-## v0.44 (NOT YET RELEASED)
+## v0.46 (NOT YET RELEASED)
+
+
+
+## v0.44 (2021-09-23)
 ### ODC common
 Added: print task path on task done event from DDS.     
-
+Modified: bump DDS to 3.5.18.    
 
 
 ## v0.42 (2021-09-13)
