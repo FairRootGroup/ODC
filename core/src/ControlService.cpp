@@ -212,6 +212,10 @@ void CControlService::SImpl::execRequestTrigger(const string& _plugin, const par
                                    << quoted(_partitionID) << ": " << _e.what();
         }
     }
+    else
+    {
+        OLOG(ESeverity::debug) << "No plugins registered for " << quoted(_plugin);
+    }
 }
 
 SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)
@@ -522,6 +526,7 @@ SReturnValue CControlService::SImpl::createReturnValue(const partitionID_t& _par
                                                        AggregatedTopologyState _aggregatedState,
                                                        SReturnDetails::ptr_t _details)
 {
+    OLOG(ESeverity::debug) << "Creating return value for partition ID " << quoted(_partitionID);
     auto info{ getOrCreateSessionInfo(_partitionID) };
     string sidStr{ to_string(info->m_session->getSessionID()) };
     EStatusCode status{ _error.m_code ? EStatusCode::error : EStatusCode::ok };
@@ -1104,8 +1109,10 @@ CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateS
         newSessionInfo->m_session = make_shared<CSession>();
         newSessionInfo->m_partitionID = _partitionID;
         m_sessions.insert(pair<partitionID_t, SSessionInfo::Ptr_t>(_partitionID, newSessionInfo));
+        OLOG(ESeverity::debug) << "Return new session info for partition ID " << quoted(_partitionID);
         return newSessionInfo;
     }
+    OLOG(ESeverity::debug) << "Return existing session info for partition ID " << quoted(_partitionID);
     return it->second;
 }
 
