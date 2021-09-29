@@ -1,7 +1,11 @@
 # ODC Release Notes
 
-## v0.46 (NOT YET RELEASED)
+## v0.48 (NOT YET RELEASED)
 
+
+## v0.46 (2021-09-29)
+### ODC common
+Added: docs on how to run on the EPN cluster.    
 
 
 ## v0.44 (2021-09-23)
