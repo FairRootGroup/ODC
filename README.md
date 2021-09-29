@@ -160,3 +160,4 @@ of your system.
 3. [Release notes](ReleaseNotes.md)
 4. [Resource plugins](docs/rp.md)
 5. [Request triggers](docs/rt.md)
+6. [ALICE EPN](docs/epn.md)
