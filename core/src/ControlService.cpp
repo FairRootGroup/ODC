@@ -833,68 +833,57 @@ bool CControlService::SImpl::changeState(const partitionID_t& _partitionID,
 
     try
     {
-        std::condition_variable cv;
+        auto result{ info->m_fairmqTopology->ChangeState(_transition, _path, m_timeout) };
 
-        info->m_fairmqTopology->AsyncChangeState(
-            _transition,
-            _path,
-            m_timeout,
-            [&cv, &success, &_aggregatedState, &_topologyState, &_error, &info, &_expectedState, this](
-                std::error_code _ec, FairMQTopologyState _state)
-            {
-                success = !_ec;
-                if (success)
-                {
-                    try
-                    {
-                        _aggregatedState = AggregateState(_state);
-                    }
-                    catch (exception& _e)
-                    {
-                        success = false;
-                        fillError(_error,
-                                  ErrorCode::FairMQChangeStateFailed,
-                                  string("Aggregate topology state failed: ") + _e.what());
-                        OLOG(ESeverity::error) << stateSummaryString(_state, _expectedState, info->m_topo);
-                    }
-                    if (_topologyState != nullptr)
-                        fairMQToODCTopologyState(info->m_topo, _state, _topologyState);
-                }
-                else
-                {
-                    fillError(_error,
-                              ErrorCode::FairMQChangeStateFailed,
-                              string("FairMQ change state failed: ") + _ec.message());
-                    OLOG(ESeverity::error) << stateSummaryString(_state, _expectedState, info->m_topo);
-                }
-                cv.notify_all();
-            });
-
-        std::mutex mtx;
-        std::unique_lock<std::mutex> lock(mtx);
-        std::cv_status waitStatus = cv.wait_for(lock, m_timeout);
-
-        if (waitStatus == std::cv_status::timeout)
+        success = !result.first;
+        if (success)
         {
-            success = false;
-            string msg{ toString("Timed out waiting for change state ", _transition) };
-            fillError(_error, ErrorCode::RequestTimeout, msg);
-            OLOG(ESeverity::error) << msg << endl
-                                   << stateSummaryString(
-                                          info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
+            try
+            {
+                _aggregatedState = AggregateState(result.second);
+            }
+            catch (exception& _e)
+            {
+                success = false;
+                fillError(_error,
+                          ErrorCode::FairMQChangeStateFailed,
+                          toString("Aggregate topology state failed: ", _e.what()));
+                OLOG(ESeverity::debug) << stateSummaryString(result.second, _expectedState, info->m_topo);
+            }
+            if (_topologyState != nullptr)
+                fairMQToODCTopologyState(info->m_topo, result.second, _topologyState);
         }
         else
         {
-            OLOG(ESeverity::info) << "Changed state to " << _aggregatedState << " via " << _transition
-                                  << " transition for partition " << std::quoted(_partitionID);
+            switch (static_cast<ErrorCode>(result.first.value()))
+            {
+                case ErrorCode::OperationTimeout:
+                    fillError(_error,
+                              ErrorCode::RequestTimeout,
+                              toString("Timed out waiting for change state ", _transition));
+                    break;
+                default:
+                    fillError(_error,
+                              ErrorCode::FairMQChangeStateFailed,
+                              toString("FairMQ change state failed: ", result.first.message()));
+                    break;
+            }
+            OLOG(ESeverity::debug) << stateSummaryString(
+                info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
         }
     }
     catch (exception& _e)
     {
         success = false;
-        fillError(_error, ErrorCode::FairMQChangeStateFailed, string("Change state failed: ") + _e.what());
-        OLOG(ESeverity::error) << stateSummaryString(
+        fillError(_error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
+        OLOG(ESeverity::debug) << stateSummaryString(
             info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
+    }
+
+    if (success)
+    {
+        OLOG(ESeverity::info) << "State changed to " << _aggregatedState << " via " << _transition
+                              << " transition for partition " << std::quoted(_partitionID);
     }
 
     return success;
@@ -984,17 +973,19 @@ bool CControlService::SImpl::setProperties(const partitionID_t& _partitionID,
                 case ErrorCode::OperationTimeout:
                     fillError(_error,
                               ErrorCode::RequestTimeout,
-                              string("Timed out waiting for set property: ") + result.first.message());
+                              toString("Timed out waiting for set property: ", result.first.message()));
                     break;
                 default:
                     fillError(_error,
                               ErrorCode::FairMQSetPropertiesFailed,
-                              string("Set property error message: ") + result.first.message());
+                              toString("Set property error message: ", result.first.message()));
                     break;
             }
-            string msg{ "Partition " + toString(quoted(_partitionID)) +
-                        ", list of failed devices for SetProperties request (" + toString(result.second.size()) +
-                        "): " };
+            string msg{ toString("Partition ",
+                                 quoted(_partitionID),
+                                 ", list of failed devices for SetProperties request (",
+                                 toString(result.second.size()),
+                                 "): ") };
             for (auto v : result.second)
             {
                 msg += v + " ";
@@ -1005,7 +996,7 @@ bool CControlService::SImpl::setProperties(const partitionID_t& _partitionID,
     catch (exception& _e)
     {
         success = false;
-        fillError(_error, ErrorCode::FairMQSetPropertiesFailed, string("Set property failed: ") + _e.what());
+        fillError(_error, ErrorCode::FairMQSetPropertiesFailed, toString("Set property failed: ", _e.what()));
     }
 
     return success;
