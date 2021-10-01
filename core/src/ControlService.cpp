@@ -970,40 +970,36 @@ bool CControlService::SImpl::setProperties(const partitionID_t& _partitionID,
 
     try
     {
-        std::condition_variable cv;
+        auto result{ info->m_fairmqTopology->SetProperties(_params.m_properties, _params.m_path, m_timeout) };
 
-        info->m_fairmqTopology->AsyncSetProperties(
-            _params.m_properties,
-            _params.m_path,
-            m_timeout,
-            [&cv, &success, &_error, this](std::error_code _ec, FailedDevices)
-            {
-                success = !_ec;
-                if (success)
-                {
-                    OLOG(ESeverity::info) << "Set property finished successfully";
-                }
-                else
-                {
-                    fillError(_error,
-                              ErrorCode::FairMQSetPropertiesFailed,
-                              string("Set property error message: ") + _ec.message());
-                }
-                cv.notify_all();
-            });
-
-        std::mutex mtx;
-        std::unique_lock<std::mutex> lock(mtx);
-        std::cv_status waitStatus = cv.wait_for(lock, m_timeout);
-
-        if (waitStatus == std::cv_status::timeout)
+        success = !result.first;
+        if (success)
         {
-            success = false;
-            fillError(_error, ErrorCode::RequestTimeout, "Timed out waiting for set property");
+            OLOG(ESeverity::info) << "Set property finished successfully";
         }
         else
         {
-            OLOG(ESeverity::info) << "Set property done successfully";
+            switch (static_cast<ErrorCode>(result.first.value()))
+            {
+                case ErrorCode::OperationTimeout:
+                    fillError(_error,
+                              ErrorCode::RequestTimeout,
+                              string("Timed out waiting for set property: ") + result.first.message());
+                    break;
+                default:
+                    fillError(_error,
+                              ErrorCode::FairMQSetPropertiesFailed,
+                              string("Set property error message: ") + result.first.message());
+                    break;
+            }
+            string msg{ "Partition " + toString(quoted(_partitionID)) +
+                        ", list of failed devices for SetProperties request (" + toString(result.second.size()) +
+                        "): " };
+            for (auto v : result.second)
+            {
+                msg += v + " ";
+            }
+            OLOG(ESeverity::debug) << msg;
         }
     }
     catch (exception& _e)

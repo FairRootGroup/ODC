@@ -1,6 +1,8 @@
 # ODC Release Notes
 
 ## v0.48 (NOT YET RELEASED)
+### ODC common
+Modified: use sync version of `SetProperties` instead of async one.    
 
 
 ## v0.46 (2021-09-29)
