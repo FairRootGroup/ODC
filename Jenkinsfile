@@ -85,7 +85,7 @@ pipeline{
             [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11'],
             [os: 'macos',  ver: '10.15', arch: 'x86_64', compiler: 'apple-clang-11'],
             [os: 'macos',  ver: '11',    arch: 'x86_64', compiler: 'apple-clang-12'],
-
+            [os: 'macos',  ver: '11',    arch: 'arm64', compiler: 'apple-clang-13'],
           ])
 
           def checks = jobMatrix('check', [
