@@ -73,7 +73,7 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        setupGrpcVerbosity(logConfig);
+        setupGrpcVerbosity(logConfig.m_severity);
 
         CCliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
         CCliHelper::parsePluginMapOptions(vm, triggerMap, "rt");

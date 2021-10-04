@@ -7,23 +7,24 @@
 
 // STD
 #include <initializer_list>
+#include <iostream>
 #include <sstream>
 #include <string>
 // SYS
 #include <pwd.h>
 #include <stdlib.h>
 #include <sys/types.h>
-// ODC
-#include "Logger.h"
 // Boost
 #include <boost/functional/hash.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
+// ODC
+#include "LoggerSeverity.h"
 
 namespace odc::core
 {
-    inline void setupGrpcVerbosity(const CLogger::SConfig& _config)
+    inline void setupGrpcVerbosity(ESeverity _severity)
     {
         // From gRPC docs: https://grpc.github.io/grpc/cpp/md_doc_environment_variables.html
         // GRPC_VERBOSITY Default gRPC logging verbosity - one of:
@@ -32,7 +33,7 @@ namespace odc::core
         // ERROR - log only errors (default)
         // NONE - won't log any
         std::string grpc;
-        switch (_config.m_severity)
+        switch (_severity)
         {
             case ESeverity::debug:
                 grpc = "DEBUG";
@@ -48,7 +49,8 @@ namespace odc::core
         }
         if (grpc.length() > 0 && ::setenv("GRPC_VERBOSITY", grpc.c_str(), 1) == 0)
         {
-            OLOG(ESeverity::info) << "Set GRPC_VERBOSITY to " << grpc;
+            // OLOG(ESeverity::info) << "Set GRPC_VERBOSITY to " << grpc;
+            std::cout << "Set GRPC_VERBOSITY to " << grpc;
         }
     }
 
@@ -83,6 +85,30 @@ namespace odc::core
     //
     // smart_path implementation from DDS
     //
+
+    /**
+     *
+     *  @brief finds elements in a string match a specified string and replaces it.
+     *  @param[in,out] _pString - The string to be processed.
+     *  @param[in] _what - String to be replaced.
+     *  @param[in] _with - Replacing string.
+     *  @return A reference to the string object from which the elements have been replaced.
+     *
+     */
+    template <typename _T>
+    _T& replace(_T* _pString, const _T& _what, const _T& _with)
+    {
+        typename _T::size_type pos = 0;
+        typename _T::size_type withLen = _with.length();
+        typename _T::size_type whatLen = _what.length();
+        while ((pos = _pString->find(_what, pos)) != _T::npos)
+        {
+            _pString->replace(pos, _what.length(), _with);
+            if (withLen > whatLen)
+                pos += withLen - whatLen + 1;
+        }
+        return (*_pString);
+    }
 
     /**
      *

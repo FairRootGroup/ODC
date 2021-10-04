@@ -5,6 +5,7 @@
 #define __ODC__LOGGERSEVERITY__
 
 //// BOOST
+#include <boost/algorithm/string/case_conv.hpp>
 #include <boost/log/expressions.hpp>
 
 namespace odc::core
@@ -18,7 +19,7 @@ namespace odc::core
         error,
         fatal,
         stdout,
-        clean, // nothing will be pre-append to the output
+        clean, // nothing will be prepend to the output
         stderr
     };
 

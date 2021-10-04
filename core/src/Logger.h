@@ -28,6 +28,7 @@
 // ODC
 #include "InfoLogger.h"
 #include "LoggerSeverity.h"
+#include "MiscUtils.h"
 
 // Main macro to be used for logging in ODC
 // Example: LOG(info) << "My message";
@@ -113,14 +114,15 @@ namespace odc::core
             using fileSink_t =
                 boost::shared_ptr<boost::log::sinks::synchronous_sink<boost::log::sinks::text_file_backend>>;
 
-            // If log directory doesn't exist throw an exception
-            if (!boost::filesystem::exists(_config.m_logDir))
+            std::string logDir{ smart_path(_config.m_logDir) };
+            if (!boost::filesystem::exists(boost::filesystem::path(logDir)) &&
+                !boost::filesystem::create_directories(boost::filesystem::path(logDir)))
             {
-                throw std::runtime_error("Can't initialize file sink of logger. Directory \"" + _config.m_logDir +
-                                         "\" doesn't exist");
+                throw std::runtime_error(
+                    toString("Can't initialize file sink of logger: failed to create directory ", std::quoted(logDir)));
             }
 
-            boost::filesystem::path logFile{ _config.m_logDir };
+            boost::filesystem::path logFile{ logDir };
             logFile /= "odc_%Y-%m-%d.%N.log";
 
             // Default format for logger

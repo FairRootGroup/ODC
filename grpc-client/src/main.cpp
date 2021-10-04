@@ -63,7 +63,7 @@ int main(int argc, char** argv)
         }
 
         CCliHelper::batchCmds(vm, batch, bopt);
-        setupGrpcVerbosity(logConfig);
+        setupGrpcVerbosity(logConfig.m_severity);
 
         CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
         control.run(bopt.m_outputCmds);

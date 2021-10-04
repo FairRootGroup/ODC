@@ -73,7 +73,9 @@ void CCliHelper::addHostOptions(bpo::options_description& _options, string& _hos
 
 void CCliHelper::addLogOptions(boost::program_options::options_description& _options, CLogger::SConfig& _config)
 {
-    _options.add_options()("logdir", bpo::value<string>(&_config.m_logDir)->default_value(""), "Log files directory");
+    string defaultLogDir{ smart_path(string("$HOME/.ODC/log")) };
+    _options.add_options()(
+        "logdir", bpo::value<string>(&_config.m_logDir)->default_value(defaultLogDir), "Log files directory");
     _options.add_options()(
         "severity", bpo::value<ESeverity>(&_config.m_severity)->default_value(ESeverity::info), "Log severity level");
     _options.add_options()("infologger",
