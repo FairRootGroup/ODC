@@ -1229,7 +1229,7 @@ bool CControlService::SImpl::subscribeToDDSSession(const partitionID_t& _partiti
             request->setResponseCallback(
                 [_partitionID](const SOnTaskDoneResponseData& _info)
                 {
-                    ESeverity severity{ (_info.m_exitCode != 0 || _info.m_signal != 0) ? ESeverity::error
+                    ESeverity severity{ (_info.m_exitCode != 0 || _info.m_signal != 0) ? ESeverity::fatal
                                                                                        : ESeverity::debug };
                     OLOG(severity) << "Partition " << quoted(_partitionID) << ": task (" << _info.m_taskID
                                    << ") with path (" << _info.m_taskPath << ") exited with code (" << _info.m_exitCode
