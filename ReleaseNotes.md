@@ -5,6 +5,7 @@
 Added: session restore. Managed sessions are serialized to a file, specified by ID. On restart ODC tryes to attach to the running sessions. If failed then shutdown trigger is called.    
 Added: optionally filter running DDS sessions in `Status` request.    
 Modified: log crash of the task as `fatal` instead of `error`.    
+Modified: use channel severity Boost log instead of severity Boost log.    
 
 
 

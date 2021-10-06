@@ -30,8 +30,9 @@ namespace odc::core
             void consume(boost::log::record_view const& rec)
             {
                 ESeverity sev{ *rec[odc::core::severity] };
+                std::string channel{ *rec[boost::log::expressions::attr<std::string>("Channel")] };
                 std::string msg{ *rec[boost::log::expressions::smessage] };
-                CInfoLogger::instance().log(sev, msg);
+                CInfoLogger::instance().log(sev, channel, msg);
             }
         };
 
@@ -61,11 +62,12 @@ namespace odc::core
             InfoLoggerContext context;
             context.setField(InfoLoggerContext::FieldName::Facility, "ODC");
             // FIXME: Set the real run number as soon as it's available from AliECS
-            context.setField(InfoLoggerContext::FieldName::Run, "0");
+            // context.setField(InfoLoggerContext::FieldName::PartitionID, "0");
+            // context.setField(InfoLoggerContext::FieldName::Run, "0");
             m_log.setContext(context);
         }
 
-        void log(ESeverity _severity, const std::string& _msg)
+        void log(ESeverity _severity, const std::string& /*_channel*/, const std::string& _msg)
         {
             m_log.log(convertSeverity(_severity), "%s", _msg.c_str());
         }

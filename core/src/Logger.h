@@ -17,7 +17,7 @@
 #include <boost/log/sources/global_logger_storage.hpp>
 #include <boost/log/sources/logger.hpp>
 #include <boost/log/sources/record_ostream.hpp>
-#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sources/severity_channel_logger.hpp>
 #include <boost/log/support/date_time.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/utility/setup/console.hpp>
@@ -31,10 +31,19 @@
 #include "MiscUtils.h"
 
 // Main macro to be used for logging in ODC
-// Example: LOG(info) << "My message";
-// TODO: FIXME: OLOG has to be changed to LOG. For the moment this is a workaround, because FairMQ SDK uses FairLogger
-// which also defines LOG macro.
-#define OLOG(severity) BOOST_LOG_SEV(odc::core::CLogger::instance().logger(), severity)
+// Example:
+// OLOG(info) << "My message";
+// OLOG(info, "TYrfjf") << "My message";
+// OLOG(info, "TYrfjf", "54321") << "My message";
+#define OLOG_SEVERITY(severity) BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), "", severity)
+#define OLOG_SEVERITY_PARTITION(severity, partition) \
+    BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), partition, severity)
+#define OLOG_SEVERITY_PARTITION_RUN(severity, partition, run) \
+    BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), toString(partition, ":", run), severity)
+#define GET_4TH_ARG(arg1, arg2, arg3, arg4, ...) arg4
+#define OLOG_MACRO_CHOOSER(...) \
+    GET_4TH_ARG(__VA_ARGS__, OLOG_SEVERITY_PARTITION_RUN, OLOG_SEVERITY_PARTITION, OLOG_SEVERITY, )
+#define OLOG(...) OLOG_MACRO_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
 
 namespace odc::core
 {
@@ -56,7 +65,7 @@ namespace odc::core
         };
 
       public:
-        using logger_t = boost::log::sources::severity_logger_mt<ESeverity>;
+        using logger_t = boost::log::sources::severity_channel_logger_mt<ESeverity>;
 
         /// \brief Return singleton instance
         static CLogger& instance()
@@ -126,16 +135,16 @@ namespace odc::core
             logFile /= "odc_%Y-%m-%d.%N.log";
 
             // Default format for logger
-            formatter formatter =
-                // TODO: std::setw doesn't work for the first collumn of the log (TimeStamp). Investigate!
-                expressions::stream << std::left
-                                    << expressions::format_date_time<boost::posix_time::ptime>("TimeStamp",
-                                                                                               "%Y-%m-%d %H:%M:%S.%f")
-                                    << "   " << std::setw(7) << expressions::attr<ESeverity>("Severity")
-                                    << std::setw(20) << expressions::attr<std::string>("Process") << " <"
-                                    << expressions::attr<attributes::current_process_id::value_type>("ProcessID") << ":"
-                                    << expressions::attr<attributes::current_thread_id::value_type>("ThreadID")
-                                    << ">    " << expressions::smessage;
+            formatter formatter = expressions::stream
+                                  << std::left
+                                  << expressions::format_date_time<boost::posix_time::ptime>("TimeStamp",
+                                                                                             "%Y-%m-%d %H:%M:%S.%f")
+                                  << "  " << std::setw(4) << expressions::attr<ESeverity>("Severity") << "  "
+                                  << std::setw(20) << expressions::attr<std::string>("Process") << " <"
+                                  << expressions::attr<attributes::current_process_id::value_type>("ProcessID") << ":"
+                                  << expressions::attr<attributes::current_thread_id::value_type>("ThreadID") << ">  "
+                                  << std::setw(20) << expressions::attr<std::string>("Channel") << "  "
+                                  << expressions::smessage;
 
             fileSink_t fileSink =
                 add_file_log(keywords::file_name = logFile,
