@@ -226,8 +226,10 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
                            "Key-value pairs for a set properties request ( key1:value1 key2:value2 )");
 }
 
-void CCliHelper::addOptions(boost::program_options::options_description& /*_options*/, SStatusParams& /*_params*/)
+void CCliHelper::addOptions(boost::program_options::options_description& _options, SStatusParams& _params)
 {
+    _options.add_options()(
+        "running", bpo::bool_switch(&_params.m_running)->default_value(false), "Select only running sessions");
 }
 
 //

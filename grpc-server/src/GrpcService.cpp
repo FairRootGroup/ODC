@@ -220,7 +220,7 @@ void CGrpcService::restore(const std::string& _restoreId)
                                     odc::StatusReply* response)
 {
     OLOG(ESeverity::info) << "Status request:\n" << request->DebugString();
-    SStatusReturnValue value{ m_service->execStatus(SStatusParams()) };
+    SStatusReturnValue value{ m_service->execStatus(SStatusParams(request->running())) };
     setupStatusReply(response, value);
     OLOG(ESeverity::info) << "Status response:\n" << response->DebugString();
     return ::grpc::Status::OK;

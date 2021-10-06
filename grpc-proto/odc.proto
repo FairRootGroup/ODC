@@ -211,6 +211,6 @@ message TerminateRequest {
 // Status request
 message StatusRequest
 {
-    // No information is required to perform the request
+    bool running = 1; // Select only running DDS sessions
 }
 

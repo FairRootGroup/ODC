@@ -314,6 +314,13 @@ namespace odc::core
         {
         }
 
+        SStatusParams(bool _running)
+            : m_running(_running)
+        {
+        }
+
+        bool m_running{ false }; ///< Select only running DDS sessions
+
         // \brief ostream operator.
         friend std::ostream& operator<<(std::ostream& _os, const SStatusParams& _params);
     };

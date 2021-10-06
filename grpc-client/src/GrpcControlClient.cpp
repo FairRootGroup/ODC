@@ -150,9 +150,10 @@ std::string CGrpcControlClient::requestShutdown(const odc::core::partitionID_t& 
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestStatus(const odc::core::SStatusParams& /*_params*/)
+std::string CGrpcControlClient::requestStatus(const odc::core::SStatusParams& _params)
 {
     odc::StatusRequest request;
+    request.set_running(_params.m_running);
     odc::StatusReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Status(&context, request, &reply);

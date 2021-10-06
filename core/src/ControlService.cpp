@@ -260,7 +260,7 @@ void CControlService::SImpl::updateRestore()
     {
         const auto& info{ v.second };
         // TODO: Add running sessions only?
-        // if (info->m_session->IsRunning())
+        // if (info->m_session->IsRunning()) // Note: IsRunning() throws
         data.m_partitions.push_back(SRestorePartition(info->m_partitionID, to_string(info->m_session->getSessionID())));
     }
 
@@ -530,7 +530,7 @@ SReturnValue CControlService::SImpl::execTerminate(const partitionID_t& _partiti
     return createReturnValue(_partitionID, error, "Terminate done", measure.duration(), state, details);
 }
 
-SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& /* _params */)
+SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& _params)
 {
     lock_guard<mutex> lock(m_sessionsMutex);
     STimeMeasure<std::chrono::milliseconds> measure;
@@ -550,19 +550,24 @@ SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& /* _p
             OLOG(ESeverity::warning) << "Failed to get session ID or session status of " << quoted(status.m_partitionID)
                                      << " partition: " << _e.what();
         }
-        try
+
+        // Filter running sessions if needed
+        if ((_params.m_running && status.m_sessionStatus == ESessionStatus::running) || (!_params.m_running))
         {
-            status.m_aggregatedState =
-                (info->m_fairmqTopology != nullptr && info->m_topo != nullptr)
-                    ? aggregateStateForPath(info->m_topo, info->m_fairmqTopology->GetCurrentState(), "")
-                    : AggregatedTopologyState::Undefined;
+            try
+            {
+                status.m_aggregatedState =
+                    (info->m_fairmqTopology != nullptr && info->m_topo != nullptr)
+                        ? aggregateStateForPath(info->m_topo, info->m_fairmqTopology->GetCurrentState(), "")
+                        : AggregatedTopologyState::Undefined;
+            }
+            catch (exception& _e)
+            {
+                OLOG(ESeverity::warning) << "Failed to get an aggregated state of " << quoted(status.m_partitionID)
+                                         << " partition: " << _e.what();
+            }
+            result.m_partitions.push_back(status);
         }
-        catch (exception& _e)
-        {
-            OLOG(ESeverity::warning) << "Failed to get an aggregated state of " << quoted(status.m_partitionID)
-                                     << " partition: " << _e.what();
-        }
-        result.m_partitions.push_back(status);
     }
     result.m_statusCode = EStatusCode::ok;
     result.m_msg = "Status done";
@@ -1363,9 +1368,9 @@ namespace odc::core
         return _os << "DeviceParams: path=" << quoted(_params.m_path) << "; detailed=" << _params.m_detailed;
     }
 
-    std::ostream& operator<<(std::ostream& _os, const SStatusParams& /* _params */)
+    std::ostream& operator<<(std::ostream& _os, const SStatusParams& _params)
     {
-        return _os << "StatusParams";
+        return _os << "StatusParams: running=" << _params.m_running;
     }
 } // namespace odc::core
 
