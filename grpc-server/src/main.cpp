@@ -34,6 +34,7 @@ int main(int argc, char** argv)
         CLogger::SConfig logConfig;
         CPluginManager::PluginMap_t pluginMap;
         CPluginManager::PluginMap_t triggerMap;
+        string restoreId;
 
         // Generic options
         bpo::options_description options("dds-control-server options");
@@ -45,6 +46,7 @@ int main(int argc, char** argv)
         CCliHelper::addLogOptions(options, logConfig);
         CCliHelper::addResourcePluginOptions(options, pluginMap);
         CCliHelper::addRequestTriggersOptions(options, triggerMap);
+        CCliHelper::addRestoreOptions(options, restoreId);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -84,6 +86,10 @@ int main(int argc, char** argv)
             server.setTimeout(chrono::seconds(timeout));
             server.registerResourcePlugins(pluginMap);
             server.registerRequestTriggers(triggerMap);
+            if (!restoreId.empty())
+            {
+                server.restore(restoreId);
+            }
             server.run(host);
         }
         else
@@ -92,6 +98,10 @@ int main(int argc, char** argv)
             server.setTimeout(chrono::seconds(timeout));
             server.registerResourcePlugins(pluginMap);
             server.registerRequestTriggers(triggerMap);
+            if (!restoreId.empty())
+            {
+                server.restore(restoreId);
+            }
             server.run(host);
         }
     }

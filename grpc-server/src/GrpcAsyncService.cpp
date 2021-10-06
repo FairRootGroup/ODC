@@ -31,6 +31,11 @@ void CGrpcAsyncService::registerRequestTriggers(const CPluginManager::PluginMap_
     m_service->registerRequestTriggers(_triggerMap);
 }
 
+void CGrpcAsyncService::restore(const std::string& _restoreId)
+{
+    m_service->restore(_restoreId);
+}
+
 void CGrpcAsyncService::run(const std::string& _host)
 {
     odc::ODC::AsyncService service;

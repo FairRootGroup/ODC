@@ -23,6 +23,7 @@ namespace odc::grpc
         void setTimeout(const std::chrono::seconds& _timeout);
         void registerResourcePlugins(const odc::core::CPluginManager::PluginMap_t& _pluginMap);
         void registerRequestTriggers(const odc::core::CPluginManager::PluginMap_t& _triggerMap);
+        void restore(const std::string& _restoreId);
 
       private:
         ::grpc::Status Initialize(::grpc::ServerContext* context,

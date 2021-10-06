@@ -61,6 +61,7 @@ namespace odc::core
         static void addRequestTriggersOptions(boost::program_options::options_description& _options,
                                               CPluginManager::PluginMap_t& _pluginMap);
         static void addOptions(boost::program_options::options_description& _options, SSleepOptions& _sleepOptions);
+        static void addRestoreOptions(boost::program_options::options_description& _options, std::string& _restoreId);
 
         //
         // Option Parsing

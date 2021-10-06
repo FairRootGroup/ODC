@@ -23,6 +23,7 @@ namespace odc::cli
 
         void registerResourcePlugins(const odc::core::CPluginManager::PluginMap_t& _pluginMap);
         void registerRequestTriggers(const odc::core::CPluginManager::PluginMap_t& _triggerMap);
+        void restore(const std::string& _restoreId);
 
         std::string requestInitialize(const odc::core::partitionID_t& _partitionID,
                                       const odc::core::SInitializeParams& _params);

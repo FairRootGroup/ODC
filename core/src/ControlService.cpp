@@ -8,6 +8,7 @@
 #include "Error.h"
 #include "Logger.h"
 #include "Process.h"
+#include "Restore.h"
 #include "TimeMeasure.h"
 #include "Topology.h"
 // DDS
@@ -66,6 +67,9 @@ struct CControlService::SImpl
     void registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap);
     void registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap);
     void execRequestTrigger(const string& _plugin, const partitionID_t& _partitionID);
+
+    void restore(const std::string& _id);
+    void updateRestore();
 
     // Core API calls
     SReturnValue execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params);
@@ -167,6 +171,7 @@ struct CControlService::SImpl
     chrono::seconds m_timeout{ 30 };                                   ///< Request timeout in sec
     CDDSSubmit::Ptr_t m_submit{ make_shared<CDDSSubmit>() };           ///< ODC to DDS submit resource converter
     CPluginManager::Ptr_t m_triggers{ make_shared<CPluginManager>() }; ///< Request triggers
+    string m_restoreId;                                                ///< Restore ID
 };
 
 void CControlService::SImpl::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
@@ -218,6 +223,52 @@ void CControlService::SImpl::execRequestTrigger(const string& _plugin, const par
     }
 }
 
+void CControlService::SImpl::restore(const std::string& _id)
+{
+    m_restoreId = _id;
+
+    OLOG(ESeverity::debug) << "Restoring sessions for " << quoted(_id);
+    auto data{ CRestoreFile(_id).read() };
+    for (const auto& v : data.m_partitions)
+    {
+        OLOG(ESeverity::debug) << "Restoring (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
+        auto result{ execInitialize(v.m_partitionId, SInitializeParams(v.m_sessionId)) };
+        if (result.m_error.m_code)
+        {
+            OLOG(ESeverity::debug) << "Failed to attach to the session. Executing Shutdown trigger for ("
+                                   << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
+            execRequestTrigger("Shutdown", v.m_partitionId);
+        }
+        else
+        {
+            OLOG(ESeverity::debug) << "Successfully attached to the session (" << quoted(v.m_partitionId) << "/"
+                                   << quoted(v.m_sessionId) << ")";
+        }
+    }
+}
+
+void CControlService::SImpl::updateRestore()
+{
+    if (m_restoreId.empty())
+        return;
+
+    OLOG(ESeverity::debug) << "Updating restore file " << quoted(m_restoreId) << "...";
+    SRestoreData data;
+
+    lock_guard<mutex> lock(m_sessionsMutex);
+    for (const auto& v : m_sessions)
+    {
+        const auto& info{ v.second };
+        // TODO: Add running sessions only?
+        // if (info->m_session->IsRunning())
+        data.m_partitions.push_back(SRestorePartition(info->m_partitionID, to_string(info->m_session->getSessionID())));
+    }
+
+    // Write the the file is locked by m_sessionsMutex
+    // This is done in order to prevent write failure in case of a parallel execution.
+    CRestoreFile(m_restoreId, data).write();
+}
+
 SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
@@ -249,6 +300,7 @@ SReturnValue CControlService::SImpl::execInitialize(const partitionID_t& _partit
         }
     }
     execRequestTrigger("Initialize", _partitionID);
+    updateRestore();
     return createReturnValue(
         _partitionID, error, "Initialize done", measure.duration(), AggregatedTopologyState::Undefined);
 }
@@ -1339,6 +1391,11 @@ void CControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pl
 void CControlService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap)
 {
     m_impl->registerRequestTriggers(_triggerMap);
+}
+
+void CControlService::restore(const std::string& _id)
+{
+    m_impl->restore(_id);
 }
 
 SReturnValue CControlService::execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)

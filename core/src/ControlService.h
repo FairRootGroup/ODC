@@ -336,6 +336,11 @@ namespace odc::core
         /// \param [in] _triggerMap Map of plugin name to path
         void registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap);
 
+        /// \brief Restore sessions for the specified ID
+        ///  The function has to be called before the service start accepting request.
+        /// \param [in] _id ID of the restore file
+        void restore(const std::string& _id);
+
         //
         // DDS topology and session requests
         //

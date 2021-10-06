@@ -143,6 +143,13 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
     _options.add_options()("ms", bpo::value<size_t>(&_sleepOptions.m_ms)->default_value(1000), "Sleep time in ms");
 }
 
+void CCliHelper::addRestoreOptions(boost::program_options::options_description& _options, std::string& _restoreId)
+{
+    _options.add_options()("restore",
+                           bpo::value<string>(&_restoreId)->default_value(""),
+                           "If set ODC will restore the sessions from file with specified ID");
+}
+
 //
 // Request specific options
 //

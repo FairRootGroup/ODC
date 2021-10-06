@@ -41,6 +41,11 @@ void CGrpcSyncService::registerRequestTriggers(const odc::core::CPluginManager::
     m_service->registerRequestTriggers(_triggerMap);
 }
 
+void CGrpcSyncService::restore(const std::string& _restoreId)
+{
+    m_service->restore(_restoreId);
+}
+
 ::grpc::Status CGrpcSyncService::Initialize(::grpc::ServerContext* context,
                                             const odc::InitializeRequest* request,
                                             odc::GeneralReply* response)

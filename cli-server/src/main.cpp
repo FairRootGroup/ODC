@@ -33,6 +33,7 @@ int main(int argc, char** argv)
         bool batch;
         CPluginManager::PluginMap_t pluginMap;
         CPluginManager::PluginMap_t triggerMap;
+        string restoreId;
 
         // Generic options
         bpo::options_description options("odc-cli-server options");
@@ -43,6 +44,7 @@ int main(int argc, char** argv)
         CCliHelper::addBatchOptions(options, bopt, batch);
         CCliHelper::addResourcePluginOptions(options, pluginMap);
         CCliHelper::addRequestTriggersOptions(options, triggerMap);
+        CCliHelper::addRestoreOptions(options, restoreId);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -79,6 +81,10 @@ int main(int argc, char** argv)
         control.setTimeout(chrono::seconds(timeout));
         control.registerResourcePlugins(pluginMap);
         control.registerRequestTriggers(triggerMap);
+        if (!restoreId.empty())
+        {
+            control.restore(restoreId);
+        }
         control.run(bopt.m_outputCmds);
     }
     catch (exception& _e)

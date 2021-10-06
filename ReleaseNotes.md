@@ -1,6 +1,8 @@
 # ODC Release Notes
 
-## v0.50 (NOT YET RELEASED)
+## v0.52 (NOT YET RELEASED)
+### ODC common
+Added: session restore. Managed sessions are serialized to a file, specified by ID. On restart ODC tryes to attach to the running sessions. If failed then shutdown trigger is called.    
 
 
 

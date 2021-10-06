@@ -32,6 +32,11 @@ void CCliControlService::registerRequestTriggers(const CPluginManager::PluginMap
     m_service->registerRequestTriggers(_triggerMap);
 }
 
+void CCliControlService::restore(const std::string& _restoreId)
+{
+    m_service->restore(_restoreId);
+}
+
 std::string CCliControlService::requestInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params)
 {
     return generalReply(m_service->execInitialize(_partitionID, _params));

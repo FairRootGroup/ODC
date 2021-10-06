@@ -32,6 +32,11 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
     m_service->registerRequestTriggers(_triggerMap);
 }
 
+void CGrpcService::restore(const std::string& _restoreId)
+{
+    m_service->restore(_restoreId);
+}
+
 ::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* /*context*/,
                                         const odc::InitializeRequest* request,
                                         odc::GeneralReply* response)
