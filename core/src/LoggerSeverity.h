@@ -29,6 +29,7 @@ namespace odc::core
     };
 
     BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", ESeverity)
+    BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 
     // A custom streamer to convert string to odc::core::ESeverity
     inline std::istream& operator>>(std::istream& _in, ESeverity& _severity)

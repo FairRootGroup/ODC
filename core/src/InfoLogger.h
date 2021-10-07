@@ -30,7 +30,7 @@ namespace odc::core
             void consume(boost::log::record_view const& rec)
             {
                 ESeverity sev{ *rec[odc::core::severity] };
-                std::string channel{ *rec[boost::log::expressions::attr<std::string>("Channel")] };
+                std::string channel{ *rec[odc::core::channel] };
                 std::string msg{ *rec[boost::log::expressions::smessage] };
                 CInfoLogger::instance().log(sev, channel, msg);
             }
@@ -58,18 +58,18 @@ namespace odc::core
       private:
         CInfoLogger()
         {
-            using namespace AliceO2::InfoLogger;
-            InfoLoggerContext context;
-            context.setField(InfoLoggerContext::FieldName::Facility, "ODC");
-            // FIXME: Set the real run number as soon as it's available from AliECS
-            // context.setField(InfoLoggerContext::FieldName::PartitionID, "0");
-            // context.setField(InfoLoggerContext::FieldName::Run, "0");
-            m_log.setContext(context);
+            m_context.setField(AliceO2::InfoLogger::InfoLoggerContext::FieldName::Facility, "ODC");
+            m_log.setContext(m_context);
         }
 
-        void log(ESeverity _severity, const std::string& /*_channel*/, const std::string& _msg)
+        void log(ESeverity _severity, const std::string& _channel, const std::string& _msg)
         {
-            m_log.log(convertSeverity(_severity), "%s", _msg.c_str());
+            using namespace AliceO2::InfoLogger;
+            InfoLogger::InfoLoggerMessageOption options{ convertSeverity(_severity), 0, -1, __FILE__, __LINE__ };
+            InfoLoggerContext context(m_context,
+                                      { { InfoLoggerContext::FieldName::Partition, _channel },
+                                        { InfoLoggerContext::FieldName::Run, std::string("0") } });
+            m_log.log(options, context, "%s", _msg.c_str());
         }
 
         AliceO2::InfoLogger::InfoLogger::Severity convertSeverity(ESeverity _severity)
@@ -92,9 +92,9 @@ namespace odc::core
             }
         }
 
+        AliceO2::InfoLogger::InfoLoggerContext m_context;
         AliceO2::InfoLogger::InfoLogger m_log;
     };
-
 }; // namespace odc::core
 
 #else

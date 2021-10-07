@@ -7,6 +7,8 @@ Added: optionally filter running DDS sessions in `Status` request.
 Modified: log crash of the task as `fatal` instead of `error`.    
 Modified: use channel severity Boost log instead of severity Boost log.    
 Added: whenever possible set `partition ID` for the log message.    
+Added: set `Partition` field of the `InfoLogger` to `PartitionID`.    
+Modified: require `InfoLogger` `2.2.0`.    
 
 
 
