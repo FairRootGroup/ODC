@@ -26,16 +26,16 @@ void CEpncClient::allocateNodes(const std::string& _partitionID,
     epnc::AllocationRequest request;
     request.set_allocated_partition(partition);
     request.set_node_count(_nodeCount);
-    OLOG(ESeverity::debug) << "epnc: AllocateNodes request: " << request.DebugString();
+    OLOG(ESeverity::debug, _partitionID) << "epnc: AllocateNodes request: " << request.DebugString();
 
     epnc::NodeList reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->AllocateNodes(&context, request, &reply);
-    OLOG(ESeverity::debug) << "epnc: AllocateNodes reply: " << GetReplyString(status, reply);
+    OLOG(ESeverity::debug, _partitionID) << "epnc: AllocateNodes reply: " << GetReplyString(status, reply);
 
     if (!status.ok() || reply.status() != epnc::EPNControllerStatus::OK)
     {
-        throw runtime_error("epnc: AllocateNodes request failed: " + GetReplyString(status, reply));
+        throw runtime_error(toString("epnc: AllocateNodes request failed: ", GetReplyString(status, reply)));
     }
 
     // string partitionID {reply.partition().id()};
@@ -53,17 +53,17 @@ void CEpncClient::releaseNode(const std::string& _partitionID, const std::string
     request.set_partition_id(_partitionID);
     request.set_node(_node);
     request.set_message(_message);
-    OLOG(ESeverity::debug) << "epnc: ReleaseNode request: " << request.DebugString();
+    OLOG(ESeverity::debug, _partitionID) << "epnc: ReleaseNode request: " << request.DebugString();
 
     epnc::EPNControllerReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->ReleaseNode(&context, request, &reply);
-    OLOG(ESeverity::debug) << "epnc: ReleaseNode reply: " << GetReplyString(status, reply);
+    OLOG(ESeverity::debug, _partitionID) << "epnc: ReleaseNode reply: " << GetReplyString(status, reply);
 
     epnc::EPNControllerStatus epncStatus{ reply.status() };
     if (!status.ok() || epncStatus != epnc::EPNControllerStatus::OK)
     {
-        throw runtime_error("epnc: ReleaseNode request failed: " + GetReplyString(status, reply));
+        throw runtime_error(toString("epnc: ReleaseNode request failed: ", GetReplyString(status, reply)));
     }
 }
 
@@ -71,17 +71,17 @@ void CEpncClient::releasePartition(const std::string& _partitionID)
 {
     epnc::ReleasePartitionRequest request;
     request.set_partition_id(_partitionID);
-    OLOG(ESeverity::debug) << "epnc: ReleasePartition request: " << request.DebugString();
+    OLOG(ESeverity::debug, _partitionID) << "epnc: ReleasePartition request: " << request.DebugString();
 
     epnc::EPNControllerReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->ReleasePartition(&context, request, &reply);
-    OLOG(ESeverity::debug) << "epnc: ReleasePartition reply: " << GetReplyString(status, reply);
+    OLOG(ESeverity::debug, _partitionID) << "epnc: ReleasePartition reply: " << GetReplyString(status, reply);
 
     epnc::EPNControllerStatus epncStatus{ reply.status() };
     if (!status.ok() || epncStatus != epnc::EPNControllerStatus::OK)
     {
-        throw runtime_error("epnc: ReleasePartition request failed: " + GetReplyString(status, reply));
+        throw runtime_error(toString("epnc: ReleasePartition request failed: ", GetReplyString(status, reply)));
     }
 }
 

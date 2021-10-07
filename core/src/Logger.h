@@ -34,15 +34,11 @@
 // Example:
 // OLOG(info) << "My message";
 // OLOG(info, "TYrfjf") << "My message";
-// OLOG(info, "TYrfjf", "54321") << "My message";
 #define OLOG_SEVERITY(severity) BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), "", severity)
 #define OLOG_SEVERITY_PARTITION(severity, partition) \
     BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), partition, severity)
-#define OLOG_SEVERITY_PARTITION_RUN(severity, partition, run) \
-    BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), toString(partition, ":", run), severity)
-#define GET_4TH_ARG(arg1, arg2, arg3, arg4, ...) arg4
-#define OLOG_MACRO_CHOOSER(...) \
-    GET_4TH_ARG(__VA_ARGS__, OLOG_SEVERITY_PARTITION_RUN, OLOG_SEVERITY_PARTITION, OLOG_SEVERITY, )
+#define GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
+#define OLOG_MACRO_CHOOSER(...) GET_3RD_ARG(__VA_ARGS__, OLOG_SEVERITY_PARTITION, OLOG_SEVERITY, )
 #define OLOG(...) OLOG_MACRO_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
 
 namespace odc::core
@@ -143,7 +139,7 @@ namespace odc::core
                                   << std::setw(20) << expressions::attr<std::string>("Process") << " <"
                                   << expressions::attr<attributes::current_process_id::value_type>("ProcessID") << ":"
                                   << expressions::attr<attributes::current_thread_id::value_type>("ThreadID") << ">  "
-                                  << std::setw(20) << expressions::attr<std::string>("Channel") << "  "
+                                  << std::setw(15) << expressions::attr<std::string>("Channel") << "  "
                                   << expressions::smessage;
 
             fileSink_t fileSink =

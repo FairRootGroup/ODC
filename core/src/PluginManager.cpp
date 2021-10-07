@@ -77,7 +77,7 @@ std::string CPluginManager::execPlugin(const string& _plugin,
     string out;
     string err;
     int exitCode{ EXIT_SUCCESS };
-    OLOG(ESeverity::debug) << "Executing plugin " << std::quoted(cmd);
+    OLOG(ESeverity::debug, _partitionID) << "Executing plugin " << std::quoted(cmd);
     execute(cmd, timeout, &out, &err, &exitCode);
 
     if (exitCode != EXIT_SUCCESS)

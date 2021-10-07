@@ -6,6 +6,7 @@ Added: session restore. Managed sessions are serialized to a file, specified by 
 Added: optionally filter running DDS sessions in `Status` request.    
 Modified: log crash of the task as `fatal` instead of `error`.    
 Modified: use channel severity Boost log instead of severity Boost log.    
+Added: whenever possible set `partition ID` for the log message.    
 
 
 

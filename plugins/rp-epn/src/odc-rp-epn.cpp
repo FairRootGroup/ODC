@@ -133,7 +133,7 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        OLOG(ESeverity::info) << "Start epnc plugin";
+        OLOG(ESeverity::info, partitionID) << "Start epnc plugin";
         CEpncClient client(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
         if (!release)
         {
@@ -144,8 +144,8 @@ int main(int argc, char** argv)
             {
                 vector<string> nodes;
                 client.allocateNodes(partitionID, v.m_zone, v.m_n, nodes);
-                OLOG(ESeverity::info) << "epnc: nodes requested (" << v.m_n << ") allocated (" << nodes.size() << ")"
-                                      << endl;
+                OLOG(ESeverity::info, partitionID)
+                    << "epnc: nodes requested (" << v.m_n << ") allocated (" << nodes.size() << ")" << endl;
 
                 for (const auto& node : nodes)
                 {
@@ -165,21 +165,21 @@ int main(int argc, char** argv)
             const bfs::path filepath{ tmpPath / "hosts.cfg" };
             dds::CSSHConfigFile::make(filepath.string(), records, bash);
 
-            OLOG(ESeverity::info) << "epnc: SSH config file created at path " << filepath << endl;
+            OLOG(ESeverity::info, partitionID) << "epnc: SSH config file created at path " << filepath << endl;
 
             stringstream ss;
             int requiredSlots(records.size() * numSlots);
             ss << "<rms>ssh</rms><configFile>" << filepath.string() << "</configFile><requiredSlots>" << requiredSlots
                << "</requiredSlots>";
 
-            OLOG(ESeverity::info) << ss.str();
-            OLOG(ESeverity::clean) << ss.str();
+            OLOG(ESeverity::info, partitionID) << ss.str();
+            OLOG(ESeverity::clean, partitionID) << ss.str();
         }
         else
         {
             client.releasePartition(partitionID);
         }
-        OLOG(ESeverity::info) << "Finish epnc plugin";
+        OLOG(ESeverity::info, partitionID) << "Finish epnc plugin";
     }
     catch (exception& _e)
     {
