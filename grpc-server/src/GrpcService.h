@@ -69,6 +69,8 @@ namespace odc::grpc
         void setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value);
         void setupStatusReply(odc::StatusReply* _response, const odc::core::SStatusReturnValue& _value);
         std::mutex& getMutex(const odc::core::partitionID_t& _partitionID);
+        template <typename Request_t>
+        core::SCommonParams commonParams(const Request_t* _request);
 
         std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
 

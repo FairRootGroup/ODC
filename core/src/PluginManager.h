@@ -25,7 +25,8 @@ namespace odc::core
         void registerPlugin(const std::string& _plugin, const std::string& _cmd);
         std::string execPlugin(const std::string& _plugin,
                                const std::string& _resources,
-                               const partitionID_t& _partitionID) const;
+                               const partitionID_t& _partitionID,
+                               runNr_t _runNr) const;
         bool isPluginRegistered(const std::string& _plugin) const;
 
       private:

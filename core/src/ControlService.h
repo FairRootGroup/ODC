@@ -147,11 +147,13 @@ namespace odc::core
                      size_t _execTime,
                      const SError& _error,
                      const partitionID_t& _partitionID,
+                     runNr_t _runNr,
                      const std::string& _sessionID,
                      AggregatedTopologyState _aggregatedState,
                      SReturnDetails::ptr_t _details = nullptr)
             : SBaseReturnValue(_statusCode, _msg, _execTime, _error)
             , m_partitionID(_partitionID)
+            , m_runNr(_runNr)
             , m_sessionID(_sessionID)
             , m_aggregatedState(_aggregatedState)
             , m_details(_details)
@@ -159,6 +161,7 @@ namespace odc::core
         }
 
         partitionID_t m_partitionID; ///< Partition ID
+        runNr_t m_runNr{ 0 };        ///< Run number
         std::string m_sessionID;     ///< Session ID of DDS
         AggregatedTopologyState m_aggregatedState{
             AggregatedTopologyState::Undefined
@@ -181,6 +184,28 @@ namespace odc::core
         }
 
         SPartitionStatus::container_t m_partitions; ///< Statuses of partitions
+    };
+
+    /// \brief Structure holds common request parameters
+    struct SCommonParams
+    {
+        SCommonParams()
+        {
+        }
+
+        SCommonParams(const partitionID_t& _partitionID, runNr_t _runNr, int _timeout)
+            : m_partitionID(_partitionID)
+            , m_runNr(_runNr)
+            , m_timeout(_timeout)
+        {
+        }
+
+        partitionID_t m_partitionID; ///< Partition ID.
+        runNr_t m_runNr{ 0 };        ///< Run number.
+        int m_timeout{ -1 };         ///< Request timeout in seconds. Negative value means "not set".
+
+        // \brief ostream operator.
+        friend std::ostream& operator<<(std::ostream& _os, const SCommonParams& _params);
     };
 
     /// \brief Structure holds configuration parameters of the Initiaalize request
@@ -353,40 +378,40 @@ namespace odc::core
         //
 
         /// \brief Initialize DDS session
-        SReturnValue execInitialize(const partitionID_t& _partitionID, const SInitializeParams& _params);
+        SReturnValue execInitialize(const SCommonParams& _common, const SInitializeParams& _params);
         /// \brief Submit DDS agents. Can be called multiple times in order to submit more agents.
-        SReturnValue execSubmit(const partitionID_t& _partitionID, const SSubmitParams& _params);
+        SReturnValue execSubmit(const SCommonParams& _common, const SSubmitParams& _params);
         /// \brief Activate topology
-        SReturnValue execActivate(const partitionID_t& _partitionID, const SActivateParams& _params);
+        SReturnValue execActivate(const SCommonParams& _common, const SActivateParams& _params);
         /// \brief Run request combines Initialize, Submit and Activate
-        SReturnValue execRun(const partitionID_t& _partitionID,
+        SReturnValue execRun(const SCommonParams& _common,
                              const SInitializeParams& _initializeParams,
                              const SSubmitParams& _submitParams,
                              const SActivateParams& _activateParams);
         /// \brief Update topology. Can be called multiple times in order to update topology.
-        SReturnValue execUpdate(const partitionID_t& _partitionID, const SUpdateParams& _params);
+        SReturnValue execUpdate(const SCommonParams& _common, const SUpdateParams& _params);
         /// \brief Shutdown DDS session
-        SReturnValue execShutdown(const partitionID_t& _partitionID);
+        SReturnValue execShutdown(const SCommonParams& _common);
 
         /// \brief Set properties
-        SReturnValue execSetProperties(const partitionID_t& _partitionID, const SSetPropertiesParams& _params);
+        SReturnValue execSetProperties(const SCommonParams& _common, const SSetPropertiesParams& _params);
         /// \brief Get state
-        SReturnValue execGetState(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        SReturnValue execGetState(const SCommonParams& _common, const SDeviceParams& _params);
 
         //
         // FairMQ device change state requests
         //
 
         /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
-        SReturnValue execConfigure(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        SReturnValue execConfigure(const SCommonParams& _common, const SDeviceParams& _params);
         /// \brief Start devices: Run
-        SReturnValue execStart(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        SReturnValue execStart(const SCommonParams& _common, const SDeviceParams& _params);
         /// \brief Stop devices: Stop
-        SReturnValue execStop(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        SReturnValue execStop(const SCommonParams& _common, const SDeviceParams& _params);
         /// \brief Reset devices: ResetTask->ResetDevice
-        SReturnValue execReset(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        SReturnValue execReset(const SCommonParams& _common, const SDeviceParams& _params);
         /// \brief Terminate devices: End
-        SReturnValue execTerminate(const partitionID_t& _partitionID, const SDeviceParams& _params);
+        SReturnValue execTerminate(const SCommonParams& _common, const SDeviceParams& _params);
 
         //
         // Generic requests

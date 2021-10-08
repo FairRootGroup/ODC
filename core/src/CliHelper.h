@@ -74,6 +74,7 @@ namespace odc::core
         // Request specific options
         //
         static void addOptions(boost::program_options::options_description& _options, partitionID_t& _partitionID);
+        static void addOptions(boost::program_options::options_description& _options, SCommonParams& _common);
         static void addOptions(boost::program_options::options_description& _options, SInitializeParams& _params);
         static void addOptions(boost::program_options::options_description& _options, SActivateParams& _params);
         static void addOptions(boost::program_options::options_description& _options, SUpdateParams& _params);

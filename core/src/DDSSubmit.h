@@ -51,7 +51,8 @@ namespace odc::core
 
         SParams makeParams(const std::string& _plugin,
                            const std::string& _resources,
-                           const partitionID_t& _partitionID);
+                           const partitionID_t& _partitionID,
+                           runNr_t _runNr);
 
       private:
         void registerDefaultPlugin(const std::string& _name);

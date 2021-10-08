@@ -94,10 +94,11 @@ void CDDSSubmit::registerDefaultPlugin(const std::string& _name)
 
 CDDSSubmit::SParams CDDSSubmit::makeParams(const string& _plugin,
                                            const string& _resources,
-                                           const partitionID_t& _partitionID)
+                                           const partitionID_t& _partitionID,
+                                           runNr_t _runNr)
 {
     CDDSSubmit::SParams params;
-    stringstream ss{ execPlugin(_plugin, _resources, _partitionID) };
+    stringstream ss{ execPlugin(_plugin, _resources, _partitionID, _runNr) };
     params.initFromXML(ss);
     return params;
 }

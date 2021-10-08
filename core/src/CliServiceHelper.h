@@ -198,11 +198,6 @@ namespace odc::core
             OLOG(ESeverity::clean) << _value;
         }
 
-        void print(const partitionID_t& _value)
-        {
-            OLOG(ESeverity::clean) << "Partition ID: " << std::quoted(_value);
-        }
-
         template <typename... RequestParams_t, typename StubFunc_t>
         std::string request(const std::string& _msg, const std::vector<std::string>& _args, StubFunc_t _stubFunc)
         {
@@ -236,72 +231,72 @@ namespace odc::core
 
             if (cmd == ".init")
             {
-                replyString = request<partitionID_t, SInitializeParams>(
+                replyString = request<SCommonParams, SInitializeParams>(
                     "Sending Initialize request...", args, &OwnerT::requestInitialize);
             }
             else if (cmd == ".submit")
             {
                 replyString =
-                    request<partitionID_t, SSubmitParams>("Sending Submit request...", args, &OwnerT::requestSubmit);
+                    request<SCommonParams, SSubmitParams>("Sending Submit request...", args, &OwnerT::requestSubmit);
             }
             else if (cmd == ".activate")
             {
-                replyString = request<partitionID_t, SActivateParams>(
+                replyString = request<SCommonParams, SActivateParams>(
                     "Sending Activate request...", args, &OwnerT::requestActivate);
             }
             else if (cmd == ".run")
             {
-                replyString = request<partitionID_t, SInitializeParams, SSubmitParams, SActivateParams>(
+                replyString = request<SCommonParams, SInitializeParams, SSubmitParams, SActivateParams>(
                     "Sending Run request...", args, &OwnerT::requestRun);
             }
             else if (cmd == ".upscale")
             {
                 replyString =
-                    request<partitionID_t, SUpdateParams>("Sending Upscale request...", args, &OwnerT::requestUpscale);
+                    request<SCommonParams, SUpdateParams>("Sending Upscale request...", args, &OwnerT::requestUpscale);
             }
             else if (cmd == ".downscale")
             {
-                replyString = request<partitionID_t, SUpdateParams>(
+                replyString = request<SCommonParams, SUpdateParams>(
                     "Sending Downscale request...", args, &OwnerT::requestDownscale);
             }
             else if (cmd == ".config")
             {
-                replyString = request<partitionID_t, SDeviceParams>(
+                replyString = request<SCommonParams, SDeviceParams>(
                     "Sending Configure request...", args, &OwnerT::requestConfigure);
             }
             else if (cmd == ".state")
             {
-                replyString = request<partitionID_t, SDeviceParams>(
+                replyString = request<SCommonParams, SDeviceParams>(
                     "Sending GetState request...", args, &OwnerT::requestGetState);
             }
             else if (cmd == ".prop")
             {
-                replyString = request<partitionID_t, SSetPropertiesParams>(
+                replyString = request<SCommonParams, SSetPropertiesParams>(
                     "Sending SetProperties request...", args, &OwnerT::requestSetProperties);
             }
             else if (cmd == ".start")
             {
                 replyString =
-                    request<partitionID_t, SDeviceParams>("Sending Start request...", args, &OwnerT::requestStart);
+                    request<SCommonParams, SDeviceParams>("Sending Start request...", args, &OwnerT::requestStart);
             }
             else if (cmd == ".stop")
             {
                 replyString =
-                    request<partitionID_t, SDeviceParams>("Sending Stop request...", args, &OwnerT::requestStop);
+                    request<SCommonParams, SDeviceParams>("Sending Stop request...", args, &OwnerT::requestStop);
             }
             else if (cmd == ".reset")
             {
                 replyString =
-                    request<partitionID_t, SDeviceParams>("Sending Reset request...", args, &OwnerT::requestReset);
+                    request<SCommonParams, SDeviceParams>("Sending Reset request...", args, &OwnerT::requestReset);
             }
             else if (cmd == ".term")
             {
-                replyString = request<partitionID_t, SDeviceParams>(
+                replyString = request<SCommonParams, SDeviceParams>(
                     "Sending Terminate request...", args, &OwnerT::requestTerminate);
             }
             else if (cmd == ".down")
             {
-                replyString = request<partitionID_t>("Sending Shutdown request...", args, &OwnerT::requestShutdown);
+                replyString = request<SCommonParams>("Sending Shutdown request...", args, &OwnerT::requestShutdown);
             }
             else if (cmd == ".status")
             {

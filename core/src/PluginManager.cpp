@@ -62,7 +62,8 @@ void CPluginManager::registerPlugin(const std::string& _plugin, const std::strin
 
 std::string CPluginManager::execPlugin(const string& _plugin,
                                        const string& _resources,
-                                       const partitionID_t& _partitionID) const
+                                       const partitionID_t& _partitionID,
+                                       runNr_t _runNr) const
 {
     // Check if plugin exists
     auto it = m_plugins.find(_plugin);
