@@ -202,24 +202,22 @@ void CControlService::SImpl::registerRequestTriggers(const CPluginManager::Plugi
 
 void CControlService::SImpl::execRequestTrigger(const string& _plugin, const SCommonParams& _common)
 {
-    const auto& prt{ _common.m_partitionID };
-    const auto run{ _common.m_runNr };
     if (m_triggers->isPluginRegistered(_plugin))
     {
         try
         {
-            OLOG(ESeverity::debug, prt) << "Executing request trigger " << quoted(_plugin);
-            string out{ m_triggers->execPlugin(_plugin, "", prt, run) };
-            OLOG(ESeverity::debug, prt) << "Request trigger " << quoted(_plugin) << " done: " << out;
+            OLOG(ESeverity::debug, _common) << "Executing request trigger " << quoted(_plugin);
+            string out{ m_triggers->execPlugin(_plugin, "", _common.m_partitionID, _common.m_runNr) };
+            OLOG(ESeverity::debug, _common) << "Request trigger " << quoted(_plugin) << " done: " << out;
         }
         catch (exception& _e)
         {
-            OLOG(ESeverity::error, prt) << "Request trigger " << quoted(_plugin) << " failed: " << _e.what();
+            OLOG(ESeverity::error, _common) << "Request trigger " << quoted(_plugin) << " failed: " << _e.what();
         }
     }
     else
     {
-        OLOG(ESeverity::debug, prt) << "No plugins registered for " << quoted(_plugin);
+        OLOG(ESeverity::debug, _common) << "No plugins registered for " << quoted(_plugin);
     }
 }
 
@@ -231,20 +229,21 @@ void CControlService::SImpl::restore(const std::string& _id)
     auto data{ CRestoreFile(_id).read() };
     for (const auto& v : data.m_partitions)
     {
-        OLOG(ESeverity::debug, v.m_partitionId)
+        OLOG(ESeverity::debug, v.m_partitionId, 0)
             << "Restoring (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
         auto result{ execInitialize(SCommonParams(v.m_partitionId, 0, -1), SInitializeParams(v.m_sessionId)) };
         if (result.m_error.m_code)
         {
-            OLOG(ESeverity::debug, v.m_partitionId)
+            OLOG(ESeverity::debug, v.m_partitionId, 0)
                 << "Failed to attach to the session. Executing Shutdown trigger for (" << quoted(v.m_partitionId) << "/"
                 << quoted(v.m_sessionId) << ")";
             execRequestTrigger("Shutdown", SCommonParams(v.m_partitionId, 0, -1));
         }
         else
         {
-            OLOG(ESeverity::debug, v.m_partitionId) << "Successfully attached to the session ("
-                                                    << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
+            OLOG(ESeverity::debug, v.m_partitionId, 0)
+                << "Successfully attached to the session (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId)
+                << ")";
         }
     }
 }
@@ -545,7 +544,7 @@ SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& _para
         }
         catch (exception& _e)
         {
-            OLOG(ESeverity::warning, status.m_partitionID)
+            OLOG(ESeverity::warning, status.m_partitionID, 0)
                 << "Failed to get session ID or session status: " << _e.what();
         }
 
@@ -561,7 +560,7 @@ SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& _para
             }
             catch (exception& _e)
             {
-                OLOG(ESeverity::warning, status.m_partitionID) << "Failed to get an aggregated state: " << _e.what();
+                OLOG(ESeverity::warning, status.m_partitionID, 0) << "Failed to get an aggregated state: " << _e.what();
             }
             result.m_partitions.push_back(status);
         }
@@ -580,7 +579,7 @@ SReturnValue CControlService::SImpl::createReturnValue(const SCommonParams& _com
                                                        AggregatedTopologyState _aggregatedState,
                                                        SReturnDetails::ptr_t _details)
 {
-    OLOG(ESeverity::debug, _common.m_partitionID) << "Creating return value...";
+    OLOG(ESeverity::debug, _common) << "Creating return value...";
     auto info{ getOrCreateSessionInfo(_common) };
     string sidStr{ to_string(info->m_session->getSessionID()) };
     EStatusCode status{ _error.m_code ? EStatusCode::error : EStatusCode::ok };
@@ -594,7 +593,7 @@ bool CControlService::SImpl::createDDSSession(const SCommonParams& _common, SErr
     {
         auto info{ getOrCreateSessionInfo(_common) };
         boost::uuids::uuid sessionID{ info->m_session->create() };
-        OLOG(ESeverity::info, _common.m_partitionID) << "DDS session created with session ID: " << to_string(sessionID);
+        OLOG(ESeverity::info, _common) << "DDS session created with session ID: " << to_string(sessionID);
     }
     catch (exception& _e)
     {
@@ -615,7 +614,7 @@ bool CControlService::SImpl::attachToDDSSession(const SCommonParams& _common,
     {
         auto info{ getOrCreateSessionInfo(_common) };
         info->m_session->attach(_sessionID);
-        OLOG(ESeverity::info, _common.m_partitionID) << "Attach to a DDS session with session ID: " << _sessionID;
+        OLOG(ESeverity::info, _common) << "Attach to a DDS session with session ID: " << _sessionID;
     }
     catch (exception& _e)
     {
@@ -655,14 +654,14 @@ bool CControlService::SImpl::submitDDSAgents(const SCommonParams& _common,
             }
             else
             {
-                OLOG(ESeverity::debug, _common.m_partitionID) << "Submit: " << _message.m_msg;
+                OLOG(ESeverity::debug, _common) << "Submit: " << _message.m_msg;
             }
         });
 
     requestPtr->setDoneCallback(
         [&cv, &_common]()
         {
-            OLOG(ESeverity::info, _common.m_partitionID) << "Agent submission done";
+            OLOG(ESeverity::info, _common) << "Agent submission done";
             cv.notify_all();
         });
 
@@ -680,7 +679,7 @@ bool CControlService::SImpl::submitDDSAgents(const SCommonParams& _common,
     }
     else
     {
-        OLOG(ESeverity::info, _common.m_partitionID) << "Agent submission done successfully";
+        OLOG(ESeverity::info, _common) << "Agent submission done successfully";
     }
     return success;
 }
@@ -695,8 +694,8 @@ bool CControlService::SImpl::requestCommanderInfo(const SCommonParams& _common,
         auto info{ getOrCreateSessionInfo(_common) };
         info->m_session->syncSendRequest<SCommanderInfoRequest>(
             SCommanderInfoRequest::request_t(), _commanderInfo, m_timeout, &ss);
-        OLOG(ESeverity::info, _common.m_partitionID) << ss.str();
-        OLOG(ESeverity::debug, _common.m_partitionID) << "Commander info: " << _commanderInfo;
+        OLOG(ESeverity::info, _common) << ss.str();
+        OLOG(ESeverity::debug, _common) << "Commander info: " << _commanderInfo;
         return true;
     }
     catch (exception& _e)
@@ -753,7 +752,7 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
             }
             else
             {
-                OLOG(ESeverity::debug, _common.m_partitionID) << "Activate: " << _message.m_msg;
+                OLOG(ESeverity::debug, _common) << "Activate: " << _message.m_msg;
             }
         });
 
@@ -763,9 +762,8 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
             uint32_t completed{ _progress.m_completed + _progress.m_errors };
             if (completed == _progress.m_total)
             {
-                OLOG(ESeverity::info, _common.m_partitionID)
-                    << "Activated tasks(" << _progress.m_completed << "), errors (" << _progress.m_errors
-                    << "), total (" << _progress.m_total << ")";
+                OLOG(ESeverity::info, _common) << "Activated tasks(" << _progress.m_completed << "), errors ("
+                                               << _progress.m_errors << "), total (" << _progress.m_total << ")";
             }
         });
 
@@ -782,12 +780,11 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
     {
         success = false;
         fillError(_common, _error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
-        OLOG(ESeverity::error, _common.m_partitionID) << _error;
+        OLOG(ESeverity::error, _common) << _error;
     }
     else
     {
-        OLOG(ESeverity::info, _common.m_partitionID)
-            << "Topology " << quoted(_topologyFile) << " activated successfully";
+        OLOG(ESeverity::info, _common) << "Topology " << quoted(_topologyFile) << " activated successfully";
     }
     return success;
 }
@@ -807,7 +804,7 @@ bool CControlService::SImpl::shutdownDDSSession(const SCommonParams& _common, SE
             info->m_session->shutdown();
             if (info->m_session->getSessionID() == boost::uuids::nil_uuid())
             {
-                OLOG(ESeverity::info, _common.m_partitionID) << "DDS session shutted down";
+                OLOG(ESeverity::info, _common) << "DDS session shutted down";
             }
             else
             {
@@ -830,8 +827,7 @@ bool CControlService::SImpl::createTopo(const SCommonParams& _common, SError& _e
     {
         auto info{ getOrCreateSessionInfo(_common) };
         info->m_topo = make_shared<dds::topology_api::CTopology>(_topologyFile);
-        OLOG(ESeverity::info, _common.m_partitionID)
-            << "DDS topology " << std::quoted(_topologyFile) << " created successfully";
+        OLOG(ESeverity::info, _common) << "DDS topology " << std::quoted(_topologyFile) << " created successfully";
     }
     catch (exception& _e)
     {
@@ -917,7 +913,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                           _error,
                           ErrorCode::FairMQChangeStateFailed,
                           toString("Aggregate topology state failed: ", _e.what()));
-                OLOG(ESeverity::debug, _common.m_partitionID)
+                OLOG(ESeverity::debug, _common)
                     << stateSummaryString(_common, result.second, _expectedState, info->m_topo);
             }
             if (_topologyState != nullptr)
@@ -940,7 +936,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                               toString("FairMQ change state failed: ", result.first.message()));
                     break;
             }
-            OLOG(ESeverity::debug, _common.m_partitionID)
+            OLOG(ESeverity::debug, _common)
                 << stateSummaryString(_common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
         }
     }
@@ -948,14 +944,14 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
     {
         success = false;
         fillError(_common, _error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
-        OLOG(ESeverity::debug, _common.m_partitionID)
-            << stateSummaryString(_common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
+        OLOG(ESeverity::debug, _common) << stateSummaryString(
+            _common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
     }
 
     if (success)
     {
-        OLOG(ESeverity::info, _common.m_partitionID)
-            << "State changed to " << _aggregatedState << " via " << _transition << " transition";
+        OLOG(ESeverity::info, _common) << "State changed to " << _aggregatedState << " via " << _transition
+                                       << " transition";
     }
 
     return success;
@@ -1035,7 +1031,7 @@ bool CControlService::SImpl::setProperties(const SCommonParams& _common,
         success = !result.first;
         if (success)
         {
-            OLOG(ESeverity::info, _common.m_partitionID) << "Set property finished successfully";
+            OLOG(ESeverity::info, _common) << "Set property finished successfully";
         }
         else
         {
@@ -1059,7 +1055,7 @@ bool CControlService::SImpl::setProperties(const SCommonParams& _common,
             {
                 msg += v + " ";
             }
-            OLOG(ESeverity::debug, _common.m_partitionID) << msg;
+            OLOG(ESeverity::debug, _common) << msg;
         }
     }
     catch (exception& _e)
@@ -1154,7 +1150,7 @@ void CControlService::SImpl::fillError(const SCommonParams& _common,
 {
     _error.m_code = MakeErrorCode(_errorCode);
     _error.m_details = _msg;
-    OLOG(ESeverity::error, _common.m_partitionID) << _error;
+    OLOG(ESeverity::error, _common) << _error;
 }
 
 CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateSessionInfo(const SCommonParams& _common)
@@ -1168,10 +1164,10 @@ CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateS
         newSessionInfo->m_session = make_shared<CSession>();
         newSessionInfo->m_partitionID = prt;
         m_sessions.insert(pair<partitionID_t, SSessionInfo::Ptr_t>(prt, newSessionInfo));
-        OLOG(ESeverity::debug, prt) << "Return new session info";
+        OLOG(ESeverity::debug, _common) << "Return new session info";
         return newSessionInfo;
     }
-    OLOG(ESeverity::debug, prt) << "Return existing session info";
+    OLOG(ESeverity::debug, _common) << "Return existing session info";
     return it->second;
 }
 
@@ -1220,7 +1216,7 @@ string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
         }
         catch (const exception& _e)
         {
-            OLOG(ESeverity::error, _common.m_partitionID)
+            OLOG(ESeverity::error, _common)
                 << "Failed to get task with ID (" << status.taskId << ") from topology (" << _topo->getName()
                 << ") at filepath " << std::quoted(_topo->getFilepath()) << ". Error: " << _e.what();
         }
@@ -1247,13 +1243,13 @@ bool CControlService::SImpl::subscribeToDDSSession(const SCommonParams& _common,
                 {
                     ESeverity severity{ (_info.m_exitCode != 0 || _info.m_signal != 0) ? ESeverity::fatal
                                                                                        : ESeverity::debug };
-                    OLOG(severity, _common.m_partitionID)
+                    OLOG(severity, _common)
                         << "Task (" << _info.m_taskID << ") with path (" << _info.m_taskPath << ") exited with code ("
                         << _info.m_exitCode << ") and signal (" << _info.m_signal << ") on (" << _info.m_host
                         << ") in working directory (" << _info.m_wrkDir << ")";
                 });
             info->m_session->sendRequest<SOnTaskDoneRequest>(request);
-            OLOG(ESeverity::info, _common.m_partitionID)
+            OLOG(ESeverity::info, _common)
                 << "Subscribed to task done event from session " << quoted(to_string(info->m_session->getSessionID()));
         }
         else
@@ -1300,7 +1296,7 @@ string CControlService::SImpl::topoFilepath(const SCommonParams& _common, const 
         string err;
         int exitCode{ EXIT_SUCCESS };
         string cmd{ ssCmd.str() };
-        OLOG(ESeverity::info, _common.m_partitionID) << "Executing topology script " << std::quoted(cmd);
+        OLOG(ESeverity::info, _common) << "Executing topology script " << std::quoted(cmd);
         execute(cmd, timeout, &out, &err, &exitCode);
 
         if (exitCode != EXIT_SUCCESS)
@@ -1314,8 +1310,8 @@ string CControlService::SImpl::topoFilepath(const SCommonParams& _common, const 
         }
 
         const string sout{ out.substr(0, min(out.length(), size_t(20))) };
-        OLOG(ESeverity::info, _common.m_partitionID) << "Topology script executed successfully: stdout ("
-                                                     << quoted(sout) << "...) stderr (" << quoted(err) << ")";
+        OLOG(ESeverity::info, _common) << "Topology script executed successfully: stdout (" << quoted(sout)
+                                       << "...) stderr (" << quoted(err) << ")";
 
         content = out;
     }
@@ -1330,8 +1326,7 @@ string CControlService::SImpl::topoFilepath(const SCommonParams& _common, const 
         throw runtime_error(toString("Failed to create temp topology file ", quoted(filepath.string())));
     }
     f << content;
-    OLOG(ESeverity::info, _common.m_partitionID)
-        << "Temp topology file " << quoted(filepath.string()) << " created successfully";
+    OLOG(ESeverity::info, _common) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
     return filepath.string();
 }
 

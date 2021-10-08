@@ -41,12 +41,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                         const odc::InitializeRequest* request,
                                         odc::GeneralReply* response)
 {
-    lock_guard<mutex> lock(getMutex(request->partitionid()));
-    OLOG(ESeverity::info, request->partitionid()) << "Initialize request:\n" << request->DebugString();
+    const auto common{ commonParams(request) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Initialize request:\n" << request->DebugString();
     SInitializeParams params{ request->sessionid() };
-    SReturnValue value{ m_service->execInitialize(commonParams(request), params) };
+    SReturnValue value{ m_service->execInitialize(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, request->partitionid()) << "Initialize response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Initialize response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -54,12 +55,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                     const odc::SubmitRequest* request,
                                     odc::GeneralReply* response)
 {
-    lock_guard<mutex> lock(getMutex(request->partitionid()));
-    OLOG(ESeverity::info, request->partitionid()) << "Submit request:\n" << request->DebugString();
+    const auto common{ commonParams(request) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Submit request:\n" << request->DebugString();
     SSubmitParams params{ request->plugin(), request->resources() };
-    SReturnValue value{ m_service->execSubmit(commonParams(request), params) };
+    SReturnValue value{ m_service->execSubmit(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, request->partitionid()) << "Submit response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Submit response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -67,12 +69,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                       const odc::ActivateRequest* request,
                                       odc::GeneralReply* response)
 {
-    lock_guard<mutex> lock(getMutex(request->partitionid()));
-    OLOG(ESeverity::info, request->partitionid()) << "Activate request:\n" << request->DebugString();
+    const auto common{ commonParams(request) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Activate request:\n" << request->DebugString();
     SActivateParams params{ request->topology(), request->content(), request->script() };
-    SReturnValue value{ m_service->execActivate(commonParams(request), params) };
+    SReturnValue value{ m_service->execActivate(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, request->partitionid()) << "Activate response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Activate response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -80,14 +83,15 @@ void CGrpcService::restore(const std::string& _restoreId)
                                  const odc::RunRequest* request,
                                  odc::GeneralReply* response)
 {
-    lock_guard<mutex> lock(getMutex(request->partitionid()));
-    OLOG(ESeverity::info, request->partitionid()) << "Run request:\n" << request->DebugString();
+    const auto common{ commonParams(request) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Run request:\n" << request->DebugString();
     SInitializeParams initializeParams{ "" };
     SSubmitParams submitParams{ request->plugin(), request->resources() };
     SActivateParams activateParams{ request->topology(), request->content(), request->script() };
-    SReturnValue value{ m_service->execRun(commonParams(request), initializeParams, submitParams, activateParams) };
+    SReturnValue value{ m_service->execRun(common, initializeParams, submitParams, activateParams) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, request->partitionid()) << "Run response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Run response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -95,12 +99,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                     const odc::UpdateRequest* request,
                                     odc::GeneralReply* response)
 {
-    lock_guard<mutex> lock(getMutex(request->partitionid()));
-    OLOG(ESeverity::info, request->partitionid()) << "Update request:\n" << request->DebugString();
+    const auto common{ commonParams(request) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Update request:\n" << request->DebugString();
     SUpdateParams params{ request->topology(), request->content(), request->script() };
-    SReturnValue value{ m_service->execUpdate(commonParams(request), params) };
+    SReturnValue value{ m_service->execUpdate(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, request->partitionid()) << "Update response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Update response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -108,12 +113,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                       const odc::StateRequest* request,
                                       odc::StateReply* response)
 {
-    lock_guard<mutex> lock(getMutex(request->partitionid()));
-    OLOG(ESeverity::info, request->partitionid()) << "GetState request:\n" << request->DebugString();
+    const auto common{ commonParams(request) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "GetState request:\n" << request->DebugString();
     SDeviceParams params{ request->path(), request->detailed() };
-    SReturnValue value{ m_service->execGetState(commonParams(request), params) };
+    SReturnValue value{ m_service->execGetState(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, request->partitionid()) << "GetState response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "GetState response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -121,8 +127,9 @@ void CGrpcService::restore(const std::string& _restoreId)
                                            const odc::SetPropertiesRequest* request,
                                            odc::GeneralReply* response)
 {
-    lock_guard<mutex> lock(getMutex(request->partitionid()));
-    OLOG(ESeverity::info, request->partitionid()) << "SetProperties request:\n" << request->DebugString();
+    const auto common{ commonParams(request) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "SetProperties request:\n" << request->DebugString();
     // Convert from protobuf to ODC format
     SSetPropertiesParams::Properties_t props;
     for (int i = 0; i < request->properties_size(); i++)
@@ -132,9 +139,9 @@ void CGrpcService::restore(const std::string& _restoreId)
     }
 
     SSetPropertiesParams params{ props, request->path() };
-    SReturnValue value{ m_service->execSetProperties(commonParams(request), params) };
+    SReturnValue value{ m_service->execSetProperties(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, request->partitionid()) << "SetProperties response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "SetProperties response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -142,13 +149,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                        const odc::ConfigureRequest* request,
                                        odc::StateReply* response)
 {
-    auto partititonID{ request->request().partitionid() };
-    lock_guard<mutex> lock(getMutex(partititonID));
-    OLOG(ESeverity::info, partititonID) << "Configure request:\n" << request->DebugString();
+    const auto common{ commonParams(&request->request()) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Configure request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execConfigure(commonParams(&request->request()), params) };
+    SReturnValue value{ m_service->execConfigure(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, partititonID) << "Configure response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Configure response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -156,13 +163,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                    const odc::StartRequest* request,
                                    odc::StateReply* response)
 {
-    auto partititonID{ request->request().partitionid() };
-    lock_guard<mutex> lock(getMutex(partititonID));
-    OLOG(ESeverity::info, partititonID) << "Start request:\n" << request->DebugString();
+    const auto common{ commonParams(&request->request()) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Start request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execStart(commonParams(&request->request()), params) };
+    SReturnValue value{ m_service->execStart(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, partititonID) << "Start response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Start response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -170,13 +177,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                   const odc::StopRequest* request,
                                   odc::StateReply* response)
 {
-    auto partititonID{ request->request().partitionid() };
-    lock_guard<mutex> lock(getMutex(partititonID));
-    OLOG(ESeverity::info, partititonID) << "Stop request:\n" << request->DebugString();
+    const auto common{ commonParams(&request->request()) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Stop request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execStop(commonParams(&request->request()), params) };
+    SReturnValue value{ m_service->execStop(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, partititonID) << "Stop response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Stop response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -184,13 +191,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                    const odc::ResetRequest* request,
                                    odc::StateReply* response)
 {
-    auto partititonID{ request->request().partitionid() };
-    lock_guard<mutex> lock(getMutex(partititonID));
-    OLOG(ESeverity::info, partititonID) << "Reset request:\n" << request->DebugString();
+    const auto common{ commonParams(&request->request()) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Reset request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execReset(commonParams(&request->request()), params) };
+    SReturnValue value{ m_service->execReset(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, partititonID) << "Reset response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Reset response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -198,13 +205,13 @@ void CGrpcService::restore(const std::string& _restoreId)
                                        const odc::TerminateRequest* request,
                                        odc::StateReply* response)
 {
-    auto partititonID{ request->request().partitionid() };
-    lock_guard<mutex> lock(getMutex(partititonID));
-    OLOG(ESeverity::info, partititonID) << "Terminate request:\n" << request->DebugString();
+    const auto common{ commonParams(&request->request()) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Terminate request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execTerminate(commonParams(&request->request()), params) };
+    SReturnValue value{ m_service->execTerminate(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, partititonID) << "Terminate response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Terminate response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 
@@ -212,11 +219,12 @@ void CGrpcService::restore(const std::string& _restoreId)
                                       const odc::ShutdownRequest* request,
                                       odc::GeneralReply* response)
 {
-    lock_guard<mutex> lock(getMutex(request->partitionid()));
-    OLOG(ESeverity::info, request->partitionid()) << "Shutdown request:\n" << request->DebugString();
-    SReturnValue value{ m_service->execShutdown(commonParams(request)) };
+    const auto common{ commonParams(request) };
+    lock_guard<mutex> lock(getMutex(common.m_partitionID));
+    OLOG(ESeverity::info, common) << "Shutdown request:\n" << request->DebugString();
+    SReturnValue value{ m_service->execShutdown(common) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, request->partitionid()) << "Shutdown response:\n" << response->DebugString();
+    OLOG(ESeverity::info, common) << "Shutdown response:\n" << response->DebugString();
     return ::grpc::Status::OK;
 }
 

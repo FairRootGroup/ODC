@@ -66,9 +66,19 @@ namespace odc::core
         {
             using namespace AliceO2::InfoLogger;
             InfoLogger::InfoLoggerMessageOption options{ convertSeverity(_severity), 0, -1, __FILE__, __LINE__ };
-            InfoLoggerContext context(m_context,
-                                      { { InfoLoggerContext::FieldName::Partition, _channel },
-                                        { InfoLoggerContext::FieldName::Run, std::string("0") } });
+
+            // Channel string contains "partition:run"
+            std::string partition;
+            std::string run;
+            const auto idx{ _channel.find_first_of(':') };
+            if (std::string::npos != idx)
+            {
+                partition = _channel.substr(0, idx);
+                run = _channel.substr(idx + 1);
+            }
+            InfoLoggerContext context(
+                m_context,
+                { { InfoLoggerContext::FieldName::Partition, partition }, { InfoLoggerContext::FieldName::Run, run } });
             m_log.log(options, context, "%s", _msg.c_str());
         }
 
