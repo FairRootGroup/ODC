@@ -24,6 +24,22 @@ void combineDPLCollections(const vector<string>& _topos, CTopoCollection::Ptr_t 
         CTopoCollection collection("DPL");
         collection.initFromXML(filepath);
         const auto& elements{ collection.getElements() };
+
+        // Check that tasks with the same name don't exist in the collection
+        for (const auto& newTask : elements)
+        {
+            for (const auto& task : _collection->getElements())
+            {
+                if (newTask->getName() == task->getName())
+                {
+                    stringstream ss;
+                    ss << "Task named " << quoted(newTask->getName()) << " already exists in the output collection";
+                    throw runtime_error(ss.str());
+                }
+            }
+        }
+
+        // Add new tasks
         for (const auto& element : elements)
         {
             auto task{ _collection->addElement<CTopoTask>(element->getName()) };
