@@ -202,7 +202,7 @@ namespace odc::core
 
         partitionID_t m_partitionID; ///< Partition ID.
         runNr_t m_runNr{ 0 };        ///< Run number.
-        int m_timeout{ -1 };         ///< Request timeout in seconds. Negative value means "not set".
+        size_t m_timeout{ 0 };       ///< Request timeout in seconds. 0 means "not set"
 
         // \brief ostream operator.
         friend std::ostream& operator<<(std::ostream& _os, const SCommonParams& _params);

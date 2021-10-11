@@ -320,6 +320,5 @@ std::mutex& CGrpcService::getMutex(const partitionID_t& _partitionID)
 template <typename Request_t>
 core::SCommonParams CGrpcService::commonParams(const Request_t* _request)
 {
-    // TODO: check if timeout is not set than use -1
     return core::SCommonParams(_request->partitionid(), _request->runnr(), _request->timeout());
 }

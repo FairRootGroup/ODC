@@ -163,7 +163,7 @@ void CCliHelper::addOptions(boost::program_options::options_description& _option
 {
     _options.add_options()("id", bpo::value<partitionID_t>(&_common.m_partitionID)->default_value(""), "Partition ID");
     _options.add_options()("run", bpo::value<runNr_t>(&_common.m_runNr)->default_value(0), "Run Nr");
-    _options.add_options()("timeout", bpo::value<int>(&_common.m_timeout)->default_value(-1), "Request timeout");
+    _options.add_options()("timeout", bpo::value<size_t>(&_common.m_timeout)->default_value(0), "Request timeout");
 }
 
 void CCliHelper::addOptions(boost::program_options::options_description& _options, SInitializeParams& _params)

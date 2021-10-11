@@ -161,6 +161,8 @@ struct CControlService::SImpl
     template <class Params_t>
     string topoFilepath(const SCommonParams& _common, const Params_t& _params);
 
+    chrono::seconds requestTimeout(const SCommonParams& _common) const;
+
     // Disable copy constructors and assignment operators
     SImpl(const SImpl&) = delete;
     SImpl(SImpl&&) = delete;
@@ -231,13 +233,13 @@ void CControlService::SImpl::restore(const std::string& _id)
     {
         OLOG(ESeverity::debug, v.m_partitionId, 0)
             << "Restoring (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
-        auto result{ execInitialize(SCommonParams(v.m_partitionId, 0, -1), SInitializeParams(v.m_sessionId)) };
+        auto result{ execInitialize(SCommonParams(v.m_partitionId, 0, 0), SInitializeParams(v.m_sessionId)) };
         if (result.m_error.m_code)
         {
             OLOG(ESeverity::debug, v.m_partitionId, 0)
                 << "Failed to attach to the session. Executing Shutdown trigger for (" << quoted(v.m_partitionId) << "/"
                 << quoted(v.m_sessionId) << ")";
-            execRequestTrigger("Shutdown", SCommonParams(v.m_partitionId, 0, -1));
+            execRequestTrigger("Shutdown", SCommonParams(v.m_partitionId, 0, 0));
         }
         else
         {
@@ -670,7 +672,7 @@ bool CControlService::SImpl::submitDDSAgents(const SCommonParams& _common,
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus = cv.wait_for(lock, m_timeout);
+    std::cv_status waitStatus = cv.wait_for(lock, requestTimeout(_common));
 
     if (waitStatus == std::cv_status::timeout)
     {
@@ -693,7 +695,7 @@ bool CControlService::SImpl::requestCommanderInfo(const SCommonParams& _common,
         stringstream ss;
         auto info{ getOrCreateSessionInfo(_common) };
         info->m_session->syncSendRequest<SCommanderInfoRequest>(
-            SCommanderInfoRequest::request_t(), _commanderInfo, m_timeout, &ss);
+            SCommanderInfoRequest::request_t(), _commanderInfo, requestTimeout(_common), &ss);
         OLOG(ESeverity::info, _common) << ss.str();
         OLOG(ESeverity::debug, _common) << "Commander info: " << _commanderInfo;
         return true;
@@ -713,7 +715,7 @@ bool CControlService::SImpl::waitForNumActiveAgents(const SCommonParams& _common
     try
     {
         auto info{ getOrCreateSessionInfo(_common) };
-        info->m_session->waitForNumAgents<CSession::EAgentState::active>(_numAgents, m_timeout);
+        info->m_session->waitForNumAgents<CSession::EAgentState::active>(_numAgents, requestTimeout(_common));
     }
     catch (std::exception& _e)
     {
@@ -774,7 +776,7 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus{ cv.wait_for(lock, m_timeout) };
+    std::cv_status waitStatus{ cv.wait_for(lock, requestTimeout(_common)) };
 
     if (waitStatus == std::cv_status::timeout)
     {
@@ -897,7 +899,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
 
     try
     {
-        auto result{ info->m_fairmqTopology->ChangeState(_transition, _path, m_timeout) };
+        auto result{ info->m_fairmqTopology->ChangeState(_transition, _path, requestTimeout(_common)) };
 
         success = !result.first;
         if (success)
@@ -1026,7 +1028,8 @@ bool CControlService::SImpl::setProperties(const SCommonParams& _common,
 
     try
     {
-        auto result{ info->m_fairmqTopology->SetProperties(_params.m_properties, _params.m_path, m_timeout) };
+        auto result{ info->m_fairmqTopology->SetProperties(
+            _params.m_properties, _params.m_path, requestTimeout(_common)) };
 
         success = !result.first;
         if (success)
@@ -1328,6 +1331,13 @@ string CControlService::SImpl::topoFilepath(const SCommonParams& _common, const 
     f << content;
     OLOG(ESeverity::info, _common) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
     return filepath.string();
+}
+
+chrono::seconds CControlService::SImpl::requestTimeout(const SCommonParams& _common) const
+{
+    auto timeout{ (_common.m_timeout == 0) ? m_timeout : chrono::seconds(_common.m_timeout) };
+    OLOG(ESeverity::debug, _common) << "Request timeout: " << timeout.count() << " sec";
+    return timeout;
 }
 
 //
