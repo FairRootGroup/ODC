@@ -33,7 +33,8 @@ void combineDPLCollections(const vector<string>& _topos, CTopoCollection::Ptr_t 
                 if (newTask->getName() == task->getName())
                 {
                     stringstream ss;
-                    ss << "Task named " << quoted(newTask->getName()) << " already exists in the output collection";
+                    ss << "Task named " << quoted(newTask->getName()) << " from " << quoted(filepath)
+                       << " already exists in the output collection " << quoted(_collection->getName());
                     throw runtime_error(ss.str());
                 }
             }
@@ -55,6 +56,7 @@ int main(int argc, char** argv)
     {
         string ddTopo;
         vector<string> recoTopos;
+        string monTopo;
         size_t recoN;
         vector<string> calibTopos;
         string calibwn;
@@ -65,10 +67,13 @@ int main(int argc, char** argv)
         bpo::options_description options("epn-topo options");
         options.add_options()("help,h", "Produce help message");
         options.add_options()(
-            "dd", bpo::value<string>(&ddTopo)->default_value(""), "Filepath to Data Distribution XML topology");
+            "dd", bpo::value<string>(&ddTopo)->default_value(""), "Filepath to XML topology of Data Distribution");
         options.add_options()("reco,r",
                               bpo::value<vector<string>>(&recoTopos)->multitoken(),
                               "Space separated list of filepathes of reconstruction XML topologies");
+        options.add_options()("mon",
+                              bpo::value<string>(&monTopo)->default_value(""),
+                              "Filepath to XML topology of a stderr monitor tool");
         options.add_options()("n", bpo::value<size_t>(&recoN)->default_value(1), "Number of DD tasks");
         options.add_options()("calib,c",
                               bpo::value<vector<string>>(&calibTopos)->multitoken(),
@@ -115,6 +120,13 @@ int main(int argc, char** argv)
             }
             // Combine all tasks from reco DPL collections to a reco collection
             combineDPLCollections(recoTopos, recoC, prependExe);
+            // Add stderr monitor task and initialize it from XML topology file
+            if (!monTopo.empty())
+            {
+                auto monTask{ recoC->addElement<CTopoTask>("ErrorMonitorTask") };
+                monTask->initFromXML(monTopo);
+                monTask->setExe(prependExe + monTask->getExe());
+            }
             // Add new requirement - one Reco DPL collection per host
             auto recoR{ recoC->addRequirement("RecoRequirement") };
             recoR->setRequirementType(CTopoRequirement::EType::MaxInstancesPerHost);

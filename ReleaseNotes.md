@@ -11,6 +11,7 @@ Added: set `Partition` and `Run` fields of the `InfoLogger`.
 Modified: require `InfoLogger` `2.2.0`.    
 Added: optional `runnr` field to each request. If specified than run number will appear in logs.    
 Added:: optional `timeout` field to each request. If specified than timeout value from request is used. Otherwise, the default global timeout is used.    
+Added: `odc-epn-topo` learned a new option `--mon` allowing to optionally include error monitoring tool.    
 
 
 
