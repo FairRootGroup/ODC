@@ -1,6 +1,10 @@
 # ODC Release Notes
 
-## v0.52 (NOT YET RELEASED)
+## v0.54 (NOT YET RELEASED)
+
+
+
+## v0.52 (2021-10-13)
 ### ODC common
 Added: session restore. Managed sessions are serialized to a file, specified by ID. On restart ODC tryes to attach to the running sessions. If failed then shutdown trigger is called.    
 Added: optionally filter running DDS sessions in `Status` request.    
@@ -14,8 +18,7 @@ Added:: optional `timeout` field to each request. If specified than timeout valu
 Added: `odc-epn-topo` learned a new option `--mon` allowing to optionally include error monitoring tool.    
 
 
-
-## v0.48 (2021-10-01)
+## v0.50 (2021-10-01)
 ### ODC common
 Modified: use sync version of `SetProperties` instead of async one.    
 Modified: use sync version of `ChangeState` instead of async one.    
