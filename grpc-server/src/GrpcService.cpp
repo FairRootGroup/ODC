@@ -47,7 +47,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SInitializeParams params{ request->sessionid() };
     SReturnValue value{ m_service->execInitialize(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, common) << "Initialize response:\n" << response->DebugString();
+    logResponse("Initialize response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -61,7 +61,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SSubmitParams params{ request->plugin(), request->resources() };
     SReturnValue value{ m_service->execSubmit(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, common) << "Submit response:\n" << response->DebugString();
+    logResponse("Submit response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -75,7 +75,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SActivateParams params{ request->topology(), request->content(), request->script() };
     SReturnValue value{ m_service->execActivate(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, common) << "Activate response:\n" << response->DebugString();
+    logResponse("Activate response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -91,7 +91,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SActivateParams activateParams{ request->topology(), request->content(), request->script() };
     SReturnValue value{ m_service->execRun(common, initializeParams, submitParams, activateParams) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, common) << "Run response:\n" << response->DebugString();
+    logResponse("Run response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -105,7 +105,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SUpdateParams params{ request->topology(), request->content(), request->script() };
     SReturnValue value{ m_service->execUpdate(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, common) << "Update response:\n" << response->DebugString();
+    logResponse("Update response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -119,7 +119,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SDeviceParams params{ request->path(), request->detailed() };
     SReturnValue value{ m_service->execGetState(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, common) << "GetState response:\n" << response->DebugString();
+    logResponse("GetState response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -141,7 +141,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SSetPropertiesParams params{ props, request->path() };
     SReturnValue value{ m_service->execSetProperties(common, params) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, common) << "SetProperties response:\n" << response->DebugString();
+    logResponse("SetProperties response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -155,7 +155,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service->execConfigure(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, common) << "Configure response:\n" << response->DebugString();
+    logResponse("Configure response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -169,7 +169,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service->execStart(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, common) << "Start response:\n" << response->DebugString();
+    logResponse("Start response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -183,7 +183,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service->execStop(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, common) << "Stop response:\n" << response->DebugString();
+    logResponse("Stop response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -197,7 +197,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service->execReset(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, common) << "Reset response:\n" << response->DebugString();
+    logResponse("Reset response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -211,7 +211,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service->execTerminate(common, params) };
     setupStateReply(response, value);
-    OLOG(ESeverity::info, common) << "Terminate response:\n" << response->DebugString();
+    logResponse("Terminate response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -224,7 +224,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     OLOG(ESeverity::info, common) << "Shutdown request:\n" << request->DebugString();
     SReturnValue value{ m_service->execShutdown(common) };
     setupGeneralReply(response, value);
-    OLOG(ESeverity::info, common) << "Shutdown response:\n" << response->DebugString();
+    logResponse("Shutdown response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
@@ -235,7 +235,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     OLOG(ESeverity::info) << "Status request:\n" << request->DebugString();
     SStatusReturnValue value{ m_service->execStatus(SStatusParams(request->running())) };
     setupStatusReply(response, value);
-    OLOG(ESeverity::info) << "Status response:\n" << response->DebugString();
+    logResponse("Status response:\n", core::SCommonParams(), response);
     return ::grpc::Status::OK;
 }
 
@@ -321,4 +321,19 @@ template <typename Request_t>
 core::SCommonParams CGrpcService::commonParams(const Request_t* _request)
 {
     return core::SCommonParams(_request->partitionid(), _request->runnr(), _request->timeout());
+}
+
+template <typename Response_t>
+void CGrpcService::logResponse(const string& _msg, const core::SCommonParams& _common, const Response_t* _response)
+{
+    auto severity{ (_response->status() == odc::ReplyStatus::ERROR) ? ESeverity::error : ESeverity::info };
+    OLOG(severity, _common) << _msg << _response->DebugString();
+}
+
+void CGrpcService::logResponse(const std::string& _msg,
+                               const core::SCommonParams& _common,
+                               const odc::StateReply* _response)
+{
+    auto severity{ (_response->reply().status() == odc::ReplyStatus::ERROR) ? ESeverity::error : ESeverity::info };
+    OLOG(severity, _common) << _msg << _response->DebugString();
 }

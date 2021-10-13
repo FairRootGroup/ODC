@@ -71,6 +71,9 @@ namespace odc::grpc
         std::mutex& getMutex(const odc::core::partitionID_t& _partitionID);
         template <typename Request_t>
         core::SCommonParams commonParams(const Request_t* _request);
+        template <typename Response_t>
+        void logResponse(const std::string& _msg, const core::SCommonParams& _common, const Response_t* _response);
+        void logResponse(const std::string& _msg, const core::SCommonParams& _common, const odc::StateReply* _response);
 
         std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
 
