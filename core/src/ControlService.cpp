@@ -1242,7 +1242,7 @@ bool CControlService::SImpl::subscribeToDDSSession(const SCommonParams& _common,
             // Subscrube on TaskDone events
             auto request{ SOnTaskDoneRequest::makeRequest(SOnTaskDoneRequest::request_t()) };
             request->setResponseCallback(
-                [&_common](const SOnTaskDoneResponseData& _info)
+                [_common](const SOnTaskDoneResponseData& _info)
                 {
                     ESeverity severity{ (_info.m_exitCode != 0 || _info.m_signal != 0) ? ESeverity::fatal
                                                                                        : ESeverity::debug };
