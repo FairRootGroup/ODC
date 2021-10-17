@@ -764,7 +764,7 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
             uint32_t completed{ _progress.m_completed + _progress.m_errors };
             if (completed == _progress.m_total)
             {
-                OLOG(ESeverity::info, _common) << "Activated tasks(" << _progress.m_completed << "), errors ("
+                OLOG(ESeverity::info, _common) << "Activated tasks (" << _progress.m_completed << "), errors ("
                                                << _progress.m_errors << "), total (" << _progress.m_total << ")";
             }
         });

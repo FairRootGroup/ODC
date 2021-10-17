@@ -1,6 +1,10 @@
 # ODC Release Notes
 
 ## v0.54 (NOT YET RELEASED)
+### ODC common
+Added: `odc-epn-topo` learned new option `recown` allowing to specify worker node requirement for reco collection.    
+Modified: `odc-reco-topo` add error monitoring task to calibration collection.    
+Modified: Log gRPC replies with error severity in case of a failure.    
 
 
 

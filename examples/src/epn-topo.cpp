@@ -59,6 +59,7 @@ int main(int argc, char** argv)
         string monTopo;
         size_t recoN;
         vector<string> calibTopos;
+        string recown;
         string calibwn;
         string outputTopo;
         string prependExe;
@@ -71,6 +72,7 @@ int main(int argc, char** argv)
         options.add_options()("reco,r",
                               bpo::value<vector<string>>(&recoTopos)->multitoken(),
                               "Space separated list of filepathes of reconstruction XML topologies");
+        options.add_options()("recown", bpo::value<string>(&recown)->default_value(""), "Name of the reco worker node");
         options.add_options()("mon",
                               bpo::value<string>(&monTopo)->default_value(""),
                               "Filepath to XML topology of a stderr monitor tool");
@@ -79,7 +81,7 @@ int main(int argc, char** argv)
                               bpo::value<vector<string>>(&calibTopos)->multitoken(),
                               "Space separated list of filepathes of calibration XML topologies");
         options.add_options()(
-            "calibwn", bpo::value<string>(&calibwn)->default_value("wn_calib"), "Name of the calibration worker node");
+            "calibwn", bpo::value<string>(&calibwn)->default_value(""), "Name of the calibration worker node");
         options.add_options()("prependexe,p",
                               bpo::value<string>(&prependExe)->default_value(""),
                               "Prepend with the command all exe tags");
@@ -128,9 +130,16 @@ int main(int argc, char** argv)
                 monTask->setExe(prependExe + monTask->getExe());
             }
             // Add new requirement - one Reco DPL collection per host
-            auto recoR{ recoC->addRequirement("RecoRequirement") };
+            auto recoR{ recoC->addRequirement("RecoInstanceRequirement") };
             recoR->setRequirementType(CTopoRequirement::EType::MaxInstancesPerHost);
             recoR->setValue("1");
+            if (!recown.empty())
+            {
+                // Add new worker node name requirement
+                auto recoR{ recoC->addRequirement("RecoWnRequirement") };
+                recoR->setRequirementType(CTopoRequirement::EType::WnName);
+                recoR->setValue(recown);
+            }
         }
 
         //
@@ -143,10 +152,20 @@ int main(int argc, char** argv)
             auto calibC{ creator.getMainGroup()->addElement<CTopoCollection>("CalibCollection") };
             // Combine all tasks from calobration DPL collections to a calibration collection
             combineDPLCollections(calibTopos, calibC, prependExe);
-            // Add new requirement - calibration worker node name
-            auto calibR{ calibC->addRequirement("CalibRequirement") };
-            calibR->setRequirementType(CTopoRequirement::EType::WnName);
-            calibR->setValue(calibwn);
+            // Add stderr monitor task and initialize it from XML topology file
+            if (!monTopo.empty())
+            {
+                auto monTask{ calibC->addElement<CTopoTask>("ErrorMonitorTask") };
+                monTask->initFromXML(monTopo);
+                monTask->setExe(prependExe + monTask->getExe());
+            }
+            if (!calibwn.empty())
+            {
+                // Add new requirement - calibration worker node name
+                auto calibR{ calibC->addRequirement("CalibRequirement") };
+                calibR->setRequirementType(CTopoRequirement::EType::WnName);
+                calibR->setValue(calibwn);
+            }
         }
 
         // Save topology to the oputput file
