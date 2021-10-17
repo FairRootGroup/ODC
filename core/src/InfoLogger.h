@@ -58,7 +58,8 @@ namespace odc::core
       private:
         CInfoLogger()
         {
-            m_context.setField(AliceO2::InfoLogger::InfoLoggerContext::FieldName::Facility, "ODC");
+            m_context.setField(AliceO2::InfoLogger::InfoLoggerContext::FieldName::Facility, std::string("ODC"));
+            m_context.setField(AliceO2::InfoLogger::InfoLoggerContext::FieldName::System, std::string("ODC"));
             m_log.setContext(m_context);
         }
 
