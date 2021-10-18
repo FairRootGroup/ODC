@@ -1190,8 +1190,8 @@ string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
                                                   DeviceState _expectedState,
                                                   DDSTopologyPtr_t _topo)
 {
-    size_t totalCount{ _topologyState.size() };
-    size_t failedCount{ 0 };
+    size_t taskTotalCount{ _topologyState.size() };
+    size_t taskFailedCount{ 0 };
     stringstream ss;
     for (const auto& status : _topologyState)
     {
@@ -1199,13 +1199,13 @@ string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
         if (status.state == _expectedState)
             continue;
 
-        failedCount++;
-        if (failedCount == 1)
+        taskFailedCount++;
+        if (taskFailedCount == 1)
         {
             ss << "List of failed devices for an expected state " << _expectedState << ":";
         }
         ss << endl
-           << right << setw(7) << failedCount << " Device: state (" << status.state << "), last state ("
+           << right << setw(7) << taskFailedCount << " Device: state (" << status.state << "), last state ("
            << status.lastState << "), task ID (" << status.taskId << "), collection ID (" << status.collectionId
            << "), "
            << "subscribed (" << status.subscribed_to_state_changes << ")";
@@ -1224,10 +1224,52 @@ string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
                 << ") at filepath " << std::quoted(_topo->getFilepath()) << ". Error: " << _e.what();
         }
     }
-    size_t successCount{ totalCount - failedCount };
+
+    auto collectionMap{ GroupByCollectionId(_topologyState) };
+    size_t collectionTotalCount{ collectionMap.size() };
+    size_t collectionFailedCount{ 0 };
+    for (const auto& states : collectionMap)
+    {
+        auto collectionState{ AggregateState(states.second) };
+        auto collectionId{ states.first };
+        // Print only failed collections
+        if (collectionState == _expectedState)
+            continue;
+
+        collectionFailedCount++;
+        if (collectionFailedCount == 1)
+        {
+            ss << endl << "List of failed collections for an expected state " << _expectedState << ":";
+        }
+        ss << endl
+           << right << setw(7) << collectionFailedCount << " Collection: state (" << collectionState
+           << "), collection ID (" << collectionId << ")";
+
+        try
+        {
+            if (_topo != nullptr)
+            {
+                auto collection{ _topo->getRuntimeCollectionById(collectionId) };
+                ss << ", collection path (" << collection.m_collectionPath << "), number of tasks ("
+                   << collection.m_collection->getNofTasks() << ")";
+            }
+        }
+        catch (const exception& _e)
+        {
+            OLOG(ESeverity::error, _common)
+                << "Failed to get collection with ID (" << collectionId << ") from topology (" << _topo->getName()
+                << ") at filepath " << std::quoted(_topo->getFilepath()) << ". Error: " << _e.what();
+        }
+    }
+
+    size_t taskSuccessCount{ taskTotalCount - taskFailedCount };
+    size_t collectionSuccessCount{ collectionTotalCount - collectionFailedCount };
     ss << endl
-       << "Device status summary for expected state (" << _expectedState << "): total/success/failed devices ("
-       << totalCount << "/" << successCount << "/" << failedCount << ")";
+       << "Summary for expected state (" << _expectedState << "): " << endl
+       << "   Tasks total/success/failed (" << taskTotalCount << "/" << taskSuccessCount << "/" << taskFailedCount
+       << ")" << endl
+       << "   Collections total/success/failed (" << collectionTotalCount << "/" << collectionSuccessCount << "/"
+       << collectionFailedCount << ")";
 
     return ss.str();
 }
