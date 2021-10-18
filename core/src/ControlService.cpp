@@ -1205,9 +1205,9 @@ string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
             ss << "List of failed devices for an expected state " << _expectedState << ":";
         }
         ss << endl
-           << "  "
-           << "Device: state (" << status.state << "), last state (" << status.lastState << "), task ID ("
-           << status.taskId << "), collection ID (" << status.collectionId << "), "
+           << right << setw(7) << failedCount << " Device: state (" << status.state << "), last state ("
+           << status.lastState << "), task ID (" << status.taskId << "), collection ID (" << status.collectionId
+           << "), "
            << "subscribed (" << status.subscribed_to_state_changes << ")";
         try
         {
