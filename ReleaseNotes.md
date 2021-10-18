@@ -1,7 +1,13 @@
 # ODC Release Notes
 
-## v0.56 (NOT YET RELEASED)
+## v0.58 (NOT YET RELEASED)
 
+
+
+## v0.56 (NOT YET RELEASED)
+### ODC common
+Modified: improve list of failed devices and log messages for `SetProperties`.    
+Modified: improve log messages of state change requests.    
 
 
 ## v0.54 (2021-10-17)
