@@ -51,8 +51,8 @@ namespace odc::cc
         state_change_subscription,   // args: { device_id, task_id, Result }
         state_change_unsubscription, // args: { device_id, task_id, Result }
         state_change,                // args: { device_id, task_id, last_state, current_state }
-        properties,                  // args: { device_id, request_id, Result, properties }
-        properties_set               // args: { device_id, request_id, Result }
+        properties,                  // args: { device_id, task_id, request_id, Result, properties }
+        properties_set               // args: { device_id, task_id, request_id, Result }
     };
 
     struct Cmd
@@ -495,11 +495,13 @@ namespace odc::cc
     struct Properties : Cmd
     {
         Properties(std::string deviceId,
+                   const uint64_t taskId,
                    std::size_t requestId,
                    const Result result,
                    std::vector<std::pair<std::string, std::string>> properties)
             : Cmd(Type::properties)
             , fDeviceId(std::move(deviceId))
+            , fTaskId(taskId)
             , fRequestId(requestId)
             , fResult(result)
             , fProperties(std::move(properties))
@@ -513,6 +515,14 @@ namespace odc::cc
         auto SetDeviceId(std::string deviceId) -> void
         {
             fDeviceId = std::move(deviceId);
+        }
+        uint64_t GetTaskId() const
+        {
+            return fTaskId;
+        }
+        void SetTaskId(const uint64_t taskId)
+        {
+            fTaskId = taskId;
         }
         auto GetRequestId() const -> std::size_t
         {
@@ -541,6 +551,7 @@ namespace odc::cc
 
       private:
         std::string fDeviceId;
+        uint64_t fTaskId;
         std::size_t fRequestId;
         Result fResult;
         std::vector<std::pair<std::string, std::string>> fProperties;
@@ -548,9 +559,10 @@ namespace odc::cc
 
     struct PropertiesSet : Cmd
     {
-        PropertiesSet(std::string deviceId, std::size_t requestId, Result result)
+        PropertiesSet(std::string deviceId, const uint64_t taskId, std::size_t requestId, Result result)
             : Cmd(Type::properties_set)
             , fDeviceId(std::move(deviceId))
+            , fTaskId(taskId)
             , fRequestId(requestId)
             , fResult(result)
         {
@@ -563,6 +575,14 @@ namespace odc::cc
         auto SetDeviceId(std::string deviceId) -> void
         {
             fDeviceId = std::move(deviceId);
+        }
+        uint64_t GetTaskId() const
+        {
+            return fTaskId;
+        }
+        void SetTaskId(const uint64_t taskId)
+        {
+            fTaskId = taskId;
         }
         auto GetRequestId() const -> std::size_t
         {
@@ -583,6 +603,7 @@ namespace odc::cc
 
       private:
         std::string fDeviceId;
+        uint64_t fTaskId;
         std::size_t fRequestId;
         Result fResult;
     };

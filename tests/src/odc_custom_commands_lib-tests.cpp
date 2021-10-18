@@ -40,8 +40,8 @@ BOOST_AUTO_TEST_CASE(construction)
     Cmds stateChangeSubscriptionCmds(make<StateChangeSubscription>("somedeviceid", 123456, Result::Ok));
     Cmds stateChangeUnsubscriptionCmds(make<StateChangeUnsubscription>("somedeviceid", 123456, Result::Ok));
     Cmds stateChangeCmds(make<StateChange>("somedeviceid", 123456, State::Running, State::Ready));
-    Cmds propertiesCmds(make<Properties>("somedeviceid", 66, Result::Ok, props));
-    Cmds propertiesSetCmds(make<PropertiesSet>("somedeviceid", 42, Result::Ok));
+    Cmds propertiesCmds(make<Properties>("somedeviceid", 123456, 66, Result::Ok, props));
+    Cmds propertiesSetCmds(make<PropertiesSet>("somedeviceid", 123456, 42, Result::Ok));
 
     BOOST_TEST(checkStateCmds.At(0).GetType() == Type::check_state);
     BOOST_TEST(changeStateCmds.At(0).GetType() == Type::change_state);
@@ -88,11 +88,13 @@ BOOST_AUTO_TEST_CASE(construction)
     BOOST_TEST(static_cast<StateChange&>(stateChangeCmds.At(0)).GetCurrentState() == State::Ready);
     BOOST_TEST(propertiesCmds.At(0).GetType() == Type::properties);
     BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetDeviceId() == "somedeviceid");
+    BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetTaskId() == 123456);
     BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetRequestId() == 66);
     BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetResult() == Result::Ok);
     BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetProps() == props);
     BOOST_TEST(propertiesSetCmds.At(0).GetType() == Type::properties_set);
     BOOST_TEST(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetDeviceId() == "somedeviceid");
+    BOOST_TEST(static_cast<Properties&>(propertiesSetCmds.At(0)).GetTaskId() == 123456);
     BOOST_TEST(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetRequestId() == 42);
     BOOST_TEST(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetResult() == Result::Ok);
 }
@@ -116,8 +118,8 @@ void fillCommands(Cmds& cmds)
     cmds.Add<StateChangeSubscription>("somedeviceid", 123456, Result::Ok);
     cmds.Add<StateChangeUnsubscription>("somedeviceid", 123456, Result::Ok);
     cmds.Add<StateChange>("somedeviceid", 123456, State::Running, State::Ready);
-    cmds.Add<Properties>("somedeviceid", 66, Result::Ok, props);
-    cmds.Add<PropertiesSet>("somedeviceid", 42, Result::Ok);
+    cmds.Add<Properties>("somedeviceid", 123456, 66, Result::Ok, props);
+    cmds.Add<PropertiesSet>("somedeviceid", 123456, 42, Result::Ok);
 }
 
 void checkCommands(Cmds& cmds)
@@ -205,6 +207,7 @@ void checkCommands(Cmds& cmds)
             case Type::properties:
                 ++count;
                 BOOST_TEST(static_cast<Properties&>(*cmd).GetDeviceId() == "somedeviceid");
+                BOOST_TEST(static_cast<Properties&>(*cmd).GetTaskId() == 123456);
                 BOOST_TEST(static_cast<Properties&>(*cmd).GetRequestId() == 66);
                 BOOST_TEST(static_cast<Properties&>(*cmd).GetResult() == Result::Ok);
                 BOOST_TEST(static_cast<Properties&>(*cmd).GetProps() == props);
@@ -212,6 +215,7 @@ void checkCommands(Cmds& cmds)
             case Type::properties_set:
                 ++count;
                 BOOST_TEST(static_cast<PropertiesSet&>(*cmd).GetDeviceId() == "somedeviceid");
+                BOOST_TEST(static_cast<PropertiesSet&>(*cmd).GetTaskId() == 123456);
                 BOOST_TEST(static_cast<PropertiesSet&>(*cmd).GetRequestId() == 42);
                 BOOST_TEST(static_cast<PropertiesSet&>(*cmd).GetResult() == Result::Ok);
                 break;
