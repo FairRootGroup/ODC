@@ -490,13 +490,20 @@ BOOST_AUTO_TEST_CASE(async_set_properties_timeout)
     Topology topo(f.mDDSTopo, f.mDDSSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopologyTransition::InitDevice).first, std::error_code());
 
+    auto devices = topo.GetCurrentState();
+
     topo.AsyncSetProperties({ { "key1", "val1" } },
                             "",
                             std::chrono::microseconds(1),
-                            [=](std::error_code ec, FailedDevices) mutable
+                            [&](std::error_code ec, FailedDevices failed) mutable
                             {
                                 BOOST_TEST_MESSAGE(ec);
                                 BOOST_CHECK_EQUAL(ec, MakeErrorCode(ErrorCode::OperationTimeout));
+                                BOOST_CHECK_EQUAL(failed.size(), devices.size());
+                                for (const auto& device : devices)
+                                {
+                                    BOOST_CHECK_EQUAL(failed.count(device.taskId), 1);
+                                }
                             });
 
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopologyTransition::CompleteInit).first, std::error_code());

@@ -34,11 +34,11 @@
 #include <memory>
 #include <mutex>
 #include <ostream>
-#include <set>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -214,7 +214,7 @@ namespace odc::core
     using DeviceProperty = std::pair<std::string, std::string>; /// pair := (key, value)
     using DeviceProperties = std::vector<DeviceProperty>;
     using DevicePropertyQuery = std::string; /// Boost regex supported
-    using FailedDevices = std::set<DeviceId>;
+    using FailedDevices = std::unordered_set<DDSTask::Id>;
 
     struct GetPropertiesResult
     {
@@ -222,7 +222,7 @@ namespace odc::core
         {
             DeviceProperties props;
         };
-        std::unordered_map<DeviceId, Device> devices;
+        std::unordered_map<DDSTask::Id, Device> devices;
         FailedDevices failed;
     };
 
@@ -304,6 +304,8 @@ namespace odc::core
                 itPair = fDDSTopo.getRuntimeTaskIteratorMatchingPath(path);
             }
             auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
+
+            list.reserve(boost::size(tasks));
 
             for (const auto& task : tasks)
             {
@@ -668,13 +670,13 @@ namespace odc::core
             {
                 auto& op(fGetPropertiesOps.at(cmd.GetRequestId()));
                 lk.unlock();
-                op.Update(cmd.GetDeviceId(), cmd.GetResult(), cmd.GetProps());
+                op.Update(cmd.GetTaskId(), cmd.GetResult(), cmd.GetProps());
             }
             catch (std::out_of_range& e)
             {
                 OLOG(ESeverity::debug) << "GetProperties operation (request id: " << cmd.GetRequestId()
                                        << ") not found (probably completed or timed out), "
-                                       << "discarding reply of device " << cmd.GetDeviceId();
+                                       << "discarding reply of device " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
             }
         }
 
@@ -685,13 +687,13 @@ namespace odc::core
             {
                 auto& op(fSetPropertiesOps.at(cmd.GetRequestId()));
                 lk.unlock();
-                op.Update(cmd.GetDeviceId(), cmd.GetResult());
+                op.Update(cmd.GetTaskId(), cmd.GetResult());
             }
             catch (std::out_of_range& e)
             {
                 OLOG(ESeverity::debug) << "SetProperties operation (request id: " << cmd.GetRequestId()
                                        << ") not found (probably completed or timed out), "
-                                       << "discarding reply of device " << cmd.GetDeviceId();
+                                       << "discarding reply of device " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
             }
         }
 
@@ -1289,7 +1291,7 @@ namespace odc::core
 
             template <typename Handler>
             GetPropertiesOp(Id id,
-                            GetCount expectedCount,
+                            std::vector<DDSTask> tasks,
                             Duration timeout,
                             std::mutex& mutex,
                             Executor const& ex,
@@ -1299,7 +1301,7 @@ namespace odc::core
                 , fOp(ex, alloc, std::move(handler))
                 , fTimer(ex)
                 , fCount(0)
-                , fExpectedCount(expectedCount)
+                , fTasks(std::move(tasks))
                 , fMtx(mutex)
             {
                 if (timeout > std::chrono::milliseconds(0))
@@ -1315,12 +1317,19 @@ namespace odc::core
                             }
                         });
                 }
-                if (expectedCount == 0)
+                if (fTasks.empty())
                 {
                     OLOG(ESeverity::warning)
                         << "GetProperties initiated on an empty set of tasks, check the path argument.";
                 }
-                // OLOG(ESeverity::debug) << "GetProperties " << fId << " with expected count of " << fExpectedCount <<
+
+                fResult.failed.reserve(fTasks.size());
+                for (const auto& task : fTasks)
+                {
+                    fResult.failed.emplace(task.GetId());
+                }
+
+                // OLOG(ESeverity::debug) << "GetProperties " << fId << " with expected count of " << fTasks.size() <<
                 // " started.";
             }
             GetPropertiesOp() = delete;
@@ -1330,16 +1339,13 @@ namespace odc::core
             GetPropertiesOp& operator=(GetPropertiesOp&&) = default;
             ~GetPropertiesOp() = default;
 
-            auto Update(const std::string& deviceId, cc::Result result, DeviceProperties props) -> void
+            auto Update(const DDSTask::Id taskId, cc::Result result, DeviceProperties props) -> void
             {
                 std::lock_guard<std::mutex> lk(fMtx);
-                if (cc::Result::Ok != result)
+                if (result == cc::Result::Ok)
                 {
-                    fResult.failed.insert(deviceId);
-                }
-                else
-                {
-                    fResult.devices.insert({ deviceId, { std::move(props) } });
+                    fResult.failed.erase(taskId);
+                    fResult.devices.insert({ taskId, { std::move(props) } });
                 }
                 ++fCount;
                 TryCompletion();
@@ -1355,14 +1361,14 @@ namespace odc::core
             AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> fOp;
             boost::asio::steady_timer fTimer;
             GetCount fCount;
-            GetCount const fExpectedCount;
+            std::vector<DDSTask> fTasks;
             GetPropertiesResult fResult;
             std::mutex& fMtx;
 
             /// precondition: fMtx is locked.
             auto TryCompletion() -> void
             {
-                if (!fOp.IsCompleted() && fCount == fExpectedCount)
+                if (!fOp.IsCompleted() && fCount == fTasks.size())
                 {
                     fTimer.cancel();
                     if (!fResult.failed.empty())
@@ -1413,7 +1419,7 @@ namespace odc::core
                     fGetPropertiesOps.emplace(std::piecewise_construct,
                                               std::forward_as_tuple(id),
                                               std::forward_as_tuple(id,
-                                                                    GetTasks(path).size(),
+                                                                    GetTasks(path),
                                                                     timeout,
                                                                     *fMtx,
                                                                     AsioBase<Executor, Allocator>::GetExecutor(),
@@ -1472,7 +1478,7 @@ namespace odc::core
 
             template <typename Handler>
             SetPropertiesOp(Id id,
-                            SetCount expectedCount,
+                            std::vector<DDSTask> tasks,
                             Duration timeout,
                             std::mutex& mutex,
                             Executor const& ex,
@@ -1482,7 +1488,7 @@ namespace odc::core
                 , fOp(ex, alloc, std::move(handler))
                 , fTimer(ex)
                 , fCount(0)
-                , fExpectedCount(expectedCount)
+                , fTasks(std::move(tasks))
                 , fMtx(mutex)
             {
                 if (timeout > std::chrono::milliseconds(0))
@@ -1498,12 +1504,19 @@ namespace odc::core
                             }
                         });
                 }
-                if (expectedCount == 0)
+                if (fTasks.empty())
                 {
                     OLOG(ESeverity::warning)
                         << "SetProperties initiated on an empty set of tasks, check the path argument.";
                 }
-                // OLOG(ESeverity::debug) << "SetProperties " << fId << " with expected count of " << fExpectedCount <<
+
+                fFailedDevices.reserve(fTasks.size());
+                for (const auto& task : fTasks)
+                {
+                    fFailedDevices.emplace(task.GetId());
+                }
+
+                // OLOG(ESeverity::debug) << "SetProperties " << fId << " with expected count of " << fTasks.size() <<
                 // " started.";
             }
             SetPropertiesOp() = delete;
@@ -1513,12 +1526,12 @@ namespace odc::core
             SetPropertiesOp& operator=(SetPropertiesOp&&) = default;
             ~SetPropertiesOp() = default;
 
-            auto Update(const std::string& deviceId, cc::Result result) -> void
+            auto Update(const DDSTask::Id taskId, cc::Result result) -> void
             {
                 std::lock_guard<std::mutex> lk(fMtx);
-                if (cc::Result::Ok != result)
+                if (result == cc::Result::Ok)
                 {
-                    fFailedDevices.insert(deviceId);
+                    fFailedDevices.erase(taskId);
                 }
                 ++fCount;
                 TryCompletion();
@@ -1534,14 +1547,14 @@ namespace odc::core
             AsioAsyncOp<Executor, Allocator, SetPropertiesCompletionSignature> fOp;
             boost::asio::steady_timer fTimer;
             SetCount fCount;
-            SetCount const fExpectedCount;
+            std::vector<DDSTask> fTasks;
             FailedDevices fFailedDevices;
             std::mutex& fMtx;
 
             /// precondition: fMtx is locked.
             auto TryCompletion() -> void
             {
-                if (!fOp.IsCompleted() && fCount == fExpectedCount)
+                if (!fOp.IsCompleted() && fCount == fTasks.size())
                 {
                     fTimer.cancel();
                     if (!fFailedDevices.empty())
@@ -1592,7 +1605,7 @@ namespace odc::core
                     fSetPropertiesOps.emplace(std::piecewise_construct,
                                               std::forward_as_tuple(id),
                                               std::forward_as_tuple(id,
-                                                                    GetTasks(path).size(),
+                                                                    GetTasks(path),
                                                                     timeout,
                                                                     *fMtx,
                                                                     AsioBase<Executor, Allocator>::GetExecutor(),
