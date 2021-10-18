@@ -488,8 +488,11 @@ namespace odc::cc
                     {
                         properties.emplace_back(props->Get(j)->key()->str(), props->Get(j)->value()->str());
                     }
-                    fCmds.emplace_back(make<Properties>(
-                        cmdPtr.device_id()->str(), cmdPtr.task_id(), cmdPtr.request_id(), GetResult(cmdPtr.result()), properties));
+                    fCmds.emplace_back(make<Properties>(cmdPtr.device_id()->str(),
+                                                        cmdPtr.task_id(),
+                                                        cmdPtr.request_id(),
+                                                        GetResult(cmdPtr.result()),
+                                                        properties));
                 }
                 break;
                 case FBCmd_properties_set:

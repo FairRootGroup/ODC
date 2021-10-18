@@ -676,7 +676,8 @@ namespace odc::core
             {
                 OLOG(ESeverity::debug) << "GetProperties operation (request id: " << cmd.GetRequestId()
                                        << ") not found (probably completed or timed out), "
-                                       << "discarding reply of device " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
+                                       << "discarding reply of device " << cmd.GetDeviceId()
+                                       << ", task id: " << cmd.GetTaskId();
             }
         }
 
@@ -693,7 +694,8 @@ namespace odc::core
             {
                 OLOG(ESeverity::debug) << "SetProperties operation (request id: " << cmd.GetRequestId()
                                        << ") not found (probably completed or timed out), "
-                                       << "discarding reply of device " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
+                                       << "discarding reply of device " << cmd.GetDeviceId()
+                                       << ", task id: " << cmd.GetTaskId();
             }
         }
 

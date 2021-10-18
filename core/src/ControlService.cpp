@@ -1053,12 +1053,29 @@ bool CControlService::SImpl::setProperties(const SCommonParams& _common,
                               toString("Set property error message: ", result.first.message()));
                     break;
             }
-            string msg{ toString("List of failed devices for SetProperties request (", result.second.size(), "): ") };
-            for (auto v : result.second)
+            stringstream ss;
+            size_t count{ 0 };
+            ss << "List of failed devices for SetProperties request (" << result.second.size() << "): " << endl;
+            for (auto taskId : result.second)
             {
-                msg += v + " ";
+                ss << right << setw(7) << count << " Task: ID (" << taskId << ")";
+                try
+                {
+                    if (info->m_topo != nullptr)
+                    {
+                        auto task{ info->m_topo->getRuntimeTaskById(taskId) };
+                        ss << ", task path (" << task.m_taskPath << ")" << endl;
+                    }
+                }
+                catch (const exception& _e)
+                {
+                    OLOG(ESeverity::error, _common)
+                        << "Failed to get task with ID (" << taskId << ") from topology (" << info->m_topo->getName()
+                        << ") at filepath " << std::quoted(info->m_topo->getFilepath()) << ". Error: " << _e.what();
+                }
+                count++;
             }
-            OLOG(ESeverity::debug, _common) << msg;
+            OLOG(ESeverity::debug, _common) << ss.str();
         }
     }
     catch (exception& _e)
