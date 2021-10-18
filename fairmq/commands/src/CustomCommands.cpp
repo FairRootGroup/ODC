@@ -336,6 +336,7 @@ namespace odc::cc
                     auto props = fbb.CreateVector(propsVector);
                     cmdBuilder = make_unique<FBCommandBuilder>(fbb);
                     cmdBuilder->add_device_id(deviceId);
+                    cmdBuilder->add_task_id(_cmd.GetTaskId());
                     cmdBuilder->add_request_id(_cmd.GetRequestId());
                     cmdBuilder->add_result(GetFBResult(_cmd.GetResult()));
                     cmdBuilder->add_properties(props);
@@ -347,6 +348,7 @@ namespace odc::cc
                     auto deviceId = fbb.CreateString(_cmd.GetDeviceId());
                     cmdBuilder = make_unique<FBCommandBuilder>(fbb);
                     cmdBuilder->add_device_id(deviceId);
+                    cmdBuilder->add_task_id(_cmd.GetTaskId());
                     cmdBuilder->add_request_id(_cmd.GetRequestId());
                     cmdBuilder->add_result(GetFBResult(_cmd.GetResult()));
                 }
@@ -487,12 +489,12 @@ namespace odc::cc
                         properties.emplace_back(props->Get(j)->key()->str(), props->Get(j)->value()->str());
                     }
                     fCmds.emplace_back(make<Properties>(
-                        cmdPtr.device_id()->str(), cmdPtr.request_id(), GetResult(cmdPtr.result()), properties));
+                        cmdPtr.device_id()->str(), cmdPtr.task_id(), cmdPtr.request_id(), GetResult(cmdPtr.result()), properties));
                 }
                 break;
                 case FBCmd_properties_set:
                     fCmds.emplace_back(make<PropertiesSet>(
-                        cmdPtr.device_id()->str(), cmdPtr.request_id(), GetResult(cmdPtr.result())));
+                        cmdPtr.device_id()->str(), cmdPtr.task_id(), cmdPtr.request_id(), GetResult(cmdPtr.result())));
                     break;
                 default:
                     throw CommandFormatError("unrecognized command type given to odc::cc::Cmds::Deserialize()");

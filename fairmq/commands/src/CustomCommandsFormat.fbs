@@ -61,8 +61,8 @@ enum FBCmd:byte {
     state_change_subscription,     // args: { device_id, task_id, Result }
     state_change_unsubscription,   // args: { device_id, task_id, Result }
     state_change,                  // args: { device_id, task_id, last_state, current_state }
-    properties,                    // args: { device_id, request_id, Result, properties }
-    properties_set                 // args: { device_id, request_id, Result }
+    properties,                    // args: { device_id, task_id, request_id, Result, properties }
+    properties_set                 // args: { device_id, task_id, request_id, Result }
 }
 
 table FBCommand {

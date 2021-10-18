@@ -539,7 +539,7 @@ namespace odc::plugins
                     LOG(warn) << "Getting properties (request id: " << request_id << ") failed: " << e.what();
                     result = Result::Failure;
                 }
-                Cmds const outCmds(make<cc::Properties>(id, request_id, result, props));
+                Cmds const outCmds(make<cc::Properties>(id, fDDSTaskId, request_id, result, props));
                 fDDS.Send(outCmds.Serialize(), to_string(senderId));
             }
             break;
@@ -563,7 +563,7 @@ namespace odc::plugins
                     LOG(warn) << "Setting properties (request id: " << request_id << ") failed: " << e.what();
                     result = Result::Failure;
                 }
-                Cmds const outCmds(make<PropertiesSet>(id, request_id, result));
+                Cmds const outCmds(make<PropertiesSet>(id, fDDSTaskId, request_id, result));
                 fDDS.Send(outCmds.Serialize(), to_string(senderId));
             }
             break;
