@@ -1,6 +1,8 @@
 # ODC Release Notes
 
 ## v0.58 (NOT YET RELEASED)
+### ODC common
+Require DDS `3.5.20`.    
 
 
 
