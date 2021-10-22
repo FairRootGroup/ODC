@@ -39,6 +39,36 @@ struct CControlService::SImpl
     using DDSSessionPtr_t = std::shared_ptr<dds::tools_api::CSession>;
     using FairMQTopologyPtr_t = std::shared_ptr<Topology>;
 
+    struct STopoItemInfo
+    {
+        using Ptr_t = std::shared_ptr<STopoItemInfo>;
+        using Map_t = std::map<uint64_t, Ptr_t>;
+
+        uint64_t m_agentID{ 0 }; ///< Agent ID
+        uint64_t m_slotID{ 0 };  ///< Slot ID
+        uint64_t m_itemID{ 0 };  ///< Task/Collection ID, 0 if not assigned
+        std::string m_path;      ///< Path in the topology
+        std::string m_host;      ///< Hostname
+        std::string m_wrkDir;    ///< Wrk directory
+
+        std::string toString() const
+        {
+            return odc::core::toString("agentID (",
+                                       m_agentID,
+                                       "), slotID (",
+                                       m_slotID,
+                                       ", itemID (",
+                                       m_itemID,
+                                       "), path (",
+                                       quoted(m_path),
+                                       "), host (",
+                                       m_host,
+                                       "), wrkDir (",
+                                       quoted(m_wrkDir),
+                                       ")");
+        }
+    };
+
     struct SSessionInfo
     {
         using Ptr_t = std::shared_ptr<SSessionInfo>;
@@ -48,6 +78,42 @@ struct CControlService::SImpl
         DDSSessionPtr_t m_session{ nullptr };            ///< DDS session
         FairMQTopologyPtr_t m_fairmqTopology{ nullptr }; ///< FairMQ topology
         partitionID_t m_partitionID;                     ///< External partition ID of this DDS session
+
+        void addToTaskCache(STopoItemInfo::Ptr_t _item)
+        {
+            lock_guard<mutex> lock(m_taskCacheMutex);
+            m_taskCache[_item->m_itemID] = _item;
+        }
+
+        void addToCollectionCache(STopoItemInfo::Ptr_t _item)
+        {
+            lock_guard<mutex> lock(m_collectionCacheMutex);
+            m_collectionCache[_item->m_itemID] = _item;
+        }
+
+        STopoItemInfo::Ptr_t getFromTaskCache(uint64_t _taskID)
+        {
+            lock_guard<mutex> lock(m_taskCacheMutex);
+            auto it{ m_taskCache.find(_taskID) };
+            if (it == m_taskCache.end())
+                throw runtime_error(toString("Failed to get additional task info for ID (", _taskID, ")"));
+            return it->second;
+        }
+
+        STopoItemInfo::Ptr_t getFromCollectionCache(uint64_t _collectionID)
+        {
+            lock_guard<mutex> lock(m_collectionCacheMutex);
+            auto it{ m_collectionCache.find(_collectionID) };
+            if (it == m_collectionCache.end())
+                throw runtime_error(toString("Failed to get additional collection info for ID (", _collectionID, ")"));
+            return it->second;
+        }
+
+      private:
+        STopoItemInfo::Map_t m_taskCache;       ///< Additional information about the task
+        mutex m_taskCacheMutex;                 ///< Mutex for the container
+        STopoItemInfo::Map_t m_collectionCache; ///< Additional information about collection
+        mutex m_collectionCacheMutex;           ///< Mutex for the collection
     };
 
     SImpl()
@@ -154,7 +220,7 @@ struct CControlService::SImpl
     string stateSummaryString(const SCommonParams& _common,
                               const FairMQTopologyState& _topologyState,
                               DeviceState _expectedState,
-                              DDSTopologyPtr_t _topo);
+                              SSessionInfo::Ptr_t _info);
 
     bool subscribeToDDSSession(const SCommonParams& _common, SError& _error);
 
@@ -738,6 +804,7 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
     topoInfo.m_updateType = _updateType;
 
     std::condition_variable cv;
+    auto info{ getOrCreateSessionInfo(_common) };
 
     STopologyRequest::ptr_t requestPtr{ STopologyRequest::makeRequest(topoInfo) };
 
@@ -769,9 +836,39 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
             }
         });
 
+    requestPtr->setResponseCallback(
+        [info](const STopologyResponseData& _info)
+        {
+            OLOG(ESeverity::debug) << "Activate: " << _info;
+
+            // We are not interested in stopped tasks
+            if (_info.m_activated)
+            {
+                STopoItemInfo::Ptr_t task{ make_shared<STopoItemInfo>() };
+                task->m_agentID = _info.m_agentID;
+                task->m_slotID = _info.m_slotID;
+                task->m_itemID = _info.m_taskID;
+                task->m_path = _info.m_path;
+                task->m_host = _info.m_host;
+                task->m_wrkDir = _info.m_wrkDir;
+                info->addToTaskCache(task);
+
+                if (_info.m_collectionID > 0)
+                {
+                    auto collection{ make_shared<STopoItemInfo>(*task) };
+                    collection->m_itemID = _info.m_collectionID;
+                    auto pos{ collection->m_path.rfind('/') };
+                    if (pos != std::string::npos)
+                    {
+                        collection->m_path.erase(pos);
+                    }
+                    info->addToCollectionCache(collection);
+                }
+            }
+        });
+
     requestPtr->setDoneCallback([&cv]() { cv.notify_all(); });
 
-    auto info{ getOrCreateSessionInfo(_common) };
     info->m_session->sendRequest<STopologyRequest>(requestPtr);
 
     std::mutex mtx;
@@ -784,10 +881,9 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
         fillError(_common, _error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
         OLOG(ESeverity::error, _common) << _error;
     }
-    else
-    {
-        OLOG(ESeverity::info, _common) << "Topology " << quoted(_topologyFile) << " activated successfully";
-    }
+
+    OLOG(ESeverity::info, _common) << "Topology " << quoted(_topologyFile)
+                                   << ((success) ? " activated successfully" : " failed to activate");
     return success;
 }
 
@@ -915,8 +1011,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                           _error,
                           ErrorCode::FairMQChangeStateFailed,
                           toString("Aggregate topology state failed: ", _e.what()));
-                OLOG(ESeverity::debug, _common)
-                    << stateSummaryString(_common, result.second, _expectedState, info->m_topo);
+                OLOG(ESeverity::debug, _common) << stateSummaryString(_common, result.second, _expectedState, info);
             }
             if (_topologyState != nullptr)
                 fairMQToODCTopologyState(info->m_topo, result.second, _topologyState);
@@ -939,7 +1034,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                     break;
             }
             OLOG(ESeverity::debug, _common)
-                << stateSummaryString(_common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
+                << stateSummaryString(_common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
         }
     }
     catch (exception& _e)
@@ -947,7 +1042,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
         success = false;
         fillError(_common, _error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
         OLOG(ESeverity::debug, _common) << stateSummaryString(
-            _common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info->m_topo);
+            _common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
     }
 
     if (success)
@@ -1055,23 +1150,17 @@ bool CControlService::SImpl::setProperties(const SCommonParams& _common,
             }
             stringstream ss;
             size_t count{ 0 };
-            ss << "List of failed devices for SetProperties request (" << result.second.size() << "): " << endl;
+            ss << "List of failed devices for SetProperties request (" << result.second.size() << "):" << endl;
             for (auto taskId : result.second)
             {
-                ss << right << setw(7) << count << " Task: ID (" << taskId << ")";
                 try
                 {
-                    if (info->m_topo != nullptr)
-                    {
-                        auto task{ info->m_topo->getRuntimeTaskById(taskId) };
-                        ss << ", task path (" << task.m_taskPath << ")" << endl;
-                    }
+                    auto item{ info->getFromTaskCache(taskId) };
+                    ss << right << setw(7) << count << "   Task: " << item->toString() << endl;
                 }
                 catch (const exception& _e)
                 {
-                    OLOG(ESeverity::error, _common)
-                        << "Failed to get task with ID (" << taskId << ") from topology (" << info->m_topo->getName()
-                        << ") at filepath " << std::quoted(info->m_topo->getFilepath()) << ". Error: " << _e.what();
+                    OLOG(ESeverity::error, _common) << "Set properties error: " << _e.what();
                 }
                 count++;
             }
@@ -1081,7 +1170,8 @@ bool CControlService::SImpl::setProperties(const SCommonParams& _common,
     catch (exception& _e)
     {
         success = false;
-        fillError(_common, _error, ErrorCode::FairMQSetPropertiesFailed, toString("Set property failed: ", _e.what()));
+        fillError(
+            _common, _error, ErrorCode::FairMQSetPropertiesFailed, toString("Set properties failed: ", _e.what()));
     }
 
     return success;
@@ -1205,7 +1295,7 @@ SError CControlService::SImpl::checkSessionIsRunning(const SCommonParams& _commo
 string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
                                                   const FairMQTopologyState& _topologyState,
                                                   DeviceState _expectedState,
-                                                  DDSTopologyPtr_t _topo)
+                                                  SSessionInfo::Ptr_t _info)
 {
     size_t taskTotalCount{ _topologyState.size() };
     size_t taskFailedCount{ 0 };
@@ -1226,19 +1316,15 @@ string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
            << status.lastState << "), task ID (" << status.taskId << "), collection ID (" << status.collectionId
            << "), "
            << "subscribed (" << status.subscribed_to_state_changes << ")";
+
         try
         {
-            if (_topo != nullptr)
-            {
-                auto task{ _topo->getRuntimeTaskById(status.taskId) };
-                ss << ", task path (" << task.m_taskPath << ")";
-            }
+            auto item{ _info->getFromTaskCache(status.taskId) };
+            ss << ", " << item->toString();
         }
         catch (const exception& _e)
         {
-            OLOG(ESeverity::error, _common)
-                << "Failed to get task with ID (" << status.taskId << ") from topology (" << _topo->getName()
-                << ") at filepath " << std::quoted(_topo->getFilepath()) << ". Error: " << _e.what();
+            OLOG(ESeverity::error, _common) << "State summary error: " << _e.what();
         }
     }
 
@@ -1258,24 +1344,16 @@ string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
         {
             ss << endl << "List of failed collections for an expected state " << _expectedState << ":";
         }
-        ss << endl
-           << right << setw(7) << collectionFailedCount << " Collection: state (" << collectionState
-           << "), collection ID (" << collectionId << ")";
+        ss << endl << right << setw(7) << collectionFailedCount << "   Collection: state (" << collectionState << ")";
 
         try
         {
-            if (_topo != nullptr)
-            {
-                auto collection{ _topo->getRuntimeCollectionById(collectionId) };
-                ss << ", collection path (" << collection.m_collectionPath << "), number of tasks ("
-                   << collection.m_collection->getNofTasks() << ")";
-            }
+            auto item{ _info->getFromCollectionCache(collectionId) };
+            ss << ", " << item->toString();
         }
         catch (const exception& _e)
         {
-            OLOG(ESeverity::error, _common)
-                << "Failed to get collection with ID (" << collectionId << ") from topology (" << _topo->getName()
-                << ") at filepath " << std::quoted(_topo->getFilepath()) << ". Error: " << _e.what();
+            OLOG(ESeverity::error, _common) << "State summary error: " << _e.what();
         }
     }
 

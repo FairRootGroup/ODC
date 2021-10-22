@@ -1,12 +1,17 @@
 # ODC Release Notes
 
-## v0.58 (NOT YET RELEASED)
+## v0.60 (NOT YET RELEASED)
+
+
+
+## v0.58 (2021-10-22)
 ### ODC common
-Require DDS `3.5.20`.    
+* Require DDS `3.5.21`.    
+* Log messages of state change and set property requests contain additional informastion about the device's runtime including hostname and wrk directory.    
+* Caching of additional information of tasks given by DDS in activate request.        
 
 
-
-## v0.56 (NOT YET RELEASED)
+## v0.56 (2021-10-18)
 ### ODC common
 Modified: improve list of failed devices and log messages for `SetProperties`.    
 Modified: improve log messages of state change requests.    
