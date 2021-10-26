@@ -293,25 +293,24 @@ void CControlService::SImpl::restore(const std::string& _id)
 {
     m_restoreId = _id;
 
-    OLOG(ESeverity::debug) << "Restoring sessions for " << quoted(_id);
+    OLOG(ESeverity::info) << "Restoring sessions for " << quoted(_id);
     auto data{ CRestoreFile(_id).read() };
     for (const auto& v : data.m_partitions)
     {
-        OLOG(ESeverity::debug, v.m_partitionId, 0)
+        OLOG(ESeverity::info, v.m_partitionId, 0)
             << "Restoring (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
         auto result{ execInitialize(SCommonParams(v.m_partitionId, 0, 0), SInitializeParams(v.m_sessionId)) };
         if (result.m_error.m_code)
         {
-            OLOG(ESeverity::debug, v.m_partitionId, 0)
+            OLOG(ESeverity::info, v.m_partitionId, 0)
                 << "Failed to attach to the session. Executing Shutdown trigger for (" << quoted(v.m_partitionId) << "/"
                 << quoted(v.m_sessionId) << ")";
             execRequestTrigger("Shutdown", SCommonParams(v.m_partitionId, 0, 0));
         }
         else
         {
-            OLOG(ESeverity::debug, v.m_partitionId, 0)
-                << "Successfully attached to the session (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId)
-                << ")";
+            OLOG(ESeverity::info, v.m_partitionId, 0) << "Successfully attached to the session ("
+                                                      << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
         }
     }
 }
@@ -321,7 +320,7 @@ void CControlService::SImpl::updateRestore()
     if (m_restoreId.empty())
         return;
 
-    OLOG(ESeverity::debug) << "Updating restore file " << quoted(m_restoreId) << "...";
+    OLOG(ESeverity::info) << "Updating restore file " << quoted(m_restoreId) << "...";
     SRestoreData data;
 
     lock_guard<mutex> lock(m_sessionsMutex);
@@ -722,7 +721,7 @@ bool CControlService::SImpl::submitDDSAgents(const SCommonParams& _common,
             }
             else
             {
-                OLOG(ESeverity::debug, _common) << "Submit: " << _message.m_msg;
+                OLOG(ESeverity::info, _common) << "Submit: " << _message.m_msg;
             }
         });
 
@@ -839,7 +838,7 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
     requestPtr->setResponseCallback(
         [info](const STopologyResponseData& _info)
         {
-            OLOG(ESeverity::debug) << "Activate: " << _info;
+            OLOG(ESeverity::info) << "Activate: " << _info;
 
             // We are not interested in stopped tasks
             if (_info.m_activated)
@@ -1011,7 +1010,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                           _error,
                           ErrorCode::FairMQChangeStateFailed,
                           toString("Aggregate topology state failed: ", _e.what()));
-                OLOG(ESeverity::debug, _common) << stateSummaryString(_common, result.second, _expectedState, info);
+                OLOG(ESeverity::error, _common) << stateSummaryString(_common, result.second, _expectedState, info);
             }
             if (_topologyState != nullptr)
                 fairMQToODCTopologyState(info->m_topo, result.second, _topologyState);
@@ -1033,7 +1032,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                               toString("FairMQ change state failed: ", result.first.message()));
                     break;
             }
-            OLOG(ESeverity::debug, _common)
+            OLOG(ESeverity::error, _common)
                 << stateSummaryString(_common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
         }
     }
@@ -1041,7 +1040,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
     {
         success = false;
         fillError(_common, _error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
-        OLOG(ESeverity::debug, _common) << stateSummaryString(
+        OLOG(ESeverity::error, _common) << stateSummaryString(
             _common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
     }
 
@@ -1164,7 +1163,7 @@ bool CControlService::SImpl::setProperties(const SCommonParams& _common,
                 }
                 count++;
             }
-            OLOG(ESeverity::debug, _common) << ss.str();
+            OLOG(ESeverity::error, _common) << ss.str();
         }
     }
     catch (exception& _e)
