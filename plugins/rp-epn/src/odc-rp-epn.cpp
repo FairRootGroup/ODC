@@ -91,6 +91,7 @@ int main(int argc, char** argv)
         string bash;
         size_t numSlots{ 1 };
         string wrkDir;
+        string sshopt;
 
         // Generic options
         bpo::options_description options("odc-rp-epn options");
@@ -111,6 +112,7 @@ int main(int argc, char** argv)
         options.add_options()(
             "slots", bpo::value<size_t>(&numSlots)->default_value(1), "Number of slots for each worker node");
         options.add_options()("wrkdir", bpo::value<string>(&wrkDir)->default_value("/tmp/wn_dds"), "Working directory");
+        options.add_options()("sshopt", bpo::value<string>(&sshopt)->default_value(""), "Additional SSH options");
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -152,7 +154,7 @@ int main(int argc, char** argv)
                     dds::configRecord_t record{ make_shared<dds::SConfigRecord>() };
                     record->m_id = "wn_" + v.m_zone + "_" + node;
                     record->m_addr = node;
-                    record->m_sshOptions = "";
+                    record->m_sshOptions = sshopt;
                     record->m_wrkDir = wrkDir;
                     record->m_nSlots = numSlots;
                     records.push_back(record);
