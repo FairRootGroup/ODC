@@ -1,7 +1,13 @@
 # ODC Release Notes
 
-## v0.60 (NOT YET RELEASED)
+## v0.62 (NOT YET RELEASED)
 
+
+
+## v0.60 (2021-10-26)
+### ODC common
+* Tune log severity levels.    
+* Add `--sshopt` option for `odc-rp-epn`.    
 
 
 ## v0.58 (2021-10-22)
