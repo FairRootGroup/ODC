@@ -33,6 +33,8 @@ Shutdown abandoned DDS session:
 dds-session stop SESSION_ID
 ```
 
+**Stop of the `ODC` service doesn't stop `DDS` sessions! On restart `ODC` will automatically reconnect to the running `DDS` sessions.**
+
 ## Advanced
 
 ### General remarks
@@ -44,34 +46,33 @@ From there login to `epn001` as `epn` user - `ssh epn@epn001`.
 
 ### Starting of `odc-grpc-server` on EPN cluster
 
-Bash script from `/home/epn/odc/run_odc.sh` which initializes the environment and starts `odc-grpc-server`:
+Bash script (`/home/epn/odc/run_odc.sh`) which initializes the environment and starts `odc-grpc-server`:
 ```bash
 #!/usr/bin/env bash
 
 source /home/epn/.bashrc 
-module load ODC InfoLogger
+#module load ODC InfoLogger
+module load O2PDPSuite
+export O2_INFOLOGGER_OPTIONS="floodProtection=0"
 export DDS_LOCATION=$(dirname $(dirname $(which dds-session)))
-dyn="$(which odc-rp-epn) --host epn000:50001 --logdir /home/epn/odc/log --severity dbg --bash \"module load DataDistribution QualityControl\" --slots 128 --wrkdir \"/tmp/wn_dds\""
+dyn="$(which odc-rp-epn) --host epn000:50001 --logdir /home/epn/odc/log --severity dbg --bash \"module load DDS\" --slots 256 --wrkdir \"/tmp/wn_dds\""
 rpdyn="epn:${dyn}"
-rpstat="odc-mw3:/home/epn/odc/odc-mw3.sh"
 rt="Shutdown:${dyn} --release"
-odc-grpc-server --sync --timeout 30 --rp "${rpdyn}" "${rpstat}" --rt "${rt}" --host "*:22334" --logdir /home/epn/odc/log --severity dbg --infologger
+nohup odc-grpc-server --sync --timeout 60 --rp "${rpdyn}" --rt "${rt}" --host "*:22334" --logdir /home/epn/odc/log --severity dbg --infologger --restore epn &
+
+# If script is started via systemd, this file stores the PID of the main process (`PIDFile` in systemd config).
+# We want `odc-grpc-server` to be the main process and not `bash`.
+dir="/home/epn/.ODC/systemd"
+mkdir -p "${dir}"
+echo $! > "${dir}/odc.epn.systemd.main.pid"
 ```
 
-Use `screen` in order to keep `odc-grpc-server` running after user logout:
-* Start `screen`: `screen -S odc`
-* Detach from `screen`: `Ctrl-A` + `Ctrl-D`.
-* Attach to `screen` : `screen -r odc`. 
-
-Or start using `nohup`:
+Start odc service via `systemd`:
 ```bash
 nohup systemctl --user start odc &
 ```
-Alternatevly start `odc-grpc-server` using `systemd-run`:
-```
-systemd-run --user --unit=odc ./run_odc.sh
-```
-Config file `~/.config/systemd/user/odc.service` to start `odc-grpc-server` using `systemctl`:
+
+Config file for `systemd` (`~/.config/systemd/user/odc.service`):
 ```
 [Unit]
 Description=ODC server
@@ -82,11 +83,25 @@ StartLimitBurst=5
 Restart=on-failure
 RestartSec=10s
 Type=simple
+KillMode=process
 ExecStart=/home/epn/odc/run_odc.sh
+LimitNOFILE=262144
+PIDFile=/home/epn/.ODC/systemd/odc.epn.systemd.main.pid
 
 [Install]
 WantedBy=multi-user.target
 ```
+
+Alternatively use `screen` in order to keep `odc-grpc-server` running after user logout:
+* Start `screen`: `screen -S odc`
+* Detach from `screen`: `Ctrl-A` + `Ctrl-D`.
+* Attach to `screen` : `screen -r odc`. 
+
+Alternatevly start `odc-grpc-server` using `systemd-run` (configuration parameters has to be provided as command line options):
+```
+systemd-run --user --unit=odc ./run_odc.sh
+```
+
 Check status, start and stop the service using `systemctl`:
 ```
 systemctl --user status/stop/start odc
