@@ -37,6 +37,8 @@ add_library(odc_core_lib
     "src/PluginManager.cpp"
     "src/Restore.h"
     "src/Restore.cpp"
+    "src/Stats.h"
+    "src/Stats.cpp"
 )
 target_link_libraries(odc_core_lib PUBLIC
   DDS::dds_topology_lib

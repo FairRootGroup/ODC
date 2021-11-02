@@ -9,6 +9,7 @@
 #include "Logger.h"
 #include "Process.h"
 #include "Restore.h"
+#include "Stats.h"
 #include "TimeMeasure.h"
 #include "Topology.h"
 // DDS
@@ -1050,6 +1051,8 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                                        << " transition";
     }
 
+    OLOG(ESeverity::info, _common) << SStateStats(info->m_fairmqTopology->GetCurrentState()).toString();
+
     return success;
 }
 
@@ -1103,6 +1106,8 @@ bool CControlService::SImpl::getState(const SCommonParams& _common,
     }
     if (_topologyState != nullptr)
         fairMQToODCTopologyState(info->m_topo, state, _topologyState);
+
+    OLOG(ESeverity::info, _common) << SStateStats(state).toString();
 
     return success;
 }
