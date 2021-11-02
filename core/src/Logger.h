@@ -148,7 +148,7 @@ namespace odc::core
             fileSink_t fileSink =
                 add_file_log(keywords::file_name = logFile,
                              keywords::open_mode = (std::ios::out | std::ios::app),
-                             keywords::rotation_size = 10 * 1024 * 1024,
+                             keywords::rotation_size = 100 * 1024 * 1024,
                              // rotate at midnight every day
                              keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
                              // log collector,
