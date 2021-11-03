@@ -7,14 +7,9 @@ Login to `epn001` as `epn` user:
 ssh epn@epn001
 ```
 
-Start of the ODC server `odc-grpc-server`:
+Start/Status/Stop of the ODC server `odc-grpc-server`:
 ```bash
-nohup systemctl --user start odc &
-```
-
-Get status or Stop the ODC server:
-```bash
-systemctl --user status/stop odc
+systemctl --user start/status/stop odc
 ```
 
 Get list of currently running DDS sessions: 
@@ -67,9 +62,9 @@ mkdir -p "${dir}"
 echo $! > "${dir}/odc.epn.systemd.main.pid"
 ```
 
-Start odc service via `systemd`:
-```bash
-nohup systemctl --user start odc &
+Start/Status/Stop of the ODC service using `systemctl`:
+```
+systemctl --user start/status/stop odc
 ```
 
 Config file for `systemd` (`~/.config/systemd/user/odc.service`):
@@ -100,11 +95,6 @@ Alternatively use `screen` in order to keep `odc-grpc-server` running after user
 Alternatevly start `odc-grpc-server` using `systemd-run` (configuration parameters has to be provided as command line options):
 ```
 systemd-run --user --unit=odc ./run_odc.sh
-```
-
-Check status, start and stop the service using `systemctl`:
-```
-systemctl --user status/stop/start odc
 ```
 
 ### ODC monitoring
