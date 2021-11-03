@@ -839,7 +839,7 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
     requestPtr->setResponseCallback(
         [&_common, info](const STopologyResponseData& _info)
         {
-            OLOG(ESeverity::info, _common) << "Activate: " << _info;
+            OLOG(ESeverity::debug, _common) << "Activate: " << _info;
 
             // We are not interested in stopped tasks
             if (_info.m_activated)
