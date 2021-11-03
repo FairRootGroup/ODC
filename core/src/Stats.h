@@ -35,7 +35,8 @@ namespace odc::core
     {
         SStateStats(const FairMQTopologyState& _topoState);
 
-        std::string toString() const;
+        std::string tasksString() const;
+        std::string collectionsString() const;
 
         std::map<DeviceState, STaskState> m_tasks;
         std::map<AggregatedTopologyState, SCollectionState> m_collections;

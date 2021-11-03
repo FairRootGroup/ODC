@@ -40,20 +40,25 @@ SStateStats::SStateStats(const FairMQTopologyState& _topoState)
     m_collectionCount = collectionMap.size();
 }
 
-string SStateStats::toString() const
+string SStateStats::tasksString() const
 {
     stringstream ss;
-    ss << "State stats for tasks:" << endl;
+    ss << "Task states:";
     for (const auto& v : m_tasks)
     {
-        ss << right << setw(20) << fair::mq::GetStateName(v.first) << ": " << v.second.m_ids.size() << "/"
-           << m_taskCount << endl;
+        ss << " " << fair::mq::GetStateName(v.first) << " (" << v.second.m_ids.size() << "/" << m_taskCount << ")";
     }
-    ss << "State stats for collections:" << endl;
+    return ss.str();
+}
+
+string SStateStats::collectionsString() const
+{
+    stringstream ss;
+    ss << "Collection states:";
     for (const auto& v : m_collections)
     {
-        ss << right << setw(20) << GetAggregatedTopologyStateName(v.first) << ": " << v.second.m_ids.size() << "/"
-           << m_collectionCount << endl;
+        ss << " " << GetAggregatedTopologyStateName(v.first) << " (" << v.second.m_ids.size() << "/"
+           << m_collectionCount << ")";
     }
     return ss.str();
 }

@@ -1051,7 +1051,9 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                                        << " transition";
     }
 
-    OLOG(ESeverity::info, _common) << SStateStats(info->m_fairmqTopology->GetCurrentState()).toString();
+    const auto stats{ SStateStats(info->m_fairmqTopology->GetCurrentState()) };
+    OLOG(ESeverity::info, _common) << stats.tasksString();
+    OLOG(ESeverity::info, _common) << stats.collectionsString();
 
     return success;
 }
@@ -1107,7 +1109,9 @@ bool CControlService::SImpl::getState(const SCommonParams& _common,
     if (_topologyState != nullptr)
         fairMQToODCTopologyState(info->m_topo, state, _topologyState);
 
-    OLOG(ESeverity::info, _common) << SStateStats(state).toString();
+    const auto stats{ SStateStats(state) };
+    OLOG(ESeverity::info, _common) << stats.tasksString();
+    OLOG(ESeverity::info, _common) << stats.collectionsString();
 
     return success;
 }
