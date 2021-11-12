@@ -87,13 +87,20 @@ mark_as_advanced(GRPC_INCLUDE_DIR)
 find_library(GPR_LIBRARY NAMES gpr)
 mark_as_advanced(GPR_LIBRARY)
 
+find_library(ABSL_LIBRARY NAMES absl_synchronization)
+mark_as_advanced(ABSL_LIBRARY)
+message(STATUS "DEBUG: ABSL_LIBRARY ${ABSL_LIBRARY} ")
+
+find_package(absl CONFIG REQUIRED)
+message(STATUS "DEBUG: FIND ABSL absl::synchronization")
+
 # Find gRPC library
 find_library(GRPC_LIBRARY NAMES grpc)
 mark_as_advanced(GRPC_LIBRARY)
 add_library(gRPC::grpc UNKNOWN IMPORTED)
 set_target_properties(gRPC::grpc PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES ${GRPC_INCLUDE_DIR}
-    INTERFACE_LINK_LIBRARIES "-lpthread;-ldl;${GPR_LIBRARY}"
+    INTERFACE_LINK_LIBRARIES "-lpthread;-ldl;${GPR_LIBRARY};absl::synchronization"
     IMPORTED_LOCATION ${GRPC_LIBRARY}
 )
 

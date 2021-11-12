@@ -1,6 +1,9 @@
 # ODC Release Notes
 
-## v0.62 (NOT YET RELEASED)
+## v0.64 (NOT YET RELEASED)
+
+
+## v0.62 (2021-11-12)
 ### ODC common
 * Log task and collection state stats.    
 * Increase log rotation size to 100MB.    
