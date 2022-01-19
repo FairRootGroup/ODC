@@ -46,6 +46,8 @@ target_link_libraries(odc_core_lib PUBLIC
   DDS::dds_tools_lib
   Boost::boost
   Boost::filesystem
+  Boost::log_setup
+  Boost::log
   odc_fairmq_lib
   FairMQ::FairMQ
 )
@@ -53,6 +55,7 @@ target_include_directories(odc_core_lib PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
 )
+target_compile_definitions(odc_core_lib PUBLIC BOOST_LOG_DYN_LINK)
 if(readline_FOUND)
     target_compile_definitions(odc_core_lib PUBLIC READLINE_AVAIL)
     target_link_libraries(odc_core_lib PUBLIC readline::readline)
