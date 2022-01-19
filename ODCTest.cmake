@@ -53,18 +53,18 @@ list(REMOVE_DUPLICATES options)
 list(JOIN options ";" optionsstr)
 ctest_configure(OPTIONS "${optionsstr}")
 
-# ctest_submit()
+ctest_submit()
 
 ctest_build(FLAGS "-j${NCPUS}")
 
-# ctest_submit()
+ctest_submit()
 
 ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}"
            PARALLEL_LEVEL 1
            SCHEDULE_RANDOM ON
            RETURN_VALUE _ctest_test_ret_val)
 
-# ctest_submit()
+ctest_submit()
 
 if(_ctest_test_ret_val)
   Message(FATAL_ERROR "Some tests failed.")
