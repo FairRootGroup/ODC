@@ -1,59 +1,33 @@
 ---
-Language:        Cpp
-#AccessModifierOffset: -4
-ConstructorInitializerIndentWidth: 4
-AlignAfterOpenBracket: Align
-AlignEscapedNewlinesLeft: true
-AlignTrailingComments: true
-AllowAllParametersOfDeclarationOnNextLine: true
+Language: Cpp
+BasedOnStyle: Mozilla
+
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true
 AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: false
-AlwaysBreakTemplateDeclarations: true
-
-# It is broken on windows. Breaks all #include "header.h"
-#AlwaysBreakBeforeMultilineStrings: true
-
-BreakBeforeBinaryOperators: false
-BreakBeforeTernaryOperators: true
-BreakConstructorInitializersBeforeComma: true
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: None
 BinPackArguments: false
 BinPackParameters: false
-ColumnLimit: 120
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
+BreakBeforeBinaryOperators: NonAssignment
+BreakConstructorInitializers: BeforeComma
+ColumnLimit: 128
 ConstructorInitializerIndentWidth: 4
-DerivePointerBinding: false
-ExperimentalAutoDetectBinPacking: false
-IndentCaseLabels: true
-MaxEmptyLinesToKeep: 1
-NamespaceIndentation: All
-ObjCSpaceAfterProperty: false
-ObjCSpaceBeforeProtocolList: false
-PenaltyBreakBeforeFirstCallParameter: 1
-PenaltyBreakComment: 300
-PenaltyBreakString: 1000
-PenaltyBreakFirstLessLess: 120
-PenaltyExcessCharacter: 1000000
-PenaltyReturnTypeOnItsOwnLine: 200
-PointerBindsToType: true
-SpacesBeforeTrailingComments: 1
-Cpp11BracedListStyle: false
-Standard:        c++17
-IndentWidth:     4
-TabWidth:        4
-UseTab:          Never
-BreakBeforeBraces: Allman
-IndentFunctionDeclarationAfterType: true
-SpacesInParentheses: false
-SpacesInAngles:  false
-SpaceInEmptyParentheses: false
-SpacesInCStyleCastParentheses: false
-SpacesInContainerLiterals: true
-SpaceBeforeAssignmentOperators: true
 ContinuationIndentWidth: 4
-CommentPragmas:  '^ IWYU pragma:'
-SpaceBeforeParens: ControlStatements
-
-MacroBlockBegin: "^BEGIN_[A-Z_]*$"
-MacroBlockEnd: "^END_[A-Z_]*$"
+Cpp11BracedListStyle: false
+DerivePointerAlignment: true
+FixNamespaceComments: true
+IndentWidth: 4
+IndentWrappedFunctionNames: true
+IncludeBlocks: Preserve
+NamespaceIndentation: None
+PointerAlignment: Left
+SortIncludes: true
+SpacesBeforeTrailingComments: 1
+Standard: c++17
+UseTab: Never
 ...
