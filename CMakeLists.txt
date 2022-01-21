@@ -10,18 +10,12 @@ cmake_policy(VERSION 3.12...3.22)
 
 project(ODC LANGUAGES CXX)
 
-# Cmake find modules
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
-# ODC utilities
 include(ODCUtils)
-
-# CTest
 include(CTest)
 
 odc_get_version()
-
-message(STATUS "Building ${PROJECT_NAME} ${PROJECT_VERSION} ...")
 
 string(TOLOWER ${PROJECT_NAME} PROJECT_NAME_LOWER)
 
@@ -54,61 +48,26 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 
+find_package(FairCMakeModules 1.0.0 REQUIRED QUIET)
+include(FairFindPackage2) # for find_package2
+
 if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
-    # Find Protobuf installation
-    find_package(Protobuf REQUIRED)
-    message(STATUS "Using protobuf ${Protobuf_VERSION}")
-
-    # Find gRPC installation
-    find_package(gRPC REQUIRED)
-    message(STATUS "Using gRPC ${GRPC_VERSION}")
+  find_package2(PRIVATE Protobuf REQUIRED)
+  find_package2(PRIVATE gRPC REQUIRED)
 endif()
-
-# Find DDS installation
-find_package(DDS 3.5.21 CONFIG REQUIRED)
-message(STATUS "Using DDS ${DDS_VERSION}")
-
-# Find Boost installation
+find_package2(PRIVATE DDS VERSION 3.6 REQUIRED)
+find_package2(PRIVATE FairMQ VERSION 1.4.26 REQUIRED COMPONENTS fairmq)
 set(Boost_Components log log_setup thread program_options filesystem system regex)
 if(BUILD_TESTS)
   set(Boost_Components ${Boost_Components} unit_test_framework)
 endif(BUILD_TESTS)
-find_package(Boost 1.67 REQUIRED COMPONENTS  ${Boost_Components})
-
-# Find FairLogger
-find_package(FairLogger REQUIRED)
-message(STATUS "Using FairLogger ${FairLogger_VERSION}")
-message(STATUS "Looking for FairLogger dependencies: ${FairLogger_PACKAGE_DEPENDENCIES}" )
-foreach(dep IN LISTS FairLogger_PACKAGE_DEPENDENCIES)
-  find_package(${dep} ${FairLogger_${dep}_VERSION})
-endforeach()
-
-# Find FairMQ
-find_package(FairMQ 1.4.26 REQUIRED COMPONENTS fairmq)
-message(STATUS "Using FairMQ ${FairMQ_GIT_VERSION}")
-if(FairMQ_CXX_STANDARD VERSION_GREATER CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD ${FairMQ_CXX_STANDARD})
-endif()
-message(STATUS "Looking for FairMQ dependencies: ${FairMQ_PACKAGE_DEPENDENCIES}" )
-foreach(dep IN LISTS FairMQ_PACKAGE_DEPENDENCIES)
-    if(FairMQ_${dep}_COMPONENTS)
-      find_package(${dep} ${FairMQ_${dep}_VERSION} COMPONENTS ${FairMQ_${dep}_COMPONENTS})
-    else()
-      find_package(${dep} ${FairMQ_${dep}_VERSION})
-    endif()
-endforeach()
-
-# Find Flatbuffers
-find_package(Flatbuffers REQUIRED)
-
-# Find optional readline package
-find_package(readline)
-
+find_package2(PRIVATE Boost VERSION 1.67 REQUIRED COMPONENTS ${Boost_Components})
+find_package2(PRIVATE Flatbuffers REQUIRED)
+find_package2(PRIVATE readline)
 if(BUILD_INFOLOGGER)
-    # Find InfoLogger installation
-    find_package(InfoLogger REQUIRED)
-    message(STATUS "Using InfoLogger ${InfoLogger_VERSION}")
+  find_package2(PRIVATE InfoLogger REQUIRED)
 endif()
+find_package2_implicit_dependencies() # Always call last after latest find_package2
 
 # https://cmake.org/Wiki/CMake_RPATH_handling
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -185,3 +144,15 @@ endif()
 install(FILES ${daemon_file} DESTINATION ${daemon_destination})
 
 odc_install_cmake_package()
+
+# Print project config summary
+include(FairFormattedOutput) # for color codes
+include(FairSummary)
+message(STATUS "  ")
+message(STATUS "  ${Cyan}${PROJECT_NAME} VERSION${CR}  ${BGreen}${PROJECT_VERSION}${CR}")
+fair_summary_global_cxx_flags_standard()
+set(Threads_PREFIX "<system>")
+fair_summary_package_dependencies()
+message(STATUS "  ")
+message(STATUS "  ${Cyan}INSTALL PREFIX${CR}  ${BGreen}${CMAKE_INSTALL_PREFIX}${CR} (change with ${BMagenta}-DCMAKE_INSTALL_PREFIX=...${CR})")
+message(STATUS "  ")
