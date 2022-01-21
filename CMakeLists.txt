@@ -48,6 +48,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options(-Wall -Wextra)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
+
 if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
     # Find Protobuf installation
     find_package(Protobuf REQUIRED)
