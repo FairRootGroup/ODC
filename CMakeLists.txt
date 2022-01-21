@@ -1,10 +1,14 @@
-# Copyright 2019 GSI, Inc. All rights reserved.
-#
-#
-project(ODC)
+################################################################################
+# Copyright (C) 2019-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+#                                                                              #
+#              This software is distributed under the terms of the             #
+#              GNU Lesser General Public Licence (LGPL) version 3,             #
+#                  copied verbatim in the file "LICENSE"                       #
+################################################################################
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_policy(VERSION 3.12...3.22)
 
-cmake_minimum_required( VERSION 3.12.0 FATAL_ERROR )
-cmake_policy(VERSION 3.12...3.14)
+project(ODC LANGUAGES CXX)
 
 # Cmake find modules
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
