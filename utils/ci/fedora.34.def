@@ -10,6 +10,7 @@ From: fedora:34
                    ca-certificates \
                    clang-tools-extra \
                    cmake \
+                   faircmakemodules \
                    fairlogger-devel \
                    fairmq-devel \
                    flatbuffers-devel \
