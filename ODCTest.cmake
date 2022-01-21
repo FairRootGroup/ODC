@@ -31,19 +31,24 @@ if(NOT NCPUS)
   endif()
 endif()
 
-if ("$ENV{CTEST_SITE}" STREQUAL "")
+if("$ENV{CTEST_SITE}" STREQUAL "")
   set(CTEST_SITE "${fqdn}")
 else()
   set(CTEST_SITE $ENV{CTEST_SITE})
 endif()
 
-if ("$ENV{LABEL}" STREQUAL "")
+if("$ENV{LABEL}" STREQUAL "")
   set(CTEST_BUILD_NAME "build")
 else()
   set(CTEST_BUILD_NAME $ENV{LABEL})
 endif()
 
-ctest_start(Continuous)
+if(CTEST_DASHBOARD_MODEL_NIGHTLY)
+  ctest_start(Nightly)
+else()
+  ctest_start(Continuous)
+endif()
+
 
 list(APPEND options "-DCMAKE_INSTALL_PREFIX=install")
 if(ENABLE_SANITIZERS)

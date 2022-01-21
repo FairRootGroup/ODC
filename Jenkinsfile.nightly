@@ -30,7 +30,7 @@ def jobMatrix(String type, List specs) {
           checkout scm
 
           def jobscript = 'job.sh'
-          def ctestcmd = "ctest ${extra} -S ODCTest.cmake -VV --output-on-failure"
+          def ctestcmd = "ctest ${extra} -DCTEST_DASHBOARD_MODEL_NIGHTLY=true -S ODCTest.cmake -VV --output-on-failure"
           sh "echo \"set -e\" >> ${jobscript}"
           sh "echo \"export LABEL=\\\"\${JOB_BASE_NAME} ${label}\\\"\" >> ${jobscript}"
           if (selector =~ /^macos/) {
