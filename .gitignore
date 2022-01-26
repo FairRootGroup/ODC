@@ -30,8 +30,8 @@ install_manifest.txt
 
 # misc
 build/
+install/
 Doxyfile
-src/version.h
 tests/xpd.cf
 .DS_Store
 *.swp
