@@ -318,19 +318,23 @@ void CControlService::SImpl::restore(const std::string& _id)
 
 void CControlService::SImpl::updateRestore()
 {
-    if (m_restoreId.empty())
+    if (m_restoreId.empty()) {
         return;
+    }
 
     OLOG(ESeverity::info) << "Updating restore file " << quoted(m_restoreId) << "...";
     SRestoreData data;
 
     lock_guard<mutex> lock(m_sessionsMutex);
-    for (const auto& v : m_sessions)
-    {
+    for (const auto& v : m_sessions) {
         const auto& info{ v.second };
-        // TODO: Add running sessions only?
-        // if (info->m_session->IsRunning()) // Note: IsRunning() throws
-        data.m_partitions.push_back(SRestorePartition(info->m_partitionID, to_string(info->m_session->getSessionID())));
+        try {
+            if (info->m_session->IsRunning()) {
+                data.m_partitions.push_back(SRestorePartition(info->m_partitionID, to_string(info->m_session->getSessionID())));
+            }
+        } catch (exception& _e) {
+            OLOG(ESeverity::warning, info->m_partitionID, 0) << "Failed to get session ID or session status: " << _e.what();
+        }
     }
 
     // Write the the file is locked by m_sessionsMutex
