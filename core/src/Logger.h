@@ -119,15 +119,13 @@ namespace odc::core
                 return;
 
             using namespace boost::log;
-            using fileSink_t =
-                boost::shared_ptr<boost::log::sinks::synchronous_sink<boost::log::sinks::text_file_backend>>;
+            using fileSink_t = boost::shared_ptr<boost::log::sinks::synchronous_sink<boost::log::sinks::text_file_backend>>;
 
             std::string logDir{ smart_path(_config.m_logDir) };
             if (!boost::filesystem::exists(boost::filesystem::path(logDir)) &&
                 !boost::filesystem::create_directories(boost::filesystem::path(logDir)))
             {
-                throw std::runtime_error(
-                    toString("Can't initialize file sink of logger: failed to create directory ", std::quoted(logDir)));
+                throw std::runtime_error(toString("Can't initialize file sink of logger: failed to create directory ", std::quoted(logDir)));
             }
 
             boost::filesystem::path logFile{ logDir };
@@ -136,8 +134,7 @@ namespace odc::core
             // Default format for logger
             formatter formatter = expressions::stream
                                   << std::left
-                                  << expressions::format_date_time<boost::posix_time::ptime>("TimeStamp",
-                                                                                             "%Y-%m-%d %H:%M:%S.%f")
+                                  << expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f")
                                   << "  " << std::setw(4) << expressions::attr<ESeverity>("Severity") << "  "
                                   << std::setw(20) << expressions::attr<std::string>("Process") << " <"
                                   << expressions::attr<attributes::current_process_id::value_type>("ProcessID") << ":"

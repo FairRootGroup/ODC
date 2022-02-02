@@ -49,5 +49,4 @@ message ReleaseNodeRequest {
 
 message ReleasePartitionRequest {
     string partition_id = 1;
-
 }
