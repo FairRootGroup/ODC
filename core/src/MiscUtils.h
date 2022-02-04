@@ -211,30 +211,30 @@ namespace odc::core
         trim_left(&path, ' ');
         if ('~' == path[0])
         {
-            std::string path(*_Path);
+            std::string path2(*_Path);
             // ~/.../.../
-            if ('/' == path[1])
+            if ('/' == path2[1])
             {
                 std::string sHome;
                 get_cuser_homedir(&sHome);
                 smart_append(&sHome, '/');
 
-                path.erase(path.begin(), path.begin() + 2);
-                sHome += path;
-                path.swap(sHome);
-                _Path->swap(path);
+                path.erase(path2.begin(), path2.begin() + 2);
+                sHome += path2;
+                path2.swap(sHome);
+                _Path->swap(path2);
             }
             else // ~user/.../.../
             {
-                typename _T::size_type p = path.find(_T( "/" ));
+                typename _T::size_type p = path2.find(_T( "/" ));
                 if (_T::npos != p)
                 {
-                    const std::string uname = path.substr(1, p - 1);
+                    const std::string uname = path2.substr(1, p - 1);
                     std::string home_dir;
                     get_homedir(uname.c_str(), &home_dir);
-                    path.erase(path.begin(), path.begin() + p);
-                    path = home_dir + path;
-                    _Path->swap(path);
+                    path2.erase(path2.begin(), path2.begin() + p);
+                    path2 = home_dir + path2;
+                    _Path->swap(path2);
                 }
             }
         }
