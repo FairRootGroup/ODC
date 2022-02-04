@@ -114,9 +114,3 @@ odc_add_boost_tests(SUITE odc_custom_commands_lib
 
   PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
 )
-
-#
-# Configure and install run_tests.sh
-#
-configure_file(run_tests.sh.in ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh @ONLY)
-install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/run_tests.sh DESTINATION ${PROJECT_INSTALL_TESTS})
