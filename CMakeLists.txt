@@ -40,9 +40,6 @@ set(PROJECT_INSTALL_TESTS tests)
 set(PROJECT_INSTALL_DOCDIR ${CMAKE_INSTALL_DATADIR}/doc/${PROJECT_NAME_LOWER})
 
 # Define preferred defaults for some global CMake settings
-if(NOT DEFINED BUILD_SHARED_LIBS)
-  set(BUILD_SHARED_LIBS ON)
-endif()
 if(NOT CMAKE_CXX_STANDARD)
   set(CMAKE_CXX_STANDARD 17)
 endif()

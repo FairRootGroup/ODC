@@ -2,7 +2,7 @@
 #
 #
 
-add_library(odc_fairmq_lib OBJECT
+add_library(odc_fairmq_lib STATIC
     "src/AsioAsyncOp.h"
     "src/AsioBase.h"
     "src/Topology.h"
@@ -22,4 +22,3 @@ target_include_directories(odc_fairmq_lib INTERFACE
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
 )
-install(TARGETS odc_fairmq_lib EXPORT ${PROJECT_NAME}Targets)

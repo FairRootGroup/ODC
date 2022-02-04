@@ -96,7 +96,10 @@ odc_add_boost_tests(SUITE odc_fairmq_lib
   topology/underlying_session_terminated
   topology/wait_for_state_full_device_lifecycle
 
-  DEPS odc_core_lib
+  DEPS
+  odc_custom_commands_lib
+  odc_fairmq_lib
+  odc_core_lib
 
   EXTRA_ARGS -- --topo-file ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/odc_fairmq_lib-tests-topo.xml
   PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
