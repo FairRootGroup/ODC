@@ -84,6 +84,11 @@ if(BUILD_INFOLOGGER)
 endif()
 find_package2_implicit_dependencies() # Always call last after latest find_package2
 
+# Install directory
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/ODC" CACHE PATH "Install prefix" FORCE)
+endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
 # https://cmake.org/Wiki/CMake_RPATH_handling
 if(NOT DEFINED CMAKE_INSTALL_RPATH_USE_LINK_PATH)
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH ON)
@@ -91,15 +96,15 @@ endif()
 list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}" isSystemDir)
 if("${isSystemDir}" STREQUAL "-1")
   if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set(CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} "-Wl,--enable-new-dtags")
-    set(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} "-Wl,--enable-new-dtags")
+    list(APPEND CMAKE_EXE_LINKER_FLAGS "-Wl,--enable-new-dtags")
+    list(APPEND CMAKE_SHARED_LINKER_FLAGS "-Wl,--enable-new-dtags")
+    list(PREPEND CMAKE_INSTALL_RPATH "$ORIGIN/../${PROJECT_INSTALL_LIBDIR}")
+  elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    list(PREPEND CMAKE_INSTALL_RPATH "@loader_path/../${PROJECT_INSTALL_LIBDIR}")
+  else()
+    list(PREPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}")
   endif()
 endif()
-
-# Install directory
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-set (CMAKE_INSTALL_PREFIX "$ENV{HOME}/ODC" CACHE PATH "Install path prefix, prepended onto install directories." FORCE)
-endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 # Source Code Formatting using clang-format
 add_custom_target(format-code
