@@ -54,19 +54,13 @@ struct CControlService::SImpl
 
         std::string toString() const
         {
-            return odc::core::toString("agentID (",
-                                       m_agentID,
-                                       "), slotID (",
-                                       m_slotID,
-                                       ", itemID (",
-                                       m_itemID,
-                                       "), path (",
-                                       quoted(m_path),
-                                       "), host (",
-                                       m_host,
-                                       "), wrkDir (",
-                                       quoted(m_wrkDir),
-                                       ")");
+            return odc::core::toString("agentID (", m_agentID,        "), ",
+                                       "slotID (",  m_slotID,         "), ",
+                                       "itemID (",  m_itemID,         "), ",
+                                       "path (",    quoted(m_path),   "), ",
+                                       "host (",    m_host,           "), ",
+                                       "wrkDir (",  quoted(m_wrkDir), ")"
+                                      );
         }
     };
 
