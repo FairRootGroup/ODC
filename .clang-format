@@ -15,7 +15,7 @@ BinPackArguments: false
 BinPackParameters: false
 BreakBeforeBinaryOperators: NonAssignment
 BreakConstructorInitializers: BeforeComma
-ColumnLimit: 128
+ColumnLimit: 192
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 Cpp11BracedListStyle: false
