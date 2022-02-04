@@ -135,11 +135,11 @@ namespace odc::core
             formatter formatter = expressions::stream
                                   << std::left
                                   << expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f")
-                                  << "  " << std::setw(4) << expressions::attr<ESeverity>("Severity") << "  "
+                                  << " " << std::setw(4) << expressions::attr<ESeverity>("Severity") << " "
                                   << std::setw(20) << expressions::attr<std::string>("Process") << " <"
                                   << expressions::attr<attributes::current_process_id::value_type>("ProcessID") << ":"
-                                  << expressions::attr<attributes::current_thread_id::value_type>("ThreadID") << ">  "
-                                  << std::setw(20) << expressions::attr<std::string>("Channel") << "  "
+                                  << expressions::attr<attributes::current_thread_id::value_type>("ThreadID") << "> "
+                                  << std::setw(20) << expressions::attr<std::string>("Channel") << " "
                                   << expressions::smessage;
 
             fileSink_t fileSink =
