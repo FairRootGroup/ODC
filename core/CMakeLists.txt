@@ -9,10 +9,9 @@ configure_file(src/BuildConstants.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/BuildCons
 
 # Version header
 configure_file(src/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/src/Version.h @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/src/Version.h DESTINATION ${PROJECT_INSTALL_INCLUDEDIR})
 
 # odc_core_lib target
-add_library(odc_core_lib
+add_library(odc_core_lib STATIC
     "${CMAKE_CURRENT_BINARY_DIR}/src/Version.h"
     "${CMAKE_CURRENT_BINARY_DIR}/src/BuildConstants.h"
     "src/ControlService.h"
@@ -64,4 +63,3 @@ if (InfoLogger_FOUND)
     target_compile_definitions(odc_core_lib PUBLIC INFOLOGGER_AVAIL)
     target_link_libraries(odc_core_lib PUBLIC AliceO2::InfoLogger)
 endif()
-install(TARGETS odc_core_lib EXPORT ${PROJECT_NAME}Targets LIBRARY DESTINATION ${PROJECT_INSTALL_LIBDIR})
