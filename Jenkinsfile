@@ -31,9 +31,12 @@ def jobMatrix(String type, List specs) {
           checkout scm
 
           def jobscript = 'job.sh'
-          def ctestcmd = "ctest ${extra} -S ODCTest.cmake -VV --output-on-failure"
+          def ctestcmd = "ctest -S ODCTest.cmake -VV --output-on-failure"
           sh "echo \"set -e\" >> ${jobscript}"
           sh "echo \"export LABEL=\\\"\${JOB_BASE_NAME} ${label}\\\"\" >> ${jobscript}"
+          if (selector =~ /alice/) {
+            ctestcmd = "aliBuild build --defaults o2 ODC --debug && cd \\\\\\\${ALIBUILD_WORK_DIR}/BUILD/ODC-latest/ODC && alienv setenv ODC/latest,CMake/latest -c ctest --output-on-failure"
+          }
           if (selector =~ /^macos/) {
             sh """\
               echo \"export DDS_ROOT=\\\"\\\$(brew --prefix dds)\\\"\" >> ${jobscript}
@@ -44,6 +47,9 @@ def jobMatrix(String type, List specs) {
             sh "bash ${jobscript}"
           } else {
             def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
+            if (selector =~ /alice/) {
+              containercmd = "singularity exec -f --no-home -B.:/root/ODC -w ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
+            }
             sh """\
               echo \"echo \\\"*** Job started at .......: \\\$(date -R)\\\"\" >> ${jobscript}
               echo \"echo \\\"*** Job ID ...............: \\\${SLURM_JOB_ID}\\\"\" >> ${jobscript}
@@ -83,6 +89,7 @@ pipeline{
         script {
           def builds = jobMatrix('build', [
             [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11'],
+            [os: 'centos', ver: '8stream.alice', arch: 'x86_64', compiler: 'gcc-10'],
             [os: 'macos',  ver: '10.15', arch: 'x86_64', compiler: 'apple-clang-12'],
             [os: 'macos',  ver: '11',    arch: 'x86_64', compiler: 'apple-clang-13'],
             [os: 'macos',  ver: '12',    arch: 'arm64', compiler: 'apple-clang-13'],

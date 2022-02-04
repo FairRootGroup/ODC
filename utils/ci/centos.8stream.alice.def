@@ -1,0 +1,28 @@
+Bootstrap: docker
+From: quay.io/centos/centos:stream8
+
+%post
+    dnf -y update
+    dnf -y install epel-release
+    dnf -y install dnf-plugins-core
+    dnf config-manager --set-enabled powertools
+    dnf -y update
+    dnf -y group install "Development Tools"
+    cat << EOF > /etc/yum.repos.d/alice-system-deps.repo
+[alice-system-deps]
+name=alice-system-deps
+baseurl=https://s3.cern.ch/swift/v1/alibuild-repo/RPMS/o2-full-deps_el8.x86-64/
+enabled=1
+gpgcheck=0
+EOF
+    cat << EOF > /etc/profile.d/alibuild.sh
+#!/bin/bash
+export ALIBUILD_WORK_DIR=/root/sw
+export DDS_LOCATION=/root/sw/slc8_x86-64/DDS/latest
+EOF
+    dnf install -y alice-o2-full-deps alibuild
+    cd /root
+    git clone https://github.com/alisw/alidist
+    aliBuild analytics off
+    aliBuild init --defaults o2 ODC --debug
+    aliBuild build --defaults o2 ODC --debug
