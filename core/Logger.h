@@ -103,9 +103,9 @@ namespace odc::core
             ostreamSink_t stdoutSink = add_console_log(std::cout, keywords::format = "%Process%: %Message%");
             ostreamSink_t stdoutCleanSink = add_console_log(std::cout, keywords::format = "%Message%");
             ostreamSink_t stderrSink = add_console_log(std::cerr, keywords::format = "%Process%: error: %Message%");
-            stdoutSink->set_filter(severity == ESeverity::stdout);
-            stdoutCleanSink->set_filter(severity == ESeverity::clean);
-            stderrSink->set_filter(severity == ESeverity::stderr);
+            stdoutSink->set_filter(logger::severity == ESeverity::stdout);
+            stdoutCleanSink->set_filter(logger::severity == ESeverity::clean);
+            stderrSink->set_filter(logger::severity == ESeverity::stderr);
         }
 
         void createFileSink(const SConfig& _config) const
@@ -152,7 +152,7 @@ namespace odc::core
                              keywords::auto_flush = true);
 
             fileSink->set_formatter(formatter);
-            fileSink->set_filter(severity >= _config.m_severity);
+            fileSink->set_filter(logger::severity >= _config.m_severity);
         }
 
       private:
