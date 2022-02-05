@@ -65,13 +65,13 @@ int main(int argc, char** argv)
 
         if (vm.count("help"))
         {
-            OLOG(ESeverity::clean) << options;
+            OLOG(clean) << options;
             return EXIT_SUCCESS;
         }
 
         if (vm.count("version"))
         {
-            OLOG(ESeverity::clean) << ODC_VERSION;
+            OLOG(clean) << ODC_VERSION;
             return EXIT_SUCCESS;
         }
 
@@ -107,14 +107,14 @@ int main(int argc, char** argv)
     }
     catch (exception& _e)
     {
-        OLOG(ESeverity::clean) << _e.what();
-        OLOG(ESeverity::fatal) << _e.what();
+        OLOG(clean) << _e.what();
+        OLOG(fatal) << _e.what();
         return EXIT_FAILURE;
     }
     catch (...)
     {
-        OLOG(ESeverity::clean) << "Unexpected Exception occurred.";
-        OLOG(ESeverity::fatal) << "Unexpected Exception occurred.";
+        OLOG(clean) << "Unexpected Exception occurred.";
+        OLOG(fatal) << "Unexpected Exception occurred.";
         return EXIT_FAILURE;
     }
 

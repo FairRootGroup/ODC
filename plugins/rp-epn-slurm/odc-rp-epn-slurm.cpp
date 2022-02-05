@@ -109,11 +109,11 @@ int main(int argc, char** argv)
         }
 
         if (vm.count("version")) {
-            OLOG(ESeverity::clean) << ODC_VERSION;
+            OLOG(clean) << ODC_VERSION;
             return EXIT_SUCCESS;
         }
 
-        OLOG(ESeverity::info, partitionID, 0) << "Starting epn slurm plugin";
+        OLOG(info, partitionID, 0) << "Starting epn slurm plugin";
 
         SResources res(resources);
 
@@ -133,10 +133,10 @@ int main(int argc, char** argv)
         ss << "<slots>" << numSlots << "</slots>"; // number of slots per agent
         ss << "<requiredSlots>" << requiredSlots << "</requiredSlots>"; // total number of required slots
 
-        OLOG(ESeverity::info, partitionID, 0) << ss.str();
-        OLOG(ESeverity::clean, partitionID, 0) << ss.str();
+        OLOG(info, partitionID, 0) << ss.str();
+        OLOG(clean, partitionID, 0) << ss.str();
 
-        OLOG(ESeverity::info, partitionID, 0) << "Finishing epn slurm plugin";
+        OLOG(info, partitionID, 0) << "Finishing epn slurm plugin";
     } catch (exception& _e) {
         cerr << _e.what();
         return EXIT_FAILURE;

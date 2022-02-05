@@ -38,7 +38,7 @@ int main(int argc, char** argv)
         }
 
         if (vm.count("version")) {
-            OLOG(ESeverity::clean) << ODC_VERSION;
+            OLOG(clean) << ODC_VERSION;
             return EXIT_SUCCESS;
         }
 

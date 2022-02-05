@@ -49,7 +49,7 @@ namespace odc::core
         }
         if (grpc.length() > 0 && ::setenv("GRPC_VERBOSITY", grpc.c_str(), 1) == 0)
         {
-            // OLOG(ESeverity::info) << "Set GRPC_VERBOSITY to " << grpc;
+            // OLOG(info) << "Set GRPC_VERBOSITY to " << grpc;
             std::cout << "Set GRPC_VERBOSITY to " << grpc << std::endl;
         }
     }

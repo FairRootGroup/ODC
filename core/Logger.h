@@ -34,9 +34,9 @@
 // Example:
 // OLOG(info) << "My message";
 // OLOG(info, "TYrfjf", 54321) << "My message";
-#define OLOG_SEVERITY(severity)                               BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), "", severity)
-#define OLOG_SEVERITY_COMMON(severity, common)                BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), toString(common.m_partitionID, ":", common.m_runNr), severity)
-#define OLOG_SEVERITY_PARTITION_RUN(severity, partition, run) BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), toString(partition, ":", run), severity)
+#define OLOG_SEVERITY(severity)                               BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), "", ESeverity::severity)
+#define OLOG_SEVERITY_COMMON(severity, common)                BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), toString(common.m_partitionID, ":", common.m_runNr), ESeverity::severity)
+#define OLOG_SEVERITY_PARTITION_RUN(severity, partition, run) BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), toString(partition, ":", run), ESeverity::severity)
 #define OLOG_GET_MACRO(arg1, arg2, arg3, NAME, ...) NAME
 #define OLOG(...) OLOG_GET_MACRO(__VA_ARGS__, OLOG_SEVERITY_PARTITION_RUN, OLOG_SEVERITY_COMMON, OLOG_SEVERITY, UNUSED)(__VA_ARGS__)
 
@@ -92,7 +92,7 @@ namespace odc::core
             boost::log::add_common_attributes();
             boost::log::core::get()->add_global_attribute("Process", boost::log::attributes::current_process_name());
 
-            OLOG(ESeverity::info) << "Log engine is initialized with severety \"" << _config.m_severity << "\"";
+            OLOG(info) << "Log engine is initialized with severety \"" << _config.m_severity << "\"";
         }
 
       private:

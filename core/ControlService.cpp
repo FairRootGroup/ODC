@@ -269,18 +269,18 @@ void CControlService::SImpl::execRequestTrigger(const string& _plugin, const SCo
     {
         try
         {
-            OLOG(ESeverity::debug, _common) << "Executing request trigger " << quoted(_plugin);
+            OLOG(debug, _common) << "Executing request trigger " << quoted(_plugin);
             string out{ m_triggers->execPlugin(_plugin, "", _common.m_partitionID, _common.m_runNr) };
-            OLOG(ESeverity::debug, _common) << "Request trigger " << quoted(_plugin) << " done: " << out;
+            OLOG(debug, _common) << "Request trigger " << quoted(_plugin) << " done: " << out;
         }
         catch (exception& _e)
         {
-            OLOG(ESeverity::error, _common) << "Request trigger " << quoted(_plugin) << " failed: " << _e.what();
+            OLOG(error, _common) << "Request trigger " << quoted(_plugin) << " failed: " << _e.what();
         }
     }
     else
     {
-        OLOG(ESeverity::debug, _common) << "No plugins registered for " << quoted(_plugin);
+        OLOG(debug, _common) << "No plugins registered for " << quoted(_plugin);
     }
 }
 
@@ -288,23 +288,23 @@ void CControlService::SImpl::restore(const std::string& _id)
 {
     m_restoreId = _id;
 
-    OLOG(ESeverity::info) << "Restoring sessions for " << quoted(_id);
+    OLOG(info) << "Restoring sessions for " << quoted(_id);
     auto data{ CRestoreFile(_id).read() };
     for (const auto& v : data.m_partitions)
     {
-        OLOG(ESeverity::info, v.m_partitionId, 0)
+        OLOG(info, v.m_partitionId, 0)
             << "Restoring (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
         auto result{ execInitialize(SCommonParams(v.m_partitionId, 0, 0), SInitializeParams(v.m_sessionId)) };
         if (result.m_error.m_code)
         {
-            OLOG(ESeverity::info, v.m_partitionId, 0)
+            OLOG(info, v.m_partitionId, 0)
                 << "Failed to attach to the session. Executing Shutdown trigger for (" << quoted(v.m_partitionId) << "/"
                 << quoted(v.m_sessionId) << ")";
             execRequestTrigger("Shutdown", SCommonParams(v.m_partitionId, 0, 0));
         }
         else
         {
-            OLOG(ESeverity::info, v.m_partitionId, 0) << "Successfully attached to the session ("
+            OLOG(info, v.m_partitionId, 0) << "Successfully attached to the session ("
                                                       << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
         }
     }
@@ -316,7 +316,7 @@ void CControlService::SImpl::updateRestore()
         return;
     }
 
-    OLOG(ESeverity::info) << "Updating restore file " << quoted(m_restoreId) << "...";
+    OLOG(info) << "Updating restore file " << quoted(m_restoreId) << "...";
     SRestoreData data;
 
     lock_guard<mutex> lock(m_sessionsMutex);
@@ -327,7 +327,7 @@ void CControlService::SImpl::updateRestore()
                 data.m_partitions.push_back(SRestorePartition(info->m_partitionID, to_string(info->m_session->getSessionID())));
             }
         } catch (exception& _e) {
-            OLOG(ESeverity::warning, info->m_partitionID, 0) << "Failed to get session ID or session status: " << _e.what();
+            OLOG(warning, info->m_partitionID, 0) << "Failed to get session ID or session status: " << _e.what();
         }
     }
 
@@ -610,7 +610,7 @@ SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& _para
         }
         catch (exception& _e)
         {
-            OLOG(ESeverity::warning, status.m_partitionID, 0)
+            OLOG(warning, status.m_partitionID, 0)
                 << "Failed to get session ID or session status: " << _e.what();
         }
 
@@ -626,7 +626,7 @@ SStatusReturnValue CControlService::SImpl::execStatus(const SStatusParams& _para
             }
             catch (exception& _e)
             {
-                OLOG(ESeverity::warning, status.m_partitionID, 0) << "Failed to get an aggregated state: " << _e.what();
+                OLOG(warning, status.m_partitionID, 0) << "Failed to get an aggregated state: " << _e.what();
             }
             result.m_partitions.push_back(status);
         }
@@ -645,7 +645,7 @@ SReturnValue CControlService::SImpl::createReturnValue(const SCommonParams& _com
                                                        AggregatedTopologyState _aggregatedState,
                                                        SReturnDetails::ptr_t _details)
 {
-    OLOG(ESeverity::debug, _common) << "Creating return value...";
+    OLOG(debug, _common) << "Creating return value...";
     auto info{ getOrCreateSessionInfo(_common) };
     string sidStr{ to_string(info->m_session->getSessionID()) };
     EStatusCode status{ _error.m_code ? EStatusCode::error : EStatusCode::ok };
@@ -659,7 +659,7 @@ bool CControlService::SImpl::createDDSSession(const SCommonParams& _common, SErr
     {
         auto info{ getOrCreateSessionInfo(_common) };
         boost::uuids::uuid sessionID{ info->m_session->create() };
-        OLOG(ESeverity::info, _common) << "DDS session created with session ID: " << to_string(sessionID);
+        OLOG(info, _common) << "DDS session created with session ID: " << to_string(sessionID);
     }
     catch (exception& _e)
     {
@@ -680,7 +680,7 @@ bool CControlService::SImpl::attachToDDSSession(const SCommonParams& _common,
     {
         auto info{ getOrCreateSessionInfo(_common) };
         info->m_session->attach(_sessionID);
-        OLOG(ESeverity::info, _common) << "Attach to a DDS session with session ID: " << _sessionID;
+        OLOG(info, _common) << "Attach to a DDS session with session ID: " << _sessionID;
     }
     catch (exception& _e)
     {
@@ -720,14 +720,14 @@ bool CControlService::SImpl::submitDDSAgents(const SCommonParams& _common,
             }
             else
             {
-                OLOG(ESeverity::info, _common) << "Submit: " << _message.m_msg;
+                OLOG(info, _common) << "Submit: " << _message.m_msg;
             }
         });
 
     requestPtr->setDoneCallback(
         [&cv, &_common]()
         {
-            OLOG(ESeverity::info, _common) << "Agent submission done";
+            OLOG(info, _common) << "Agent submission done";
             cv.notify_all();
         });
 
@@ -745,7 +745,7 @@ bool CControlService::SImpl::submitDDSAgents(const SCommonParams& _common,
     }
     else
     {
-        OLOG(ESeverity::info, _common) << "Agent submission done successfully";
+        OLOG(info, _common) << "Agent submission done successfully";
     }
     return success;
 }
@@ -760,8 +760,8 @@ bool CControlService::SImpl::requestCommanderInfo(const SCommonParams& _common,
         auto info{ getOrCreateSessionInfo(_common) };
         info->m_session->syncSendRequest<SCommanderInfoRequest>(
             SCommanderInfoRequest::request_t(), _commanderInfo, requestTimeout(_common), &ss);
-        OLOG(ESeverity::info, _common) << ss.str();
-        OLOG(ESeverity::debug, _common) << "Commander info: " << _commanderInfo;
+        OLOG(info, _common) << ss.str();
+        OLOG(debug, _common) << "Commander info: " << _commanderInfo;
         return true;
     }
     catch (exception& _e)
@@ -819,7 +819,7 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
             }
             else
             {
-                OLOG(ESeverity::debug, _common) << "Activate: " << _message.m_msg;
+                OLOG(debug, _common) << "Activate: " << _message.m_msg;
             }
         });
 
@@ -829,7 +829,7 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
             uint32_t completed{ _progress.m_completed + _progress.m_errors };
             if (completed == _progress.m_total)
             {
-                OLOG(ESeverity::info, _common) << "Activated tasks (" << _progress.m_completed << "), errors ("
+                OLOG(info, _common) << "Activated tasks (" << _progress.m_completed << "), errors ("
                                                << _progress.m_errors << "), total (" << _progress.m_total << ")";
             }
         });
@@ -837,7 +837,7 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
     requestPtr->setResponseCallback(
         [&_common, info](const STopologyResponseData& _info)
         {
-            OLOG(ESeverity::debug, _common) << "Activate: " << _info;
+            OLOG(debug, _common) << "Activate: " << _info;
 
             // We are not interested in stopped tasks
             if (_info.m_activated)
@@ -877,10 +877,10 @@ bool CControlService::SImpl::activateDDSTopology(const SCommonParams& _common,
     {
         success = false;
         fillError(_common, _error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
-        OLOG(ESeverity::error, _common) << _error;
+        OLOG(error, _common) << _error;
     }
 
-    OLOG(ESeverity::info, _common) << "Topology " << quoted(_topologyFile)
+    OLOG(info, _common) << "Topology " << quoted(_topologyFile)
                                    << ((success) ? " activated successfully" : " failed to activate");
     return success;
 }
@@ -900,7 +900,7 @@ bool CControlService::SImpl::shutdownDDSSession(const SCommonParams& _common, SE
             info->m_session->shutdown();
             if (info->m_session->getSessionID() == boost::uuids::nil_uuid())
             {
-                OLOG(ESeverity::info, _common) << "DDS session shutted down";
+                OLOG(info, _common) << "DDS session shutted down";
             }
             else
             {
@@ -923,7 +923,7 @@ bool CControlService::SImpl::createTopo(const SCommonParams& _common, SError& _e
     {
         auto info{ getOrCreateSessionInfo(_common) };
         info->m_topo = make_shared<dds::topology_api::CTopology>(_topologyFile);
-        OLOG(ESeverity::info, _common) << "DDS topology " << std::quoted(_topologyFile) << " created successfully";
+        OLOG(info, _common) << "DDS topology " << std::quoted(_topologyFile) << " created successfully";
     }
     catch (exception& _e)
     {
@@ -1009,7 +1009,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                           _error,
                           ErrorCode::FairMQChangeStateFailed,
                           toString("Aggregate topology state failed: ", _e.what()));
-                OLOG(ESeverity::error, _common) << stateSummaryString(_common, result.second, _expectedState, info);
+                OLOG(error, _common) << stateSummaryString(_common, result.second, _expectedState, info);
             }
             if (_topologyState != nullptr)
                 fairMQToODCTopologyState(info->m_topo, result.second, _topologyState);
@@ -1031,7 +1031,7 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
                               toString("FairMQ change state failed: ", result.first.message()));
                     break;
             }
-            OLOG(ESeverity::error, _common)
+            OLOG(error, _common)
                 << stateSummaryString(_common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
         }
     }
@@ -1039,19 +1039,19 @@ bool CControlService::SImpl::changeState(const SCommonParams& _common,
     {
         success = false;
         fillError(_common, _error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
-        OLOG(ESeverity::error, _common) << stateSummaryString(
+        OLOG(error, _common) << stateSummaryString(
             _common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
     }
 
     if (success)
     {
-        OLOG(ESeverity::info, _common) << "State changed to " << _aggregatedState << " via " << _transition
+        OLOG(info, _common) << "State changed to " << _aggregatedState << " via " << _transition
                                        << " transition";
     }
 
     const auto stats{ SStateStats(info->m_fairmqTopology->GetCurrentState()) };
-    OLOG(ESeverity::info, _common) << stats.tasksString();
-    OLOG(ESeverity::info, _common) << stats.collectionsString();
+    OLOG(info, _common) << stats.tasksString();
+    OLOG(info, _common) << stats.collectionsString();
 
     return success;
 }
@@ -1108,8 +1108,8 @@ bool CControlService::SImpl::getState(const SCommonParams& _common,
         fairMQToODCTopologyState(info->m_topo, state, _topologyState);
 
     const auto stats{ SStateStats(state) };
-    OLOG(ESeverity::info, _common) << stats.tasksString();
-    OLOG(ESeverity::info, _common) << stats.collectionsString();
+    OLOG(info, _common) << stats.tasksString();
+    OLOG(info, _common) << stats.collectionsString();
 
     return success;
 }
@@ -1135,7 +1135,7 @@ bool CControlService::SImpl::setProperties(const SCommonParams& _common,
         success = !result.first;
         if (success)
         {
-            OLOG(ESeverity::info, _common) << "Set property finished successfully";
+            OLOG(info, _common) << "Set property finished successfully";
         }
         else
         {
@@ -1166,11 +1166,11 @@ bool CControlService::SImpl::setProperties(const SCommonParams& _common,
                 }
                 catch (const exception& _e)
                 {
-                    OLOG(ESeverity::error, _common) << "Set properties error: " << _e.what();
+                    OLOG(error, _common) << "Set properties error: " << _e.what();
                 }
                 count++;
             }
-            OLOG(ESeverity::error, _common) << ss.str();
+            OLOG(error, _common) << ss.str();
         }
     }
     catch (exception& _e)
@@ -1266,7 +1266,7 @@ void CControlService::SImpl::fillError(const SCommonParams& _common,
 {
     _error.m_code = MakeErrorCode(_errorCode);
     _error.m_details = _msg;
-    OLOG(ESeverity::error, _common) << _error;
+    OLOG(error, _common) << _error;
 }
 
 CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateSessionInfo(const SCommonParams& _common)
@@ -1280,10 +1280,10 @@ CControlService::SImpl::SSessionInfo::Ptr_t CControlService::SImpl::getOrCreateS
         newSessionInfo->m_session = make_shared<CSession>();
         newSessionInfo->m_partitionID = prt;
         m_sessions.insert(pair<partitionID_t, SSessionInfo::Ptr_t>(prt, newSessionInfo));
-        OLOG(ESeverity::debug, _common) << "Return new session info";
+        OLOG(debug, _common) << "Return new session info";
         return newSessionInfo;
     }
-    OLOG(ESeverity::debug, _common) << "Return existing session info";
+    OLOG(debug, _common) << "Return existing session info";
     return it->second;
 }
 
@@ -1330,7 +1330,7 @@ string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
         }
         catch (const exception& _e)
         {
-            OLOG(ESeverity::error, _common) << "State summary error: " << _e.what();
+            OLOG(error, _common) << "State summary error: " << _e.what();
         }
     }
 
@@ -1359,7 +1359,7 @@ string CControlService::SImpl::stateSummaryString(const SCommonParams& _common,
         }
         catch (const exception& _e)
         {
-            OLOG(ESeverity::error, _common) << "State summary error: " << _e.what();
+            OLOG(error, _common) << "State summary error: " << _e.what();
         }
     }
 
@@ -1387,15 +1387,18 @@ bool CControlService::SImpl::subscribeToDDSSession(const SCommonParams& _common,
             request->setResponseCallback(
                 [_common](const SOnTaskDoneResponseData& _info)
                 {
-                    ESeverity severity{ (_info.m_exitCode != 0 || _info.m_signal != 0) ? ESeverity::fatal
-                                                                                       : ESeverity::debug };
-                    OLOG(severity, _common)
-                        << "Task (" << _info.m_taskID << ") with path (" << _info.m_taskPath << ") exited with code ("
+                    stringstream ss;
+                    ss << "Task (" << _info.m_taskID << ") with path (" << _info.m_taskPath << ") exited with code ("
                         << _info.m_exitCode << ") and signal (" << _info.m_signal << ") on (" << _info.m_host
                         << ") in working directory (" << _info.m_wrkDir << ")";
+                    if (_info.m_exitCode != 0 || _info.m_signal != 0) {
+                        OLOG(fatal, _common) << ss.str();
+                    } else {
+                        OLOG(debug, _common) << ss.str();
+                    }
                 });
             info->m_session->sendRequest<SOnTaskDoneRequest>(request);
-            OLOG(ESeverity::info, _common)
+            OLOG(info, _common)
                 << "Subscribed to task done event from session " << quoted(to_string(info->m_session->getSessionID()));
         }
         else
@@ -1442,7 +1445,7 @@ string CControlService::SImpl::topoFilepath(const SCommonParams& _common, const 
         string err;
         int exitCode{ EXIT_SUCCESS };
         string cmd{ ssCmd.str() };
-        OLOG(ESeverity::info, _common) << "Executing topology script " << std::quoted(cmd);
+        OLOG(info, _common) << "Executing topology script " << std::quoted(cmd);
         execute(cmd, timeout, &out, &err, &exitCode);
 
         if (exitCode != EXIT_SUCCESS)
@@ -1456,7 +1459,7 @@ string CControlService::SImpl::topoFilepath(const SCommonParams& _common, const 
         }
 
         const string sout{ out.substr(0, min(out.length(), size_t(20))) };
-        OLOG(ESeverity::info, _common) << "Topology script executed successfully: stdout (" << quoted(sout)
+        OLOG(info, _common) << "Topology script executed successfully: stdout (" << quoted(sout)
                                        << "...) stderr (" << quoted(err) << ")";
 
         content = out;
@@ -1472,14 +1475,14 @@ string CControlService::SImpl::topoFilepath(const SCommonParams& _common, const 
         throw runtime_error(toString("Failed to create temp topology file ", quoted(filepath.string())));
     }
     f << content;
-    OLOG(ESeverity::info, _common) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
+    OLOG(info, _common) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
     return filepath.string();
 }
 
 chrono::seconds CControlService::SImpl::requestTimeout(const SCommonParams& _common) const
 {
     auto timeout{ (_common.m_timeout == 0) ? m_timeout : chrono::seconds(_common.m_timeout) };
-    OLOG(ESeverity::debug, _common) << "Request timeout: " << timeout.count() << " sec";
+    OLOG(debug, _common) << "Request timeout: " << timeout.count() << " sec";
     return timeout;
 }
 
