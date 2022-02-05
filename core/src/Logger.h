@@ -42,7 +42,7 @@
     BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), toString(partition, ":", run), severity)
 #define OLOG_GET_MACRO(arg1, arg2, arg3, NAME, ...) NAME
 #define OLOG(...) \
-    OLOG_GET_MACRO(__VA_ARGS__, OLOG_SEVERITY_PARTITION_RUN, OLOG_SEVERITY_COMMON, OLOG_SEVERITY)(__VA_ARGS__)
+    OLOG_GET_MACRO(__VA_ARGS__, OLOG_SEVERITY_PARTITION_RUN, OLOG_SEVERITY_COMMON, OLOG_SEVERITY, UNUSED)(__VA_ARGS__)
 
 namespace odc::core
 {
