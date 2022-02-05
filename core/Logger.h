@@ -158,6 +158,6 @@ namespace odc::core
       private:
         logger_t m_logger; ///> Main logger object
     };
-}; // namespace odc::core
+} // namespace odc::core
 
 #endif // __ODC__LOGGER__

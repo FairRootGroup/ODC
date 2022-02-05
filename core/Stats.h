@@ -44,6 +44,6 @@ namespace odc::core
         size_t m_taskCount{ 0 };
         size_t m_collectionCount{ 0 };
     };
-}; // namespace odc::core
+} // namespace odc::core
 
 #endif /* defined(__ODC__Stats__) */
