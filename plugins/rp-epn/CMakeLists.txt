@@ -38,5 +38,8 @@ target_include_directories(${target} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
   "${GRPC_INCLUDE_DIR}"
 )
+if(BOOST_VERSION VERSION_LESS 1.76)
+  target_compile_definitions(${target} PRIVATE BOOST_BIND_GLOBAL_PLACEHOLDERS)
+endif()
 
 install(TARGETS ${target} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})

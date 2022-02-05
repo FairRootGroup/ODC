@@ -15,6 +15,9 @@ target_include_directories(odc-epn-topo PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
 )
+if(BOOST_VERSION VERSION_LESS 1.76)
+  target_compile_definitions(odc-epn-topo PRIVATE BOOST_BIND_GLOBAL_PLACEHOLDERS)
+endif()
 
 # odc-topo executable
 add_executable(odc-topo

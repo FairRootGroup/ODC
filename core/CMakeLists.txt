@@ -55,6 +55,9 @@ target_include_directories(odc_core_lib PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
 )
 target_compile_definitions(odc_core_lib PUBLIC BOOST_LOG_DYN_LINK)
+if(BOOST_VERSION VERSION_LESS 1.76)
+  target_compile_definitions(odc_core_lib PUBLIC BOOST_BIND_GLOBAL_PLACEHOLDERS)
+endif()
 if(readline_FOUND)
   target_compile_definitions(odc_core_lib PUBLIC READLINE_AVAIL)
   target_link_libraries(odc_core_lib PUBLIC readline::readline)
