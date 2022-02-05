@@ -88,6 +88,10 @@ function(odc_add_boost_tests)
 
     add_executable(${suite_target} ${ARG_SOURCES})
     target_link_libraries(${suite_target} PRIVATE ${ARG_DEPS})
+    if(BOOST_VERSION VERSION_LESS 1.76)
+      target_compile_definitions(${suite_target} PRIVATE BOOST_BIND_GLOBAL_PLACEHOLDERS)
+    endif()
+
     install(TARGETS ${suite_target} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_TESTS})
 
     if(NOT ARG_TESTS)
