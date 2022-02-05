@@ -14,49 +14,27 @@ endif()
 list(APPEND TEST_ENV "PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}:$ENV{PATH}")
 
 
-#
 # Test odc-cli-server with default set of options
-#
 set(target odc-cli-server)
 set(test ${target}::default)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch)
-set_tests_properties(${test} PROPERTIES
-    TIMEOUT 60
-    FAIL_REGULAR_EXPRESSION "Status code: ERROR"
-    ENVIRONMENT "${TEST_ENV}"
-)
+set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
-#
 # Test odc-cli-server by sending different commands without running session
-#
-install(FILES cmds_test_1.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+install(FILES batch_cmds.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 set(target odc-cli-server)
-set(test ${target}::test_1)
-add_test(NAME ${test}
-         COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_SOURCE_DIR}/cmds_test_1.cfg
-)
-set_tests_properties(${test} PROPERTIES
-    TIMEOUT 10
-    PASS_REGULAR_EXPRESSION "Sleeping 100 ms"
-    ENVIRONMENT "${TEST_ENV}"
-)
+set(test ${target}::batch_cmds_from_file)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_SOURCE_DIR}/batch_cmds.cfg)
+set_tests_properties(${test} PROPERTIES TIMEOUT 10 PASS_REGULAR_EXPRESSION "Sleeping 100 ms" ENVIRONMENT "${TEST_ENV}")
 
-#
 # Test `--script` option of odc-cli-server
-#
 set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
-configure_file(cmds_test_2.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/cmds_test_2.cfg @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmds_test_2.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+configure_file(batch_cmds_with_script.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 set(target odc-cli-server)
-set(test ${target}::test_2)
-add_test(NAME ${test}
-         COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/cmds_test_2.cfg
-)
-set_tests_properties(${test} PROPERTIES
-    TIMEOUT 10
-    FAIL_REGULAR_EXPRESSION "Status code: ERROR"
-    ENVIRONMENT "${TEST_ENV}"
-)
+set(test ${target}::batch_cmds_from_file_with_script)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg)
+set_tests_properties(${test} PROPERTIES TIMEOUT 10 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
 #
 # Boost.UTF tests
