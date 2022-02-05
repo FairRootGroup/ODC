@@ -52,7 +52,7 @@ endif()
 
 list(APPEND options "-DCMAKE_INSTALL_PREFIX=install")
 if(ENABLE_SANITIZERS)
-  list(APPEND options "-DCMAKE_CXX_FLAGS='-O1 -fsanitize=address,leak,undefined -fno-omit-frame-pointer'")
+  list(APPEND options "-DCMAKE_CXX_FLAGS='-O1 -fsanitize=address,leak,undefined -fno-omit-frame-pointer -fno-var-tracking-assignments'")
 endif()
 list(REMOVE_DUPLICATES options)
 list(JOIN options ";" optionsstr)
