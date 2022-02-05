@@ -88,11 +88,11 @@ namespace odc::core
                     }
                     catch (const std::exception& e)
                     {
-                        OLOG(ESeverity::error) << "Uncaught exception in AsioAsyncOp completion handler: " << e.what();
+                        OLOG(error) << "Uncaught exception in AsioAsyncOp completion handler: " << e.what();
                     }
                     catch (...)
                     {
-                        OLOG(ESeverity::error) << "Unknown uncaught exception in AsioAsyncOp completion handler.";
+                        OLOG(error) << "Unknown uncaught exception in AsioAsyncOp completion handler.";
                     }
                 });
 

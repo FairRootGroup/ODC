@@ -111,7 +111,7 @@ void CRestoreFile::write()
     }
     catch (const exception& _e)
     {
-        OLOG(ESeverity::error) << "Failed to write restore data " << quoted(m_id) << " to file "
+        OLOG(error) << "Failed to write restore data " << quoted(m_id) << " to file "
                                << quoted(getFilepath()) << ": " << _e.what();
     }
 }
@@ -126,7 +126,7 @@ const SRestoreData& CRestoreFile::read()
     }
     catch (const exception& _e)
     {
-        OLOG(ESeverity::error) << "Failed to read restore data " << quoted(m_id) << " from file "
+        OLOG(error) << "Failed to read restore data " << quoted(m_id) << " from file "
                                << quoted(getFilepath()) << ": " << _e.what();
     }
     return m_data;

@@ -88,7 +88,7 @@ void CDDSSubmit::registerDefaultPlugin(const std::string& _name)
     }
     catch (const exception& _e)
     {
-        OLOG(ESeverity::error) << "Unable to register default resource plugin " << quoted(_name) << ": " << _e.what();
+        OLOG(error) << "Unable to register default resource plugin " << quoted(_name) << ": " << _e.what();
     }
 }
 

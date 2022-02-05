@@ -51,7 +51,7 @@ class CCliServiceHelper
                     cmd = std::string(buf);
                     free(buf);
                 } else {
-                    OLOG(ESeverity::clean) << std::endl;
+                    OLOG(clean) << std::endl;
                     break; // ^D
                 }
 
@@ -59,7 +59,7 @@ class CCliServiceHelper
                     add_history(cmd.c_str());
                 }
 #else
-                OLOG(ESeverity::clean) << "Please enter command: ";
+                OLOG(clean) << "Please enter command: ";
                 getline(std::cin, cmd);
 #endif
 
@@ -115,7 +115,7 @@ class CCliServiceHelper
     void execCmds(const std::vector<std::string>& _cmds)
     {
         for (const auto& cmd : _cmds) {
-            OLOG(ESeverity::clean) << "Executing command " << std::quoted(cmd);
+            OLOG(clean) << "Executing command " << std::quoted(cmd);
             processRequest(cmd);
         }
     }
@@ -133,7 +133,7 @@ class CCliServiceHelper
         CCliHelper::SSleepOptions sopt;
         if (parseCommand(_args, sopt)) {
             if (sopt.m_ms > 0) {
-                OLOG(ESeverity::clean) << "Sleeping " << sopt.m_ms << " ms";
+                OLOG(clean) << "Sleeping " << sopt.m_ms << " ms";
                 std::this_thread::sleep_for(std::chrono::milliseconds(sopt.m_ms));
             }
         }
@@ -158,11 +158,11 @@ class CCliServiceHelper
             CCliHelper::parseOptions(vm, _params...);
 
             if (vm.count("help")) {
-                OLOG(ESeverity::clean) << options;
+                OLOG(clean) << options;
                 return false;
             }
         } catch (std::exception& _e) {
-            OLOG(ESeverity::clean) << "Error parsing options: " << _e.what();
+            OLOG(clean) << "Error parsing options: " << _e.what();
             return false;
         }
         return true;
@@ -171,7 +171,7 @@ class CCliServiceHelper
     template<typename T>
     void print(const T& _value)
     {
-        OLOG(ESeverity::clean) << _value;
+        OLOG(clean) << _value;
     }
 
     template<typename... RequestParams_t, typename StubFunc_t>
@@ -182,7 +182,7 @@ class CCliServiceHelper
         std::apply(
             [&result, &_msg, &_args, &_stubFunc, this](auto&&... params) {
                 if (parseCommand(_args, params...)) {
-                    OLOG(ESeverity::clean) << _msg;
+                    OLOG(clean) << _msg;
                     std::apply([this](auto&&... args) { ((this->print(args)), ...); }, std::tie(params...));
                     OwnerT* p = reinterpret_cast<OwnerT*>(this);
                     result = (p->*_stubFunc)(params...);
@@ -238,12 +238,12 @@ class CCliServiceHelper
             execSleep(args);
         } else {
             if (cmd.length() > 0) {
-                OLOG(ESeverity::clean) << "Unknown command " << _cmd;
+                OLOG(clean) << "Unknown command " << _cmd;
             }
         }
 
         if (!replyString.empty()) {
-            OLOG(ESeverity::clean) << "Reply: (\n" << replyString << ")";
+            OLOG(clean) << "Reply: (\n" << replyString << ")";
         }
     }
 

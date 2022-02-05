@@ -116,11 +116,11 @@ int main(int argc, char** argv)
         }
 
         if (vm.count("version")) {
-            OLOG(ESeverity::clean) << ODC_VERSION;
+            OLOG(clean) << ODC_VERSION;
             return EXIT_SUCCESS;
         }
 
-        OLOG(ESeverity::info, partitionID, 0) << "Start epnc plugin";
+        OLOG(info, partitionID, 0) << "Start epnc plugin";
         CEpncClient client(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
         if (!release) {
             auto r{ SResources(res) };
@@ -129,7 +129,7 @@ int main(int argc, char** argv)
             for (const auto& v : r.m_resources) {
                 vector<string> nodes;
                 client.allocateNodes(partitionID, v.m_zone, v.m_n, nodes);
-                OLOG(ESeverity::info, partitionID, 0) << "epnc: nodes requested (" << v.m_n << ") allocated (" << nodes.size() << ")" << endl;
+                OLOG(info, partitionID, 0) << "epnc: nodes requested (" << v.m_n << ") allocated (" << nodes.size() << ")" << endl;
 
                 for (const auto& node : nodes) {
                     dds::configRecord_t record{ make_shared<dds::SConfigRecord>() };
@@ -148,18 +148,18 @@ int main(int argc, char** argv)
             const bfs::path filepath{ tmpPath / "hosts.cfg" };
             dds::CSSHConfigFile::make(filepath.string(), records, bash);
 
-            OLOG(ESeverity::info, partitionID, 0) << "epnc: SSH config file created at path " << filepath << endl;
+            OLOG(info, partitionID, 0) << "epnc: SSH config file created at path " << filepath << endl;
 
             stringstream ss;
             int requiredSlots(records.size() * numSlots);
             ss << "<rms>ssh</rms><configFile>" << filepath.string() << "</configFile><requiredSlots>" << requiredSlots << "</requiredSlots>";
 
-            OLOG(ESeverity::info, partitionID, 0) << ss.str();
-            OLOG(ESeverity::clean, partitionID, 0) << ss.str();
+            OLOG(info, partitionID, 0) << ss.str();
+            OLOG(clean, partitionID, 0) << ss.str();
         } else {
             client.releasePartition(partitionID);
         }
-        OLOG(ESeverity::info, partitionID, 0) << "Finish epnc plugin";
+        OLOG(info, partitionID, 0) << "Finish epnc plugin";
     } catch (exception& _e) {
         cerr << _e.what();
         return EXIT_FAILURE;

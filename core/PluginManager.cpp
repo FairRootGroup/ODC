@@ -49,7 +49,7 @@ void CPluginManager::registerPlugin(const std::string& _plugin, const std::strin
 
         string correctedCmd{ _cmd };
         ba::replace_first(correctedCmd, path, pluginPath.string());
-        OLOG(ESeverity::info) << "Register resource plugin " << quoted(_plugin) << " as " << quoted(correctedCmd);
+        OLOG(info) << "Register resource plugin " << quoted(_plugin) << " as " << quoted(correctedCmd);
         m_plugins.insert(make_pair(_plugin, correctedCmd));
     }
     catch (const exception& _e)
@@ -78,7 +78,7 @@ std::string CPluginManager::execPlugin(const string& _plugin,
     string out;
     string err;
     int exitCode{ EXIT_SUCCESS };
-    OLOG(ESeverity::debug, _partitionID, _runNr) << "Executing plugin " << std::quoted(cmd);
+    OLOG(debug, _partitionID, _runNr) << "Executing plugin " << std::quoted(cmd);
     execute(cmd, timeout, &out, &err, &exitCode);
 
     if (exitCode != EXIT_SUCCESS)

@@ -461,11 +461,11 @@ namespace odc::core
             }
             else if (ec == boost::asio::error::operation_aborted)
             {
-                // OLOG(ESeverity::debug) << "Heartbeats timer canceled";
+                // OLOG(debug) << "Heartbeats timer canceled";
             }
             else
             {
-                OLOG(ESeverity::error) << "Timer error: " << ec;
+                OLOG(error) << "Timer error: " << ec;
             }
         }
 
@@ -488,12 +488,12 @@ namespace odc::core
                 {
                     cc::Cmds inCmds;
                     inCmds.Deserialize(msg);
-                    // OLOG(ESeverity::debug) << "Received " << inCmds.Size() << " command(s) with total size of " <<
+                    // OLOG(debug) << "Received " << inCmds.Size() << " command(s) with total size of " <<
                     // msg.length() << " bytes: ";
 
                     for (const auto& cmd : inCmds)
                     {
-                        // OLOG(ESeverity::debug) << " > " << cmd->GetType();
+                        // OLOG(debug) << " > " << cmd->GetType();
                         switch (cmd->GetType())
                         {
                             case cc::Type::state_change_subscription:
@@ -515,8 +515,8 @@ namespace odc::core
                                 HandleCmd(static_cast<cc::PropertiesSet&>(*cmd));
                                 break;
                             default:
-                                OLOG(ESeverity::warning) << "Unexpected/unknown command received: " << cmd->GetType();
-                                OLOG(ESeverity::warning) << "Origin: " << senderId;
+                                OLOG(warning) << "Unexpected/unknown command received: " << cmd->GetType();
+                                OLOG(warning) << "Origin: " << senderId;
                                 break;
                         }
                     }
@@ -540,7 +540,7 @@ namespace odc::core
                     }
                     else
                     {
-                        OLOG(ESeverity::warning)
+                        OLOG(warning)
                             << "Task '" << task.taskId << "' sent subscription confirmation more than once";
                     }
                     lk.unlock();
@@ -548,14 +548,14 @@ namespace odc::core
                 }
                 catch (const std::exception& e)
                 {
-                    OLOG(ESeverity::error)
+                    OLOG(error)
                         << "Exception in HandleCmd(cc::StateChangeSubscription const&): " << e.what();
-                    OLOG(ESeverity::error) << "Possibly no task with id '" << taskId << "'?";
+                    OLOG(error) << "Possibly no task with id '" << taskId << "'?";
                 }
             }
             else
             {
-                OLOG(ESeverity::error) << "State change subscription failed for device: " << cmd.GetDeviceId()
+                OLOG(error) << "State change subscription failed for device: " << cmd.GetDeviceId()
                                        << ", task id: " << cmd.GetTaskId();
             }
         }
@@ -577,7 +577,7 @@ namespace odc::core
                     }
                     else
                     {
-                        OLOG(ESeverity::warning)
+                        OLOG(warning)
                             << "Task '" << task.taskId << "' sent unsubscription confirmation more than once";
                     }
                     lk.unlock();
@@ -585,13 +585,13 @@ namespace odc::core
                 }
                 catch (const std::exception& e)
                 {
-                    OLOG(ESeverity::error)
+                    OLOG(error)
                         << "Exception in HandleCmd(cc::StateChangeUnsubscription const&): " << e.what();
                 }
             }
             else
             {
-                OLOG(ESeverity::error) << "State change unsubscription failed for device: " << cmd.GetDeviceId()
+                OLOG(error) << "State change unsubscription failed for device: " << cmd.GetDeviceId()
                                        << ", task id: " << cmd.GetTaskId();
             }
         }
@@ -631,7 +631,7 @@ namespace odc::core
             }
             catch (const std::exception& e)
             {
-                OLOG(ESeverity::error) << "Exception in HandleCmd(cmd::StateChange const&): " << e.what();
+                OLOG(error) << "Exception in HandleCmd(cmd::StateChange const&): " << e.what();
             }
         }
 
@@ -647,14 +647,14 @@ namespace odc::core
                     {
                         if (fStateData.at(fStateIndex.at(taskId)).state != op.second.GetTargetState())
                         {
-                            OLOG(ESeverity::error)
+                            OLOG(error)
                                 << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId()
                                 << ", device is in " << cmd.GetCurrentState() << " state.";
                             op.second.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
                         }
                         else
                         {
-                            OLOG(ESeverity::debug)
+                            OLOG(debug)
                                 << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId()
                                 << ", device is already in " << cmd.GetCurrentState() << " state.";
                         }
@@ -674,7 +674,7 @@ namespace odc::core
             }
             catch (std::out_of_range& e)
             {
-                OLOG(ESeverity::debug) << "GetProperties operation (request id: " << cmd.GetRequestId()
+                OLOG(debug) << "GetProperties operation (request id: " << cmd.GetRequestId()
                                        << ") not found (probably completed or timed out), "
                                        << "discarding reply of device " << cmd.GetDeviceId()
                                        << ", task id: " << cmd.GetTaskId();
@@ -692,7 +692,7 @@ namespace odc::core
             }
             catch (std::out_of_range& e)
             {
-                OLOG(ESeverity::debug) << "SetProperties operation (request id: " << cmd.GetRequestId()
+                OLOG(debug) << "SetProperties operation (request id: " << cmd.GetRequestId()
                                        << ") not found (probably completed or timed out), "
                                        << "discarding reply of device " << cmd.GetDeviceId()
                                        << ", task id: " << cmd.GetTaskId();
@@ -742,7 +742,7 @@ namespace odc::core
                 }
                 if (fTasks.empty())
                 {
-                    OLOG(ESeverity::warning)
+                    OLOG(warning)
                         << "ChangeState initiated on an empty set of tasks, check the path argument.";
                 }
             }
@@ -1086,7 +1086,7 @@ namespace odc::core
                 }
                 if (fTasks.empty())
                 {
-                    OLOG(ESeverity::warning)
+                    OLOG(warning)
                         << "WaitForState initiated on an empty set of tasks, check the path argument.";
                 }
             }
@@ -1321,7 +1321,7 @@ namespace odc::core
                 }
                 if (fTasks.empty())
                 {
-                    OLOG(ESeverity::warning)
+                    OLOG(warning)
                         << "GetProperties initiated on an empty set of tasks, check the path argument.";
                 }
 
@@ -1331,7 +1331,7 @@ namespace odc::core
                     fResult.failed.emplace(task.GetId());
                 }
 
-                // OLOG(ESeverity::debug) << "GetProperties " << fId << " with expected count of " << fTasks.size() <<
+                // OLOG(debug) << "GetProperties " << fId << " with expected count of " << fTasks.size() <<
                 // " started.";
             }
             GetPropertiesOp() = delete;
@@ -1508,7 +1508,7 @@ namespace odc::core
                 }
                 if (fTasks.empty())
                 {
-                    OLOG(ESeverity::warning)
+                    OLOG(warning)
                         << "SetProperties initiated on an empty set of tasks, check the path argument.";
                 }
 
@@ -1518,7 +1518,7 @@ namespace odc::core
                     fFailedDevices.emplace(task.GetId());
                 }
 
-                // OLOG(ESeverity::debug) << "SetProperties " << fId << " with expected count of " << fTasks.size() <<
+                // OLOG(debug) << "SetProperties " << fId << " with expected count of " << fTasks.size() <<
                 // " started.";
             }
             SetPropertiesOp() = delete;
