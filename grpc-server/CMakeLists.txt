@@ -4,13 +4,13 @@
 
 # odc-grpc-server executable
 add_executable(odc-grpc-server
-    "src/main.cpp"
-    "src/GrpcService.h"
-    "src/GrpcService.cpp"
-    "src/GrpcSyncService.h"
-    "src/GrpcSyncService.cpp"
-    "src/GrpcAsyncService.h"
-    "src/GrpcAsyncService.cpp"
+  "main.cpp"
+  "GrpcService.h"
+  "GrpcService.cpp"
+  "GrpcSyncService.h"
+  "GrpcSyncService.cpp"
+  "GrpcAsyncService.h"
+  "GrpcAsyncService.cpp"
 )
 target_link_libraries(odc-grpc-server PUBLIC
   Boost::boost
@@ -19,8 +19,8 @@ target_link_libraries(odc-grpc-server PUBLIC
   odc_grpc_proto_lib
 )
 target_include_directories(odc-grpc-server PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
-    "${GRPC_INCLUDE_DIR}"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+  "${GRPC_INCLUDE_DIR}"
 )
 install(TARGETS odc-grpc-server EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})

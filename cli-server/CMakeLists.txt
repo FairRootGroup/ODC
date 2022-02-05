@@ -4,9 +4,9 @@
 
 # odc-cli-server executable
 add_executable(odc-cli-server
-    "src/main.cpp"
-    "src/CliControlService.h"
-    "src/CliControlService.cpp"
+  "main.cpp"
+  "CliControlService.h"
+  "CliControlService.cpp"
 )
 target_link_libraries(odc-cli-server
   Boost::boost
@@ -14,7 +14,7 @@ target_link_libraries(odc-cli-server
   odc_core_lib
 )
 target_include_directories(odc-cli-server PUBLIC
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
-    "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
 )
 install(TARGETS odc-cli-server EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
