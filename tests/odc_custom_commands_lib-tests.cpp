@@ -18,7 +18,7 @@ using namespace boost::unit_test;
 using namespace odc::cc;
 using namespace fair::mq;
 
-BOOST_AUTO_TEST_SUITE(format);
+BOOST_AUTO_TEST_SUITE(format)
 
 BOOST_AUTO_TEST_CASE(construction)
 {

@@ -106,7 +106,7 @@ namespace odc::core
         AliceO2::InfoLogger::InfoLoggerContext m_context;
         AliceO2::InfoLogger::InfoLogger m_log;
     };
-}; // namespace odc::core
+} // namespace odc::core
 
 #else
 
@@ -127,7 +127,7 @@ namespace odc::core
         {
         }
     };
-}; // namespace odc::core
+} // namespace odc::core
 
 #endif // INFOLOGGER_AVAIL
 

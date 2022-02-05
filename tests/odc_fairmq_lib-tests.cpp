@@ -18,7 +18,7 @@
 using namespace boost::unit_test;
 using namespace odc::core;
 
-BOOST_AUTO_TEST_SUITE(async_op);
+BOOST_AUTO_TEST_SUITE(async_op)
 
 BOOST_AUTO_TEST_CASE(default_construction)
 {
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(timeout2)
     BOOST_CHECK_THROW(op.Complete(), RuntimeError);
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // async_op
+BOOST_AUTO_TEST_SUITE_END() // async_op
 
 template <typename Functor>
 void full_device_lifecycle(Functor&& functor)
@@ -134,7 +134,7 @@ void full_device_lifecycle(Functor&& functor)
     }
 }
 
-BOOST_AUTO_TEST_SUITE(topology);
+BOOST_AUTO_TEST_SUITE(topology)
 
 BOOST_AUTO_TEST_CASE(construction)
 {
@@ -694,9 +694,9 @@ BOOST_AUTO_TEST_CASE(underlying_session_terminated)
     BOOST_TEST_CHECKPOINT("Topology destructed.");
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // topology
+BOOST_AUTO_TEST_SUITE_END() // topology
 
-BOOST_AUTO_TEST_SUITE(multiple_topologies);
+BOOST_AUTO_TEST_SUITE(multiple_topologies)
 
 BOOST_AUTO_TEST_CASE(construction)
 {
@@ -809,4 +809,4 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_concurrent)
     t1.join();
 }
 
-BOOST_AUTO_TEST_SUITE_END(); // multiple_topologies
+BOOST_AUTO_TEST_SUITE_END() // multiple_topologies

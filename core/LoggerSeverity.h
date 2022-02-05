@@ -54,6 +54,6 @@ namespace odc::core
         _out << gSeverityNames.at(idx);
         return _out;
     }
-}; // namespace odc::core
+} // namespace odc::core
 
 #endif // __ODC__LOGGERSEVERITY__

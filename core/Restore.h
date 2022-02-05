@@ -56,6 +56,6 @@ namespace odc::core
         std::string m_id;
         SRestoreData m_data;
     };
-}; // namespace odc::core
+} // namespace odc::core
 
 #endif /* defined(__ODC__Restore__) */
