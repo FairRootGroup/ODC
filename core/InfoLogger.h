@@ -29,8 +29,8 @@ namespace odc::core
             // The function consumes the log records that come from the frontend
             void consume(boost::log::record_view const& rec)
             {
-                ESeverity sev{ *rec[odc::core::severity] };
-                std::string channel{ *rec[odc::core::channel] };
+                ESeverity sev{ *rec[odc::core::logger::severity] };
+                std::string channel{ *rec[odc::core::logger::channel] };
                 std::string msg{ *rec[boost::log::expressions::smessage] };
                 CInfoLogger::instance().log(sev, channel, msg);
             }
@@ -51,7 +51,7 @@ namespace odc::core
             if (!_infologger)
                 return;
             auto sink{ boost::make_shared<CSink>() };
-            sink->set_filter(severity >= _severity);
+            sink->set_filter(logger::severity >= _severity);
             boost::log::core::get()->add_sink(sink);
         }
 
