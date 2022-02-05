@@ -26,10 +26,11 @@ void CCliHelper::batchCmds(const bpo::variables_map& _vm, bool _batch, SBatchOpt
     CCliHelper::conflictingOptions(_vm, "cmds", "cf");
     if (_batch) {
         if ((_vm.count("cmds") && _vm["cmds"].defaulted() && _vm.count("cf") && _vm["cf"].defaulted())
-            || (_vm.count("cmds") && !_vm["cmds"].defaulted()))
+            || (_vm.count("cmds") && !_vm["cmds"].defaulted())) {
             _batchOptions.m_outputCmds = _batchOptions.m_cmds;
-        else if (_vm.count("cf") && !_vm["cf"].defaulted())
+        } else if (_vm.count("cf") && !_vm["cf"].defaulted()) {
             _batchOptions.m_outputCmds = CCmdsFile::getCmds(_batchOptions.m_cmdsFilepath);
+        }
     } else {
         _batchOptions.m_outputCmds = vector<string>();
     }
@@ -187,8 +188,7 @@ void CCliHelper::addOptions(bpo::options_description& _options, SSubmitParams& _
 void CCliHelper::addOptions(bpo::options_description& _options, SDeviceParams& _params)
 {
     _options.add_options()("path", bpo::value<string>(&_params.m_path)->default_value(""), "Topology path of devices");
-    _options.add_options()(
-        "detailed", bpo::bool_switch(&_params.m_detailed)->default_value(false), "Detailed reply of devices");
+    _options.add_options()("detailed", bpo::bool_switch(&_params.m_detailed)->default_value(false), "Detailed reply of devices");
 }
 
 void CCliHelper::addOptions(bpo::options_description& _options, SSetPropertiesParams& _params)

@@ -136,9 +136,9 @@ int main(int argc, char** argv)
             if (!recown.empty())
             {
                 // Add new worker node name requirement
-                auto recoR{ recoC->addRequirement("RecoWnRequirement") };
-                recoR->setRequirementType(CTopoRequirement::EType::WnName);
-                recoR->setValue(recown);
+                auto recoR2{ recoC->addRequirement("RecoWnRequirement") };
+                recoR2->setRequirementType(CTopoRequirement::EType::WnName);
+                recoR2->setValue(recown);
             }
         }
 

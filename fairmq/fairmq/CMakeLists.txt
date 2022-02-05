@@ -3,12 +3,12 @@
 #
 
 add_library(odc_fairmq_lib STATIC
-    "src/AsioAsyncOp.h"
-    "src/AsioBase.h"
-    "src/Topology.h"
-    "src/Semaphore.h"
-    "src/Semaphore.cpp"
-    "src/Traits.h"
+  "AsioAsyncOp.h"
+  "AsioBase.h"
+  "Topology.h"
+  "Semaphore.h"
+  "Semaphore.cpp"
+  "Traits.h"
 )
 target_link_libraries(odc_core_lib PUBLIC
   DDS::dds_topology_lib
@@ -19,6 +19,6 @@ target_link_libraries(odc_core_lib PUBLIC
   FairMQ::FairMQ
 )
 target_include_directories(odc_fairmq_lib INTERFACE
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
+  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
 )

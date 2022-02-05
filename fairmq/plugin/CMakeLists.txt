@@ -8,7 +8,7 @@
 
 # the name prefix `FairMQPlugin_` is required by the FairMQ plugin mechanism
 set(plugin FairMQPlugin_odc)
-add_library(${plugin} SHARED src/ODC.cpp src/ODC.h)
+add_library(${plugin} SHARED ODC.cpp ODC.h)
 add_library(ODC::${plugin} ALIAS ${plugin})
 target_compile_features(${plugin} PUBLIC cxx_std_17)
 target_link_libraries(${plugin} PRIVATE
@@ -19,8 +19,8 @@ target_link_libraries(${plugin} PRIVATE
   odc_custom_commands_lib
 )
 target_include_directories(${plugin} PRIVATE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/src>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 set_target_properties(${plugin} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 # set_target_properties(${plugin} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/fairmq)

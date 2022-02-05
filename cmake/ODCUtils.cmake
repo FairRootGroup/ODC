@@ -74,7 +74,7 @@ function(odc_add_boost_tests)
 
     if(NOT ARG_SOURCES)
         # guess cpp file name
-        list(APPEND ARG_SOURCES src/${ARG_SUITE}-tests.cpp)
+        list(APPEND ARG_SOURCES ${ARG_SUITE}-tests.cpp)
     endif()
 
     if(NOT ARG_DEPS)
