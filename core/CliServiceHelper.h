@@ -249,28 +249,28 @@ class CCliServiceHelper
 
     void printDescription()
     {
-        std::cout << "Sample client for ODC service." << std::endl
-                  << "Each command has a set of extra options. Use " << std::quoted("--help") << " to list available options." << std::endl
-                  << "For example, " << std::quoted(".activate --topo topo_file.xml") << " command activates a topology " << std::quoted("topo_file.xml") << "." << std::endl
-                  << "List of available commands:" << std::endl
-                  << ".quit - Quit the program." << std::endl
-                  << ".init - Initialization request." << std::endl
-                  << ".submit - Submit request." << std::endl
-                  << ".activate - Activate request." << std::endl
-                  << ".run - Run request." << std::endl
-                  << ".prop - Set properties request." << std::endl
-                  << ".upscale - Upscale topology request." << std::endl
-                  << ".downscale - Downscale topology request." << std::endl
-                  << ".state - Get state request." << std::endl
-                  << ".config - Configure run request." << std::endl
-                  << ".start - Start request." << std::endl
-                  << ".stop - Stop request." << std::endl
-                  << ".reset - Reset request." << std::endl
-                  << ".term - Terminate request." << std::endl
-                  << ".down - Shutdown request." << std::endl
-                  << ".status - Status request." << std::endl
-                  << ".batch - Execute an array of requests." << std::endl
-                  << ".sleep - Sleep for X ms." << std::endl;
+        std::cout << "ODC Client.\n"
+                  << "Each command has a set of extra options. Use " << std::quoted("<command> --help") << " to list available options.\n"
+                  << "For example, " << std::quoted(".activate --topo topo_file.xml") << " command activates a topology " << std::quoted("topo_file.xml") << ".\n\n"
+                  << "Available commands:\n\n"
+                  << ".init - Initialize. Creates a new DDS session or attaches to an existing DDS session.\n"
+                  << ".submit - Submit DDS agents. Can be called multiple times.\n"
+                  << ".activate - Activates DDS topology (devices enter Idle state).\n"
+                  << ".run - Combines Initialize, Submit and Activate commands. A new DDS session is always created.\n"
+                  << ".prop - Set device properties.\n"
+                  << ".upscale - Upscale topology.\n"
+                  << ".downscale - Downscale topology.\n"
+                  << ".state - Get current aggregated state of devices.\n"
+                  << ".config - Transitions devices to Ready state (InitDevice->CompleteInit->Bind->Connect->InitTask).\n"
+                  << ".start - Transitions devices to Running state (via Run transition).\n"
+                  << ".stop - Transitions devices to Ready state (via Stop transition).\n"
+                  << ".reset - Transitions devices to Idle state (via ResetTask->ResetDevice transitions).\n"
+                  << ".term - Shutdown devices via End transition.\n"
+                  << ".down - Shutdown DDS session.\n"
+                  << ".status - Show statuses of managed partitions/sessions.\n"
+                  << ".batch - Execute an array of commands.\n"
+                  << ".sleep - Sleep for X ms.\n"
+                  << ".quit - Quit the program.\n" << std::endl;
     }
 };
 } // namespace odc::core
