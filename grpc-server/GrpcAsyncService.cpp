@@ -13,28 +13,15 @@ using namespace std;
 
 CGrpcAsyncService::CGrpcAsyncService()
     : m_service(make_shared<CGrpcService>())
-{
-}
+{}
 
-void CGrpcAsyncService::setTimeout(const std::chrono::seconds& _timeout)
-{
-    m_service->setTimeout(_timeout);
-}
+void CGrpcAsyncService::setTimeout(const std::chrono::seconds& _timeout) { m_service->setTimeout(_timeout); }
 
-void CGrpcAsyncService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap)
-{
-    m_service->registerResourcePlugins(_pluginMap);
-}
+void CGrpcAsyncService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap) { m_service->registerResourcePlugins(_pluginMap); }
 
-void CGrpcAsyncService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap)
-{
-    m_service->registerRequestTriggers(_triggerMap);
-}
+void CGrpcAsyncService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap) { m_service->registerRequestTriggers(_triggerMap); }
 
-void CGrpcAsyncService::restore(const std::string& _restoreId)
-{
-    m_service->restore(_restoreId);
-}
+void CGrpcAsyncService::restore(const std::string& _restoreId) { m_service->restore(_restoreId); }
 
 void CGrpcAsyncService::run(const std::string& _host)
 {
@@ -66,8 +53,7 @@ void CGrpcAsyncService::run(const std::string& _host)
 
     void* tag;
     bool ok;
-    while (true)
-    {
+    while (true) {
         // Block waiting to read the next event from the completion queue.
         // The event is uniquely identified by its tag, which in this case is the
         // memory address of a CallData instance.
