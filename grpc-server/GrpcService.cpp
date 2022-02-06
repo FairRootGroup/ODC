@@ -12,17 +12,13 @@ using namespace odc::core;
 using namespace odc::grpc;
 using namespace std;
 
-CGrpcService::CGrpcService()
-    : m_service(make_shared<CControlService>())
-{}
+void CGrpcService::setTimeout(const std::chrono::seconds& _timeout) { m_service.setTimeout(_timeout); }
 
-void CGrpcService::setTimeout(const std::chrono::seconds& _timeout) { m_service->setTimeout(_timeout); }
+void CGrpcService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap) { m_service.registerResourcePlugins(_pluginMap); }
 
-void CGrpcService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap) { m_service->registerResourcePlugins(_pluginMap); }
+void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap) { m_service.registerRequestTriggers(_triggerMap); }
 
-void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap) { m_service->registerRequestTriggers(_triggerMap); }
-
-void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_restoreId); }
+void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_restoreId); }
 
 ::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* /*context*/, const odc::InitializeRequest* request, odc::GeneralReply* response)
 {
@@ -30,7 +26,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Initialize request:\n" << request->DebugString();
     SInitializeParams params{ request->sessionid() };
-    SReturnValue value{ m_service->execInitialize(common, params) };
+    SReturnValue value{ m_service.execInitialize(common, params) };
     setupGeneralReply(response, value);
     logResponse("Initialize response:\n", common, response);
     return ::grpc::Status::OK;
@@ -42,7 +38,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Submit request:\n" << request->DebugString();
     SSubmitParams params{ request->plugin(), request->resources() };
-    SReturnValue value{ m_service->execSubmit(common, params) };
+    SReturnValue value{ m_service.execSubmit(common, params) };
     setupGeneralReply(response, value);
     logResponse("Submit response:\n", common, response);
     return ::grpc::Status::OK;
@@ -54,7 +50,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Activate request:\n" << request->DebugString();
     SActivateParams params{ request->topology(), request->content(), request->script() };
-    SReturnValue value{ m_service->execActivate(common, params) };
+    SReturnValue value{ m_service.execActivate(common, params) };
     setupGeneralReply(response, value);
     logResponse("Activate response:\n", common, response);
     return ::grpc::Status::OK;
@@ -68,7 +64,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     SInitializeParams initializeParams{ "" };
     SSubmitParams submitParams{ request->plugin(), request->resources() };
     SActivateParams activateParams{ request->topology(), request->content(), request->script() };
-    SReturnValue value{ m_service->execRun(common, initializeParams, submitParams, activateParams) };
+    SReturnValue value{ m_service.execRun(common, initializeParams, submitParams, activateParams) };
     setupGeneralReply(response, value);
     logResponse("Run response:\n", common, response);
     return ::grpc::Status::OK;
@@ -80,7 +76,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Update request:\n" << request->DebugString();
     SUpdateParams params{ request->topology(), request->content(), request->script() };
-    SReturnValue value{ m_service->execUpdate(common, params) };
+    SReturnValue value{ m_service.execUpdate(common, params) };
     setupGeneralReply(response, value);
     logResponse("Update response:\n", common, response);
     return ::grpc::Status::OK;
@@ -92,7 +88,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "GetState request:\n" << request->DebugString();
     SDeviceParams params{ request->path(), request->detailed() };
-    SReturnValue value{ m_service->execGetState(common, params) };
+    SReturnValue value{ m_service.execGetState(common, params) };
     setupStateReply(response, value);
     logResponse("GetState response:\n", common, response);
     return ::grpc::Status::OK;
@@ -111,7 +107,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     }
 
     SSetPropertiesParams params{ props, request->path() };
-    SReturnValue value{ m_service->execSetProperties(common, params) };
+    SReturnValue value{ m_service.execSetProperties(common, params) };
     setupGeneralReply(response, value);
     logResponse("SetProperties response:\n", common, response);
     return ::grpc::Status::OK;
@@ -123,7 +119,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Configure request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execConfigure(common, params) };
+    SReturnValue value{ m_service.execConfigure(common, params) };
     setupStateReply(response, value);
     logResponse("Configure response:\n", common, response);
     return ::grpc::Status::OK;
@@ -135,7 +131,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Start request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execStart(common, params) };
+    SReturnValue value{ m_service.execStart(common, params) };
     setupStateReply(response, value);
     logResponse("Start response:\n", common, response);
     return ::grpc::Status::OK;
@@ -147,7 +143,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Stop request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execStop(common, params) };
+    SReturnValue value{ m_service.execStop(common, params) };
     setupStateReply(response, value);
     logResponse("Stop response:\n", common, response);
     return ::grpc::Status::OK;
@@ -159,7 +155,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Reset request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execReset(common, params) };
+    SReturnValue value{ m_service.execReset(common, params) };
     setupStateReply(response, value);
     logResponse("Reset response:\n", common, response);
     return ::grpc::Status::OK;
@@ -171,7 +167,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Terminate request:\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
-    SReturnValue value{ m_service->execTerminate(common, params) };
+    SReturnValue value{ m_service.execTerminate(common, params) };
     setupStateReply(response, value);
     logResponse("Terminate response:\n", common, response);
     return ::grpc::Status::OK;
@@ -182,7 +178,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "Shutdown request:\n" << request->DebugString();
-    SReturnValue value{ m_service->execShutdown(common) };
+    SReturnValue value{ m_service.execShutdown(common) };
     setupGeneralReply(response, value);
     logResponse("Shutdown response:\n", common, response);
     return ::grpc::Status::OK;
@@ -191,7 +187,7 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_
 ::grpc::Status CGrpcService::Status(::grpc::ServerContext* /*context*/, const odc::StatusRequest* request, odc::StatusReply* response)
 {
     OLOG(info) << "Status request:\n" << request->DebugString();
-    SStatusReturnValue value{ m_service->execStatus(SStatusParams(request->running())) };
+    SStatusReturnValue value{ m_service.execStatus(SStatusParams(request->running())) };
     setupStatusReply(response, value);
     logResponse("Status response:\n", core::SCommonParams(), response);
     return ::grpc::Status::OK;

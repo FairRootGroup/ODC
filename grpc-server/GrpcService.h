@@ -17,7 +17,7 @@ namespace odc::grpc {
 class CGrpcService final
 {
   public:
-    CGrpcService();
+    CGrpcService() {}
 
     void setTimeout(const std::chrono::seconds& _timeout);
     void registerResourcePlugins(const odc::core::CPluginManager::PluginMap_t& _pluginMap);
@@ -53,7 +53,7 @@ class CGrpcService final
     void logResponse(const std::string& _msg, const core::SCommonParams& _common, const Response_t* _response);
     void logResponse(const std::string& _msg, const core::SCommonParams& _common, const odc::StateReply* _response);
 
-    std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
+    odc::core::CControlService m_service; ///< Core ODC service
 
     // Mutex for each partition.
     // All requests for a certain partition are processed sequentially.
