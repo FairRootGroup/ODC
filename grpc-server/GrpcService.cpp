@@ -14,32 +14,17 @@ using namespace std;
 
 CGrpcService::CGrpcService()
     : m_service(make_shared<CControlService>())
-{
-}
+{}
 
-void CGrpcService::setTimeout(const std::chrono::seconds& _timeout)
-{
-    m_service->setTimeout(_timeout);
-}
+void CGrpcService::setTimeout(const std::chrono::seconds& _timeout) { m_service->setTimeout(_timeout); }
 
-void CGrpcService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap)
-{
-    m_service->registerResourcePlugins(_pluginMap);
-}
+void CGrpcService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap) { m_service->registerResourcePlugins(_pluginMap); }
 
-void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap)
-{
-    m_service->registerRequestTriggers(_triggerMap);
-}
+void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap) { m_service->registerRequestTriggers(_triggerMap); }
 
-void CGrpcService::restore(const std::string& _restoreId)
-{
-    m_service->restore(_restoreId);
-}
+void CGrpcService::restore(const std::string& _restoreId) { m_service->restore(_restoreId); }
 
-::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* /*context*/,
-                                        const odc::InitializeRequest* request,
-                                        odc::GeneralReply* response)
+::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* /*context*/, const odc::InitializeRequest* request, odc::GeneralReply* response)
 {
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -51,9 +36,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Submit(::grpc::ServerContext* /*context*/,
-                                    const odc::SubmitRequest* request,
-                                    odc::GeneralReply* response)
+::grpc::Status CGrpcService::Submit(::grpc::ServerContext* /*context*/, const odc::SubmitRequest* request, odc::GeneralReply* response)
 {
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -65,9 +48,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Activate(::grpc::ServerContext* /*context*/,
-                                      const odc::ActivateRequest* request,
-                                      odc::GeneralReply* response)
+::grpc::Status CGrpcService::Activate(::grpc::ServerContext* /*context*/, const odc::ActivateRequest* request, odc::GeneralReply* response)
 {
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -79,9 +60,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Run(::grpc::ServerContext* /*context*/,
-                                 const odc::RunRequest* request,
-                                 odc::GeneralReply* response)
+::grpc::Status CGrpcService::Run(::grpc::ServerContext* /*context*/, const odc::RunRequest* request, odc::GeneralReply* response)
 {
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -95,9 +74,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Update(::grpc::ServerContext* /*context*/,
-                                    const odc::UpdateRequest* request,
-                                    odc::GeneralReply* response)
+::grpc::Status CGrpcService::Update(::grpc::ServerContext* /*context*/, const odc::UpdateRequest* request, odc::GeneralReply* response)
 {
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -109,9 +86,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::GetState(::grpc::ServerContext* /*context*/,
-                                      const odc::StateRequest* request,
-                                      odc::StateReply* response)
+::grpc::Status CGrpcService::GetState(::grpc::ServerContext* /*context*/, const odc::StateRequest* request, odc::StateReply* response)
 {
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -123,17 +98,14 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::SetProperties(::grpc::ServerContext* /*context*/,
-                                           const odc::SetPropertiesRequest* request,
-                                           odc::GeneralReply* response)
+::grpc::Status CGrpcService::SetProperties(::grpc::ServerContext* /*context*/, const odc::SetPropertiesRequest* request, odc::GeneralReply* response)
 {
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
     OLOG(info, common) << "SetProperties request:\n" << request->DebugString();
     // Convert from protobuf to ODC format
     SSetPropertiesParams::Properties_t props;
-    for (int i = 0; i < request->properties_size(); i++)
-    {
+    for (int i = 0; i < request->properties_size(); i++) {
         auto prop{ request->properties(i) };
         props.push_back(SSetPropertiesParams::Property_t(prop.key(), prop.value()));
     }
@@ -145,9 +117,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Configure(::grpc::ServerContext* /*context*/,
-                                       const odc::ConfigureRequest* request,
-                                       odc::StateReply* response)
+::grpc::Status CGrpcService::Configure(::grpc::ServerContext* /*context*/, const odc::ConfigureRequest* request, odc::StateReply* response)
 {
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -159,9 +129,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Start(::grpc::ServerContext* /*context*/,
-                                   const odc::StartRequest* request,
-                                   odc::StateReply* response)
+::grpc::Status CGrpcService::Start(::grpc::ServerContext* /*context*/, const odc::StartRequest* request, odc::StateReply* response)
 {
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -173,9 +141,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Stop(::grpc::ServerContext* /*context*/,
-                                  const odc::StopRequest* request,
-                                  odc::StateReply* response)
+::grpc::Status CGrpcService::Stop(::grpc::ServerContext* /*context*/, const odc::StopRequest* request, odc::StateReply* response)
 {
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -187,9 +153,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Reset(::grpc::ServerContext* /*context*/,
-                                   const odc::ResetRequest* request,
-                                   odc::StateReply* response)
+::grpc::Status CGrpcService::Reset(::grpc::ServerContext* /*context*/, const odc::ResetRequest* request, odc::StateReply* response)
 {
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -201,9 +165,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Terminate(::grpc::ServerContext* /*context*/,
-                                       const odc::TerminateRequest* request,
-                                       odc::StateReply* response)
+::grpc::Status CGrpcService::Terminate(::grpc::ServerContext* /*context*/, const odc::TerminateRequest* request, odc::StateReply* response)
 {
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -215,9 +177,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Shutdown(::grpc::ServerContext* /*context*/,
-                                      const odc::ShutdownRequest* request,
-                                      odc::GeneralReply* response)
+::grpc::Status CGrpcService::Shutdown(::grpc::ServerContext* /*context*/, const odc::ShutdownRequest* request, odc::GeneralReply* response)
 {
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
@@ -228,9 +188,7 @@ void CGrpcService::restore(const std::string& _restoreId)
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Status(::grpc::ServerContext* /*context*/,
-                                    const odc::StatusRequest* request,
-                                    odc::StatusReply* response)
+::grpc::Status CGrpcService::Status(::grpc::ServerContext* /*context*/, const odc::StatusRequest* request, odc::StatusReply* response)
 {
     OLOG(info) << "Status request:\n" << request->DebugString();
     SStatusReturnValue value{ m_service->execStatus(SStatusParams(request->running())) };
@@ -249,13 +207,10 @@ odc::Error* CGrpcService::newError(const SBaseReturnValue& _value)
 
 void CGrpcService::setupGeneralReply(odc::GeneralReply* _response, const SReturnValue& _value)
 {
-    if (_value.m_statusCode == EStatusCode::ok)
-    {
+    if (_value.m_statusCode == EStatusCode::ok) {
         _response->set_status(odc::ReplyStatus::SUCCESS);
         _response->set_msg(_value.m_msg);
-    }
-    else
-    {
+    } else {
         _response->set_status(odc::ReplyStatus::ERROR);
         _response->set_allocated_error(newError(_value));
     }
@@ -273,11 +228,9 @@ void CGrpcService::setupStateReply(odc::StateReply* _response, const odc::core::
     setupGeneralReply(generalResponse, _value);
     _response->set_allocated_reply(generalResponse);
 
-    if (_value.m_details != nullptr)
-    {
+    if (_value.m_details != nullptr) {
         const auto& topologyState = _value.m_details->m_topologyState;
-        for (const auto& state : topologyState)
-        {
+        for (const auto& state : topologyState) {
             auto device{ _response->add_devices() };
             device->set_path(state.m_path);
             device->set_id(state.m_status.taskId);
@@ -288,24 +241,19 @@ void CGrpcService::setupStateReply(odc::StateReply* _response, const odc::core::
 
 void CGrpcService::setupStatusReply(odc::StatusReply* _response, const odc::core::SStatusReturnValue& _value)
 {
-    if (_value.m_statusCode == EStatusCode::ok)
-    {
+    if (_value.m_statusCode == EStatusCode::ok) {
         _response->set_status(odc::ReplyStatus::SUCCESS);
         _response->set_msg(_value.m_msg);
-    }
-    else
-    {
+    } else {
         _response->set_status(odc::ReplyStatus::ERROR);
         _response->set_allocated_error(newError(_value));
     }
     _response->set_exectime(_value.m_execTime);
-    for (const auto& p : _value.m_partitions)
-    {
+    for (const auto& p : _value.m_partitions) {
         auto partition{ _response->add_partitions() };
         partition->set_partitionid(p.m_partitionID);
         partition->set_sessionid(p.m_sessionID);
-        partition->set_status(
-            (p.m_sessionStatus == ESessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
+        partition->set_status((p.m_sessionStatus == ESessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
         partition->set_state(GetAggregatedTopologyStateName(p.m_aggregatedState));
     }
 }
@@ -317,13 +265,13 @@ std::mutex& CGrpcService::getMutex(const partitionID_t& _partitionID)
     return (it == m_mutexMap.end()) ? m_mutexMap[_partitionID] : it->second;
 }
 
-template <typename Request_t>
+template<typename Request_t>
 core::SCommonParams CGrpcService::commonParams(const Request_t* _request)
 {
     return core::SCommonParams(_request->partitionid(), _request->runnr(), _request->timeout());
 }
 
-template <typename Response_t>
+template<typename Response_t>
 void CGrpcService::logResponse(const string& _msg, const core::SCommonParams& _common, const Response_t* _response)
 {
     if (_response->status() == odc::ReplyStatus::ERROR) {
@@ -333,9 +281,7 @@ void CGrpcService::logResponse(const string& _msg, const core::SCommonParams& _c
     }
 }
 
-void CGrpcService::logResponse(const std::string& _msg,
-                               const core::SCommonParams& _common,
-                               const odc::StateReply* _response)
+void CGrpcService::logResponse(const std::string& _msg, const core::SCommonParams& _common, const odc::StateReply* _response)
 {
     if (_response->reply().status() == odc::ReplyStatus::ERROR) {
         OLOG(error, _common) << _msg << _response->DebugString();

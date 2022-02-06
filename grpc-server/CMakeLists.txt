@@ -8,7 +8,6 @@ add_executable(odc-grpc-server
   "GrpcService.h"
   "GrpcService.cpp"
   "GrpcSyncService.h"
-  "GrpcSyncService.cpp"
   "GrpcAsyncService.h"
   "GrpcAsyncService.cpp"
 )
