@@ -27,7 +27,6 @@ add_library(odc_core_lib STATIC
   "Error.cpp"
   "MiscUtils.h"
   "DDSSubmit.h"
-  "DDSSubmit.cpp"
   "Process.h"
   "CmdsFile.h"
   "CmdsFile.cpp"
