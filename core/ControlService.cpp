@@ -726,7 +726,7 @@ SReturnValue CControlService::execSubmit(const SCommonParams& _common, const SSu
     SError error{ checkSessionIsRunning(_common, ErrorCode::DDSSubmitAgentsFailed) };
 
     // Get DDS submit parameters from ODC resource plugin
-    CDDSSubmit::SParams ddsParams;
+    std::vector<CDDSSubmit::SParams> ddsParams;
     if (!error.m_code) {
         try {
             ddsParams = m_submit->makeParams(_params.m_plugin, _params.m_resources, _common.m_partitionID, _common.m_runNr);
@@ -735,11 +735,18 @@ SReturnValue CControlService::execSubmit(const SCommonParams& _common, const SSu
         }
     }
 
+    OLOG(info) << "Preparing to submit " << ddsParams.size() << " configurations";
+
     if (!error.m_code) {
-        const size_t requiredSlots{ ddsParams.m_requiredNumSlots };
-        // Submit DDS agents
-        // Wait until all agents are active
-        submitDDSAgents(_common, error, ddsParams) && waitForNumActiveAgents(_common, error, requiredSlots);
+        size_t totalRequiredSlots = 0;
+        for (const auto& param : ddsParams) {
+            OLOG(info) << "Submitting " << param;
+            // Submit DDS agents
+            submitDDSAgents(_common, error, param);
+            totalRequiredSlots = param.m_numRequiredSlots;
+        }
+        // Wait until <totalRequiredSlots> agents are active
+        waitForNumActiveAgents(_common, error, totalRequiredSlots);
     }
     execRequestTrigger("Submit", _common);
     return createReturnValue(_common, error, "Submit done", measure.duration(), AggregatedTopologyState::Undefined);

@@ -4,7 +4,11 @@
 
 // STD
 #include <iostream>
+#include <map>
+#include <string>
+#include <vector>
 // BOOST
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -69,14 +73,36 @@ struct SResources
     vector<SResource> m_resources;
 };
 
+struct ZoneConfig
+{
+    size_t numSlots;
+    std::string slurmCfgPath;
+};
+
+std::map<std::string, ZoneConfig> getZoneConfig(const std::vector<std::string>& zonesStr)
+{
+    std::map<std::string, ZoneConfig> result;
+
+    for (const auto& z : zonesStr) {
+        std::vector<std::string> zoneCfg;
+        boost::algorithm::split(zoneCfg, z, boost::algorithm::is_any_of(":"));
+        if (zoneCfg.size() != 3) {
+            OLOG(error) << "Provided zones configuration has incorrect format";
+            throw std::runtime_error("Provided zones configuration has incorrect format");
+        }
+        result.emplace(zoneCfg.at(0), ZoneConfig{ std::stoul(zoneCfg.at(1)), zoneCfg.at(2) });
+    }
+
+    return result;
+}
+
 int main(int argc, char** argv)
 {
     try {
         string resources;
         CLogger::SConfig logConfig;
         string partitionID;
-        string slurmConfig;
-        size_t numSlots = 1;
+        std::vector<std::string> zonesStr;
 
         string defaultLogDir{ smart_path(string("$HOME/.ODC/log")) };
 
@@ -88,9 +114,8 @@ int main(int argc, char** argv)
             ("logdir", bpo::value<string>(&logConfig.m_logDir)->default_value(defaultLogDir), "Log files directory")
             ("severity", bpo::value<ESeverity>(&logConfig.m_severity)->default_value(ESeverity::info), "Log severity level")
             ("infologger", bpo::bool_switch(&logConfig.m_infologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
-            ("id", bpo::value<string>(&partitionID)->default_value(""), "Partition ID")
-            ("slurm-config", bpo::value<string>(&slurmConfig)->default_value(""), "Path to slurm config file")
-            ("slots", bpo::value<size_t>(&numSlots)->default_value(1), "Number of slots for each worker node");
+            ("id", bpo::value<string>(&partitionID)->default_value(""), "ECS partition ID")
+            ("zones", bpo::value<std::vector<std::string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath> format");
 
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(opts).run(), vm);
@@ -116,25 +141,26 @@ int main(int argc, char** argv)
         OLOG(info, partitionID, 0) << "Starting epn slurm plugin";
 
         SResources res(resources);
-
-        int numNodes = 0;
+        std::map<std::string, ZoneConfig> zones{getZoneConfig(zonesStr)};
 
         for (const auto& r : res.m_resources) {
-            numNodes += r.m_n;
-        }
+            stringstream ss;
+            const auto& zone = zones.at(r.m_zone);
+            int requiredSlots(r.m_n * zone.numSlots);
+            ss << "<submit>"
+               << "<rms>slurm</rms>";
+            if (!zone.slurmCfgPath.empty()) {
+                ss << "<configFile>" << zone.slurmCfgPath << "</configFile>";
+            }
+            ss << "<agents>" << r.m_n << "</agents>" // number of agents (assuming it is equals to number of nodes)
+               << "<agentGroup>" << r.m_zone << "</agentGroup>" // number of agents (assuming it is equals to number of nodes)
+               << "<slots>" << zone.numSlots << "</slots>" // number of slots per agent
+               << "<requiredSlots>" << requiredSlots << "</requiredSlots>" // total number of required slots
+               << "</submit>";
 
-        stringstream ss;
-        int requiredSlots(numNodes * numSlots);
-        ss << "<rms>slurm</rms>";
-        if (!slurmConfig.empty()) {
-            ss << "<configFile>" << slurmConfig << "</configFile>";
+            OLOG(info, partitionID, 0) << ss.str();
+            OLOG(clean, partitionID, 0) << ss.str();
         }
-        ss << "<agents>" << numNodes << "</agents>"; // number of agents (assuming it is equals to number of nodes)
-        ss << "<slots>" << numSlots << "</slots>"; // number of slots per agent
-        ss << "<requiredSlots>" << requiredSlots << "</requiredSlots>"; // total number of required slots
-
-        OLOG(info, partitionID, 0) << ss.str();
-        OLOG(clean, partitionID, 0) << ss.str();
 
         OLOG(info, partitionID, 0) << "Finishing epn slurm plugin";
     } catch (exception& _e) {
