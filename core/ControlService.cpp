@@ -116,6 +116,7 @@ bool CControlService::submitDDSAgents(const SCommonParams& _common, SError& _err
     requestInfo.m_instances = _params.m_numAgents;
     requestInfo.m_slots = _params.m_numSlots;
     requestInfo.m_config = _params.m_configFile;
+    requestInfo.m_groupName = _params.m_agentGroup;
 
     std::condition_variable cv;
 
