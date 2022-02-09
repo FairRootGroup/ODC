@@ -60,4 +60,5 @@ Registered plugins can be addressed by using `plugin` field of [`SubmitRequest`]
 ODC containes several examples of resource plugins:
  * A built-in [`odc-rp-same`](../plugins/rp-same/odc-rp-same.cpp) plugin implemented in `C++`.
  * A built-in [`odc-rp-epn`](../plugins/rp-epn/) plugin uses `gRPC` and implemented in `C++`.
+ * A built-in [`odc-rp-epn-slurm`](../plugins/rp-epn-slurm/) Receives resources description from AliECS via gRPC and translates these into DDS slurm configuration.
  * A [DDS SSH configuration plugin](../examples/odc-rp-example.sh) implemented as a `bash` script.
