@@ -43,3 +43,4 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 *.xcodeproj
 .vscode
+*.sif
