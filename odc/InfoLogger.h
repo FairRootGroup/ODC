@@ -1,6 +1,11 @@
-// Copyright 2019 GSI, Inc. All rights reserved.
-//
-//
+/********************************************************************************
+ * Copyright (C) 2019-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ *                                                                              *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
+
 #ifndef __ODC__INFOLOGGER__
 #define __ODC__INFOLOGGER__
 
