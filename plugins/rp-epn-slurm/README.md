@@ -22,12 +22,12 @@ Configuration for each zone should be specified as a parameter when the plugin i
 ```
 --zones online:8:/home/user/slurm-online.cfg calib:8:/home/user/slurm-calib.cfg
 ```
-`--zones` takes any number of string arguments that translate into zone configurations in in `<name>:<numSlots>:<slurmCfgPath>` format. The arguments are:
+`--zones` takes any number of string arguments that translate into zone configurations in the `<name>:<numSlots>:<slurmCfgPath>` format. The arguments are:
 - **name** - the name of the zone
 - **numSlots** - translates to `--slots` of DDS submit command (slots per agent), which for Slurm translates to `#SBATCH --cpus-per-task <numSlots>` entry in the sbatch file. Should be equal or higher for the number of deployed tasks for this zone.
-- **slurmCfgPath** - A full path to a slurm config file, which is appended to the [slurm sbatch file](https://slurm.schedmd.com/sbatch.html). Here you can specify any additional slurm parameters that you want to use for this zone.
+- **slurmCfgPath** - A full path to a Slurm config file, which is appended to the [slurm sbatch file](https://slurm.schedmd.com/sbatch.html). Here you can specify any additional Slurm parameters that you want to use for this zone.
 
-For DDS tasks and collections to be deployed on the configured zones, they have to specify the `groupname` requirement with the zone name as its value (see example below).
+For DDS tasks and collections to be deployed on the configured zones, they have to specify the `groupname` requirement with the zone name as its value (see an example below).
 
 ### Example Usage
 
@@ -35,7 +35,7 @@ For DDS tasks and collections to be deployed on the configured zones, they have 
 ```bash
 odc-grpc-server --host "127.0.0.1:6667" --logdir /home/user/odclogs --rp "slurm:/home/user/dev/ODC/install/bin/odc-rp-epn-slurm --logdir /home/user/odclogs --zones online:8:/home/user/slurm-online.cfg calib:8:/home/user/slurm-calib.cfg"
 ```
-This starts the `odc-grpc-server` with the slurm plugin, configured to accept 2 zones: `online` and `calib`, with corresponding slurm config files and number of slots per Agent.
+This starts the `odc-grpc-server` with the Slurm plugin, configured to accept 2 zones: `online` and `calib`, with corresponding Slurm config files and number of slots per Agent.
 The corresponding config files can have all sorts of Slurm sbatch parameters, but in this particular example we have:
 ```bash
 > cat slurm-online.cfg
@@ -51,7 +51,7 @@ Thus, zone `online` will be submitted to the Slurm `online` partition and zone `
 
 2. Start odc-grpc-client:
 ```
-odc-grpc-client --host 127.0.0.1:6667 --logdir /home/rbx/odclogs/
+odc-grpc-client --host 127.0.0.1:6667 --logdir /home/user/odclogs/
 ```
 This starts the `odc-grpc-client`. In a real life scenario this client would be replaced by AliECS, but it talks the same gRPC protocol with the server.
 
@@ -110,16 +110,16 @@ Collection `Col1` will be deployed on the `calib` Slurm partition, and `Col2` on
 
 ### Terminology (to be extended)
 
-As the AliECS/EPN/ODC terminology is quite large and even partially conflicting, we find it useful to summarize some of it here.
+As the AliECS/EPN/ODC/DDS terminology is quite large and even partially conflicting, we find it useful to summarize some of it here.
 
-| Term | Discription |
+| Term | Description |
 | ---- | ---- |
 | ECS Environment | In Alice's definition it is "part of a whole experiment that can work independently on a task" |
-| ECS Partition | Same as ECS Environment, but can be a human-readable label. Typically ECS Environment/Partition sorresponds to one active DDS topology |
+| ECS Partition | Same as ECS Environment, but can be a human-readable label. Typically ECS Environment/Partition corresponds to one active DDS topology |
 | Slurm Partition | Groups nodes managed by Slurm into logical sets |
-| Run | Run in a partition - a period of continuous data taking. Can be multiple per ECS partition. Separated by Running->Ready->Running state changes |
+| Run | Run in an ECS partition - a period of continuous data taking. Single ECS partition can contain multiple runs. Individual runs would then be separated by Running->Ready->Running state changes |
 | Zone | A label for a part of a resource request from AliECS. Typicaly maps to a Slurm partition, or a set of nodes managed through SSH or another resource manager |
-| DDS Topology | A set of executed DDS tasks, potentially grouped into DDS Collections and/or multiplied via DDS Groups |
+| DDS Topology | A set of DDS tasks, potentially grouped into DDS Collections and/or multiplied via DDS Groups |
 | DDS Task | A user executable or a script, launched through DDS |
 | DDS Collection | A set of DDS Tasks, grouped together that has to be executed on the same node |
-| DDS Group | A set of DDS Tasks and/or DDS Collections, grouped together only to allow easy way to multiply them |
+| DDS Group | A set of DDS Tasks and/or DDS Collections, grouped together only to allow easy way of multiplying them |
