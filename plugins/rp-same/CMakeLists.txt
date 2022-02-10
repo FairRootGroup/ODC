@@ -1,8 +1,11 @@
-# Copyright 2019 GSI, Inc. All rights reserved.
-#
-#
+################################################################################
+# Copyright (C) 2020-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  #
+#                                                                              #
+#              This software is distributed under the terms of the             #
+#              GNU Lesser General Public Licence (LGPL) version 3,             #
+#                  copied verbatim in the file "LICENSE"                       #
+################################################################################
 
-# odc-rp-same executable
 add_executable(odc-rp-same
   "odc-rp-same.cpp"
 )

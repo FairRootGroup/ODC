@@ -1,4 +1,10 @@
-// Copyright 2014 GSI, Inc. All rights reserved.
+/********************************************************************************
+ * Copyright (C) 2019-2022 GSI Helmholtzzentrum fuer Schwerionenforschung GmbH  *
+ *                                                                              *
+ *              This software is distributed under the terms of the             *
+ *              GNU Lesser General Public Licence (LGPL) version 3,             *
+ *                  copied verbatim in the file "LICENSE"                       *
+ ********************************************************************************/
 //
 // This file contains a number of helpers to calculate execution time of a function.
 //
