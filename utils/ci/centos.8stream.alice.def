@@ -18,11 +18,10 @@ EOF
     cat << EOF > /etc/profile.d/alibuild.sh
 #!/bin/bash
 export ALIBUILD_WORK_DIR=/root/sw
-export DDS_LOCATION=/root/sw/slc8_x86-64/DDS/latest
 EOF
     dnf install -y alice-o2-full-deps alibuild
     cd /root
-    git clone https://github.com/alisw/alidist
+    git clone -b odc_ci https://github.com/FairRootGroup/alidist
     aliBuild analytics off
     aliBuild init --defaults o2 ODC --debug
     aliBuild build --defaults o2 ODC --debug
