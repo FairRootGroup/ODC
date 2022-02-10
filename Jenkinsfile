@@ -37,30 +37,20 @@ def jobMatrix(String type, List specs) {
           if (selector =~ /alice/) {
             ctestcmd = "aliBuild build --defaults o2 ODC --debug && cd \\\\\\\${ALIBUILD_WORK_DIR}/BUILD/ODC-latest/ODC && alienv setenv ODC/latest,CMake/latest -c ctest --output-on-failure"
           }
-          if (selector =~ /^macos/) {
-            sh """\
-              echo \"export DDS_ROOT=\\\"\\\$(brew --prefix dds)\\\"\" >> ${jobscript}
-              echo \"export PATH=\\\"\\\$(brew --prefix dds)/bin:\\\$PATH\\\"\" >> ${jobscript}
-              echo \"${ctestcmd}\" >> ${jobscript}
-            """
-            sh "cat ${jobscript}"
-            sh "bash ${jobscript}"
-          } else {
-            def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
-            if (selector =~ /alice/) {
-              containercmd = "singularity exec -f --no-home -B.:/root/ODC -w ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
-            }
-            sh """\
-              echo \"echo \\\"*** Job started at .......: \\\$(date -R)\\\"\" >> ${jobscript}
-              echo \"echo \\\"*** Job ID ...............: \\\${SLURM_JOB_ID}\\\"\" >> ${jobscript}
-              echo \"echo \\\"*** Compute node .........: \\\$(hostname -f)\\\"\" >> ${jobscript}
-              echo \"unset http_proxy\" >> ${jobscript}
-              echo \"unset HTTP_PROXY\" >> ${jobscript}
-              echo \"${containercmd}\" >> ${jobscript}
-            """
-            sh "cat ${jobscript}"
-            sh "utils/ci/slurm-submit.sh \"ODC \${JOB_BASE_NAME} ${label}\" ${jobscript}"
+          def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
+          if (selector =~ /alice/) {
+            containercmd = "singularity exec -f --no-home -B.:/root/ODC -w ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
           }
+          sh """\
+            echo \"echo \\\"*** Job started at .......: \\\$(date -R)\\\"\" >> ${jobscript}
+            echo \"echo \\\"*** Job ID ...............: \\\${SLURM_JOB_ID}\\\"\" >> ${jobscript}
+            echo \"echo \\\"*** Compute node .........: \\\$(hostname -f)\\\"\" >> ${jobscript}
+            echo \"unset http_proxy\" >> ${jobscript}
+            echo \"unset HTTP_PROXY\" >> ${jobscript}
+            echo \"${containercmd}\" >> ${jobscript}
+          """
+          sh "cat ${jobscript}"
+          sh "utils/ci/slurm-submit.sh \"ODC \${JOB_BASE_NAME} ${label}\" ${jobscript}"
 
           deleteDir()
           githubNotify(context: "${label}", description: 'Success', status: 'SUCCESS')
@@ -90,9 +80,6 @@ pipeline{
           def builds = jobMatrix('build', [
             [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11'],
             [os: 'centos', ver: '8stream.alice', arch: 'x86_64', compiler: 'gcc-10'],
-            [os: 'macos',  ver: '10.15', arch: 'x86_64', compiler: 'apple-clang-12'],
-            [os: 'macos',  ver: '11',    arch: 'x86_64', compiler: 'apple-clang-13'],
-            [os: 'macos',  ver: '12',    arch: 'arm64', compiler: 'apple-clang-13'],
           ])
 
           def checks = jobMatrix('check', [
