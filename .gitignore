@@ -44,3 +44,4 @@ CPackSourceConfig.cmake
 *.xcodeproj
 .vscode
 *.sif
+.cache
