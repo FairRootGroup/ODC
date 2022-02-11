@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "Semaphore.h"
+#include <odc/Semaphore.h>
 
 namespace odc::core
 {

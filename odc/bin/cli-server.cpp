@@ -7,11 +7,11 @@
  ********************************************************************************/
 
 // ODC
-#include "BuildConstants.h"
-#include "CliControlService.h"
-#include "CliHelper.h"
-#include "Logger.h"
-#include "Version.h"
+#include <odc/BuildConstants.h>
+#include <odc/CliControlService.h>
+#include <odc/CliHelper.h>
+#include <odc/Logger.h>
+#include <odc/Version.h>
 // STD
 #include <chrono>
 #include <cstdlib>

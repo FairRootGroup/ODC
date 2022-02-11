@@ -7,13 +7,13 @@
  ********************************************************************************/
 
 // ODC
-#include "BuildConstants.h"
-#include "CliHelper.h"
-#include "GrpcAsyncService.h"
-#include "GrpcSyncService.h"
-#include "Logger.h"
-#include "MiscUtils.h"
-#include "Version.h"
+#include <odc/BuildConstants.h>
+#include <odc/CliHelper.h>
+#include <odc/grpc/GrpcAsyncService.h>
+#include <odc/grpc/GrpcSyncService.h>
+#include <odc/Logger.h>
+#include <odc/MiscUtils.h>
+#include <odc/Version.h>
 // STD
 #include <cstdlib>
 #include <iostream>

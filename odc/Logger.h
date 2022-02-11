@@ -31,9 +31,9 @@
 #include <fstream>
 #include <ostream>
 // ODC
-#include "InfoLogger.h"
-#include "LoggerSeverity.h"
-#include "MiscUtils.h"
+#include <odc/InfoLogger.h>
+#include <odc/LoggerSeverity.h>
+#include <odc/MiscUtils.h>
 
 // Main macro to be used for logging in ODC
 // Example:

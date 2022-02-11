@@ -15,12 +15,12 @@
 #include <boost/program_options/variables_map.hpp>
 #include <boost/property_tree/json_parser.hpp>
 // DDS
-#include "dds/SSHConfigFile.h"
+#include <dds/SSHConfigFile.h>
 // ODC
-#include "CliHelper.h"
-#include "EpncClient.h"
-#include "Logger.h"
-#include "Version.h"
+#include <odc/CliHelper.h>
+#include <EpncClient.h>
+#include <odc/Logger.h>
+#include <odc/Version.h>
 
 using namespace std;
 namespace bpo = boost::program_options;

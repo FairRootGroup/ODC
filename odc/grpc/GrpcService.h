@@ -10,10 +10,10 @@
 #define __ODC__GrpcService__
 
 // ODC
-#include "ControlService.h"
-#include "DDSSubmit.h"
+#include <odc/ControlService.h>
+#include <odc/DDSSubmit.h>
 // GRPC
-#include "odc.grpc.pb.h"
+#include <odc/grpc/odc.grpc.pb.h>
 #include <grpcpp/grpcpp.h>
 
 namespace odc::grpc {

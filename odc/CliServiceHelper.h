@@ -10,9 +10,9 @@
 #define __ODC__CliServiceHelper__
 
 // ODC
-#include "CliHelper.h"
-#include "ControlService.h"
-#include "Logger.h"
+#include <odc/CliHelper.h>
+#include <odc/ControlService.h>
+#include <odc/Logger.h>
 // STD
 #include <iostream>
 #include <tuple>

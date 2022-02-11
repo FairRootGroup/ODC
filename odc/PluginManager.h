@@ -14,7 +14,7 @@
 #include <memory>
 #include <string>
 // ODC
-#include "Def.h"
+#include <odc/Def.h>
 
 namespace odc::core
 {

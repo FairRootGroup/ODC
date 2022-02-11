@@ -19,8 +19,8 @@
 #include <boost/program_options/variables_map.hpp>
 #include <boost/property_tree/json_parser.hpp>
 // ODC
-#include "Logger.h"
-#include "Version.h"
+#include <odc/Logger.h>
+#include <odc/Version.h>
 
 using namespace std;
 namespace bpo = boost::program_options;

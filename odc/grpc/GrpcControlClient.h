@@ -10,14 +10,14 @@
 #define __ODC__GrpcControlClient__
 
 // ODC
-#include "CliServiceHelper.h"
+#include <odc/CliServiceHelper.h>
 // STD
 #include <iostream>
 #include <memory>
 #include <sstream>
 #include <string>
 // GRPC
-#include "odc.grpc.pb.h"
+#include <odc/grpc/odc.grpc.pb.h>
 #include <grpcpp/grpcpp.h>
 
 class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClient>

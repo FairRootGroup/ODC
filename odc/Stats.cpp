@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 // ODC
-#include "Stats.h"
+#include <odc/Stats.h>
 
 using namespace std;
 using namespace odc::core;

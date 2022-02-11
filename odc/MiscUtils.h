@@ -27,7 +27,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 // ODC
-#include "LoggerSeverity.h"
+#include <odc/LoggerSeverity.h>
 
 namespace odc::core
 {

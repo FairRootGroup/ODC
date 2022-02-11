@@ -7,8 +7,8 @@
  ********************************************************************************/
 
 // DDS
-#include "GrpcAsyncService.h"
-#include "Logger.h"
+#include <odc/grpc/GrpcAsyncService.h>
+#include <odc/Logger.h>
 
 using namespace odc;
 using namespace odc::core;

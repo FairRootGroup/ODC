@@ -7,14 +7,15 @@
  ********************************************************************************/
 
 // ODC
-#include "ControlService.h"
-#include "DDSSubmit.h"
-#include "Error.h"
-#include "Logger.h"
-#include "Restore.h"
-#include "Stats.h"
-#include "TimeMeasure.h"
-#include "Topology.h"
+#include <odc/ControlService.h>
+#include <odc/DDSSubmit.h>
+#include <odc/Error.h>
+#include <odc/Logger.h>
+#include <odc/Process.h>
+#include <odc/Restore.h>
+#include <odc/Stats.h>
+#include <odc/TimeMeasure.h>
+#include <odc/Topology.h>
 // DDS
 #include <dds/Tools.h>
 #include <dds/Topology.h>

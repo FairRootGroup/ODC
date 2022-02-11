@@ -10,9 +10,9 @@
 #define __ODC__GrpcAsyncService__
 
 // ODC
-#include "DDSSubmit.h"
-#include "GrpcService.h"
-#include "Logger.h"
+#include <odc/DDSSubmit.h>
+#include <odc/grpc/GrpcService.h>
+#include <odc/Logger.h>
 // GRPC
 #include <grpcpp/grpcpp.h>
 
