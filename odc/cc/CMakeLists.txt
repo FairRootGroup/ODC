@@ -30,6 +30,7 @@ add_library(${target} STATIC
   ${CMAKE_CURRENT_BINARY_DIR}/CustomCommandsFormatDef.h
 )
 add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
+set_target_properties(${target} PROPERTIES OUTPUT_NAME "${PROJECT_NAME_LOWER}-${target}")
 
 set(_flatbuffers flatbuffers::flatbuffers_shared)
 if(NOT TARGET flatbuffers::flatbuffers_shared AND TARGET flatbuffers::flatbuffers)

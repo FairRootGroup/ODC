@@ -25,6 +25,7 @@ add_library(${target} STATIC
   "GrpcSyncService.h"
 )
 add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
+set_target_properties(${target} PROPERTIES OUTPUT_NAME "${PROJECT_NAME_LOWER}-${target}")
 target_include_directories(${target} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>"
   "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>"
