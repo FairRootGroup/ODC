@@ -81,8 +81,6 @@ function(odc_add_boost_tests)
         # guess dependencies
         list(APPEND ARG_DEPS ${ARG_SUITE})
     endif()
-    # always add Boost.UTF
-    list(APPEND ARG_DEPS Boost::unit_test_framework)
 
     set(suite_target "${ARG_SUITE}-tests")
 

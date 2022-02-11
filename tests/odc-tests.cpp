@@ -3,7 +3,8 @@
 //
 
 #define BOOST_TEST_MODULE odc_core_lib
-#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_NO_MAIN
+#define BOOST_TEST_ALTERNATIVE_INIT_API
 #include <boost/test/included/unit_test.hpp>
 
 #include <odc/AsioAsyncOp.h>
@@ -810,3 +811,7 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_concurrent)
 }
 
 BOOST_AUTO_TEST_SUITE_END() // multiple_topologies
+
+int main(int argc, char* argv[]) {
+    return boost::unit_test::unit_test_main(init_unit_test, argc, argv);
+}
