@@ -38,8 +38,8 @@ set_tests_properties(${test} PROPERTIES TIMEOUT 10 FAIL_REGULAR_EXPRESSION "Stat
 #
 # Boost.UTF tests
 #
-install(FILES odc_fairmq_lib-tests-topo.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
-odc_add_boost_tests(SUITE odc_fairmq_lib
+install(FILES odc-tests-topo.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
+odc_add_boost_tests(SUITE odc
   TESTS
   async_op/cancel
   async_op/complete
@@ -73,21 +73,20 @@ odc_add_boost_tests(SUITE odc_fairmq_lib
   topology/underlying_session_terminated
   topology/wait_for_state_full_device_lifecycle
 
-  DEPS
-  odc_custom_commands_lib
-  odc_fairmq_lib
-  odc_core_lib
+  DEPS ODC::odc
 
-  EXTRA_ARGS -- --topo-file ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/odc_fairmq_lib-tests-topo.xml
+  EXTRA_ARGS -- --topo-file ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/odc-tests-topo.xml
   PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
 )
-set_tests_properties(odc_fairmq_lib::topology/device_crashed PROPERTIES TIMEOUT 45)
-set_tests_properties(odc_fairmq_lib::topology/underlying_session_terminated PROPERTIES TIMEOUT 45)
-odc_add_boost_tests(SUITE odc_custom_commands_lib
+set_tests_properties(odc::topology/device_crashed PROPERTIES TIMEOUT 45)
+set_tests_properties(odc::topology/underlying_session_terminated PROPERTIES TIMEOUT 45)
+odc_add_boost_tests(SUITE cc
   TESTS
   format/construction
   format/serialization_binary
   format/serialization_json
+
+  DEPS ODC::cc
 
   PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
 )

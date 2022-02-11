@@ -6,21 +6,32 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-# Proto file
-set(odc_proto_file "odc.proto")
+set(proto_file "odc.proto")
+protobuf_generate_cpp(proto_srcs proto_hdrs ${proto_file})
+grpc_generate_cpp(grpc_srcs grpc_hdrs ${CMAKE_CURRENT_BINARY_DIR} ${proto_file})
 
-# Generated sources
-protobuf_generate_cpp(odc_proto_srcs odc_proto_hdrs ${odc_proto_file})
-grpc_generate_cpp(odc_grpc_srcs odc_grpc_hdrs ${CMAKE_CURRENT_BINARY_DIR} ${odc_proto_file})
-
-add_library(odc_grpc_proto_lib STATIC
-  ${odc_proto_srcs}
-  ${odc_proto_hdrs}
-  ${odc_grpc_srcs}
-  ${odc_grpc_hdrs}
+set(target "grpc")
+add_library(${target} STATIC
+  ${proto_srcs}
+  ${proto_hdrs}
+  ${grpc_srcs}
+  ${grpc_hdrs}
+  "GrpcAsyncService.cpp"
+  "GrpcAsyncService.h"
+  "GrpcControlClient.cpp"
+  "GrpcControlClient.h"
+  "GrpcService.cpp"
+  "GrpcService.h"
+  "GrpcSyncService.h"
 )
-target_include_directories(odc_grpc_proto_lib PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>")
-target_link_libraries(odc_grpc_proto_lib PUBLIC
+add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
+target_include_directories(${target} PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>"
+  "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>"
+  "${GRPC_INCLUDE_DIR}"
+)
+target_link_libraries(${target} PUBLIC
   protobuf::libprotobuf
   gRPC::grpc++
+  ODC::odc
 )

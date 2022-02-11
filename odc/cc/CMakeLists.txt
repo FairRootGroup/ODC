@@ -6,7 +6,7 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-set(target odc_custom_commands_lib)
+set(target cc)
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/CustomCommandsFormat.h
@@ -29,6 +29,7 @@ add_library(${target} STATIC
   ${CMAKE_CURRENT_BINARY_DIR}/CustomCommandsFormat.h
   ${CMAKE_CURRENT_BINARY_DIR}/CustomCommandsFormatDef.h
 )
+add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
 
 set(_flatbuffers flatbuffers::flatbuffers_shared)
 if(NOT TARGET flatbuffers::flatbuffers_shared AND TARGET flatbuffers::flatbuffers)
@@ -38,6 +39,6 @@ endif()
 target_link_libraries(${target} PUBLIC FairMQ::FairMQ ${_flatbuffers})
 target_compile_features(${target} PUBLIC cxx_std_17)
 target_include_directories(${target} PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
 )

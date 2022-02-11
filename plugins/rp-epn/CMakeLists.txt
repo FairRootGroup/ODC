@@ -34,7 +34,7 @@ target_link_libraries(${target}
   Boost::program_options
   Boost::thread
   DDS::dds_misc_lib
-  odc_core_lib
+  ODC::odc
   epnc_grpc_proto_lib
 )
 target_include_directories(${target} PUBLIC

@@ -14,7 +14,7 @@ target_link_libraries(${target}
   Boost::boost
   Boost::program_options
   Boost::thread
-  odc_core_lib
+  ODC::odc
 )
 target_include_directories(${target} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
