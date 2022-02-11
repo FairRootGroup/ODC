@@ -749,7 +749,7 @@ SReturnValue CControlService::execSubmit(const SCommonParams& _common, const SSu
             OLOG(info) << "Submitting " << param;
             // Submit DDS agents
             submitDDSAgents(_common, error, param);
-            totalRequiredSlots = param.m_numRequiredSlots;
+            totalRequiredSlots += param.m_numRequiredSlots;
         }
         // Wait until <totalRequiredSlots> agents are active
         waitForNumActiveAgents(_common, error, totalRequiredSlots);
