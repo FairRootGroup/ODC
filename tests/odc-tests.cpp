@@ -6,10 +6,10 @@
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/included/unit_test.hpp>
 
-#include "AsioAsyncOp.h"
-#include "AsioBase.h"
-#include "Topology.h"
-#include "odc_fairmq_lib-fixtures.h"
+#include <odc/AsioAsyncOp.h>
+#include <odc/AsioBase.h>
+#include <odc/Topology.h>
+#include "odc-fixtures.h"
 
 #include <array>
 #include <boost/asio.hpp>

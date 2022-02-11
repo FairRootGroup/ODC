@@ -10,7 +10,7 @@
 #define BOOST_TEST_DYN_LINK
 #include <boost/test/included/unit_test.hpp>
 
-#include "CustomCommands.h"
+#include <odc/cc/CustomCommands.h>
 #include <string>
 
 using namespace boost::unit_test;

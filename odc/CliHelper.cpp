@@ -6,9 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "CliHelper.h"
-#include "BuildConstants.h"
-#include "CmdsFile.h"
+#include <odc/CliHelper.h>
+#include <odc/BuildConstants.h>
+#include <odc/CmdsFile.h>
 // BOOST
 #include <boost/algorithm/string.hpp>
 

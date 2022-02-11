@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 // ODC
-#include "GrpcControlClient.h"
+#include <odc/grpc/GrpcControlClient.h>
 
 using namespace odc::core;
 using namespace std;

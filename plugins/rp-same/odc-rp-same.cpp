@@ -13,8 +13,8 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 // ODC
-#include "CliHelper.h"
-#include "Version.h"
+#include <odc/CliHelper.h>
+#include <odc/Version.h>
 
 using namespace std;
 using namespace odc::core;

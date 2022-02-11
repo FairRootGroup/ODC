@@ -10,10 +10,10 @@
 #define __ODC__GrpcSyncService__
 
 // ODC
-#include "GrpcService.h"
-#include "PluginManager.h"
+#include <odc/grpc/GrpcService.h>
+#include <odc/PluginManager.h>
 // GRPC
-#include "odc.grpc.pb.h"
+#include <odc/grpc/odc.grpc.pb.h>
 #include <grpcpp/grpcpp.h>
 
 namespace odc::grpc {

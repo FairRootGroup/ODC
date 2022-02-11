@@ -6,9 +6,9 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "CustomCommands.h"
-#include "CustomCommandsFormat.h"
-#include "CustomCommandsFormatDef.h"
+#include <odc/cc/CustomCommands.h>
+#include <odc/cc/CustomCommandsFormat.h>
+#include <odc/cc/CustomCommandsFormatDef.h>
 
 #include <flatbuffers/idl.h>
 

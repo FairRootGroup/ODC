@@ -7,9 +7,9 @@
  ********************************************************************************/
 
 // ODC
-#include "GrpcService.h"
-#include "Logger.h"
-#include "Topology.h"
+#include <odc/grpc/GrpcService.h>
+#include <odc/Logger.h>
+#include <odc/Topology.h>
 
 using namespace odc;
 using namespace odc::core;

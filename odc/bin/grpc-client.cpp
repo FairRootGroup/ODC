@@ -7,12 +7,12 @@
  ********************************************************************************/
 
 // ODC
-#include "BuildConstants.h"
-#include "CliHelper.h"
-#include "GrpcControlClient.h"
-#include "Logger.h"
-#include "MiscUtils.h"
-#include "Version.h"
+#include <odc/BuildConstants.h>
+#include <odc/CliHelper.h>
+#include <odc/grpc/GrpcControlClient.h>
+#include <odc/Logger.h>
+#include <odc/MiscUtils.h>
+#include <odc/Version.h>
 // BOOST
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>

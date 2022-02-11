@@ -12,9 +12,9 @@
 // STD
 #include <chrono>
 // ODC
-#include "CliServiceHelper.h"
-#include "ControlService.h"
-#include "DDSSubmit.h"
+#include <odc/CliServiceHelper.h>
+#include <odc/ControlService.h>
+#include <odc/DDSSubmit.h>
 
 namespace odc::cli
 {

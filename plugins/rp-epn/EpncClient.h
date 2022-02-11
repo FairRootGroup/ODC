@@ -10,7 +10,7 @@
 #define __ODC__EpncClient__
 
 // ODC
-#include "Logger.h"
+#include <odc/Logger.h>
 // STD
 #include <string>
 // GRPC

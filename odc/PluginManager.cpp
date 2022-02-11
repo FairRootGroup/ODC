@@ -7,10 +7,10 @@
  ********************************************************************************/
 
 // ODC
-#include "PluginManager.h"
-#include "Logger.h"
-#include "MiscUtils.h"
-#include "Process.h"
+#include <odc/PluginManager.h>
+#include <odc/Logger.h>
+#include <odc/MiscUtils.h>
+#include <odc/Process.h>
 // BOOST
 #include <boost/filesystem.hpp>
 #include <boost/program_options/parsers.hpp>

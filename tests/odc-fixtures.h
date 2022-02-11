@@ -9,8 +9,8 @@
 #ifndef __ODC__odc_core_lib_fixtures
 #define __ODC__odc_core_lib_fixtures
 
-#include "MiscUtils.h"
-#include "Semaphore.h"
+#include <odc/MiscUtils.h>
+#include <odc/Semaphore.h>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/test/unit_test_log.hpp>

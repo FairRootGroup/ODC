@@ -9,7 +9,7 @@
 #ifndef __ODC__AsioBase__
 #define __ODC__AsioBase__
 
-#include "Traits.h"
+#include <odc/Traits.h>
 
 #include <boost/asio/any_io_executor.hpp>
 #include <memory>

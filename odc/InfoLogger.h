@@ -10,7 +10,7 @@
 #define __ODC__INFOLOGGER__
 
 // ODC
-#include "LoggerSeverity.h"
+#include <odc/LoggerSeverity.h>
 
 #ifdef INFOLOGGER_AVAIL
 

@@ -10,10 +10,10 @@
 #define __ODC__ControlService__
 
 // ODC
-#include "DDSSubmit.h"
-#include "Def.h"
-#include "Process.h"
-#include "Topology.h"
+#include <odc/DDSSubmit.h>
+#include <odc/Def.h>
+#include <odc/Process.h>
+#include <odc/Topology.h>
 // BOOST
 #include <boost/filesystem.hpp>
 #include <boost/process.hpp>

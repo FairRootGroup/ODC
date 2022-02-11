@@ -14,7 +14,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 // DDS
-#include "dds/dds.h"
+#include <dds/dds.h>
 
 using namespace std;
 using namespace dds::topology_api;

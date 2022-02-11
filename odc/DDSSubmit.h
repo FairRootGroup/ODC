@@ -17,9 +17,9 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/xml_parser.hpp>
 // ODC
-#include "PluginManager.h"
-#include "BuildConstants.h"
-#include "Logger.h"
+#include <odc/BuildConstants.h>
+#include <odc/Logger.h>
+#include <odc/PluginManager.h>
 
 namespace odc::core {
 

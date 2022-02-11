@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "Error.h"
+#include <odc/Error.h>
 
 using namespace std;
 

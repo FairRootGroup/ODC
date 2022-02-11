@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include "CliControlService.h"
-#include "Topology.h"
+#include <odc/CliControlService.h>
+#include <odc/Topology.h>
 // STD
 #include <sstream>
 

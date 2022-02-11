@@ -7,8 +7,8 @@
  ********************************************************************************/
 
 // ODC
-#include "Restore.h"
-#include "Logger.h"
+#include <odc/Restore.h>
+#include <odc/Logger.h>
 // Boost
 #include <boost/property_tree/json_parser.hpp>
 

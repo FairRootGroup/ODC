@@ -9,7 +9,7 @@
 #ifndef __ODC__fairmq_odc
 #define __ODC__fairmq_odc
 
-#include "CustomCommands.h"
+#include <odc/cc/CustomCommands.h>
 
 #include <fairmq/Plugin.h>
 #include <fairmq/StateQueue.h>
