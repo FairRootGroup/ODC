@@ -31,7 +31,7 @@ target_link_libraries(odc-topo
   Boost::boost
   Boost::program_options
   DDS::dds_topology_lib
-  odc_core_lib
+  ODC::odc
 )
 target_include_directories(odc-topo PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"

@@ -13,7 +13,7 @@ target_link_libraries(odc-rp-same
   Boost::boost
   Boost::program_options
   Boost::thread
-  odc_core_lib
+  ODC::odc
 )
 target_include_directories(odc-rp-same PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"

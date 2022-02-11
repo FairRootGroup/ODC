@@ -8,43 +8,48 @@
 
 add_subdirectory(cc)
 
-# BuildConstants header
 set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
 set(ODC_BINDIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}")
 configure_file(BuildConstants.h.in ${CMAKE_CURRENT_BINARY_DIR}/BuildConstants.h @ONLY)
-
-# Version header
 configure_file(Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/Version.h @ONLY)
 
-# odc_core_lib target
-add_library(odc_core_lib STATIC
-  "${CMAKE_CURRENT_BINARY_DIR}/Version.h"
+set(target "odc")
+add_library(${target} STATIC
   "${CMAKE_CURRENT_BINARY_DIR}/BuildConstants.h"
-  "ControlService.h"
-  "ControlService.cpp"
-  "TimeMeasure.h"
-  "CliHelper.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/Version.h"
+  "AsioAsyncOp.h"
+  "AsioBase.h"
+  "CliControlService.cpp"
+  "CliControlService.h"
   "CliHelper.cpp"
+  "CliHelper.h"
   "CliServiceHelper.h"
+  "CmdsFile.cpp"
+  "CmdsFile.h"
+  "ControlService.cpp"
+  "ControlService.h"
+  "DDSSubmit.h"
+  "Def.h"
+  "Error.cpp"
+  "Error.h"
+  "InfoLogger.h"
   "Logger.h"
   "LoggerSeverity.h"
-  "InfoLogger.h"
-  "Error.h"
-  "Error.cpp"
   "MiscUtils.h"
-  "DDSSubmit.h"
-  "Process.h"
-  "CmdsFile.h"
-  "CmdsFile.cpp"
-  "Def.h"
-  "PluginManager.h"
   "PluginManager.cpp"
-  "Restore.h"
+  "PluginManager.h"
+  "Process.h"
   "Restore.cpp"
-  "Stats.h"
+  "Restore.h"
+  "Semaphore.cpp"
+  "Semaphore.h"
   "Stats.cpp"
+  "Stats.h"
+  "TimeMeasure.h"
+  "Topology.h"
+  "Traits.h"
 )
-target_link_libraries(odc_core_lib PUBLIC
+target_link_libraries(${target} PUBLIC
   DDS::dds_topology_lib
   DDS::dds_intercom_lib
   DDS::dds_tools_lib
@@ -52,22 +57,28 @@ target_link_libraries(odc_core_lib PUBLIC
   Boost::filesystem
   Boost::log_setup
   Boost::log
-  odc_fairmq_lib
   FairMQ::FairMQ
+  ODC::cc
 )
-target_include_directories(odc_core_lib PUBLIC
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
-  "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
+add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
+target_include_directories(${target} PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_BINARY_DIR}>"
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>"
 )
-target_compile_definitions(odc_core_lib PUBLIC BOOST_LOG_DYN_LINK)
+target_compile_definitions(${target} PUBLIC BOOST_LOG_DYN_LINK)
 if(BOOST_VERSION VERSION_LESS 1.76)
-  target_compile_definitions(odc_core_lib PUBLIC BOOST_BIND_GLOBAL_PLACEHOLDERS)
+  target_compile_definitions(${target} PUBLIC BOOST_BIND_GLOBAL_PLACEHOLDERS)
 endif()
 if(readline_FOUND)
-  target_compile_definitions(odc_core_lib PUBLIC READLINE_AVAIL)
-  target_link_libraries(odc_core_lib PUBLIC readline::readline)
+  target_compile_definitions(${target} PUBLIC READLINE_AVAIL)
+  target_link_libraries(${target} PUBLIC readline::readline)
 endif()
 if (InfoLogger_FOUND)
-  target_compile_definitions(odc_core_lib PUBLIC INFOLOGGER_AVAIL)
-  target_link_libraries(odc_core_lib PUBLIC AliceO2::InfoLogger)
+  target_compile_definitions(${target} PUBLIC INFOLOGGER_AVAIL)
+  target_link_libraries(${target} PUBLIC AliceO2::InfoLogger)
 endif()
+
+if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
+   add_subdirectory(grpc)
+endif()
+add_subdirectory(bin)
