@@ -6,15 +6,33 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-// ODC
-#include <odc/grpc/GrpcService.h>
+#include <cassert>
+#include <numeric>
 #include <odc/Logger.h>
+#include <odc/MiscUtils.h>
 #include <odc/Topology.h>
+#include <odc/grpc/GrpcService.h>
+#include <string>
 
 using namespace odc;
 using namespace odc::core;
 using namespace odc::grpc;
 using namespace std;
+
+namespace {
+
+auto clientMetadataAsString(const ::grpc::ServerContext& context) -> std::string
+{
+    const auto clientMetadata{ context.client_metadata() };
+    return toString("[", context.peer(), "]{",
+                    std::accumulate(clientMetadata.begin(),
+                                    clientMetadata.end(),
+                                    std::string{},
+                                    [](std::string prefix, const auto element) { return toString(std::move(prefix), prefix.empty() ? "" : ",", element.first, ":", element.second); }),
+                    "}");
+}
+
+} // namespace
 
 void CGrpcService::setTimeout(const std::chrono::seconds& _timeout) { m_service.setTimeout(_timeout); }
 
@@ -24,11 +42,13 @@ void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _t
 
 void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_restoreId); }
 
-::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* /*context*/, const odc::InitializeRequest* request, odc::GeneralReply* response)
+::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* context, const odc::InitializeRequest* request, odc::GeneralReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Initialize request:\n" << request->DebugString();
+    OLOG(info, common) << "Initialize request from " << client << ":\n" << request->DebugString();
     SInitializeParams params{ request->sessionid() };
     SReturnValue value{ m_service.execInitialize(common, params) };
     setupGeneralReply(response, value);
@@ -36,11 +56,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Submit(::grpc::ServerContext* /*context*/, const odc::SubmitRequest* request, odc::GeneralReply* response)
+::grpc::Status CGrpcService::Submit(::grpc::ServerContext* context, const odc::SubmitRequest* request, odc::GeneralReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Submit request:\n" << request->DebugString();
+    OLOG(info, common) << "Submit request from " << client << ":\n" << request->DebugString();
     SSubmitParams params{ request->plugin(), request->resources() };
     SReturnValue value{ m_service.execSubmit(common, params) };
     setupGeneralReply(response, value);
@@ -48,11 +70,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Activate(::grpc::ServerContext* /*context*/, const odc::ActivateRequest* request, odc::GeneralReply* response)
+::grpc::Status CGrpcService::Activate(::grpc::ServerContext* context, const odc::ActivateRequest* request, odc::GeneralReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Activate request:\n" << request->DebugString();
+    OLOG(info, common) << "Activate request from " << client << ":\n" << request->DebugString();
     SActivateParams params{ request->topology(), request->content(), request->script() };
     SReturnValue value{ m_service.execActivate(common, params) };
     setupGeneralReply(response, value);
@@ -60,11 +84,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Run(::grpc::ServerContext* /*context*/, const odc::RunRequest* request, odc::GeneralReply* response)
+::grpc::Status CGrpcService::Run(::grpc::ServerContext* context, const odc::RunRequest* request, odc::GeneralReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Run request:\n" << request->DebugString();
+    OLOG(info, common) << "Run request from " << client << ":\n" << request->DebugString();
     SInitializeParams initializeParams{ "" };
     SSubmitParams submitParams{ request->plugin(), request->resources() };
     SActivateParams activateParams{ request->topology(), request->content(), request->script() };
@@ -74,11 +100,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Update(::grpc::ServerContext* /*context*/, const odc::UpdateRequest* request, odc::GeneralReply* response)
+::grpc::Status CGrpcService::Update(::grpc::ServerContext* context, const odc::UpdateRequest* request, odc::GeneralReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Update request:\n" << request->DebugString();
+    OLOG(info, common) << "Update request from " << client << ":\n" << request->DebugString();
     SUpdateParams params{ request->topology(), request->content(), request->script() };
     SReturnValue value{ m_service.execUpdate(common, params) };
     setupGeneralReply(response, value);
@@ -86,11 +114,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::GetState(::grpc::ServerContext* /*context*/, const odc::StateRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::GetState(::grpc::ServerContext* context, const odc::StateRequest* request, odc::StateReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "GetState request:\n" << request->DebugString();
+    OLOG(info, common) << "GetState request from " << client << ":\n" << request->DebugString();
     SDeviceParams params{ request->path(), request->detailed() };
     SReturnValue value{ m_service.execGetState(common, params) };
     setupStateReply(response, value);
@@ -98,11 +128,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::SetProperties(::grpc::ServerContext* /*context*/, const odc::SetPropertiesRequest* request, odc::GeneralReply* response)
+::grpc::Status CGrpcService::SetProperties(::grpc::ServerContext* context, const odc::SetPropertiesRequest* request, odc::GeneralReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "SetProperties request:\n" << request->DebugString();
+    OLOG(info, common) << "SetProperties request from " << client << ":\n" << request->DebugString();
     // Convert from protobuf to ODC format
     SSetPropertiesParams::Properties_t props;
     for (int i = 0; i < request->properties_size(); i++) {
@@ -117,11 +149,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Configure(::grpc::ServerContext* /*context*/, const odc::ConfigureRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Configure(::grpc::ServerContext* context, const odc::ConfigureRequest* request, odc::StateReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Configure request:\n" << request->DebugString();
+    OLOG(info, common) << "Configure request from " << client << ":\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service.execConfigure(common, params) };
     setupStateReply(response, value);
@@ -129,11 +163,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Start(::grpc::ServerContext* /*context*/, const odc::StartRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Start(::grpc::ServerContext* context, const odc::StartRequest* request, odc::StateReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Start request:\n" << request->DebugString();
+    OLOG(info, common) << "Start request from " << client << ":\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service.execStart(common, params) };
     setupStateReply(response, value);
@@ -141,11 +177,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Stop(::grpc::ServerContext* /*context*/, const odc::StopRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Stop(::grpc::ServerContext* context, const odc::StopRequest* request, odc::StateReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Stop request:\n" << request->DebugString();
+    OLOG(info, common) << "Stop request from " << client << ":\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service.execStop(common, params) };
     setupStateReply(response, value);
@@ -153,11 +191,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Reset(::grpc::ServerContext* /*context*/, const odc::ResetRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Reset(::grpc::ServerContext* context, const odc::ResetRequest* request, odc::StateReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Reset request:\n" << request->DebugString();
+    OLOG(info, common) << "Reset request from " << client << ":\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service.execReset(common, params) };
     setupStateReply(response, value);
@@ -165,11 +205,13 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Terminate(::grpc::ServerContext* /*context*/, const odc::TerminateRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Terminate(::grpc::ServerContext* context, const odc::TerminateRequest* request, odc::StateReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(&request->request()) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Terminate request:\n" << request->DebugString();
+    OLOG(info, common) << "Terminate request from " << client << ":\n" << request->DebugString();
     SDeviceParams params{ request->request().path(), request->request().detailed() };
     SReturnValue value{ m_service.execTerminate(common, params) };
     setupStateReply(response, value);
@@ -177,20 +219,24 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Shutdown(::grpc::ServerContext* /*context*/, const odc::ShutdownRequest* request, odc::GeneralReply* response)
+::grpc::Status CGrpcService::Shutdown(::grpc::ServerContext* context, const odc::ShutdownRequest* request, odc::GeneralReply* response)
 {
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
     const auto common{ commonParams(request) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Shutdown request:\n" << request->DebugString();
+    OLOG(info, common) << "Shutdown request from " << client << ":\n" << request->DebugString();
     SReturnValue value{ m_service.execShutdown(common) };
     setupGeneralReply(response, value);
     logResponse("Shutdown response:\n", common, response);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Status(::grpc::ServerContext* /*context*/, const odc::StatusRequest* request, odc::StatusReply* response)
+::grpc::Status CGrpcService::Status(::grpc::ServerContext* context, const odc::StatusRequest* request, odc::StatusReply* response)
 {
-    OLOG(info) << "Status request:\n" << request->DebugString();
+    assert(context);
+    const auto client{ clientMetadataAsString(*context) };
+    OLOG(info) << "Status request from " << client << ":\n" << request->DebugString();
     SStatusReturnValue value{ m_service.execStatus(SStatusParams(request->running())) };
     setupStatusReply(response, value);
     logResponse("Status response:\n", core::SCommonParams(), response);
