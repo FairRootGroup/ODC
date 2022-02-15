@@ -12,6 +12,8 @@ else()
   list(APPEND TEST_ENV "LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_LIBDIR}:${Boost_LIBRARY_DIRS}:$ENV{LD_LIBRARY_PATH}")
 endif()
 list(APPEND TEST_ENV "PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}:$ENV{PATH}")
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/tmp")
+list(APPEND TEST_ENV "TMPDIR=${CMAKE_BINARY_DIR}/tmp")
 
 # Test odc-cli-server with default set of options
 set(target odc-cli-server)
