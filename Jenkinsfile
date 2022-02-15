@@ -35,7 +35,7 @@ def jobMatrix(String type, List specs) {
           sh "echo \"set -e\" >> ${jobscript}"
           sh "echo \"export LABEL=\\\"\${JOB_BASE_NAME} ${label}\\\"\" >> ${jobscript}"
           if (selector =~ /alice/) {
-            ctestcmd = "aliBuild build --defaults o2 ODC --debug && cd \\\\\\\${ALIBUILD_WORK_DIR}/BUILD/ODC-latest/ODC && alienv setenv ODC/latest,CMake/latest -c ctest --output-on-failure"
+            ctestcmd = "aliBuild build --defaults o2 ODC --debug && cd ODC && alienv setenv ODC/latest,CMake/latest -c ctest -VV -S ODCTest.cmake -DTEST_ONLY=ON -DCTEST_BINARY_DIRECTORY=\\\\\\\${ALIBUILD_WORK_DIR}/BUILD/ODC-latest/ODC"
           }
           def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
           if (selector =~ /alice/) {
