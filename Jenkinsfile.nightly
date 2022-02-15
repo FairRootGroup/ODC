@@ -64,6 +64,7 @@ def jobMatrix(String type, List specs) {
 
 pipeline{
   agent none
+  options { ansiColor('xterm') }
   triggers { cron('H H(0-3) * * *') }
   stages {
     stage("CI") {

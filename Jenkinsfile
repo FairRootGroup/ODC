@@ -73,6 +73,7 @@ def jobMatrix(String type, List specs) {
 
 pipeline{
   agent none
+  options { ansiColor('xterm') }
   stages {
     stage("CI") {
       steps{
