@@ -8,8 +8,12 @@
 
 cmake_host_system_information(RESULT fqdn QUERY FQDN)
 
-set(CTEST_SOURCE_DIRECTORY .)
-set(CTEST_BINARY_DIRECTORY build)
+if(NOT CTEST_SOURCE_DIRECTORY)
+  set(CTEST_SOURCE_DIRECTORY .)
+endif()
+if(NOT CTEST_BINARY_DIRECTORY)
+  set(CTEST_BINARY_DIRECTORY build)
+endif()
 set(CTEST_CMAKE_GENERATOR "Ninja")
 set(CTEST_USE_LAUNCHERS ON)
 if(CMAKE_CXX_FLAGS)
@@ -49,7 +53,7 @@ else()
   ctest_start(Continuous)
 endif()
 
-
+if(NOT TEST_ONLY)
 list(APPEND options "-DCMAKE_INSTALL_PREFIX=install")
 if(ENABLE_SANITIZERS)
   list(APPEND options "-DCMAKE_CXX_FLAGS='-O1 -fsanitize=address,leak,undefined -fno-omit-frame-pointer -fno-var-tracking-assignments'")
@@ -63,6 +67,7 @@ ctest_submit()
 ctest_build(FLAGS "-j${NCPUS}")
 
 ctest_submit()
+endif()
 
 ctest_test(BUILD "${CTEST_BINARY_DIRECTORY}"
            PARALLEL_LEVEL 1
