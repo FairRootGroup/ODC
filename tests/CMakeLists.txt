@@ -26,7 +26,7 @@ install(FILES batch_cmds.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 set(target odc-cli-server)
 set(test ${target}::batch_cmds_from_file)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_SOURCE_DIR}/batch_cmds.cfg)
-set_tests_properties(${test} PROPERTIES TIMEOUT 10 PASS_REGULAR_EXPRESSION "Sleeping 100 ms" ENVIRONMENT "${TEST_ENV}")
+set_tests_properties(${test} PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "Sleeping 100 ms" ENVIRONMENT "${TEST_ENV}")
 
 # Test `--script` option of odc-cli-server
 set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
@@ -35,7 +35,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg DESTINATION
 set(target odc-cli-server)
 set(test ${target}::batch_cmds_from_file_with_script)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg)
-set_tests_properties(${test} PROPERTIES TIMEOUT 10 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
+set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
 #
 # Boost.UTF tests
@@ -78,10 +78,8 @@ odc_add_boost_tests(SUITE odc
   DEPS ODC::odc
 
   EXTRA_ARGS -- --topo-file ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/odc-tests-topo.xml
-  PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
+  PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}"
 )
-set_tests_properties(odc::topology/device_crashed PROPERTIES TIMEOUT 45)
-set_tests_properties(odc::topology/underlying_session_terminated PROPERTIES TIMEOUT 45)
 odc_add_boost_tests(SUITE cc
   TESTS
   format/construction
@@ -90,5 +88,5 @@ odc_add_boost_tests(SUITE cc
 
   DEPS ODC::cc
 
-  PROPERTIES TIMEOUT 10 ENVIRONMENT "${TEST_ENV}"
+  PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}"
 )
