@@ -122,6 +122,7 @@ bool CControlService::submitDDSAgents(const SCommonParams& _common, SError& _err
     requestInfo.m_slots = _params.m_numSlots;
     requestInfo.m_config = _params.m_configFile;
     requestInfo.m_groupName = _params.m_agentGroup;
+    OLOG(info) << "dds::tools_api::SSubmitRequest: " << requestInfo;
 
     std::condition_variable cv;
 
@@ -753,7 +754,7 @@ SReturnValue CControlService::execSubmit(const SCommonParams& _common, const SSu
             // TODO: wait for all submissions only once. Depends on https://github.com/FairRootGroup/DDS/issues/411
             OLOG(info) << "Waiting for " << totalRequiredSlots << " available slots...";
             waitForNumActiveAgents(_common, error, totalRequiredSlots);
-            OLOG(info) << totalRequiredSlots << " slots are ready.";
+            OLOG(info) << "Done waiting for slots.";
         }
     }
     execRequestTrigger("Submit", _common);
