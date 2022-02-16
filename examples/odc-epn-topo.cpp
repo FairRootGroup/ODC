@@ -62,7 +62,7 @@ int main(int argc, char** argv)
         string prependExe;
 
         // Generic options
-        bpo::options_description options("epn-topo options");
+        bpo::options_description options("odc-epn-topo options");
         options.add_options()("help,h",       "Produce help message");
         options.add_options()("dd",           bpo::value<string>(&ddTopo)->default_value(""), "Filepath to XML topology of Data Distribution");
         options.add_options()("reco,r",       bpo::value<vector<string>>(&recoTopos)->multitoken(), "Space separated list of filepathes of reconstruction XML topologies");
