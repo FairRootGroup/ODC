@@ -6,9 +6,9 @@
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
 
-# epn-topo executable
+# odc-epn-topo executable
 add_executable(odc-epn-topo
-  "epn-topo.cpp"
+  "odc-epn-topo.cpp"
 )
 target_link_libraries(odc-epn-topo
   Boost::boost
