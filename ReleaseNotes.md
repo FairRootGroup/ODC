@@ -1,7 +1,15 @@
 # ODC Release Notes
 
-## v0.64 (NOT YET RELEASED)
+## v0.64 (2022-02-19)
 
+- Update odc-epn-topo to handle agent groups.
+- Annotate incoming gRPC request logs with client info.
+
+## v0.63 (2022-02-12)
+
+- Add odc-rp-epn-slurm plugin that translates AliECS resource descriptions into DDS Slurm RMS plugin configurations.
+- Serialize only running sessions to the restore file.
+- Require DDS 3.7.1 (for agent group names).
 
 ## v0.62 (2021-11-12)
 ### ODC common
