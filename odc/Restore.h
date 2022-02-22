@@ -9,57 +9,116 @@
 #ifndef __ODC__Restore__
 #define __ODC__Restore__
 
-// STD
-#include <string>
-// ODC
 #include <odc/Def.h>
-// BOOST
+#include <odc/Logger.h>
+
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-namespace odc::core
+#include <string>
+
+namespace odc::core {
+
+struct SRestorePartition
 {
-    struct SRestorePartition
+    using Vector_t = std::vector<SRestorePartition>;
+
+    SRestorePartition() {}
+    SRestorePartition(const partitionID_t& _partitionId, const std::string& _sessionId)
+        : m_partitionId(_partitionId)
+        , m_sessionId(_sessionId)
+    {}
+    SRestorePartition(const boost::property_tree::ptree& _pt) { fromPT(_pt); }
+
+    boost::property_tree::ptree toPT() const
     {
-        using Vector_t = std::vector<SRestorePartition>;
-
-        SRestorePartition();
-        SRestorePartition(const partitionID_t& _partitionId, const std::string& _sessionId);
-        SRestorePartition(const boost::property_tree::ptree& _pt);
-
-        boost::property_tree::ptree toPT() const;
-        void fromPT(const boost::property_tree::ptree& _pt);
-
-        partitionID_t m_partitionId;
-        std::string m_sessionId;
-    };
-
-    struct SRestoreData
+        boost::property_tree::ptree pt;
+        pt.put<partitionID_t>("partition", m_partitionId);
+        pt.put<std::string>("session", m_sessionId);
+        return pt;
+    }
+    void fromPT(const boost::property_tree::ptree& _pt)
     {
-        SRestoreData();
-        SRestoreData(const boost::property_tree::ptree& _pt);
+        m_partitionId = _pt.get<partitionID_t>("partition", "");
+        m_sessionId = _pt.get<std::string>("session", "");
+    }
 
-        boost::property_tree::ptree toPT() const;
-        void fromPT(const boost::property_tree::ptree& _pt);
+    partitionID_t m_partitionId;
+    std::string m_sessionId;
+};
 
-        SRestorePartition::Vector_t m_partitions;
-    };
+struct SRestoreData
+{
+    SRestoreData() {}
+    SRestoreData(const boost::property_tree::ptree& _pt) { fromPT(_pt); }
 
-    class CRestoreFile
+    boost::property_tree::ptree toPT() const
     {
-      public:
-        CRestoreFile(const std::string& _id);
-        CRestoreFile(const std::string& _id, const SRestoreData& _data);
+        boost::property_tree::ptree children;
+        for (const auto& v : m_partitions) {
+            children.push_back(make_pair("", v.toPT()));
+        }
+        boost::property_tree::ptree pt;
+        pt.add_child("sessions", children);
+        return pt;
+    }
+    void fromPT(const boost::property_tree::ptree& _pt)
+    {
+        auto rpt{ _pt.get_child_optional("sessions") };
+        if (rpt) {
+            for (const auto& v : rpt.get()) {
+                m_partitions.push_back(SRestorePartition(v.second));
+            }
+        }
+    }
 
-        void write();
-        const SRestoreData& read();
+    SRestorePartition::Vector_t m_partitions;
+};
 
-      private:
-        std::string getDir() const;
-        std::string getFilepath() const;
+class CRestoreFile
+{
+  public:
+    CRestoreFile(const std::string& _id)
+        : m_id(_id)
+    {}
+    CRestoreFile(const std::string& _id, const SRestoreData& _data)
+        : m_id(_id)
+        , m_data(_data)
+    {}
 
-        std::string m_id;
-        SRestoreData m_data;
-    };
+    void write()
+    {
+        try {
+            auto dir{ boost::filesystem::path(getDir()) };
+            if (!boost::filesystem::exists(dir) && !boost::filesystem::create_directories(dir)) {
+                throw std::runtime_error(toString("Restore failed to create directory ", std::quoted(dir.string())));
+            }
+
+            boost::property_tree::write_json(getFilepath(), m_data.toPT());
+        } catch (const std::exception& _e) {
+            OLOG(error) << "Failed to write restore data " << quoted(m_id) << " to file " << quoted(getFilepath()) << ": " << _e.what();
+        }
+    }
+    const SRestoreData& read()
+    {
+        try {
+            boost::property_tree::ptree pt;
+            boost::property_tree::read_json(getFilepath(), pt);
+            m_data = SRestoreData(pt);
+        } catch (const std::exception& _e) {
+            OLOG(error) << "Failed to read restore data " << quoted(m_id) << " from file " << quoted(getFilepath()) << ": " << _e.what();
+        }
+        return m_data;
+    }
+
+  private:
+    std::string getDir() const { return smart_path(toString("$HOME/.ODC/restore/")); }
+    std::string getFilepath() const { return toString(getDir(), "odc_", m_id, ".json"); }
+
+    std::string m_id;
+    SRestoreData m_data;
+};
+
 } // namespace odc::core
 
 #endif /* defined(__ODC__Restore__) */

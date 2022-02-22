@@ -39,7 +39,6 @@ add_library(${target} STATIC
   "PluginManager.cpp"
   "PluginManager.h"
   "Process.h"
-  "Restore.cpp"
   "Restore.h"
   "Semaphore.cpp"
   "Semaphore.h"
