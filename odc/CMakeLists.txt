@@ -24,7 +24,6 @@ add_library(${target} STATIC
   "CliHelper.cpp"
   "CliHelper.h"
   "CliServiceHelper.h"
-  "CmdsFile.cpp"
   "CmdsFile.h"
   "ControlService.cpp"
   "ControlService.h"
