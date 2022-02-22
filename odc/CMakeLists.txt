@@ -35,7 +35,6 @@ add_library(${target} STATIC
   "Logger.h"
   "LoggerSeverity.h"
   "MiscUtils.h"
-  "PluginManager.cpp"
   "PluginManager.h"
   "Process.h"
   "Restore.h"
