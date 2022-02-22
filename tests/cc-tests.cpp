@@ -35,8 +35,7 @@ BOOST_AUTO_TEST_CASE(construction)
     Cmds setPropertiesCmds(make<SetProperties>(42, props));
     Cmds subscriptionHeartbeatCmds(make<SubscriptionHeartbeat>(60000));
     Cmds currentStateCmds(make<CurrentState>("somedeviceid", State::Running));
-    Cmds transitionStatusCmds(
-        make<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop, State::Running));
+    Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop, State::Running));
     Cmds configCmds(make<Config>("somedeviceid", "someconfig"));
     Cmds stateChangeSubscriptionCmds(make<StateChangeSubscription>("somedeviceid", 123456, Result::Ok));
     Cmds stateChangeUnsubscriptionCmds(make<StateChangeUnsubscription>("somedeviceid", 123456, Result::Ok));
@@ -45,54 +44,68 @@ BOOST_AUTO_TEST_CASE(construction)
     Cmds propertiesSetCmds(make<PropertiesSet>("somedeviceid", 123456, 42, Result::Ok));
 
     BOOST_TEST(checkStateCmds.At(0).GetType() == Type::check_state);
+
     BOOST_TEST(changeStateCmds.At(0).GetType() == Type::change_state);
     BOOST_TEST(static_cast<ChangeState&>(changeStateCmds.At(0)).GetTransition() == Transition::Stop);
+
     BOOST_TEST(dumpConfigCmds.At(0).GetType() == Type::dump_config);
+
     BOOST_TEST(subscribeToStateChangeCmds.At(0).GetType() == Type::subscribe_to_state_change);
     BOOST_TEST(static_cast<SubscribeToStateChange&>(subscribeToStateChangeCmds.At(0)).GetInterval() == 60000);
+
     BOOST_TEST(unsubscribeFromStateChangeCmds.At(0).GetType() == Type::unsubscribe_from_state_change);
+
     BOOST_TEST(stateChangeExitingReceivedCmds.At(0).GetType() == Type::state_change_exiting_received);
+
     BOOST_TEST(getPropertiesCmds.At(0).GetType() == Type::get_properties);
     BOOST_TEST(static_cast<GetProperties&>(getPropertiesCmds.At(0)).GetRequestId() == 66);
     BOOST_TEST(static_cast<GetProperties&>(getPropertiesCmds.At(0)).GetQuery() == "k[12]");
+
     BOOST_TEST(setPropertiesCmds.At(0).GetType() == Type::set_properties);
     BOOST_TEST(static_cast<SetProperties&>(setPropertiesCmds.At(0)).GetRequestId() == 42);
     BOOST_TEST(static_cast<SetProperties&>(setPropertiesCmds.At(0)).GetProps() == props);
+
     BOOST_TEST(subscriptionHeartbeatCmds.At(0).GetType() == Type::subscription_heartbeat);
     BOOST_TEST(static_cast<SubscriptionHeartbeat&>(subscriptionHeartbeatCmds.At(0)).GetInterval() == 60000);
+
     BOOST_TEST(currentStateCmds.At(0).GetType() == Type::current_state);
     BOOST_TEST(static_cast<CurrentState&>(currentStateCmds.At(0)).GetDeviceId() == "somedeviceid");
     BOOST_TEST(static_cast<CurrentState&>(currentStateCmds.At(0)).GetCurrentState() == State::Running);
+
     BOOST_TEST(transitionStatusCmds.At(0).GetType() == Type::transition_status);
     BOOST_TEST(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetDeviceId() == "somedeviceid");
     BOOST_TEST(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetTaskId() == 123456);
     BOOST_TEST(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetResult() == Result::Ok);
     BOOST_TEST(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetTransition() == Transition::Stop);
     BOOST_TEST(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetCurrentState() == State::Running);
+
     BOOST_TEST(configCmds.At(0).GetType() == Type::config);
     BOOST_TEST(static_cast<Config&>(configCmds.At(0)).GetDeviceId() == "somedeviceid");
     BOOST_TEST(static_cast<Config&>(configCmds.At(0)).GetConfig() == "someconfig");
+
     BOOST_TEST(stateChangeSubscriptionCmds.At(0).GetType() == Type::state_change_subscription);
-    BOOST_TEST(static_cast<StateChangeSubscription&>(stateChangeSubscriptionCmds.At(0)).GetDeviceId() ==
-               "somedeviceid");
+    BOOST_TEST(static_cast<StateChangeSubscription&>(stateChangeSubscriptionCmds.At(0)).GetDeviceId() == "somedeviceid");
     BOOST_TEST(static_cast<StateChangeSubscription&>(stateChangeSubscriptionCmds.At(0)).GetTaskId() == 123456);
     BOOST_TEST(static_cast<StateChangeSubscription&>(stateChangeSubscriptionCmds.At(0)).GetResult() == Result::Ok);
+
     BOOST_TEST(stateChangeUnsubscriptionCmds.At(0).GetType() == Type::state_change_unsubscription);
-    BOOST_TEST(static_cast<StateChangeUnsubscription&>(stateChangeUnsubscriptionCmds.At(0)).GetDeviceId() ==
-               "somedeviceid");
+    BOOST_TEST(static_cast<StateChangeUnsubscription&>(stateChangeUnsubscriptionCmds.At(0)).GetDeviceId() == "somedeviceid");
     BOOST_TEST(static_cast<StateChangeUnsubscription&>(stateChangeUnsubscriptionCmds.At(0)).GetTaskId() == 123456);
     BOOST_TEST(static_cast<StateChangeUnsubscription&>(stateChangeUnsubscriptionCmds.At(0)).GetResult() == Result::Ok);
+
     BOOST_TEST(stateChangeCmds.At(0).GetType() == Type::state_change);
     BOOST_TEST(static_cast<StateChange&>(stateChangeCmds.At(0)).GetDeviceId() == "somedeviceid");
     BOOST_TEST(static_cast<StateChange&>(stateChangeCmds.At(0)).GetTaskId() == 123456);
     BOOST_TEST(static_cast<StateChange&>(stateChangeCmds.At(0)).GetLastState() == State::Running);
     BOOST_TEST(static_cast<StateChange&>(stateChangeCmds.At(0)).GetCurrentState() == State::Ready);
+
     BOOST_TEST(propertiesCmds.At(0).GetType() == Type::properties);
     BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetDeviceId() == "somedeviceid");
     BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetTaskId() == 123456);
     BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetRequestId() == 66);
     BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetResult() == Result::Ok);
     BOOST_TEST(static_cast<Properties&>(propertiesCmds.At(0)).GetProps() == props);
+
     BOOST_TEST(propertiesSetCmds.At(0).GetType() == Type::properties_set);
     BOOST_TEST(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetDeviceId() == "somedeviceid");
     BOOST_TEST(static_cast<Properties&>(propertiesSetCmds.At(0)).GetTaskId() == 123456);
@@ -130,10 +143,8 @@ void checkCommands(Cmds& cmds)
     int count = 0;
     auto const props(std::vector<std::pair<std::string, std::string>>({ { "k1", "v1" }, { "k2", "v2" } }));
 
-    for (const auto& cmd : cmds)
-    {
-        switch (cmd->GetType())
-        {
+    for (const auto& cmd : cmds) {
+        switch (cmd->GetType()) {
             case Type::check_state:
                 ++count;
                 break;
@@ -253,6 +264,4 @@ BOOST_AUTO_TEST_CASE(serialization_json)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-int main(int argc, char* argv[]) {
-    return boost::unit_test::unit_test_main(init_unit_test, argc, argv);
-}
+int main(int argc, char* argv[]) { return boost::unit_test::unit_test_main(init_unit_test, argc, argv); }
