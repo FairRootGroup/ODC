@@ -1,4 +1,4 @@
-<topology name="EPNExample">
+<topology name="Example">
 
     <declrequirement name="onlineReq" type="groupname" value="online"/>
     <declrequirement name="calibReq" type="groupname" value="calib"/>
@@ -33,7 +33,7 @@
 
     <declcollection name="SamplersSinks">
         <requirements>
-            <name>onlineReq</name>
+            <name>calibReq</name>
         </requirements>
        <tasks>
            <name>Sampler</name>
@@ -43,16 +43,16 @@
 
     <declcollection name="Processors">
         <requirements>
-            <name>calibReq</name>
+            <name>onlineReq</name>
         </requirements>
        <tasks>
-           <name n="8">Processor</name>
+           <name>Processor</name>
        </tasks>
     </declcollection>
 
     <main name="main">
-        <group name="EPNGroup" n="@ODC_VAR_EXAMPLE_N@">
-            <collection>SamplersSinks</collection>
+        <collection>SamplersSinks</collection>
+        <group name="ProcessorGroup" n="@ODC_VAR_EXAMPLE_N@">
             <collection>Processors</collection>
         </group>
     </main>

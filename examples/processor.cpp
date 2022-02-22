@@ -17,23 +17,23 @@ namespace bpo = boost::program_options;
 
 struct Processor : fair::mq::Device
 {
-    Processor()
-    {
-        OnData("data1", &Processor::HandleData);
-    }
+    Processor() { OnData("data1", &Processor::HandleData); }
 
     void Init() override
     {
         GetConfig()->SetProperty<std::string>("crash", "no");
-        GetConfig()->SubscribeAsString("device",
-                                       [](auto key, auto value)
-                                       {
-                                           if (key == "crash" && value == "yes")
-                                           {
-                                               LOG(warn) << "<<< CRASH >>>";
-                                               std::abort();
-                                           }
-                                       });
+        GetConfig()->SubscribeAsString("device", [](auto key, auto value) {
+            if (key == "crash" && value == "yes") {
+                LOG(warn) << "<<< CRASH >>>";
+                std::abort();
+            }
+        });
+
+        selfDestruct = GetConfig()->GetProperty<bool>("self-destruct", false);
+        if (selfDestruct) {
+            LOG(warn) << "<<< --self-destruct is true, aborting >>>";
+            std::abort();
+        }
     }
 
     bool HandleData(FairMQMessagePtr& msg, int)
@@ -44,31 +44,24 @@ struct Processor : fair::mq::Device
         std::string* text = new std::string(static_cast<char*>(msg->GetData()), msg->GetSize());
         *text += " (modified by " + fId + ")";
 
-        // create message object with a pointer to the data buffer,
-        // its size,
-        // custom deletion function (called when transfer is done),
-        // and pointer to the object managing the data buffer
-        FairMQMessagePtr msg2(NewMessage(
-            const_cast<char*>(text->c_str()),
-            text->length(),
-            [](void* /*data*/, void* object) { delete static_cast<std::string*>(object); },
-            text));
+        FairMQMessagePtr msg2(NewMessage(const_cast<char*>(text->c_str()), text->length(), [](void* /*data*/, void* object) {
+            delete static_cast<std::string*>(object);
+        }, text));
 
         // Send out the output message
-        if (Send(msg2, "data2") < 0)
-        {
+        if (Send(msg2, "data2") < 0) {
             return false;
         }
 
         return true;
     }
+
+    bool selfDestruct = false;
 };
 
-void addCustomOptions(bpo::options_description& /*options*/)
+void addCustomOptions(bpo::options_description& options)
 {
+    options.add_options()("self-destruct", bpo::value<bool>()->default_value(false), "If true, abort() during Init()");
 }
 
-std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/)
-{
-    return std::make_unique<Processor>();
-}
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/) { return std::make_unique<Processor>(); }
