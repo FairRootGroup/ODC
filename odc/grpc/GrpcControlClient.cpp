@@ -57,11 +57,13 @@ std::string CGrpcControlClient::requestActivate(const SCommonParams& _common, co
 
 std::string CGrpcControlClient::requestRun(const SCommonParams& _common,
                                            const odc::core::SInitializeParams& /*_initializeParams*/,
-                                           const odc::core::SSubmitParams& /*_submitParams*/,
+                                           const odc::core::SSubmitParams& _submitParams,
                                            const odc::core::SActivateParams& _activateParams)
 {
     odc::RunRequest request;
     updateCommonParams(_common, &request);
+    request.set_plugin(_submitParams.m_plugin);
+    request.set_resources(_submitParams.m_resources);
     request.set_topology(_activateParams.m_topologyFile);
     request.set_content(_activateParams.m_topologyContent);
     request.set_script(_activateParams.m_topologyScript);
