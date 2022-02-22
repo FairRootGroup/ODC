@@ -15,42 +15,68 @@
 #include <memory>
 #include <mutex>
 
-namespace odc::core
+namespace odc::core {
+
+/**
+ * @brief A simple blocking semaphore.
+ */
+struct Semaphore
 {
+    Semaphore()
+        : Semaphore(0)
+    {}
+    explicit Semaphore(std::size_t initial_count)
+        : fCount(initial_count)
+    {}
 
-    /**
-     * @brief A simple blocking semaphore.
-     */
-    struct Semaphore
+    void Wait()
     {
-        Semaphore();
-        explicit Semaphore(std::size_t initial_count);
-
-        auto Wait() -> void;
-        auto Signal() -> void;
-        auto GetCount() const -> std::size_t;
-
-      private:
-        std::size_t fCount;
-        mutable std::mutex fMutex;
-        std::condition_variable fCv;
-    };
-
-    /**
-     * @brief A simple copyable blocking semaphore.
-     */
-    struct SharedSemaphore
+        std::unique_lock<std::mutex> lk(fMutex);
+        if (fCount > 0) {
+            --fCount;
+        } else {
+            fCv.wait(lk, [this] { return fCount > 0; });
+            --fCount;
+        }
+    }
+    void Signal()
     {
-        SharedSemaphore();
-        explicit SharedSemaphore(std::size_t initial_count);
+        std::unique_lock<std::mutex> lk(fMutex);
+        ++fCount;
+        lk.unlock();
+        fCv.notify_one();
+    }
+    std::size_t GetCount() const
+    {
+        std::unique_lock<std::mutex> lk(fMutex);
+        return fCount;
+    }
 
-        auto Wait() -> void;
-        auto Signal() -> void;
-        auto GetCount() const -> std::size_t;
+  private:
+    std::size_t fCount;
+    mutable std::mutex fMutex;
+    std::condition_variable fCv;
+};
 
-      private:
-        std::shared_ptr<Semaphore> fSemaphore;
-    };
+/**
+ * @brief A simple copyable blocking semaphore.
+ */
+struct SharedSemaphore
+{
+    SharedSemaphore()
+        : fSemaphore(std::make_shared<Semaphore>())
+    {}
+    explicit SharedSemaphore(std::size_t initial_count)
+        : fSemaphore(std::make_shared<Semaphore>(initial_count))
+    {}
+
+    void Wait() { fSemaphore->Wait(); }
+    void Signal() { fSemaphore->Signal(); }
+    std::size_t GetCount() const { return fSemaphore->GetCount(); }
+
+  private:
+    std::shared_ptr<Semaphore> fSemaphore;
+};
 
 } // namespace odc::core
 
