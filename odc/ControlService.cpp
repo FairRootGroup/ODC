@@ -534,6 +534,18 @@ void CControlService::fillError(const SCommonParams& _common, SError& _error, Er
     OLOG(error, _common) << _error;
 }
 
+void CControlService::fillFatalError(const SCommonParams& _common, SError& _error, ErrorCode _errorCode, const string& _msg)
+{
+    _error.m_code = MakeErrorCode(_errorCode);
+    _error.m_details = _msg;
+    stringstream ss(_error.m_details);
+    std::string line;
+    OLOG(fatal, _common) << _error.m_code;
+    while (std::getline(ss, line, '\n')) {
+        OLOG(fatal, _common) << line;
+    }
+}
+
 CControlService::SSessionInfo::Ptr_t CControlService::getOrCreateSessionInfo(const SCommonParams& _common)
 {
     const auto& prt{ _common.m_partitionID };
@@ -772,7 +784,7 @@ SReturnValue CControlService::execActivate(const SCommonParams& _common, const S
         try {
             topo = topoFilepath(_common, _params);
         } catch (exception& _e) {
-            fillError(_common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
+            fillFatalError(_common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
         }
         if (!error.m_code) {
             activateDDSTopology(_common, error, topo, STopologyRequest::request_t::EUpdateType::ACTIVATE) && createTopo(_common, error, topo) && createFairMQTopo(_common, error, topo);
@@ -819,7 +831,7 @@ SReturnValue CControlService::execUpdate(const SCommonParams& _common, const SUp
     try {
         topo = topoFilepath(_common, _params);
     } catch (exception& _e) {
-        fillError(_common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
+        fillFatalError(_common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
     }
 
     if (!error.m_code) {

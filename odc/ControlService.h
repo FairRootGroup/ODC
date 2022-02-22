@@ -514,6 +514,7 @@ class CControlService
     bool changeStateReset(const SCommonParams& _common, SError& _error, const std::string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState = nullptr);
 
     void fillError(const SCommonParams& _common, SError& _error, ErrorCode _errorCode, const std::string& _msg);
+    void fillFatalError(const SCommonParams& _common, SError& _error, ErrorCode _errorCode, const std::string& _msg);
 
     AggregatedTopologyState aggregateStateForPath(const DDSTopologyPtr_t& _topo, const FairMQTopologyState& _fairmq, const std::string& _path);
     void fairMQToODCTopologyState(const DDSTopologyPtr_t& _topo, const FairMQTopologyState& _fairmq, TopologyState* _odc);
