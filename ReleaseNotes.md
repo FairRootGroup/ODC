@@ -1,5 +1,10 @@
 # ODC Release Notes
 
+## 0.65 (2022-02-23)
+
+- odc-grpc-client: Add missing Run request parameters for plugin and resource.
+- Promote topology generation script errors to fatal and output them line by line.
+
 ## 0.64 (2022-02-19)
 
 - Update odc-epn-topo to handle agent groups.
