@@ -761,12 +761,16 @@ SReturnValue CControlService::execSubmit(const SCommonParams& _common, const SSu
         for (const auto& param : ddsParams) {
             OLOG(info) << "Submitting " << param;
             // Submit DDS agents
-            submitDDSAgents(_common, error, param);
-            totalRequiredSlots += param.m_numRequiredSlots;
-            // TODO: wait for all submissions only once. Depends on https://github.com/FairRootGroup/DDS/issues/411
-            OLOG(info) << "Waiting for " << totalRequiredSlots << " available slots...";
-            waitForNumActiveAgents(_common, error, totalRequiredSlots);
-            OLOG(info) << "Done waiting for slots.";
+            if (submitDDSAgents(_common, error, param)) {
+                totalRequiredSlots += param.m_numRequiredSlots;
+                // TODO: wait for all submissions only once. Depends on https://github.com/FairRootGroup/DDS/issues/411
+                OLOG(info) << "Waiting for " << totalRequiredSlots << " available slots...";
+                waitForNumActiveAgents(_common, error, totalRequiredSlots);
+                OLOG(info) << "Done waiting for slots.";
+            } else {
+                OLOG(error) << "Submission failed";
+                break;
+            }
         }
     }
     execRequestTrigger("Submit", _common);
