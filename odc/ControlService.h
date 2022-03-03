@@ -534,8 +534,9 @@ class CControlService
         if (count != 1) {
             throw std::runtime_error("Either topology filepath, content or script has to be set");
         }
-        if (!_params.m_topologyFile.empty())
+        if (!_params.m_topologyFile.empty()) {
             return _params.m_topologyFile;
+        }
 
         std::string content{ _params.m_topologyContent };
 
@@ -552,7 +553,7 @@ class CControlService
             execute(cmd, timeout, &out, &err, &exitCode);
 
             if (exitCode != EXIT_SUCCESS) {
-                throw std::runtime_error(toString("Topology script ", quoted(cmd), " execution failed with exit code: ", exitCode, "; error message: ", err));
+                throw std::runtime_error(toString("Topology generation script ", quoted(cmd), " failed with exit code: ", exitCode, "; stderr: ", quoted(err), "; stdout: ", quoted(out)));
             }
 
             const std::string sout{ out.substr(0, std::min(out.length(), size_t(20))) };
@@ -565,11 +566,11 @@ class CControlService
         const boost::filesystem::path tmpPath{ boost::filesystem::temp_directory_path() / boost::filesystem::unique_path() };
         boost::filesystem::create_directories(tmpPath);
         const boost::filesystem::path filepath{ tmpPath / "topology.xml" };
-        std::ofstream f(filepath.string());
-        if (!f.is_open()) {
+        std::ofstream file(filepath.string());
+        if (!file.is_open()) {
             throw std::runtime_error(toString("Failed to create temp topology file ", quoted(filepath.string())));
         }
-        f << content;
+        file << content;
         OLOG(info, _common) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
         return filepath.string();
     }
