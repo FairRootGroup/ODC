@@ -83,8 +83,10 @@ class CCliServiceHelper
 #ifdef READLINE_AVAIL
     static char* commandGenerator(const char* text, int index)
     {
-        static const std::vector<std::string> commands{ ".quit",   ".init",  ".submit", ".activate", ".run",  ".prop", ".upscale", ".downscale", ".state",
-                                                        ".config", ".start", ".stop",   ".reset",    ".term", ".down", ".status",  ".batch",     ".sleep" };
+        static const std::vector<std::string> commands{
+            ".quit",   ".init",  ".submit", ".activate", ".run",  ".prop", ".upscale", ".downscale", ".state",
+            ".config", ".start", ".stop",   ".reset",    ".term", ".down", ".status",  ".batch",     ".sleep", ".help"
+        };
         static std::vector<std::string> matches;
 
         if (index == 0) {
@@ -240,6 +242,8 @@ class CCliServiceHelper
             execBatch(args);
         } else if (cmd == ".sleep") {
             execSleep(args);
+        } else if (cmd == ".help") {
+            printDescription();
         } else {
             if (cmd.length() > 0) {
                 OLOG(clean) << "Unknown command " << _cmd;
@@ -274,6 +278,7 @@ class CCliServiceHelper
                   << ".status - Show statuses of managed partitions/sessions.\n"
                   << ".batch - Execute an array of commands.\n"
                   << ".sleep - Sleep for X ms.\n"
+                  << ".help - Print available commands.\n"
                   << ".quit - Quit the program.\n" << std::endl;
     }
 };
