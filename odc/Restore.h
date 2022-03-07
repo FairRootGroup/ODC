@@ -9,7 +9,6 @@
 #ifndef __ODC__Restore__
 #define __ODC__Restore__
 
-#include <odc/Def.h>
 #include <odc/Logger.h>
 
 #include <boost/property_tree/json_parser.hpp>
@@ -24,7 +23,7 @@ struct SRestorePartition
     using Vector_t = std::vector<SRestorePartition>;
 
     SRestorePartition() {}
-    SRestorePartition(const partitionID_t& _partitionId, const std::string& _sessionId)
+    SRestorePartition(const std::string& _partitionId, const std::string& _sessionId)
         : m_partitionId(_partitionId)
         , m_sessionId(_sessionId)
     {}
@@ -33,17 +32,17 @@ struct SRestorePartition
     boost::property_tree::ptree toPT() const
     {
         boost::property_tree::ptree pt;
-        pt.put<partitionID_t>("partition", m_partitionId);
+        pt.put<std::string>("partition", m_partitionId);
         pt.put<std::string>("session", m_sessionId);
         return pt;
     }
     void fromPT(const boost::property_tree::ptree& _pt)
     {
-        m_partitionId = _pt.get<partitionID_t>("partition", "");
+        m_partitionId = _pt.get<std::string>("partition", "");
         m_sessionId = _pt.get<std::string>("session", "");
     }
 
-    partitionID_t m_partitionId;
+    std::string m_partitionId;
     std::string m_sessionId;
 };
 

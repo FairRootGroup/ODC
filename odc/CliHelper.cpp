@@ -74,7 +74,7 @@ void CCliHelper::addTimeoutOptions(bpo::options_description& options, size_t& ti
 
 void CCliHelper::addOptions(bpo::options_description& options, SBatchOptions& batchOptions)
 {
-    const vector<partitionID_t> defaultPartitions{ "a1b2c3", "d4e5f6" };
+    const vector<std::string> defaultPartitions{ "a1b2c3", "d4e5f6" };
     const string defaultUpTopo{ kODCDataDir + "/ex-dds-topology-infinite-up.xml" };
     const string defaultDownTopo{ kODCDataDir + "/ex-dds-topology-infinite-down.xml" };
     const string upStr{ ".upscale --topo " + defaultUpTopo };
@@ -122,15 +122,15 @@ void CCliHelper::addRestoreOptions(bpo::options_description& options, string& re
 
 // Request specific options
 
-void CCliHelper::addOptions(bpo::options_description& options, partitionID_t& partitionID)
+void CCliHelper::addPartitionOptions(bpo::options_description& options, std::string& partitionID)
 {
-    options.add_options()("id", bpo::value<partitionID_t>(&partitionID)->default_value(""), "Partition ID");
+    options.add_options()("id", bpo::value<std::string>(&partitionID)->default_value(""), "Partition ID");
 }
 
 void CCliHelper::addOptions(bpo::options_description& options, SCommonParams& common)
 {
-    options.add_options()("id", bpo::value<partitionID_t>(&common.m_partitionID)->default_value(""), "Partition ID");
-    options.add_options()("run", bpo::value<runNr_t>(&common.m_runNr)->default_value(0), "Run Nr");
+    options.add_options()("id", bpo::value<std::string>(&common.m_partitionID)->default_value(""), "Partition ID");
+    options.add_options()("run", bpo::value<uint64_t>(&common.m_runNr)->default_value(0), "Run Nr");
     options.add_options()("timeout", bpo::value<size_t>(&common.m_timeout)->default_value(0), "Request timeout");
 }
 
@@ -198,7 +198,7 @@ void CCliHelper::addRequestTriggersOptions(bpo::options_description& options, CP
 
 // Extra step of options parsing
 
-void CCliHelper::parseOptions(const bpo::variables_map& vm, partitionID_t& /* partitionID */, SSetPropertiesParams& params)
+void CCliHelper::parseOptions(const bpo::variables_map& vm, std::string& /* partitionID */, SSetPropertiesParams& params)
 {
     if (vm.count("prop")) {
         const auto& kvp(vm["prop"].as<vector<string>>());

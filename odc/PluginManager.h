@@ -9,7 +9,6 @@
 #ifndef __ODC__PluginManager__
 #define __ODC__PluginManager__
 
-#include <odc/Def.h>
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/PluginManager.h>
@@ -68,7 +67,7 @@ class CPluginManager
         }
     }
 
-    std::string execPlugin(const std::string& _plugin, const std::string& _resources, const partitionID_t& _partitionID, runNr_t _runNr) const
+    std::string execPlugin(const std::string& _plugin, const std::string& _resources, const std::string& _partitionID, uint64_t _runNr) const
     {
         // Check if plugin exists
         auto it = m_plugins.find(_plugin);

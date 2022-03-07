@@ -48,7 +48,7 @@ class CGrpcService final
     void setupGeneralReply(odc::GeneralReply* _response, const odc::core::SReturnValue& _value);
     void setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value);
     void setupStatusReply(odc::StatusReply* _response, const odc::core::SStatusReturnValue& _value);
-    std::mutex& getMutex(const odc::core::partitionID_t& _partitionID);
+    std::mutex& getMutex(const std::string& _partitionID);
 
     template<typename Request_t>
     core::SCommonParams commonParams(const Request_t* _request);

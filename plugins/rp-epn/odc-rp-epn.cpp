@@ -84,7 +84,7 @@ int main(int argc, char** argv)
         string host;
         bool release;
         CLogger::SConfig logConfig;
-        partitionID_t partitionID;
+        std::string partitionID;
         string bash;
         size_t numSlots{ 1 };
         string wrkDir;
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
         CCliHelper::addHelpOptions(opts);
         CCliHelper::addVersionOptions(opts);
         CCliHelper::addLogOptions(opts, logConfig);
-        CCliHelper::addOptions(opts, partitionID);
+        CCliHelper::addPartitionOptions(opts, partitionID);
         opts.add_options()("res", bpo::value<string>(&res)->default_value("{\"zone\":\"online\",\"n\":1}"), "Resource description in JSON format");
         opts.add_options()("host", bpo::value<string>(&host)->default_value("localhost:50001"), "EPN controller endpoint");
         opts.add_options()("release", bpo::bool_switch(&release)->default_value(false), "If set then release allocation");

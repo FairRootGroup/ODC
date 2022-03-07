@@ -28,7 +28,6 @@ add_library(${target} STATIC
   "ControlService.cpp"
   "ControlService.h"
   "DDSSubmit.h"
-  "Def.h"
   "Error.cpp"
   "Error.h"
   "InfoLogger.h"

@@ -95,7 +95,7 @@ class CDDSSubmit : public CPluginManager
         registerDefaultPlugin("odc-rp-same");
     }
 
-    std::vector<SParams> makeParams(const std::string& _plugin, const std::string& _resources, const partitionID_t& _partitionID, runNr_t _runNr)
+    std::vector<SParams> makeParams(const std::string& _plugin, const std::string& _resources, const std::string& _partitionID, uint64_t _runNr)
     {
         std::vector<SParams> params;
         std::stringstream ss{ execPlugin(_plugin, _resources, _partitionID, _runNr) };

@@ -56,7 +56,7 @@ class CCliHelper
 
     // Request specific options
 
-    static void addOptions(boost::program_options::options_description& options, partitionID_t& partitionID);
+    static void addPartitionOptions(boost::program_options::options_description& options, std::string& partitionID);
     static void addOptions(boost::program_options::options_description& options, SCommonParams& common);
     static void addOptions(boost::program_options::options_description& options, SInitializeParams& params);
     static void addOptions(boost::program_options::options_description& options, SActivateParams& params);
@@ -77,7 +77,7 @@ class CCliHelper
 
     template<typename... RequestParams_t>
     static void parseOptions(const boost::program_options::variables_map& /*vm*/, RequestParams_t&&... /*params*/) {} // Default implementation does nothing
-    static void parseOptions(const boost::program_options::variables_map& vm, partitionID_t& partitionID, SSetPropertiesParams& params);
+    static void parseOptions(const boost::program_options::variables_map& vm, std::string& partitionID, SSetPropertiesParams& params);
     static void parseOptions(const boost::program_options::variables_map& vm, CCliHelper::SBatchOptions& params);
 };
 

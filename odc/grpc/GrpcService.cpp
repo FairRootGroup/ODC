@@ -304,7 +304,7 @@ void CGrpcService::setupStatusReply(odc::StatusReply* _response, const odc::core
     }
 }
 
-std::mutex& CGrpcService::getMutex(const partitionID_t& _partitionID)
+std::mutex& CGrpcService::getMutex(const std::string& _partitionID)
 {
     std::lock_guard<std::mutex> lock(m_mutexMapMutex);
     auto it{ m_mutexMap.find(_partitionID) };

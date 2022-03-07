@@ -11,7 +11,6 @@
 
 // ODC
 #include <odc/DDSSubmit.h>
-#include <odc/Def.h>
 #include <odc/Process.h>
 #include <odc/Topology.h>
 // BOOST
@@ -80,14 +79,14 @@ struct SPartitionStatus
 
     SPartitionStatus() {}
 
-    SPartitionStatus(const partitionID_t& _partitionID, const std::string& _sessionID, ESessionStatus _sessionStatus, AggregatedTopologyState _aggregatedState)
+    SPartitionStatus(const std::string& _partitionID, const std::string& _sessionID, ESessionStatus _sessionStatus, AggregatedTopologyState _aggregatedState)
         : m_partitionID(_partitionID)
         , m_sessionID(_sessionID)
         , m_sessionStatus(_sessionStatus)
         , m_aggregatedState(_aggregatedState)
     {}
 
-    partitionID_t m_partitionID;                                                     ///< Partition ID
+    std::string m_partitionID;                                                     ///< Partition ID
     std::string m_sessionID;                                                         ///< Session ID of DDS
     ESessionStatus m_sessionStatus{ ESessionStatus::unknown };                       ///< DDS session status
     AggregatedTopologyState m_aggregatedState{ AggregatedTopologyState::Undefined }; ///< Aggregated state of the affected divices
@@ -131,8 +130,8 @@ struct SReturnValue : public SBaseReturnValue
                  const std::string& _msg,
                  size_t _execTime,
                  const SError& _error,
-                 const partitionID_t& _partitionID,
-                 runNr_t _runNr,
+                 const std::string& _partitionID,
+                 uint64_t _runNr,
                  const std::string& _sessionID,
                  AggregatedTopologyState _aggregatedState,
                  SReturnDetails::ptr_t _details = nullptr)
@@ -144,8 +143,8 @@ struct SReturnValue : public SBaseReturnValue
         , m_details(_details)
     {}
 
-    partitionID_t m_partitionID;                                                     ///< Partition ID
-    runNr_t m_runNr{ 0 };                                                            ///< Run number
+    std::string m_partitionID;                                                     ///< Partition ID
+    uint64_t m_runNr{ 0 };                                                            ///< Run number
     std::string m_sessionID;                                                         ///< Session ID of DDS
     AggregatedTopologyState m_aggregatedState{ AggregatedTopologyState::Undefined }; ///< Aggregated state of the affected divices
 
@@ -170,14 +169,14 @@ struct SCommonParams
 {
     SCommonParams() {}
 
-    SCommonParams(const partitionID_t& _partitionID, runNr_t _runNr, int _timeout)
+    SCommonParams(const std::string& _partitionID, uint64_t _runNr, int _timeout)
         : m_partitionID(_partitionID)
         , m_runNr(_runNr)
         , m_timeout(_timeout)
     {}
 
-    partitionID_t m_partitionID; ///< Partition ID.
-    runNr_t m_runNr{ 0 };        ///< Run number.
+    std::string m_partitionID; ///< Partition ID.
+    uint64_t m_runNr{ 0 };        ///< Run number.
     size_t m_timeout{ 0 };       ///< Request timeout in seconds. 0 means "not set"
 
     // \brief ostream operator.
@@ -361,12 +360,12 @@ class CControlService
     struct SSessionInfo
     {
         using Ptr_t = std::shared_ptr<SSessionInfo>;
-        using Map_t = std::map<partitionID_t, Ptr_t>;
+        using Map_t = std::map<std::string, Ptr_t>;
 
         DDSTopologyPtr_t m_topo{ nullptr };              ///< DDS topology
         DDSSessionPtr_t m_session{ nullptr };            ///< DDS session
         FairMQTopologyPtr_t m_fairmqTopology{ nullptr }; ///< FairMQ topology
-        partitionID_t m_partitionID;                     ///< External partition ID of this DDS session
+        std::string m_partitionID;                     ///< External partition ID of this DDS session
 
         void addToTaskCache(STopoItemInfo::Ptr_t _item)
         {

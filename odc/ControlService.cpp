@@ -383,11 +383,11 @@ bool CControlService::changeState(const SCommonParams& _common,
 
 bool CControlService::changeStateConfigure(const SCommonParams& _common, SError& _error, const string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState)
 {
-    return changeState(_common, _error, TopologyTransition::InitDevice, _path, _aggregatedState, _topologyState)
-           && changeState(_common, _error, TopologyTransition::CompleteInit, _path, _aggregatedState, _topologyState)
-           && changeState(_common, _error, TopologyTransition::Bind, _path, _aggregatedState, _topologyState)
-           && changeState(_common, _error, TopologyTransition::Connect, _path, _aggregatedState, _topologyState)
-           && changeState(_common, _error, TopologyTransition::InitTask, _path, _aggregatedState, _topologyState);
+    return changeState(_common, _error, TopologyTransition::InitDevice,   _path, _aggregatedState, _topologyState)
+        && changeState(_common, _error, TopologyTransition::CompleteInit, _path, _aggregatedState, _topologyState)
+        && changeState(_common, _error, TopologyTransition::Bind,         _path, _aggregatedState, _topologyState)
+        && changeState(_common, _error, TopologyTransition::Connect,      _path, _aggregatedState, _topologyState)
+        && changeState(_common, _error, TopologyTransition::InitTask,     _path, _aggregatedState, _topologyState);
 }
 
 bool CControlService::changeStateReset(const SCommonParams& _common, SError& _error, const string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState)
@@ -555,7 +555,7 @@ CControlService::SSessionInfo::Ptr_t CControlService::getOrCreateSessionInfo(con
         auto newSessionInfo{ make_shared<SSessionInfo>() };
         newSessionInfo->m_session = make_shared<CSession>();
         newSessionInfo->m_partitionID = prt;
-        m_sessions.insert(pair<partitionID_t, SSessionInfo::Ptr_t>(prt, newSessionInfo));
+        m_sessions.insert(pair<std::string, SSessionInfo::Ptr_t>(prt, newSessionInfo));
         OLOG(debug, _common) << "Return new session info";
         return newSessionInfo;
     }
@@ -839,8 +839,12 @@ SReturnValue CControlService::execUpdate(const SCommonParams& _common, const SUp
     }
 
     if (!error.m_code) {
-        changeStateReset(_common, error, "", state) && resetFairMQTopo(_common) && activateDDSTopology(_common, error, topo, STopologyRequest::request_t::EUpdateType::UPDATE)
-            && createTopo(_common, error, topo) && createFairMQTopo(_common, error, topo) && changeStateConfigure(_common, error, "", state);
+        changeStateReset(_common, error, "", state) &&
+        resetFairMQTopo(_common) &&
+        activateDDSTopology(_common, error, topo, STopologyRequest::request_t::EUpdateType::UPDATE) &&
+        createTopo(_common, error, topo) &&
+        createFairMQTopo(_common, error, topo) &&
+        changeStateConfigure(_common, error, "", state);
     }
     execRequestTrigger("Update", _common);
     return createReturnValue(_common, error, "Update done", measure.duration(), state);
