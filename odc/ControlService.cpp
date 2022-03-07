@@ -33,10 +33,10 @@ using namespace dds::topology_api;
 
 void CControlService::execRequestTrigger(const string& _plugin, const SCommonParams& _common)
 {
-    if (m_triggers->isPluginRegistered(_plugin)) {
+    if (m_triggers.isPluginRegistered(_plugin)) {
         try {
             OLOG(debug, _common) << "Executing request trigger " << quoted(_plugin);
-            string out{ m_triggers->execPlugin(_plugin, "", _common.m_partitionID, _common.m_runNr) };
+            string out{ m_triggers.execPlugin(_plugin, "", _common.m_partitionID, _common.m_runNr) };
             OLOG(debug, _common) << "Request trigger " << quoted(_plugin) << " done: " << out;
         } catch (exception& _e) {
             OLOG(error, _common) << "Request trigger " << quoted(_plugin) << " failed: " << _e.what();
@@ -73,11 +73,11 @@ void CControlService::updateRestore()
 }
 
 SReturnValue CControlService::createReturnValue(const SCommonParams& _common,
-                                                       const SError& _error,
-                                                       const std::string& _msg,
-                                                       size_t _execTime,
-                                                       AggregatedTopologyState _aggregatedState,
-                                                       SReturnDetails::ptr_t _details)
+                                                const SError& _error,
+                                                const std::string& _msg,
+                                                size_t _execTime,
+                                                AggregatedTopologyState _aggregatedState,
+                                                SReturnDetails::ptr_t _details)
 {
     OLOG(debug, _common) << "Creating return value...";
     auto info{ getOrCreateSessionInfo(_common) };
@@ -220,7 +220,7 @@ bool CControlService::activateDDSTopology(const SCommonParams& _common, SError& 
 
         // We are not interested in stopped tasks
         if (_info.m_activated) {
-            STopoItemInfo::Ptr_t task{ make_shared<STopoItemInfo>() };
+            auto task(make_shared<STopoItemInfo>());
             task->m_agentID = _info.m_agentID;
             task->m_slotID = _info.m_slotID;
             task->m_itemID = _info.m_taskID;
@@ -230,9 +230,9 @@ bool CControlService::activateDDSTopology(const SCommonParams& _common, SError& 
             info->addToTaskCache(task);
 
             if (_info.m_collectionID > 0) {
-                auto collection{ make_shared<STopoItemInfo>(*task) };
+                auto collection(make_shared<STopoItemInfo>(*task));
                 collection->m_itemID = _info.m_collectionID;
-                auto pos{ collection->m_path.rfind('/') };
+                auto pos = collection->m_path.rfind('/');
                 if (pos != std::string::npos) {
                     collection->m_path.erase(pos);
                 }
@@ -309,7 +309,7 @@ bool CControlService::createFairMQTopo(const SCommonParams& _common, SError& _er
     auto info{ getOrCreateSessionInfo(_common) };
     try {
         info->m_fairmqTopology.reset();
-        info->m_fairmqTopology = make_shared<Topology>(dds::topology_api::CTopology(_topologyFile), info->m_session);
+        info->m_fairmqTopology = make_unique<Topology>(dds::topology_api::CTopology(_topologyFile), info->m_session);
     } catch (exception& _e) {
         info->m_fairmqTopology = nullptr;
         fillError(_common, _error, ErrorCode::FairMQCreateTopologyFailed, toString("Failed to initialize FairMQ topology: ", _e.what()));
@@ -678,7 +678,7 @@ chrono::seconds CControlService::requestTimeout(const SCommonParams& _common) co
 void CControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
 {
     for (const auto& v : _pluginMap) {
-        m_submit->registerPlugin(v.first, v.second);
+        m_submit.registerPlugin(v.first, v.second);
     }
 }
 
@@ -689,7 +689,7 @@ void CControlService::registerRequestTriggers(const CPluginManager::PluginMap_t&
         if (avail.count(v.first) == 0) {
             throw runtime_error(toString("Failed to add request trigger ", quoted(v.first), ". Invalid request name. Valid names are: ", quoted(boost::algorithm::join(avail, ", "))));
         }
-        m_triggers->registerPlugin(v.first, v.second);
+        m_triggers.registerPlugin(v.first, v.second);
     }
 }
 
@@ -748,7 +748,7 @@ SReturnValue CControlService::execSubmit(const SCommonParams& _common, const SSu
     std::vector<CDDSSubmit::SParams> ddsParams;
     if (!error.m_code) {
         try {
-            ddsParams = m_submit->makeParams(_params.m_plugin, _params.m_resources, _common.m_partitionID, _common.m_runNr);
+            ddsParams = m_submit.makeParams(_params.m_plugin, _params.m_resources, _common.m_partitionID, _common.m_runNr);
         } catch (exception& _e) {
             fillError(_common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", _e.what()));
         }
@@ -872,7 +872,7 @@ SReturnValue CControlService::execGetState(const SCommonParams& _common, const S
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
+    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
     SError error;
     getState(_common, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
     execRequestTrigger("GetState", _common);
@@ -883,7 +883,7 @@ SReturnValue CControlService::execConfigure(const SCommonParams& _common, const 
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
+    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
     SError error;
     changeStateConfigure(_common, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
     execRequestTrigger("Configure", _common);
@@ -894,7 +894,7 @@ SReturnValue CControlService::execStart(const SCommonParams& _common, const SDev
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
+    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
     SError error;
     changeState(_common, error, TopologyTransition::Run, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
     execRequestTrigger("Start", _common);
@@ -905,7 +905,7 @@ SReturnValue CControlService::execStop(const SCommonParams& _common, const SDevi
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
+    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
     SError error;
     changeState(_common, error, TopologyTransition::Stop, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
     execRequestTrigger("Stop", _common);
@@ -916,7 +916,7 @@ SReturnValue CControlService::execReset(const SCommonParams& _common, const SDev
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
+    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
     SError error;
     changeStateReset(_common, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
     execRequestTrigger("Reset", _common);
@@ -927,7 +927,7 @@ SReturnValue CControlService::execTerminate(const SCommonParams& _common, const 
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details((_params.m_detailed) ? make_shared<SReturnDetails>() : nullptr);
+    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
     SError error;
     changeState(_common, error, TopologyTransition::End, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
     execRequestTrigger("Terminate", _common);

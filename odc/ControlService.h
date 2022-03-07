@@ -17,11 +17,14 @@
 #include <boost/filesystem.hpp>
 #include <boost/process.hpp>
 // STD
+#include <map>
 #include <memory>
 #include <string>
 #include <system_error>
+#include <unordered_map>
 
 namespace odc::core {
+
 /// \brief Return status code of request
 enum EStatusCode
 {
@@ -34,7 +37,6 @@ enum EStatusCode
 struct SError
 {
     SError() {}
-
     SError(std::error_code _code, const std::string& _details)
         : m_code(_code)
         , m_details(_details)
@@ -50,10 +52,7 @@ struct SError
 /// \brief Holds device status of detailed output
 struct SDeviceStatus
 {
-    using container_t = std::vector<SDeviceStatus>;
-
     SDeviceStatus() {}
-
     SDeviceStatus(const DeviceStatus& _status, const std::string& _path)
         : m_status(_status)
         , m_path(_path)
@@ -64,7 +63,7 @@ struct SDeviceStatus
 };
 
 /// \brief Aggregated topology state
-using TopologyState = SDeviceStatus::container_t;
+using TopologyState = std::vector<SDeviceStatus>;
 
 enum class ESessionStatus
 {
@@ -75,10 +74,7 @@ enum class ESessionStatus
 
 struct SPartitionStatus
 {
-    using container_t = std::vector<SPartitionStatus>;
-
     SPartitionStatus() {}
-
     SPartitionStatus(const std::string& _partitionID, const std::string& _sessionID, ESessionStatus _sessionStatus, AggregatedTopologyState _aggregatedState)
         : m_partitionID(_partitionID)
         , m_sessionID(_sessionID)
@@ -86,25 +82,24 @@ struct SPartitionStatus
         , m_aggregatedState(_aggregatedState)
     {}
 
-    std::string m_partitionID;                                                     ///< Partition ID
-    std::string m_sessionID;                                                         ///< Session ID of DDS
-    ESessionStatus m_sessionStatus{ ESessionStatus::unknown };                       ///< DDS session status
-    AggregatedTopologyState m_aggregatedState{ AggregatedTopologyState::Undefined }; ///< Aggregated state of the affected divices
+    std::string m_partitionID;                                                      ///< Partition ID
+    std::string m_sessionID;                                                        ///< Session ID of DDS
+    ESessionStatus m_sessionStatus = ESessionStatus::unknown;                       ///< DDS session status
+    AggregatedTopologyState m_aggregatedState = AggregatedTopologyState::Undefined; ///< Aggregated state of the affected divices
 };
 
 struct SBaseReturnValue
 {
     SBaseReturnValue() {}
-
     SBaseReturnValue(EStatusCode _statusCode, const std::string& _msg, size_t _execTime, const SError& _error)
         : m_statusCode(_statusCode)
         , m_msg(_msg)
         , m_execTime(_execTime)
         , m_error(_error)
     {}
-    EStatusCode m_statusCode{ EStatusCode::unknown }; ///< Operation status code
+    EStatusCode m_statusCode = EStatusCode::unknown; ///< Operation status code
     std::string m_msg;                                ///< General message about the status
-    size_t m_execTime{ 0 };                           ///< Execution time in milliseconds
+    size_t m_execTime = 0;                           ///< Execution time in milliseconds
     SError m_error;                                   ///< In case of error containes information about the error
 };
 
@@ -113,10 +108,7 @@ struct SReturnDetails
     using ptr_t = std::shared_ptr<SReturnDetails>;
 
     SReturnDetails() {}
-
-    SReturnDetails(const TopologyState& _topologyState)
-        : m_topologyState(_topologyState)
-    {}
+    SReturnDetails(const TopologyState& _topologyState) : m_topologyState(_topologyState) {}
 
     TopologyState m_topologyState; ///< FairMQ aggregated topology state
 };
@@ -125,7 +117,6 @@ struct SReturnDetails
 struct SReturnValue : public SBaseReturnValue
 {
     SReturnValue() {}
-
     SReturnValue(EStatusCode _statusCode,
                  const std::string& _msg,
                  size_t _execTime,
@@ -143,10 +134,10 @@ struct SReturnValue : public SBaseReturnValue
         , m_details(_details)
     {}
 
-    std::string m_partitionID;                                                     ///< Partition ID
-    uint64_t m_runNr{ 0 };                                                            ///< Run number
-    std::string m_sessionID;                                                         ///< Session ID of DDS
-    AggregatedTopologyState m_aggregatedState{ AggregatedTopologyState::Undefined }; ///< Aggregated state of the affected divices
+    std::string m_partitionID;                                                      ///< Partition ID
+    uint64_t m_runNr = 0;                                                           ///< Run number
+    std::string m_sessionID;                                                        ///< Session ID of DDS
+    AggregatedTopologyState m_aggregatedState = AggregatedTopologyState::Undefined; ///< Aggregated state of the affected divices
 
     // Optional parameters
     SReturnDetails::ptr_t m_details; ///< Details of the return value. Stored only if requested.
@@ -156,19 +147,17 @@ struct SReturnValue : public SBaseReturnValue
 struct SStatusReturnValue : public SBaseReturnValue
 {
     SStatusReturnValue() {}
-
     SStatusReturnValue(EStatusCode _statusCode, const std::string& _msg, size_t _execTime, const SError& _error)
         : SBaseReturnValue(_statusCode, _msg, _execTime, _error)
     {}
 
-    SPartitionStatus::container_t m_partitions; ///< Statuses of partitions
+    std::vector<SPartitionStatus> m_partitions; ///< Statuses of partitions
 };
 
 /// \brief Structure holds common request parameters
 struct SCommonParams
 {
     SCommonParams() {}
-
     SCommonParams(const std::string& _partitionID, uint64_t _runNr, int _timeout)
         : m_partitionID(_partitionID)
         , m_runNr(_runNr)
@@ -176,8 +165,8 @@ struct SCommonParams
     {}
 
     std::string m_partitionID; ///< Partition ID.
-    uint64_t m_runNr{ 0 };        ///< Run number.
-    size_t m_timeout{ 0 };       ///< Request timeout in seconds. 0 means "not set"
+    uint64_t m_runNr = 0;        ///< Run number.
+    size_t m_timeout = 0;       ///< Request timeout in seconds. 0 means "not set"
 
     // \brief ostream operator.
     friend std::ostream& operator<<(std::ostream& _os, const SCommonParams& _params)
@@ -190,10 +179,7 @@ struct SCommonParams
 struct SInitializeParams
 {
     SInitializeParams() {}
-
-    SInitializeParams(const std::string& _sessionID)
-        : m_sessionID(_sessionID)
-    {}
+    SInitializeParams(const std::string& _sessionID) : m_sessionID(_sessionID) {}
 
     std::string m_sessionID; ///< DDS session ID
 
@@ -205,7 +191,6 @@ struct SInitializeParams
 struct SSubmitParams
 {
     SSubmitParams() {}
-
     SSubmitParams(const std::string& _plugin, const std::string& _resources)
         : m_plugin(_plugin)
         , m_resources(_resources)
@@ -224,11 +209,10 @@ struct SSubmitParams
 struct SActivateParams
 {
     SActivateParams() {}
-
-    SActivateParams(const std::string& _topologyFile, const std::string& _topologyContent, const std::string& _topologyScript)
-        : m_topologyFile(_topologyFile)
-        , m_topologyContent(_topologyContent)
-        , m_topologyScript(_topologyScript)
+    SActivateParams(const std::string& topoFile, const std::string& topoContent, const std::string& topoScript)
+        : m_topologyFile(topoFile)
+        , m_topologyContent(topoContent)
+        , m_topologyScript(topoScript)
     {}
     std::string m_topologyFile;    ///< Path to the topoloy file
     std::string m_topologyContent; ///< Content of the XML topology
@@ -246,11 +230,10 @@ struct SActivateParams
 struct SUpdateParams
 {
     SUpdateParams() {}
-
-    SUpdateParams(const std::string& _topologyFile, const std::string& _topologyContent, const std::string& _topologyScript)
-        : m_topologyFile(_topologyFile)
-        , m_topologyContent(_topologyContent)
-        , m_topologyScript(_topologyScript)
+    SUpdateParams(const std::string& topoFile, const std::string& topoContent, const std::string& topoScript)
+        : m_topologyFile(topoFile)
+        , m_topologyContent(topoContent)
+        , m_topologyScript(topoScript)
     {}
     std::string m_topologyFile;    ///< Path to the topoloy file
     std::string m_topologyContent; ///< Content of the XML topology
@@ -271,7 +254,6 @@ struct SSetPropertiesParams
     using Properties_t = std::vector<Property_t>;
 
     SSetPropertiesParams() {}
-
     SSetPropertiesParams(const Properties_t& _properties, const std::string& _path)
         : m_path(_path)
         , m_properties(_properties)
@@ -294,7 +276,6 @@ struct SSetPropertiesParams
 struct SDeviceParams
 {
     SDeviceParams() {}
-
     SDeviceParams(const std::string& _path, bool _detailed)
         : m_path(_path)
         , m_detailed(_detailed)
@@ -313,10 +294,7 @@ struct SDeviceParams
 struct SStatusParams
 {
     SStatusParams() {}
-
-    SStatusParams(bool _running)
-        : m_running(_running)
-    {}
+    SStatusParams(bool _running) : m_running(_running) {}
 
     bool m_running{ false }; ///< Select only running DDS sessions
 
@@ -329,19 +307,15 @@ class CControlService
   public:
     using DDSTopologyPtr_t = std::shared_ptr<dds::topology_api::CTopology>;
     using DDSSessionPtr_t = std::shared_ptr<dds::tools_api::CSession>;
-    using FairMQTopologyPtr_t = std::shared_ptr<Topology>;
 
     struct STopoItemInfo
     {
-        using Ptr_t = std::shared_ptr<STopoItemInfo>;
-        using Map_t = std::map<uint64_t, Ptr_t>;
-
-        uint64_t m_agentID{ 0 }; ///< Agent ID
-        uint64_t m_slotID{ 0 };  ///< Slot ID
-        uint64_t m_itemID{ 0 };  ///< Task/Collection ID, 0 if not assigned
-        std::string m_path;      ///< Path in the topology
-        std::string m_host;      ///< Hostname
-        std::string m_wrkDir;    ///< Wrk directory
+        uint64_t m_agentID = 0; ///< Agent ID
+        uint64_t m_slotID = 0;  ///< Slot ID
+        uint64_t m_itemID = 0;  ///< Task/Collection ID, 0 if not assigned
+        std::string m_path;     ///< Path in the topology
+        std::string m_host;     ///< Hostname
+        std::string m_wrkDir;   ///< Wrk directory
 
         std::string toString() const
         {
@@ -362,49 +336,50 @@ class CControlService
         using Ptr_t = std::shared_ptr<SSessionInfo>;
         using Map_t = std::map<std::string, Ptr_t>;
 
-        DDSTopologyPtr_t m_topo{ nullptr };              ///< DDS topology
-        DDSSessionPtr_t m_session{ nullptr };            ///< DDS session
-        FairMQTopologyPtr_t m_fairmqTopology{ nullptr }; ///< FairMQ topology
+        DDSTopologyPtr_t m_topo = nullptr;              ///< DDS topology
+        DDSSessionPtr_t m_session = nullptr;            ///< DDS session
+        std::unique_ptr<Topology> m_fairmqTopology = nullptr; ///< FairMQ topology
         std::string m_partitionID;                     ///< External partition ID of this DDS session
 
-        void addToTaskCache(STopoItemInfo::Ptr_t _item)
+        void addToTaskCache(std::shared_ptr<STopoItemInfo> item)
         {
-            std::lock_guard<std::mutex> lock(m_taskCacheMutex);
-            m_taskCache[_item->m_itemID] = _item;
+            std::lock_guard<std::mutex> lock(mTaskCacheMutex);
+            mTaskCache[item->m_itemID] = item;
         }
 
-        void addToCollectionCache(STopoItemInfo::Ptr_t _item)
+        void addToCollectionCache(std::shared_ptr<STopoItemInfo> item)
         {
-            std::lock_guard<std::mutex> lock(m_collectionCacheMutex);
-            m_collectionCache[_item->m_itemID] = _item;
+            std::lock_guard<std::mutex> lock(mCollectionCacheMutex);
+            mCollectionCache[item->m_itemID] = item;
         }
 
-        STopoItemInfo::Ptr_t getFromTaskCache(uint64_t _taskID)
+        std::shared_ptr<STopoItemInfo> getFromTaskCache(uint64_t taskID)
         {
-            std::lock_guard<std::mutex> lock(m_taskCacheMutex);
-            auto it{ m_taskCache.find(_taskID) };
-            if (it == m_taskCache.end())
-                throw std::runtime_error(toString("Failed to get additional task info for ID (", _taskID, ")"));
+            std::lock_guard<std::mutex> lock(mTaskCacheMutex);
+            auto it = mTaskCache.find(taskID);
+            if (it == mTaskCache.end()) {
+                throw std::runtime_error(toString("Failed to get additional task info for ID (", taskID, ")"));
+            }
             return it->second;
         }
 
-        STopoItemInfo::Ptr_t getFromCollectionCache(uint64_t _collectionID)
+        std::shared_ptr<STopoItemInfo> getFromCollectionCache(uint64_t collectionID)
         {
-            std::lock_guard<std::mutex> lock(m_collectionCacheMutex);
-            auto it{ m_collectionCache.find(_collectionID) };
-            if (it == m_collectionCache.end())
-                throw std::runtime_error(toString("Failed to get additional collection info for ID (", _collectionID, ")"));
+            std::lock_guard<std::mutex> lock(mCollectionCacheMutex);
+            auto it = mCollectionCache.find(collectionID);
+            if (it == mCollectionCache.end()) {
+                throw std::runtime_error(toString("Failed to get additional collection info for ID (", collectionID, ")"));
+            }
             return it->second;
         }
 
       private:
-        STopoItemInfo::Map_t m_taskCache;       ///< Additional information about the task
-        std::mutex m_taskCacheMutex;                 ///< Mutex for the container
-        STopoItemInfo::Map_t m_collectionCache; ///< Additional information about collection
-        std::mutex m_collectionCacheMutex;           ///< Mutex for the collection
+        std::unordered_map<uint64_t, std::shared_ptr<STopoItemInfo>> mTaskCache;       ///< Additional information about the task
+        std::mutex mTaskCacheMutex; ///< Mutex for the tasks container
+        std::unordered_map<uint64_t, std::shared_ptr<STopoItemInfo>> mCollectionCache; ///< Additional information about collection
+        std::mutex mCollectionCacheMutex; ///< Mutex for the collections container
     };
 
-    /// \brief Default constructor
     CControlService() {}
 
     // Disable copy constructors and assignment operators
@@ -430,9 +405,7 @@ class CControlService
     /// \param [in] _id ID of the restore file
     void restore(const std::string& _id);
 
-    //
     // DDS topology and session requests
-    //
 
     /// \brief Initialize DDS session
     SReturnValue execInitialize(const SCommonParams& _common, const SInitializeParams& _params);
@@ -452,9 +425,7 @@ class CControlService
     /// \brief Get state
     SReturnValue execGetState(const SCommonParams& _common, const SDeviceParams& _params);
 
-    //
     // FairMQ device change state requests
-    //
 
     /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
     SReturnValue execConfigure(const SCommonParams& _common, const SDeviceParams& _params);
@@ -467,20 +438,18 @@ class CControlService
     /// \brief Terminate devices: End
     SReturnValue execTerminate(const SCommonParams& _common, const SDeviceParams& _params);
 
-    //
     // Generic requests
-    //
 
     /// \brief Status request
     SStatusReturnValue execStatus(const SStatusParams& _params);
 
   private:
-    SSessionInfo::Map_t m_sessions;                                    ///< Map of partition ID to session info
-    std::mutex m_sessionsMutex;                                        ///< Mutex of sessions map
-    std::chrono::seconds m_timeout{ 30 };                              ///< Request timeout in sec
-    CDDSSubmit::Ptr_t m_submit{ std::make_shared<CDDSSubmit>() };           ///< ODC to DDS submit resource converter
-    CPluginManager::Ptr_t m_triggers{ std::make_shared<CPluginManager>() }; ///< Request triggers
-    std::string m_restoreId;                                           ///< Restore ID
+    SSessionInfo::Map_t m_sessions;       ///< Map of partition ID to session info
+    std::mutex m_sessionsMutex;           ///< Mutex of sessions map
+    std::chrono::seconds m_timeout{ 30 }; ///< Request timeout in sec
+    CDDSSubmit m_submit;                  ///< ODC to DDS submit resource converter
+    CPluginManager m_triggers;            ///< Request triggers
+    std::string m_restoreId;              ///< Restore ID
 
     void execRequestTrigger(const std::string& _plugin, const SCommonParams& _common);
     void updateRestore();

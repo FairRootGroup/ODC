@@ -27,8 +27,6 @@ namespace odc::core {
 class CPluginManager
 {
   public:
-    // Shared pointer
-    using Ptr_t = std::shared_ptr<CPluginManager>;
     // Plugin map <plugin name, cmd>
     using PluginMap_t = std::map<std::string, std::string>;
 

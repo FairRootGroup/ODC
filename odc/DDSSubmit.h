@@ -131,10 +131,6 @@ class CDDSSubmit : public CPluginManager
             OLOG(error) << "Unable to register default resource plugin " << std::quoted(_name) << ": " << _e.what();
         }
     }
-
-  public:
-    // Shared pointer
-    using Ptr_t = std::shared_ptr<CDDSSubmit>;
 };
 
 } // namespace odc::core
