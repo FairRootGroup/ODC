@@ -77,13 +77,13 @@ SReturnValue CControlService::createReturnValue(const SCommonParams& _common,
                                                 const std::string& _msg,
                                                 size_t _execTime,
                                                 AggregatedTopologyState _aggregatedState,
-                                                SReturnDetails::ptr_t _details)
+                                                std::unique_ptr<TopologyState> fullState/*  = nullptr */)
 {
     OLOG(debug, _common) << "Creating return value...";
     auto info{ getOrCreateSessionInfo(_common) };
     string sidStr{ to_string(info->m_session->getSessionID()) };
     EStatusCode status{ _error.m_code ? EStatusCode::error : EStatusCode::ok };
-    return SReturnValue(status, _msg, _execTime, _error, _common.m_partitionID, _common.m_runNr, sidStr, _aggregatedState, _details);
+    return SReturnValue(status, _msg, _execTime, _error, _common.m_partitionID, _common.m_runNr, sidStr, _aggregatedState, std::move(fullState));
 }
 
 bool CControlService::createDDSSession(const SCommonParams& _common, SError& _error)
@@ -872,66 +872,66 @@ SReturnValue CControlService::execGetState(const SCommonParams& _common, const S
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
+    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
     SError error;
-    getState(_common, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    getState(_common, error, _params.m_path, state, fullState.get());
     execRequestTrigger("GetState", _common);
-    return createReturnValue(_common, error, "GetState done", measure.duration(), state, details);
+    return createReturnValue(_common, error, "GetState done", measure.duration(), state, std::move(fullState));
 }
 
 SReturnValue CControlService::execConfigure(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
+    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
     SError error;
-    changeStateConfigure(_common, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    changeStateConfigure(_common, error, _params.m_path, state, fullState.get());
     execRequestTrigger("Configure", _common);
-    return createReturnValue(_common, error, "Configure done", measure.duration(), state, details);
+    return createReturnValue(_common, error, "Configure done", measure.duration(), state, std::move(fullState));
 }
 
 SReturnValue CControlService::execStart(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
+    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
     SError error;
-    changeState(_common, error, TopologyTransition::Run, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    changeState(_common, error, TopologyTransition::Run, _params.m_path, state, fullState.get());
     execRequestTrigger("Start", _common);
-    return createReturnValue(_common, error, "Start done", measure.duration(), state, details);
+    return createReturnValue(_common, error, "Start done", measure.duration(), state, std::move(fullState));
 }
 
 SReturnValue CControlService::execStop(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
+    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
     SError error;
-    changeState(_common, error, TopologyTransition::Stop, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    changeState(_common, error, TopologyTransition::Stop, _params.m_path, state, fullState.get());
     execRequestTrigger("Stop", _common);
-    return createReturnValue(_common, error, "Stop done", measure.duration(), state, details);
+    return createReturnValue(_common, error, "Stop done", measure.duration(), state, std::move(fullState));
 }
 
 SReturnValue CControlService::execReset(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
+    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
     SError error;
-    changeStateReset(_common, error, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    changeStateReset(_common, error, _params.m_path, state, fullState.get());
     execRequestTrigger("Reset", _common);
-    return createReturnValue(_common, error, "Reset done", measure.duration(), state, details);
+    return createReturnValue(_common, error, "Reset done", measure.duration(), state, std::move(fullState));
 }
 
 SReturnValue CControlService::execTerminate(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    SReturnDetails::ptr_t details = _params.m_detailed ? make_shared<SReturnDetails>() : nullptr;
+    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
     SError error;
-    changeState(_common, error, TopologyTransition::End, _params.m_path, state, ((details == nullptr) ? nullptr : &details->m_topologyState));
+    changeState(_common, error, TopologyTransition::End, _params.m_path, state, fullState.get());
     execRequestTrigger("Terminate", _common);
-    return createReturnValue(_common, error, "Terminate done", measure.duration(), state, details);
+    return createReturnValue(_common, error, "Terminate done", measure.duration(), state, std::move(fullState));
 }
 
 SStatusReturnValue CControlService::execStatus(const SStatusParams& _params)

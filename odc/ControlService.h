@@ -98,19 +98,9 @@ struct SBaseReturnValue
         , m_error(_error)
     {}
     EStatusCode m_statusCode = EStatusCode::unknown; ///< Operation status code
-    std::string m_msg;                                ///< General message about the status
+    std::string m_msg;                               ///< General message about the status
     size_t m_execTime = 0;                           ///< Execution time in milliseconds
-    SError m_error;                                   ///< In case of error containes information about the error
-};
-
-struct SReturnDetails
-{
-    using ptr_t = std::shared_ptr<SReturnDetails>;
-
-    SReturnDetails() {}
-    SReturnDetails(const TopologyState& _topologyState) : m_topologyState(_topologyState) {}
-
-    TopologyState m_topologyState; ///< FairMQ aggregated topology state
+    SError m_error;                                  ///< In case of error containes information about the error
 };
 
 /// \brief Structure holds return value of the request
@@ -125,13 +115,13 @@ struct SReturnValue : public SBaseReturnValue
                  uint64_t _runNr,
                  const std::string& _sessionID,
                  AggregatedTopologyState _aggregatedState,
-                 SReturnDetails::ptr_t _details = nullptr)
+                 std::unique_ptr<TopologyState> fullState = nullptr)
         : SBaseReturnValue(_statusCode, _msg, _execTime, _error)
         , m_partitionID(_partitionID)
         , m_runNr(_runNr)
         , m_sessionID(_sessionID)
         , m_aggregatedState(_aggregatedState)
-        , m_details(_details)
+        , mFullState(std::move(fullState))
     {}
 
     std::string m_partitionID;                                                      ///< Partition ID
@@ -140,7 +130,7 @@ struct SReturnValue : public SBaseReturnValue
     AggregatedTopologyState m_aggregatedState = AggregatedTopologyState::Undefined; ///< Aggregated state of the affected divices
 
     // Optional parameters
-    SReturnDetails::ptr_t m_details; ///< Details of the return value. Stored only if requested.
+    std::unique_ptr<TopologyState> mFullState = nullptr;
 };
 
 /// \brief Structure holds information about return status
@@ -459,7 +449,7 @@ class CControlService
                                    const std::string& _msg,
                                    size_t _execTime,
                                    AggregatedTopologyState _aggregatedState,
-                                   SReturnDetails::ptr_t _details = nullptr);
+                                   std::unique_ptr<TopologyState> fullState = nullptr);
     bool createDDSSession(const SCommonParams& _common, SError& _error);
     bool attachToDDSSession(const SCommonParams& _common, SError& _error, const std::string& _sessionID);
     bool submitDDSAgents(const SCommonParams& _common, SError& _error, const CDDSSubmit::SParams& _params);

@@ -139,11 +139,10 @@ string CCliControlService::generalReply(const SReturnValue& _value)
     ss << "  Run Nr: " << _value.m_runNr << endl;
     ss << "  Session ID: " << _value.m_sessionID << endl;
 
-    if (_value.m_details != nullptr)
+    if (_value.mFullState != nullptr)
     {
         ss << endl << "  Devices: " << endl;
-        const auto& topologyState = _value.m_details->m_topologyState;
-        for (const auto& state : topologyState)
+        for (const auto& state : *(_value.mFullState))
         {
             ss << "    { id: " << state.m_status.taskId << "; path: " << state.m_path
                << "; state: " << state.m_status.state << " }" << endl;

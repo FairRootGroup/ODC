@@ -274,9 +274,8 @@ void CGrpcService::setupStateReply(odc::StateReply* _response, const odc::core::
     setupGeneralReply(generalResponse, _value);
     _response->set_allocated_reply(generalResponse);
 
-    if (_value.m_details != nullptr) {
-        const auto& topologyState = _value.m_details->m_topologyState;
-        for (const auto& state : topologyState) {
+    if (_value.mFullState != nullptr) {
+        for (const auto& state : *(_value.mFullState)) {
             auto device{ _response->add_devices() };
             device->set_path(state.m_path);
             device->set_id(state.m_status.taskId);
