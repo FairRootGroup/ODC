@@ -60,13 +60,16 @@ namespace odc::core
             boost::log::core::get()->add_sink(sink);
         }
 
-      private:
-        CInfoLogger()
+        void setContext(const std::string& facility, const std::string& system, const std::string& role)
         {
-            m_context.setField(AliceO2::InfoLogger::InfoLoggerContext::FieldName::Facility, std::string("ODC"));
-            m_context.setField(AliceO2::InfoLogger::InfoLoggerContext::FieldName::System, std::string("ODC"));
+            m_context.setField(AliceO2::InfoLogger::InfoLoggerContext::FieldName::Facility, facility);
+            m_context.setField(AliceO2::InfoLogger::InfoLoggerContext::FieldName::System, system);
+            m_context.setField(AliceO2::InfoLogger::InfoLoggerContext::FieldName::Role, role);
             m_log.setContext(m_context);
         }
+
+      private:
+        CInfoLogger() {}
 
         void log(ESeverity _severity, const std::string& _channel, const std::string& _msg)
         {
@@ -128,9 +131,8 @@ namespace odc::core
             return instance;
         }
 
-        void registerSink(ESeverity /*_severity*/, bool /*_infologger*/) const
-        {
-        }
+        void setContext(const std::string& /* facility */, const std::string& /* system */, const std::string& /* role */) {}
+        void registerSink(ESeverity /* _severity */, bool /* _infologger */) const {}
     };
 } // namespace odc::core
 

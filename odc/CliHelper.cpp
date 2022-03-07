@@ -62,6 +62,9 @@ void CCliHelper::addLogOptions(bpo::options_description& options, CLogger::SConf
     options.add_options()("logdir", bpo::value<string>(&config.m_logDir)->default_value(defaultLogDir), "Log files directory");
     options.add_options()("severity", bpo::value<ESeverity>(&config.m_severity)->default_value(ESeverity::info), "Log severity level");
     options.add_options()("infologger", bpo::bool_switch(&config.m_infologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)");
+    options.add_options()("infologger-system", bpo::value<string>(&config.m_infologgerSystem)->default_value("ODC"), "Fills the InfoLogger 'System' field");
+    options.add_options()("infologger-facility", bpo::value<string>(&config.m_infologgerFacility)->default_value("ODC"), "Fills the InfoLogger 'Facility' field");
+    options.add_options()("infologger-role", bpo::value<string>(&config.m_infologgerRole)->default_value("production"), "Fills the InfoLogger 'Role' field");
 }
 
 void CCliHelper::addTimeoutOptions(bpo::options_description& options, size_t& timeout)

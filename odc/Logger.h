@@ -62,6 +62,9 @@ namespace odc::core
             ESeverity m_severity{ ESeverity::info };
             std::string m_logDir;
             bool m_infologger{ false };
+            std::string m_infologgerSystem;
+            std::string m_infologgerFacility;
+            std::string m_infologgerRole;
         };
 
       public:
@@ -92,6 +95,7 @@ namespace odc::core
             // Logging to console
             createConsoleSink(_config);
             // Optional InfoLogger sink
+            CInfoLogger::instance().setContext(_config.m_infologgerFacility, _config.m_infologgerSystem, _config.m_infologgerRole);
             CInfoLogger::instance().registerSink(_config.m_severity, _config.m_infologger);
 
             boost::log::add_common_attributes();
