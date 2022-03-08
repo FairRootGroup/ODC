@@ -55,7 +55,7 @@ void CControlService::updateRestore()
     OLOG(info) << "Updating restore file " << quoted(m_restoreId) << "...";
     SRestoreData data;
 
-    lock_guard<mutex> lock(m_sessionsMutex);
+    lock_guard<mutex> lock(mSessionsMtx);
     for (const auto& v : m_sessions) {
         const auto& info{ v.second };
         try {
@@ -67,7 +67,7 @@ void CControlService::updateRestore()
         }
     }
 
-    // Write the the file is locked by m_sessionsMutex
+    // Write the the file is locked by mSessionsMtx
     // This is done in order to prevent write failure in case of a parallel execution.
     CRestoreFile(m_restoreId, data).write();
 }
@@ -80,8 +80,8 @@ RequestResult CControlService::createRequestResult(const SCommonParams& _common,
                                                 std::unique_ptr<TopologyState> fullState/*  = nullptr */)
 {
     OLOG(debug, _common) << "Creating return value...";
-    auto info{ getOrCreateSessionInfo(_common) };
-    string sidStr{ to_string(info->m_session->getSessionID()) };
+    auto& info = getOrCreateSessionInfo(_common);
+    string sidStr{ to_string(info.m_session->getSessionID()) };
     EStatusCode status{ _error.m_code ? EStatusCode::error : EStatusCode::ok };
     return RequestResult(status, _msg, _execTime, _error, _common.m_partitionID, _common.m_runNr, sidStr, _aggregatedState, std::move(fullState));
 }
@@ -89,8 +89,8 @@ RequestResult CControlService::createRequestResult(const SCommonParams& _common,
 bool CControlService::createDDSSession(const SCommonParams& _common, SError& _error)
 {
     try {
-        auto info{ getOrCreateSessionInfo(_common) };
-        boost::uuids::uuid sessionID{ info->m_session->create() };
+        auto& info = getOrCreateSessionInfo(_common);
+        boost::uuids::uuid sessionID{ info.m_session->create() };
         OLOG(info, _common) << "DDS session created with session ID: " << to_string(sessionID);
     } catch (exception& _e) {
         fillError(_common, _error, ErrorCode::DDSCreateSessionFailed, toString("Failed to create a DDS session: ", _e.what()));
@@ -102,8 +102,8 @@ bool CControlService::createDDSSession(const SCommonParams& _common, SError& _er
 bool CControlService::attachToDDSSession(const SCommonParams& _common, SError& _error, const std::string& _sessionID)
 {
     try {
-        auto info{ getOrCreateSessionInfo(_common) };
-        info->m_session->attach(_sessionID);
+        auto& info = getOrCreateSessionInfo(_common);
+        info.m_session->attach(_sessionID);
         OLOG(info, _common) << "Attach to a DDS session with session ID: " << _sessionID;
     } catch (exception& _e) {
         fillError(_common, _error, ErrorCode::DDSAttachToSessionFailed, toString("Failed to attach to a DDS session: ", _e.what()));
@@ -142,8 +142,8 @@ bool CControlService::submitDDSAgents(const SCommonParams& _common, SError& _err
         cv.notify_all();
     });
 
-    auto info{ getOrCreateSessionInfo(_common) };
-    info->m_session->sendRequest<SSubmitRequest>(requestPtr);
+    auto& info = getOrCreateSessionInfo(_common);
+    info.m_session->sendRequest<SSubmitRequest>(requestPtr);
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
@@ -162,8 +162,8 @@ bool CControlService::requestCommanderInfo(const SCommonParams& _common, SError&
 {
     try {
         stringstream ss;
-        auto info{ getOrCreateSessionInfo(_common) };
-        info->m_session->syncSendRequest<SCommanderInfoRequest>(SCommanderInfoRequest::request_t(), _commanderInfo, requestTimeout(_common), &ss);
+        auto& info = getOrCreateSessionInfo(_common);
+        info.m_session->syncSendRequest<SCommanderInfoRequest>(SCommanderInfoRequest::request_t(), _commanderInfo, requestTimeout(_common), &ss);
         OLOG(info, _common) << ss.str();
         OLOG(debug, _common) << "Commander info: " << _commanderInfo;
         return true;
@@ -176,8 +176,8 @@ bool CControlService::requestCommanderInfo(const SCommonParams& _common, SError&
 bool CControlService::waitForNumActiveAgents(const SCommonParams& _common, SError& _error, size_t _numAgents)
 {
     try {
-        auto info{ getOrCreateSessionInfo(_common) };
-        info->m_session->waitForNumAgents<CSession::EAgentState::active>(_numAgents, requestTimeout(_common));
+        auto& info = getOrCreateSessionInfo(_common);
+        info.m_session->waitForNumAgents<CSession::EAgentState::active>(_numAgents, requestTimeout(_common));
     } catch (std::exception& _e) {
         fillError(_common, _error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS agents: ", _e.what()));
         return false;
@@ -195,7 +195,7 @@ bool CControlService::activateDDSTopology(const SCommonParams& common, SError& _
     topoInfo.m_updateType = _updateType;
 
     std::condition_variable cv;
-    auto sessionInfo{ getOrCreateSessionInfo(common) };
+    auto& sessionInfo = getOrCreateSessionInfo(common);
 
     STopologyRequest::ptr_t requestPtr{ STopologyRequest::makeRequest(topoInfo) };
 
@@ -215,13 +215,13 @@ bool CControlService::activateDDSTopology(const SCommonParams& common, SError& _
         }
     });
 
-    requestPtr->setResponseCallback([&common, sessionInfo](const STopologyResponseData& res) {
+    requestPtr->setResponseCallback([&common, &sessionInfo](const STopologyResponseData& res) {
         OLOG(debug, common) << "Activate: " << res;
 
         // We are not interested in stopped tasks
         if (res.m_activated) {
             TopoTaskInfo task{res.m_agentID, res.m_slotID, res.m_taskID, res.m_path, res.m_host, res.m_wrkDir};
-            sessionInfo->addToTaskCache(std::move(task));
+            sessionInfo.addToTaskCache(std::move(task));
 
             if (res.m_collectionID > 0) {
                 TopoCollectionInfo collection{res.m_agentID, res.m_slotID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir};
@@ -229,14 +229,14 @@ bool CControlService::activateDDSTopology(const SCommonParams& common, SError& _
                 if (pos != std::string::npos) {
                     collection.mPath.erase(pos);
                 }
-                sessionInfo->addToCollectionCache(std::move(collection));
+                sessionInfo.addToCollectionCache(std::move(collection));
             }
         }
     });
 
     requestPtr->setDoneCallback([&cv]() { cv.notify_all(); });
 
-    sessionInfo->m_session->sendRequest<STopologyRequest>(requestPtr);
+    sessionInfo.m_session->sendRequest<STopologyRequest>(requestPtr);
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
@@ -248,7 +248,7 @@ bool CControlService::activateDDSTopology(const SCommonParams& common, SError& _
         OLOG(error, common) << _error;
     }
 
-    sessionInfo->debug();
+    sessionInfo.debug();
 
     OLOG(info, common) << "Topology " << quoted(_topologyFile) << ((success) ? " activated successfully" : " failed to activate");
     return success;
@@ -257,15 +257,15 @@ bool CControlService::activateDDSTopology(const SCommonParams& common, SError& _
 bool CControlService::shutdownDDSSession(const SCommonParams& _common, SError& _error)
 {
     try {
-        auto info{ getOrCreateSessionInfo(_common) };
-        info->m_topo.reset();
-        info->m_fairmqTopology.reset();
+        auto& info = getOrCreateSessionInfo(_common);
+        info.m_topo.reset();
+        info.m_fairmqTopology.reset();
         // We stop the session anyway if session ID is not nil.
         // Session can already be stopped by `dds-session stop` but session ID is not yet reset to nil.
         // If session is already stopped CSession::shutdown will reset pointers.
-        if (info->m_session->getSessionID() != boost::uuids::nil_uuid()) {
-            info->m_session->shutdown();
-            if (info->m_session->getSessionID() == boost::uuids::nil_uuid()) {
+        if (info.m_session->getSessionID() != boost::uuids::nil_uuid()) {
+            info.m_session->shutdown();
+            if (info.m_session->getSessionID() == boost::uuids::nil_uuid()) {
                 OLOG(info, _common) << "DDS session shutted down";
             } else {
                 fillError(_common, _error, ErrorCode::DDSShutdownSessionFailed, "Failed to shut down DDS session");
@@ -282,8 +282,8 @@ bool CControlService::shutdownDDSSession(const SCommonParams& _common, SError& _
 bool CControlService::createTopo(const SCommonParams& _common, SError& _error, const std::string& _topologyFile)
 {
     try {
-        auto info{ getOrCreateSessionInfo(_common) };
-        info->m_topo = make_unique<dds::topology_api::CTopology>(_topologyFile);
+        auto& info = getOrCreateSessionInfo(_common);
+        info.m_topo = make_unique<dds::topology_api::CTopology>(_topologyFile);
         OLOG(info, _common) << "DDS topology " << std::quoted(_topologyFile) << " created successfully";
     } catch (exception& _e) {
         fillError(_common, _error, ErrorCode::DDSCreateTopologyFailed, toString("Failed to initialize DDS topology: ", _e.what()));
@@ -294,22 +294,22 @@ bool CControlService::createTopo(const SCommonParams& _common, SError& _error, c
 
 bool CControlService::resetFairMQTopo(const SCommonParams& _common)
 {
-    auto info{ getOrCreateSessionInfo(_common) };
-    info->m_fairmqTopology.reset();
+    auto& info = getOrCreateSessionInfo(_common);
+    info.m_fairmqTopology.reset();
     return true;
 }
 
 bool CControlService::createFairMQTopo(const SCommonParams& _common, SError& _error, const std::string& _topologyFile)
 {
-    auto info{ getOrCreateSessionInfo(_common) };
+    auto& info = getOrCreateSessionInfo(_common);
     try {
-        info->m_fairmqTopology.reset();
-        info->m_fairmqTopology = make_unique<Topology>(dds::topology_api::CTopology(_topologyFile), info->m_session);
+        info.m_fairmqTopology.reset();
+        info.m_fairmqTopology = make_unique<Topology>(dds::topology_api::CTopology(_topologyFile), info.m_session);
     } catch (exception& _e) {
-        info->m_fairmqTopology = nullptr;
+        info.m_fairmqTopology = nullptr;
         fillError(_common, _error, ErrorCode::FairMQCreateTopologyFailed, toString("Failed to initialize FairMQ topology: ", _e.what()));
     }
-    return info->m_fairmqTopology != nullptr;
+    return info.m_fairmqTopology != nullptr;
 }
 
 bool CControlService::changeState(const SCommonParams& common,
@@ -319,8 +319,8 @@ bool CControlService::changeState(const SCommonParams& common,
                                          AggregatedTopologyState& aggregatedState,
                                          TopologyState* topologyState)
 {
-    auto info{ getOrCreateSessionInfo(common) };
-    if (info->m_fairmqTopology == nullptr) {
+    auto& info = getOrCreateSessionInfo(common);
+    if (info.m_fairmqTopology == nullptr) {
         fillError(common, error, ErrorCode::FairMQChangeStateFailed, "FairMQ topology is not initialized");
         return false;
     }
@@ -335,7 +335,7 @@ bool CControlService::changeState(const SCommonParams& common,
     bool success(true);
 
     try {
-        auto result{ info->m_fairmqTopology->ChangeState(transition, path, requestTimeout(common)) };
+        auto result{ info.m_fairmqTopology->ChangeState(transition, path, requestTimeout(common)) };
 
         success = !result.first;
         if (success) {
@@ -347,7 +347,7 @@ bool CControlService::changeState(const SCommonParams& common,
                 OLOG(error, common) << stateSummaryString(common, result.second, _expectedState, info);
             }
             if (topologyState != nullptr) {
-                fairMQToODCTopologyState(info->m_topo.get(), result.second, topologyState);
+                fairMQToODCTopologyState(info.m_topo.get(), result.second, topologyState);
             }
         } else {
             switch (static_cast<ErrorCode>(result.first.value())) {
@@ -358,19 +358,19 @@ bool CControlService::changeState(const SCommonParams& common,
                     fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("FairMQ change state failed: ", result.first.message()));
                     break;
             }
-            OLOG(error, common) << stateSummaryString(common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
+            OLOG(error, common) << stateSummaryString(common, info.m_fairmqTopology->GetCurrentState(), _expectedState, info);
         }
     } catch (exception& _e) {
         success = false;
         fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
-        OLOG(error, common) << stateSummaryString(common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
+        OLOG(error, common) << stateSummaryString(common, info.m_fairmqTopology->GetCurrentState(), _expectedState, info);
     }
 
     if (success) {
         OLOG(info, common) << "State changed to " << aggregatedState << " via " << transition << " transition";
     }
 
-    const auto stats{ SStateStats(info->m_fairmqTopology->GetCurrentState()) };
+    const auto stats{ SStateStats(info.m_fairmqTopology->GetCurrentState()) };
     OLOG(info, common) << stats.tasksString();
     OLOG(info, common) << stats.collectionsString();
 
@@ -394,23 +394,23 @@ bool CControlService::changeStateReset(const SCommonParams& common, SError& erro
 
 bool CControlService::getState(const SCommonParams& _common, SError& _error, const string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState)
 {
-    auto info{ getOrCreateSessionInfo(_common) };
-    if (info->m_fairmqTopology == nullptr) {
+    auto& info = getOrCreateSessionInfo(_common);
+    if (info.m_fairmqTopology == nullptr) {
         fillError(_common, _error, ErrorCode::FairMQGetStateFailed, "FairMQ topology is not initialized");
         return false;
     }
 
     bool success(true);
-    auto const state(info->m_fairmqTopology->GetCurrentState());
+    auto const state(info.m_fairmqTopology->GetCurrentState());
 
     try {
-        _aggregatedState = aggregateStateForPath(info->m_topo.get(), state, _path);
+        _aggregatedState = aggregateStateForPath(info.m_topo.get(), state, _path);
     } catch (exception& _e) {
         success = false;
         fillError(_common, _error, ErrorCode::FairMQGetStateFailed, toString("Get state failed: ", _e.what()));
     }
     if (_topologyState != nullptr)
-        fairMQToODCTopologyState(info->m_topo.get(), state, _topologyState);
+        fairMQToODCTopologyState(info.m_topo.get(), state, _topologyState);
 
     const auto stats{ SStateStats(state) };
     OLOG(info, _common) << stats.tasksString();
@@ -421,8 +421,8 @@ bool CControlService::getState(const SCommonParams& _common, SError& _error, con
 
 bool CControlService::setProperties(const SCommonParams& _common, SError& _error, const SSetPropertiesParams& _params)
 {
-    auto info{ getOrCreateSessionInfo(_common) };
-    if (info->m_fairmqTopology == nullptr) {
+    auto& info = getOrCreateSessionInfo(_common);
+    if (info.m_fairmqTopology == nullptr) {
         fillError(_common, _error, ErrorCode::FairMQSetPropertiesFailed, "FairMQ topology is not initialized");
         return false;
     }
@@ -430,7 +430,7 @@ bool CControlService::setProperties(const SCommonParams& _common, SError& _error
     bool success(true);
 
     try {
-        auto result{ info->m_fairmqTopology->SetProperties(_params.m_properties, _params.m_path, requestTimeout(_common)) };
+        auto result{ info.m_fairmqTopology->SetProperties(_params.m_properties, _params.m_path, requestTimeout(_common)) };
 
         success = !result.first;
         if (success) {
@@ -449,7 +449,7 @@ bool CControlService::setProperties(const SCommonParams& _common, SError& _error
             ss << "List of failed devices for SetProperties request (" << result.second.size() << "):" << endl;
             for (auto taskId : result.second) {
                 try {
-                    TopoTaskInfo& taskInfo = info->getFromTaskCache(taskId);
+                    TopoTaskInfo& taskInfo = info.getFromTaskCache(taskId);
                     ss << right << setw(7) << count << "   Task: " << taskInfo << endl;
                 } catch (const exception& _e) {
                     OLOG(error, _common) << "Set properties error: " << _e.what();
@@ -542,34 +542,33 @@ void CControlService::fillFatalError(const SCommonParams& _common, SError& _erro
     }
 }
 
-CControlService::SSessionInfo::Ptr_t CControlService::getOrCreateSessionInfo(const SCommonParams& _common)
+CControlService::SessionInfo& CControlService::getOrCreateSessionInfo(const SCommonParams& common)
 {
-    const auto& prt{ _common.m_partitionID };
-    lock_guard<mutex> lock(m_sessionsMutex);
-    auto it{ m_sessions.find(prt) };
+    lock_guard<mutex> lock(mSessionsMtx);
+    auto it = m_sessions.find(common.m_partitionID);
     if (it == m_sessions.end()) {
-        auto newSessionInfo{ make_shared<SSessionInfo>() };
-        newSessionInfo->m_session = make_shared<CSession>();
-        newSessionInfo->m_partitionID = prt;
-        m_sessions.insert(pair<std::string, SSessionInfo::Ptr_t>(prt, newSessionInfo));
-        OLOG(debug, _common) << "Return new session info";
-        return newSessionInfo;
+        auto newSessionInfo = make_unique<SessionInfo>();
+        newSessionInfo->m_session = make_unique<CSession>();
+        newSessionInfo->m_partitionID = common.m_partitionID;
+        auto ret = m_sessions.emplace(common.m_partitionID, std::move(newSessionInfo));
+        OLOG(debug, common) << "Return new session info";
+        return *(ret.first->second);
     }
-    OLOG(debug, _common) << "Return existing session info";
-    return it->second;
+    OLOG(debug, common) << "Return existing session info";
+    return *(it->second);
 }
 
 SError CControlService::checkSessionIsRunning(const SCommonParams& _common, ErrorCode _errorCode)
 {
     SError error;
-    auto info{ getOrCreateSessionInfo(_common) };
-    if (!info->m_session->IsRunning()) {
+    auto& info = getOrCreateSessionInfo(_common);
+    if (!info.m_session->IsRunning()) {
         fillError(_common, error, _errorCode, "DDS session is not running. Use Init or Run to start the session.");
     }
     return error;
 }
 
-string CControlService::stateSummaryString(const SCommonParams& _common, const FairMQTopologyState& _topologyState, DeviceState _expectedState, SSessionInfo::Ptr_t _info)
+string CControlService::stateSummaryString(const SCommonParams& _common, const FairMQTopologyState& _topologyState, DeviceState _expectedState, SessionInfo& sessionInfo)
 {
     size_t taskTotalCount{ _topologyState.size() };
     size_t taskFailedCount{ 0 };
@@ -589,7 +588,7 @@ string CControlService::stateSummaryString(const SCommonParams& _common, const F
            << "subscribed (" << status.subscribed_to_state_changes << ")";
 
         try {
-            TopoTaskInfo& taskInfo = _info->getFromTaskCache(status.taskId);
+            TopoTaskInfo& taskInfo = sessionInfo.getFromTaskCache(status.taskId);
             ss << ", " << taskInfo;
         } catch (const exception& _e) {
             OLOG(error, _common) << "State summary error: " << _e.what();
@@ -613,7 +612,7 @@ string CControlService::stateSummaryString(const SCommonParams& _common, const F
         ss << endl << right << setw(7) << collectionFailedCount << "   Collection: state (" << collectionState << ")";
 
         try {
-            TopoCollectionInfo& collectionInfo = _info->getFromCollectionCache(collectionId);
+            TopoCollectionInfo& collectionInfo = sessionInfo.getFromCollectionCache(collectionId);
             ss << ", " << collectionInfo;
         } catch (const exception& _e) {
             OLOG(error, _common) << "State summary error: " << _e.what();
@@ -633,8 +632,8 @@ string CControlService::stateSummaryString(const SCommonParams& _common, const F
 bool CControlService::subscribeToDDSSession(const SCommonParams& _common, SError& _error)
 {
     try {
-        auto info{ getOrCreateSessionInfo(_common) };
-        if (info->m_session->IsRunning()) {
+        auto& info = getOrCreateSessionInfo(_common);
+        if (info.m_session->IsRunning()) {
             // Subscrube on TaskDone events
             auto request{ SOnTaskDoneRequest::makeRequest(SOnTaskDoneRequest::request_t()) };
             request->setResponseCallback([_common](const SOnTaskDoneResponseData& _info) {
@@ -647,8 +646,8 @@ bool CControlService::subscribeToDDSSession(const SCommonParams& _common, SError
                     OLOG(debug, _common) << ss.str();
                 }
             });
-            info->m_session->sendRequest<SOnTaskDoneRequest>(request);
-            OLOG(info, _common) << "Subscribed to task done event from session " << quoted(to_string(info->m_session->getSessionID()));
+            info.m_session->sendRequest<SOnTaskDoneRequest>(request);
+            OLOG(info, _common) << "Subscribed to task done event from session " << quoted(to_string(info.m_session->getSessionID()));
         } else {
             fillError(_common, _error, ErrorCode::DDSSubscribeToSessionFailed, "Failed to subscribe to task done events: session is not running");
             return false;
@@ -933,7 +932,7 @@ RequestResult CControlService::execTerminate(const SCommonParams& _common, const
 
 StatusRequestResult CControlService::execStatus(const SStatusParams& params)
 {
-    lock_guard<mutex> lock(m_sessionsMutex);
+    lock_guard<mutex> lock(mSessionsMtx);
     STimeMeasure<std::chrono::milliseconds> measure;
     StatusRequestResult result;
     for (const auto& v : m_sessions) {

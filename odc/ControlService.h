@@ -292,48 +292,43 @@ struct SStatusParams
     friend std::ostream& operator<<(std::ostream& os, const SStatusParams& p) { return os << "StatusParams: running=" << p.m_running; }
 };
 
+struct TopoTaskInfo
+{
+    uint64_t mAgentID = 0; ///< Agent ID
+    uint64_t mSlotID = 0;  ///< Slot ID
+    uint64_t mTaskID = 0;  ///< Task ID, 0 if not assigned
+    std::string mPath;     ///< Path in the topology
+    std::string mHost;     ///< Hostname
+    std::string mWrkDir;   ///< Wrk directory
+
+    friend std::ostream& operator<<(std::ostream& os, const TopoTaskInfo& i) {
+        return os << "TopoTaskInfo: agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", taskID=" << i.mTaskID
+                  << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
+    }
+};
+
+struct TopoCollectionInfo
+{
+    uint64_t mAgentID = 0; ///< Agent ID
+    uint64_t mSlotID = 0;  ///< Slot ID
+    uint64_t mCollectionID = 0;  ///< Task/Collection ID, 0 if not assigned
+    std::string mPath;     ///< Path in the topology
+    std::string mHost;     ///< Hostname
+    std::string mWrkDir;   ///< Wrk directory
+
+    friend std::ostream& operator<<(std::ostream& os, const TopoCollectionInfo& i) {
+        return os << "TopoCollectionInfo: agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", collectionID=" << i.mCollectionID
+                  << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
+    }
+};
+
 class CControlService
 {
   public:
-    using DDSSessionPtr_t = std::shared_ptr<dds::tools_api::CSession>;
-
-    struct TopoTaskInfo
+    struct SessionInfo
     {
-        uint64_t mAgentID = 0; ///< Agent ID
-        uint64_t mSlotID = 0;  ///< Slot ID
-        uint64_t mTaskID = 0;  ///< Task ID, 0 if not assigned
-        std::string mPath;     ///< Path in the topology
-        std::string mHost;     ///< Hostname
-        std::string mWrkDir;   ///< Wrk directory
-
-        friend std::ostream& operator<<(std::ostream& os, const TopoTaskInfo& i) {
-            return os << "TopoTaskInfo: agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", taskID=" << i.mTaskID
-                      << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
-        }
-    };
-
-    struct TopoCollectionInfo
-    {
-        uint64_t mAgentID = 0; ///< Agent ID
-        uint64_t mSlotID = 0;  ///< Slot ID
-        uint64_t mCollectionID = 0;  ///< Task/Collection ID, 0 if not assigned
-        std::string mPath;     ///< Path in the topology
-        std::string mHost;     ///< Hostname
-        std::string mWrkDir;   ///< Wrk directory
-
-        friend std::ostream& operator<<(std::ostream& os, const TopoCollectionInfo& i) {
-            return os << "TopoCollectionInfo: agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", collectionID=" << i.mCollectionID
-                      << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
-        }
-    };
-
-    struct SSessionInfo
-    {
-        using Ptr_t = std::shared_ptr<SSessionInfo>;
-        using Map_t = std::map<std::string, Ptr_t>;
-
         std::unique_ptr<dds::topology_api::CTopology> m_topo = nullptr; ///< DDS topology
-        DDSSessionPtr_t m_session = nullptr; ///< DDS session
+        std::shared_ptr<dds::tools_api::CSession> m_session = nullptr; ///< DDS session
         std::unique_ptr<Topology> m_fairmqTopology = nullptr; ///< FairMQ topology
         std::string m_partitionID; ///< External partition ID of this DDS session
 
@@ -395,7 +390,6 @@ class CControlService
     };
 
     CControlService() {}
-
     // Disable copy constructors and assignment operators
     CControlService(const CControlService&) = delete;
     CControlService(CControlService&&) = delete;
@@ -458,8 +452,8 @@ class CControlService
     StatusRequestResult execStatus(const SStatusParams& _params);
 
   private:
-    SSessionInfo::Map_t m_sessions;       ///< Map of partition ID to session info
-    std::mutex m_sessionsMutex;           ///< Mutex of sessions map
+    std::map<std::string, std::unique_ptr<SessionInfo>> m_sessions; ///< Map of partition ID to session info
+    std::mutex mSessionsMtx; ///< Mutex of sessions map
     std::chrono::seconds m_timeout{ 30 }; ///< Request timeout in sec
     CDDSSubmit m_submit;                  ///< ODC to DDS submit resource converter
     CPluginManager m_triggers;            ///< Request triggers
@@ -501,11 +495,11 @@ class CControlService
     AggregatedTopologyState aggregateStateForPath(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _fairmq, const std::string& _path);
     void fairMQToODCTopologyState(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _fairmq, TopologyState* _odc);
 
-    SSessionInfo::Ptr_t getOrCreateSessionInfo(const SCommonParams& _common);
+    SessionInfo& getOrCreateSessionInfo(const SCommonParams& _common);
 
     SError checkSessionIsRunning(const SCommonParams& _common, ErrorCode _errorCode);
 
-    std::string stateSummaryString(const SCommonParams& _common, const FairMQTopologyState& _topologyState, DeviceState _expectedState, SSessionInfo::Ptr_t _info);
+    std::string stateSummaryString(const SCommonParams& _common, const FairMQTopologyState& _topologyState, DeviceState _expectedState, SessionInfo& sessionInfo);
 
     bool subscribeToDDSSession(const SCommonParams& _common, SError& _error);
 
