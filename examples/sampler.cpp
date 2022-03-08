@@ -21,7 +21,7 @@ struct Sampler : fair::mq::Device
     {
         FairMQMessagePtr msg(NewSimpleMessage("Data"));
 
-        LOG(info) << "Sending \"Data\"";
+        // LOG(info) << "Sending \"Data\"";
 
         if (Send(msg, "data1") < 0) {
             return false;

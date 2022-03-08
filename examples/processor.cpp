@@ -30,15 +30,17 @@ struct Processor : fair::mq::Device
         });
 
         selfDestruct = GetConfig()->GetProperty<bool>("self-destruct", false);
-        if (selfDestruct) {
-            LOG(warn) << "<<< --self-destruct is true, aborting >>>";
+        collectionIndex = GetConfig()->GetProperty<int>("collection-index", 0);
+        LOG(warn) << "collectionIndex == " << collectionIndex << " and --self-destruct == " << selfDestruct;
+        if (selfDestruct && collectionIndex % 2 != 0) {
+            LOG(warn) << "<<< collectionIndex == " << collectionIndex << " and --self-destruct is true, aborting >>>";
             std::abort();
         }
     }
 
     bool HandleData(FairMQMessagePtr& msg, int)
     {
-        LOG(info) << "Received data, processing...";
+        // LOG(info) << "Received data, processing...";
 
         // Modify the received string
         std::string* text = new std::string(static_cast<char*>(msg->GetData()), msg->GetSize());
@@ -57,11 +59,13 @@ struct Processor : fair::mq::Device
     }
 
     bool selfDestruct = false;
+    int collectionIndex = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()("self-destruct", bpo::value<bool>()->default_value(false), "If true, abort() during Init()");
+    options.add_options()("collection-index", bpo::value<int>()->default_value(0), "DDS collection index");
 }
 
 std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/) { return std::make_unique<Processor>(); }
