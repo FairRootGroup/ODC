@@ -44,10 +44,10 @@ class CGrpcService final
     ::grpc::Status Status(::grpc::ServerContext*        context, const odc::StatusRequest*        request, odc::StatusReply*  response);
 
   private:
-    odc::Error* newError(const odc::core::SBaseReturnValue& _value);
-    void setupGeneralReply(odc::GeneralReply* _response, const odc::core::SReturnValue& _value);
-    void setupStateReply(odc::StateReply* _response, const odc::core::SReturnValue& _value);
-    void setupStatusReply(odc::StatusReply* _response, const odc::core::SStatusReturnValue& _value);
+    odc::Error* newError(const odc::core::BaseRequestResult& result);
+    void setupGeneralReply(odc::GeneralReply* _response, const odc::core::RequestResult& result);
+    void setupStateReply(odc::StateReply* _response, const odc::core::RequestResult& result);
+    void setupStatusReply(odc::StatusReply* _response, const odc::core::StatusRequestResult& result);
     std::mutex& getMutex(const std::string& _partitionID);
 
     template<typename Request_t>

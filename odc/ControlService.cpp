@@ -72,7 +72,7 @@ void CControlService::updateRestore()
     CRestoreFile(m_restoreId, data).write();
 }
 
-SReturnValue CControlService::createReturnValue(const SCommonParams& _common,
+RequestResult CControlService::createRequestResult(const SCommonParams& _common,
                                                 const SError& _error,
                                                 const std::string& _msg,
                                                 size_t _execTime,
@@ -83,7 +83,7 @@ SReturnValue CControlService::createReturnValue(const SCommonParams& _common,
     auto info{ getOrCreateSessionInfo(_common) };
     string sidStr{ to_string(info->m_session->getSessionID()) };
     EStatusCode status{ _error.m_code ? EStatusCode::error : EStatusCode::ok };
-    return SReturnValue(status, _msg, _execTime, _error, _common.m_partitionID, _common.m_runNr, sidStr, _aggregatedState, std::move(fullState));
+    return RequestResult(status, _msg, _execTime, _error, _common.m_partitionID, _common.m_runNr, sidStr, _aggregatedState, std::move(fullState));
 }
 
 bool CControlService::createDDSSession(const SCommonParams& _common, SError& _error)
@@ -711,7 +711,7 @@ void CControlService::restore(const std::string& _id)
     }
 }
 
-SReturnValue CControlService::execInitialize(const SCommonParams& _common, const SInitializeParams& _params)
+RequestResult CControlService::execInitialize(const SCommonParams& _common, const SInitializeParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
 
@@ -735,10 +735,10 @@ SReturnValue CControlService::execInitialize(const SCommonParams& _common, const
     }
     execRequestTrigger("Initialize", _common);
     updateRestore();
-    return createReturnValue(_common, error, "Initialize done", measure.duration(), AggregatedTopologyState::Undefined);
+    return createRequestResult(_common, error, "Initialize done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
-SReturnValue CControlService::execSubmit(const SCommonParams& _common, const SSubmitParams& _params)
+RequestResult CControlService::execSubmit(const SCommonParams& _common, const SSubmitParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
 
@@ -774,10 +774,10 @@ SReturnValue CControlService::execSubmit(const SCommonParams& _common, const SSu
         }
     }
     execRequestTrigger("Submit", _common);
-    return createReturnValue(_common, error, "Submit done", measure.duration(), AggregatedTopologyState::Undefined);
+    return createRequestResult(_common, error, "Submit done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
-SReturnValue CControlService::execActivate(const SCommonParams& _common, const SActivateParams& _params)
+RequestResult CControlService::execActivate(const SCommonParams& _common, const SActivateParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     // Activate DDS topology
@@ -796,10 +796,10 @@ SReturnValue CControlService::execActivate(const SCommonParams& _common, const S
     }
     AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle : AggregatedTopologyState::Undefined };
     execRequestTrigger("Activate", _common);
-    return createReturnValue(_common, error, "Activate done", measure.duration(), state);
+    return createRequestResult(_common, error, "Activate done", measure.duration(), state);
 }
 
-SReturnValue CControlService::execRun(const SCommonParams& _common, const SInitializeParams& _initializeParams, const SSubmitParams& _submitParams, const SActivateParams& _activateParams)
+RequestResult CControlService::execRun(const SCommonParams& _common, const SInitializeParams& _initializeParams, const SSubmitParams& _submitParams, const SActivateParams& _activateParams)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     // Run request doesn't support attachment to a DDS session.
@@ -818,10 +818,10 @@ SReturnValue CControlService::execRun(const SCommonParams& _common, const SIniti
     }
     AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle : AggregatedTopologyState::Undefined };
     execRequestTrigger("Run", _common);
-    return createReturnValue(_common, error, "Run done", measure.duration(), state);
+    return createRequestResult(_common, error, "Run done", measure.duration(), state);
 }
 
-SReturnValue CControlService::execUpdate(const SCommonParams& _common, const SUpdateParams& _params)
+RequestResult CControlService::execUpdate(const SCommonParams& _common, const SUpdateParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
@@ -847,28 +847,28 @@ SReturnValue CControlService::execUpdate(const SCommonParams& _common, const SUp
         changeStateConfigure(_common, error, "", state);
     }
     execRequestTrigger("Update", _common);
-    return createReturnValue(_common, error, "Update done", measure.duration(), state);
+    return createRequestResult(_common, error, "Update done", measure.duration(), state);
 }
 
-SReturnValue CControlService::execShutdown(const SCommonParams& _common)
+RequestResult CControlService::execShutdown(const SCommonParams& _common)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     SError error;
     shutdownDDSSession(_common, error);
     execRequestTrigger("Shutdown", _common);
-    return createReturnValue(_common, error, "Shutdown done", measure.duration(), AggregatedTopologyState::Undefined);
+    return createRequestResult(_common, error, "Shutdown done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
-SReturnValue CControlService::execSetProperties(const SCommonParams& _common, const SSetPropertiesParams& _params)
+RequestResult CControlService::execSetProperties(const SCommonParams& _common, const SSetPropertiesParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     SError error;
     setProperties(_common, error, _params);
     execRequestTrigger("SetProperties", _common);
-    return createReturnValue(_common, error, "SetProperties done", measure.duration(), AggregatedTopologyState::Undefined);
+    return createRequestResult(_common, error, "SetProperties done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
-SReturnValue CControlService::execGetState(const SCommonParams& _common, const SDeviceParams& _params)
+RequestResult CControlService::execGetState(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
@@ -876,10 +876,10 @@ SReturnValue CControlService::execGetState(const SCommonParams& _common, const S
     SError error;
     getState(_common, error, _params.m_path, state, fullState.get());
     execRequestTrigger("GetState", _common);
-    return createReturnValue(_common, error, "GetState done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(_common, error, "GetState done", measure.duration(), state, std::move(fullState));
 }
 
-SReturnValue CControlService::execConfigure(const SCommonParams& _common, const SDeviceParams& _params)
+RequestResult CControlService::execConfigure(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
@@ -887,10 +887,10 @@ SReturnValue CControlService::execConfigure(const SCommonParams& _common, const 
     SError error;
     changeStateConfigure(_common, error, _params.m_path, state, fullState.get());
     execRequestTrigger("Configure", _common);
-    return createReturnValue(_common, error, "Configure done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(_common, error, "Configure done", measure.duration(), state, std::move(fullState));
 }
 
-SReturnValue CControlService::execStart(const SCommonParams& _common, const SDeviceParams& _params)
+RequestResult CControlService::execStart(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
@@ -898,10 +898,10 @@ SReturnValue CControlService::execStart(const SCommonParams& _common, const SDev
     SError error;
     changeState(_common, error, TopologyTransition::Run, _params.m_path, state, fullState.get());
     execRequestTrigger("Start", _common);
-    return createReturnValue(_common, error, "Start done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(_common, error, "Start done", measure.duration(), state, std::move(fullState));
 }
 
-SReturnValue CControlService::execStop(const SCommonParams& _common, const SDeviceParams& _params)
+RequestResult CControlService::execStop(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
@@ -909,10 +909,10 @@ SReturnValue CControlService::execStop(const SCommonParams& _common, const SDevi
     SError error;
     changeState(_common, error, TopologyTransition::Stop, _params.m_path, state, fullState.get());
     execRequestTrigger("Stop", _common);
-    return createReturnValue(_common, error, "Stop done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(_common, error, "Stop done", measure.duration(), state, std::move(fullState));
 }
 
-SReturnValue CControlService::execReset(const SCommonParams& _common, const SDeviceParams& _params)
+RequestResult CControlService::execReset(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
@@ -920,10 +920,10 @@ SReturnValue CControlService::execReset(const SCommonParams& _common, const SDev
     SError error;
     changeStateReset(_common, error, _params.m_path, state, fullState.get());
     execRequestTrigger("Reset", _common);
-    return createReturnValue(_common, error, "Reset done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(_common, error, "Reset done", measure.duration(), state, std::move(fullState));
 }
 
-SReturnValue CControlService::execTerminate(const SCommonParams& _common, const SDeviceParams& _params)
+RequestResult CControlService::execTerminate(const SCommonParams& _common, const SDeviceParams& _params)
 {
     STimeMeasure<std::chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
@@ -931,14 +931,14 @@ SReturnValue CControlService::execTerminate(const SCommonParams& _common, const 
     SError error;
     changeState(_common, error, TopologyTransition::End, _params.m_path, state, fullState.get());
     execRequestTrigger("Terminate", _common);
-    return createReturnValue(_common, error, "Terminate done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(_common, error, "Terminate done", measure.duration(), state, std::move(fullState));
 }
 
-SStatusReturnValue CControlService::execStatus(const SStatusParams& _params)
+StatusRequestResult CControlService::execStatus(const SStatusParams& _params)
 {
     lock_guard<mutex> lock(m_sessionsMutex);
     STimeMeasure<std::chrono::milliseconds> measure;
-    SStatusReturnValue result;
+    StatusRequestResult result;
     for (const auto& v : m_sessions) {
         const auto& info{ v.second };
         SPartitionStatus status;

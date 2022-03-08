@@ -119,30 +119,30 @@ std::string CCliControlService::requestStatus(const SStatusParams& _params)
     return statusReply(m_service->execStatus(_params));
 }
 
-string CCliControlService::generalReply(const SReturnValue& _value)
+string CCliControlService::generalReply(const RequestResult& result)
 {
     stringstream ss;
 
-    if (_value.m_statusCode == EStatusCode::ok)
+    if (result.m_statusCode == EStatusCode::ok)
     {
-        ss << "  Status code: SUCCESS\n  Message: " << _value.m_msg << endl;
+        ss << "  Status code: SUCCESS\n  Message: " << result.m_msg << endl;
     }
     else
     {
-        ss << "  Status code: ERROR\n  Error code: " << _value.m_error.m_code.value()
-           << "\n  Error message: " << _value.m_error.m_code.message() << " (" << _value.m_error.m_details << ")"
+        ss << "  Status code: ERROR\n  Error code: " << result.m_error.m_code.value()
+           << "\n  Error message: " << result.m_error.m_code.message() << " (" << result.m_error.m_details << ")"
            << endl;
     }
 
-    ss << "  Aggregated state: " << _value.m_aggregatedState << endl;
-    ss << "  Partition ID: " << _value.m_partitionID << endl;
-    ss << "  Run Nr: " << _value.m_runNr << endl;
-    ss << "  Session ID: " << _value.m_sessionID << endl;
+    ss << "  Aggregated state: " << result.m_aggregatedState << endl;
+    ss << "  Partition ID: " << result.m_partitionID << endl;
+    ss << "  Run Nr: " << result.m_runNr << endl;
+    ss << "  Session ID: " << result.m_sessionID << endl;
 
-    if (_value.mFullState != nullptr)
+    if (result.mFullState != nullptr)
     {
         ss << endl << "  Devices: " << endl;
-        for (const auto& state : *(_value.mFullState))
+        for (const auto& state : *(result.mFullState))
         {
             ss << "    { id: " << state.m_status.taskId << "; path: " << state.m_path
                << "; state: " << state.m_status.state << " }" << endl;
@@ -150,31 +150,31 @@ string CCliControlService::generalReply(const SReturnValue& _value)
         ss << endl;
     }
 
-    ss << "  Execution time: " << _value.m_execTime << " msec" << endl;
+    ss << "  Execution time: " << result.m_execTime << " msec" << endl;
 
     return ss.str();
 }
 
-std::string CCliControlService::statusReply(const SStatusReturnValue& _value)
+std::string CCliControlService::statusReply(const StatusRequestResult& result)
 {
     stringstream ss;
-    if (_value.m_statusCode == EStatusCode::ok)
+    if (result.m_statusCode == EStatusCode::ok)
     {
-        ss << "  Status code: SUCCESS\n  Message: " << _value.m_msg << endl;
+        ss << "  Status code: SUCCESS\n  Message: " << result.m_msg << endl;
     }
     else
     {
-        ss << "  Status code: ERROR\n  Error code: " << _value.m_error.m_code.value()
-           << "\n  Error message: " << _value.m_error.m_code.message() << " (" << _value.m_error.m_details << ")"
+        ss << "  Status code: ERROR\n  Error code: " << result.m_error.m_code.value()
+           << "\n  Error message: " << result.m_error.m_code.message() << " (" << result.m_error.m_details << ")"
            << endl;
     }
     ss << "  Partitions: " << endl;
-    for (const auto& p : _value.m_partitions)
+    for (const auto& p : result.m_partitions)
     {
         ss << "    { partition ID: " << p.m_partitionID << "; session ID: " << p.m_sessionID
            << "; status: " << ((p.m_sessionStatus == ESessionStatus::running) ? "RUNNING" : "STOPPED")
            << "; state: " << GetAggregatedTopologyStateName(p.m_aggregatedState) << " }" << endl;
     }
-    ss << "  Execution time: " << _value.m_execTime << " msec" << endl;
+    ss << "  Execution time: " << result.m_execTime << " msec" << endl;
     return ss.str();
 }

@@ -51,8 +51,8 @@ namespace odc::cli
         std::string requestStatus(const odc::core::SStatusParams& _params);
 
       private:
-        std::string generalReply(const odc::core::SReturnValue& _value);
-        std::string statusReply(const odc::core::SStatusReturnValue& _value);
+        std::string generalReply(const odc::core::RequestResult& result);
+        std::string statusReply(const odc::core::StatusRequestResult& result);
 
       private:
         std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service

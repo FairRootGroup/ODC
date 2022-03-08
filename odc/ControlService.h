@@ -88,10 +88,10 @@ struct SPartitionStatus
     AggregatedTopologyState m_aggregatedState = AggregatedTopologyState::Undefined; ///< Aggregated state of the affected divices
 };
 
-struct SBaseReturnValue
+struct BaseRequestResult
 {
-    SBaseReturnValue() {}
-    SBaseReturnValue(EStatusCode _statusCode, const std::string& _msg, size_t _execTime, const SError& _error)
+    BaseRequestResult() {}
+    BaseRequestResult(EStatusCode _statusCode, const std::string& _msg, size_t _execTime, const SError& _error)
         : m_statusCode(_statusCode)
         , m_msg(_msg)
         , m_execTime(_execTime)
@@ -103,11 +103,11 @@ struct SBaseReturnValue
     SError m_error;                                  ///< In case of error containes information about the error
 };
 
-/// \brief Structure holds return value of the request
-struct SReturnValue : public SBaseReturnValue
+/// \brief Request result
+struct RequestResult : public BaseRequestResult
 {
-    SReturnValue() {}
-    SReturnValue(EStatusCode _statusCode,
+    RequestResult() {}
+    RequestResult(EStatusCode _statusCode,
                  const std::string& _msg,
                  size_t _execTime,
                  const SError& _error,
@@ -116,7 +116,7 @@ struct SReturnValue : public SBaseReturnValue
                  const std::string& _sessionID,
                  AggregatedTopologyState _aggregatedState,
                  std::unique_ptr<TopologyState> fullState = nullptr)
-        : SBaseReturnValue(_statusCode, _msg, _execTime, _error)
+        : BaseRequestResult(_statusCode, _msg, _execTime, _error)
         , m_partitionID(_partitionID)
         , m_runNr(_runNr)
         , m_sessionID(_sessionID)
@@ -133,12 +133,12 @@ struct SReturnValue : public SBaseReturnValue
     std::unique_ptr<TopologyState> mFullState = nullptr;
 };
 
-/// \brief Structure holds information about return status
-struct SStatusReturnValue : public SBaseReturnValue
+/// \brief Status Request Result
+struct StatusRequestResult : public BaseRequestResult
 {
-    SStatusReturnValue() {}
-    SStatusReturnValue(EStatusCode _statusCode, const std::string& _msg, size_t _execTime, const SError& _error)
-        : SBaseReturnValue(_statusCode, _msg, _execTime, _error)
+    StatusRequestResult() {}
+    StatusRequestResult(EStatusCode _statusCode, const std::string& _msg, size_t _execTime, const SError& _error)
+        : BaseRequestResult(_statusCode, _msg, _execTime, _error)
     {}
 
     std::vector<SPartitionStatus> m_partitions; ///< Statuses of partitions
@@ -398,40 +398,40 @@ class CControlService
     // DDS topology and session requests
 
     /// \brief Initialize DDS session
-    SReturnValue execInitialize(const SCommonParams& _common, const SInitializeParams& _params);
+    RequestResult execInitialize(const SCommonParams& _common, const SInitializeParams& _params);
     /// \brief Submit DDS agents. Can be called multiple times in order to submit more agents.
-    SReturnValue execSubmit(const SCommonParams& _common, const SSubmitParams& _params);
+    RequestResult execSubmit(const SCommonParams& _common, const SSubmitParams& _params);
     /// \brief Activate topology
-    SReturnValue execActivate(const SCommonParams& _common, const SActivateParams& _params);
+    RequestResult execActivate(const SCommonParams& _common, const SActivateParams& _params);
     /// \brief Run request combines Initialize, Submit and Activate
-    SReturnValue execRun(const SCommonParams& _common, const SInitializeParams& _initializeParams, const SSubmitParams& _submitParams, const SActivateParams& _activateParams);
+    RequestResult execRun(const SCommonParams& _common, const SInitializeParams& _initializeParams, const SSubmitParams& _submitParams, const SActivateParams& _activateParams);
     /// \brief Update topology. Can be called multiple times in order to update topology.
-    SReturnValue execUpdate(const SCommonParams& _common, const SUpdateParams& _params);
+    RequestResult execUpdate(const SCommonParams& _common, const SUpdateParams& _params);
     /// \brief Shutdown DDS session
-    SReturnValue execShutdown(const SCommonParams& _common);
+    RequestResult execShutdown(const SCommonParams& _common);
 
     /// \brief Set properties
-    SReturnValue execSetProperties(const SCommonParams& _common, const SSetPropertiesParams& _params);
+    RequestResult execSetProperties(const SCommonParams& _common, const SSetPropertiesParams& _params);
     /// \brief Get state
-    SReturnValue execGetState(const SCommonParams& _common, const SDeviceParams& _params);
+    RequestResult execGetState(const SCommonParams& _common, const SDeviceParams& _params);
 
     // FairMQ device change state requests
 
     /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
-    SReturnValue execConfigure(const SCommonParams& _common, const SDeviceParams& _params);
+    RequestResult execConfigure(const SCommonParams& _common, const SDeviceParams& _params);
     /// \brief Start devices: Run
-    SReturnValue execStart(const SCommonParams& _common, const SDeviceParams& _params);
+    RequestResult execStart(const SCommonParams& _common, const SDeviceParams& _params);
     /// \brief Stop devices: Stop
-    SReturnValue execStop(const SCommonParams& _common, const SDeviceParams& _params);
+    RequestResult execStop(const SCommonParams& _common, const SDeviceParams& _params);
     /// \brief Reset devices: ResetTask->ResetDevice
-    SReturnValue execReset(const SCommonParams& _common, const SDeviceParams& _params);
+    RequestResult execReset(const SCommonParams& _common, const SDeviceParams& _params);
     /// \brief Terminate devices: End
-    SReturnValue execTerminate(const SCommonParams& _common, const SDeviceParams& _params);
+    RequestResult execTerminate(const SCommonParams& _common, const SDeviceParams& _params);
 
     // Generic requests
 
     /// \brief Status request
-    SStatusReturnValue execStatus(const SStatusParams& _params);
+    StatusRequestResult execStatus(const SStatusParams& _params);
 
   private:
     SSessionInfo::Map_t m_sessions;       ///< Map of partition ID to session info
@@ -444,12 +444,12 @@ class CControlService
     void execRequestTrigger(const std::string& _plugin, const SCommonParams& _common);
     void updateRestore();
 
-    SReturnValue createReturnValue(const SCommonParams& _common,
-                                   const SError& _error,
-                                   const std::string& _msg,
-                                   size_t _execTime,
-                                   AggregatedTopologyState _aggregatedState,
-                                   std::unique_ptr<TopologyState> fullState = nullptr);
+    RequestResult createRequestResult(const SCommonParams& _common,
+                                      const SError& _error,
+                                      const std::string& _msg,
+                                      size_t _execTime,
+                                      AggregatedTopologyState _aggregatedState,
+                                      std::unique_ptr<TopologyState> fullState = nullptr);
     bool createDDSSession(const SCommonParams& _common, SError& _error);
     bool attachToDDSSession(const SCommonParams& _common, SError& _error, const std::string& _sessionID);
     bool submitDDSAgents(const SCommonParams& _common, SError& _error, const CDDSSubmit::SParams& _params);
