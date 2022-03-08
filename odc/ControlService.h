@@ -159,9 +159,9 @@ struct SCommonParams
     size_t m_timeout = 0;       ///< Request timeout in seconds. 0 means "not set"
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& _os, const SCommonParams& _params)
+    friend std::ostream& operator<<(std::ostream& os, const SCommonParams& p)
     {
-        return _os << "CommonParams: partitionID=" << quoted(_params.m_partitionID) << ", runNr=" << _params.m_runNr << ", timeout=" << _params.m_timeout;
+        return os << "CommonParams: partitionID=" << quoted(p.m_partitionID) << ", runNr=" << p.m_runNr << ", timeout=" << p.m_timeout;
     }
 };
 
@@ -174,7 +174,7 @@ struct SInitializeParams
     std::string m_sessionID; ///< DDS session ID
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& _os, const SInitializeParams& _params) { return _os << "InitilizeParams: sid=" << quoted(_params.m_sessionID); }
+    friend std::ostream& operator<<(std::ostream& os, const SInitializeParams& p) { return os << "InitilizeParams: sid=" << quoted(p.m_sessionID); }
 };
 
 /// \brief Structure holds configuration parameters of the submit request
@@ -189,9 +189,9 @@ struct SSubmitParams
     std::string m_resources; ///< Parcable description of the requested resources.
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& _os, const SSubmitParams& _params)
+    friend std::ostream& operator<<(std::ostream& os, const SSubmitParams& p)
     {
-        return _os << "SubmitParams: plugin=" << quoted(_params.m_plugin) << "; resources=" << quoted(_params.m_resources);
+        return os << "SubmitParams: plugin=" << quoted(p.m_plugin) << "; resources=" << quoted(p.m_resources);
     }
 };
 
@@ -209,10 +209,10 @@ struct SActivateParams
     std::string m_topologyScript;  ///< Script that generates topology content
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& _os, const SActivateParams& _params)
+    friend std::ostream& operator<<(std::ostream& os, const SActivateParams& p)
     {
-        return _os << "ActivateParams: topologyFile=" << quoted(_params.m_topologyFile) << "; topologyContent=" << quoted(_params.m_topologyContent)
-                << "; topologyScript=" << quoted(_params.m_topologyScript);
+        return os << "ActivateParams: topologyFile=" << quoted(p.m_topologyFile) << "; topologyContent=" << quoted(p.m_topologyContent)
+                << "; topologyScript=" << quoted(p.m_topologyScript);
     }
 };
 
@@ -230,10 +230,10 @@ struct SUpdateParams
     std::string m_topologyScript;  ///< Script that generates topology content
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& _os, const SUpdateParams& _params)
+    friend std::ostream& operator<<(std::ostream& os, const SUpdateParams& p)
     {
-        return _os << "UpdateParams: topologyFile=" << quoted(_params.m_topologyFile) << "; topologyContent=" << quoted(_params.m_topologyContent)
-                << "; topologyScript=" << quoted(_params.m_topologyScript);
+        return os << "UpdateParams: topologyFile=" << quoted(p.m_topologyFile) << "; topologyContent=" << quoted(p.m_topologyContent)
+                << "; topologyScript=" << quoted(p.m_topologyScript);
     }
 };
 
@@ -252,13 +252,13 @@ struct SSetPropertiesParams
     Properties_t m_properties; ///< List of device configuration properties
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& _os, const SSetPropertiesParams& _params)
+    friend std::ostream& operator<<(std::ostream& os, const SSetPropertiesParams& p)
     {
-        _os << "SetPropertiesParams: path=" << quoted(_params.m_path) << "; properties={";
-        for (const auto& v : _params.m_properties) {
-            _os << " (" << v.first << ":" << v.second << ") ";
+        os << "SetPropertiesParams: path=" << quoted(p.m_path) << "; properties={";
+        for (const auto& v : p.m_properties) {
+            os << " (" << v.first << ":" << v.second << ") ";
         }
-        return _os << "}";
+        return os << "}";
     }
 };
 
@@ -274,9 +274,9 @@ struct SDeviceParams
     bool m_detailed{ false }; ///< If True than return also detailed information
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& _os, const SDeviceParams& _params)
+    friend std::ostream& operator<<(std::ostream& os, const SDeviceParams& p)
     {
-        return _os << "DeviceParams: path=" << quoted(_params.m_path) << "; detailed=" << _params.m_detailed;
+        return os << "DeviceParams: path=" << quoted(p.m_path) << "; detailed=" << p.m_detailed;
     }
 };
 
@@ -289,7 +289,7 @@ struct SStatusParams
     bool m_running{ false }; ///< Select only running DDS sessions
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& _os, const SStatusParams& _params) { return _os << "StatusParams: running=" << _params.m_running; }
+    friend std::ostream& operator<<(std::ostream& os, const SStatusParams& p) { return os << "StatusParams: running=" << p.m_running; }
 };
 
 class CControlService
@@ -297,26 +297,33 @@ class CControlService
   public:
     using DDSSessionPtr_t = std::shared_ptr<dds::tools_api::CSession>;
 
-    struct STopoItemInfo
+    struct TopoTaskInfo
     {
-        uint64_t m_agentID = 0; ///< Agent ID
-        uint64_t m_slotID = 0;  ///< Slot ID
-        uint64_t m_itemID = 0;  ///< Task/Collection ID, 0 if not assigned
-        std::string m_path;     ///< Path in the topology
-        std::string m_host;     ///< Hostname
-        std::string m_wrkDir;   ///< Wrk directory
+        uint64_t mAgentID = 0; ///< Agent ID
+        uint64_t mSlotID = 0;  ///< Slot ID
+        uint64_t mTaskID = 0;  ///< Task ID, 0 if not assigned
+        std::string mPath;     ///< Path in the topology
+        std::string mHost;     ///< Hostname
+        std::string mWrkDir;   ///< Wrk directory
 
-        std::string toString() const
-        {
-            // clang-format off
-            return odc::core::toString("agentID (", m_agentID,        "), ",
-                                       "slotID (",  m_slotID,         "), ",
-                                       "itemID (",  m_itemID,         "), ",
-                                       "path (",    quoted(m_path),   "), ",
-                                       "host (",    m_host,           "), ",
-                                       "wrkDir (",  quoted(m_wrkDir), ")"
-                                      );
-            // clang-format on
+        friend std::ostream& operator<<(std::ostream& os, const TopoTaskInfo& i) {
+            return os << "TopoTaskInfo: agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", taskID=" << i.mTaskID
+                      << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
+        }
+    };
+
+    struct TopoCollectionInfo
+    {
+        uint64_t mAgentID = 0; ///< Agent ID
+        uint64_t mSlotID = 0;  ///< Slot ID
+        uint64_t mCollectionID = 0;  ///< Task/Collection ID, 0 if not assigned
+        std::string mPath;     ///< Path in the topology
+        std::string mHost;     ///< Hostname
+        std::string mWrkDir;   ///< Wrk directory
+
+        friend std::ostream& operator<<(std::ostream& os, const TopoCollectionInfo& i) {
+            return os << "TopoCollectionInfo: agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", collectionID=" << i.mCollectionID
+                      << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
         }
     };
 
@@ -325,24 +332,24 @@ class CControlService
         using Ptr_t = std::shared_ptr<SSessionInfo>;
         using Map_t = std::map<std::string, Ptr_t>;
 
-        std::unique_ptr<dds::topology_api::CTopology> m_topo = nullptr;              ///< DDS topology
-        DDSSessionPtr_t m_session = nullptr;            ///< DDS session
+        std::unique_ptr<dds::topology_api::CTopology> m_topo = nullptr; ///< DDS topology
+        DDSSessionPtr_t m_session = nullptr; ///< DDS session
         std::unique_ptr<Topology> m_fairmqTopology = nullptr; ///< FairMQ topology
-        std::string m_partitionID;                     ///< External partition ID of this DDS session
+        std::string m_partitionID; ///< External partition ID of this DDS session
 
-        void addToTaskCache(std::shared_ptr<STopoItemInfo> item)
+        void addToTaskCache(TopoTaskInfo&& taskInfo)
         {
             std::lock_guard<std::mutex> lock(mTaskCacheMutex);
-            mTaskCache[item->m_itemID] = item;
+            mTaskCache.emplace(taskInfo.mTaskID, taskInfo);
         }
 
-        void addToCollectionCache(std::shared_ptr<STopoItemInfo> item)
+        void addToCollectionCache(TopoCollectionInfo&& collectionInfo)
         {
             std::lock_guard<std::mutex> lock(mCollectionCacheMutex);
-            mCollectionCache[item->m_itemID] = item;
+            mCollectionCache.emplace(collectionInfo.mCollectionID, collectionInfo);
         }
 
-        std::shared_ptr<STopoItemInfo> getFromTaskCache(uint64_t taskID)
+        TopoTaskInfo& getFromTaskCache(uint64_t taskID)
         {
             std::lock_guard<std::mutex> lock(mTaskCacheMutex);
             auto it = mTaskCache.find(taskID);
@@ -352,7 +359,7 @@ class CControlService
             return it->second;
         }
 
-        std::shared_ptr<STopoItemInfo> getFromCollectionCache(uint64_t collectionID)
+        TopoCollectionInfo& getFromCollectionCache(uint64_t collectionID)
         {
             std::lock_guard<std::mutex> lock(mCollectionCacheMutex);
             auto it = mCollectionCache.find(collectionID);
@@ -362,11 +369,29 @@ class CControlService
             return it->second;
         }
 
+        void debug()
+        {
+            {
+                OLOG(info) << "tasks:";
+                std::lock_guard<std::mutex> lock(mTaskCacheMutex);
+                for (const auto& t : mTaskCache) {
+                    OLOG(info) << t.second;
+                }
+            }
+            {
+                OLOG(info) << "collections:";
+                std::lock_guard<std::mutex> lock(mCollectionCacheMutex);
+                for (const auto& c : mCollectionCache) {
+                    OLOG(info) << c.second;
+                }
+            }
+        }
+
       private:
-        std::unordered_map<uint64_t, std::shared_ptr<STopoItemInfo>> mTaskCache;       ///< Additional information about the task
         std::mutex mTaskCacheMutex; ///< Mutex for the tasks container
-        std::unordered_map<uint64_t, std::shared_ptr<STopoItemInfo>> mCollectionCache; ///< Additional information about collection
         std::mutex mCollectionCacheMutex; ///< Mutex for the collections container
+        std::unordered_map<uint64_t, TopoTaskInfo> mTaskCache; ///< Additional information about task
+        std::unordered_map<uint64_t, TopoCollectionInfo> mCollectionCache; ///< Additional information about collection
     };
 
     CControlService() {}

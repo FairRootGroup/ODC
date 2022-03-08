@@ -185,7 +185,7 @@ bool CControlService::waitForNumActiveAgents(const SCommonParams& _common, SErro
     return true;
 }
 
-bool CControlService::activateDDSTopology(const SCommonParams& _common, SError& _error, const string& _topologyFile, STopologyRequest::request_t::EUpdateType _updateType)
+bool CControlService::activateDDSTopology(const SCommonParams& common, SError& _error, const string& _topologyFile, STopologyRequest::request_t::EUpdateType _updateType)
 {
     bool success(true);
 
@@ -195,48 +195,41 @@ bool CControlService::activateDDSTopology(const SCommonParams& _common, SError& 
     topoInfo.m_updateType = _updateType;
 
     std::condition_variable cv;
-    auto sessionInfo{ getOrCreateSessionInfo(_common) };
+    auto sessionInfo{ getOrCreateSessionInfo(common) };
 
     STopologyRequest::ptr_t requestPtr{ STopologyRequest::makeRequest(topoInfo) };
 
-    requestPtr->setMessageCallback([&success, &_error, &_common, this](const SMessageResponseData& _message) {
-        if (_message.m_severity == dds::intercom_api::EMsgSeverity::error) {
+    requestPtr->setMessageCallback([&success, &_error, &common, this](const SMessageResponseData& msg) {
+        if (msg.m_severity == dds::intercom_api::EMsgSeverity::error) {
             success = false;
-            fillError(_common, _error, ErrorCode::DDSActivateTopologyFailed, toString("Activate error: ", _message.m_msg));
+            fillError(common, _error, ErrorCode::DDSActivateTopologyFailed, toString("Activate error: ", msg.m_msg));
         } else {
-            OLOG(debug, _common) << "Activate: " << _message.m_msg;
+            OLOG(debug, common) << "Activate: " << msg.m_msg;
         }
     });
 
-    requestPtr->setProgressCallback([&_common](const SProgressResponseData& _progress) {
-        uint32_t completed{ _progress.m_completed + _progress.m_errors };
-        if (completed == _progress.m_total) {
-            OLOG(info, _common) << "Activated tasks (" << _progress.m_completed << "), errors (" << _progress.m_errors << "), total (" << _progress.m_total << ")";
+    requestPtr->setProgressCallback([&common](const SProgressResponseData& progress) {
+        uint32_t completed{ progress.m_completed + progress.m_errors };
+        if (completed == progress.m_total) {
+            OLOG(info, common) << "Activated tasks (" << progress.m_completed << "), errors (" << progress.m_errors << "), total (" << progress.m_total << ")";
         }
     });
 
-    requestPtr->setResponseCallback([&_common, sessionInfo](const STopologyResponseData& _info) {
-        OLOG(debug, _common) << "Activate: " << _info;
+    requestPtr->setResponseCallback([&common, sessionInfo](const STopologyResponseData& res) {
+        OLOG(debug, common) << "Activate: " << res;
 
         // We are not interested in stopped tasks
-        if (_info.m_activated) {
-            auto task(make_shared<STopoItemInfo>());
-            task->m_agentID = _info.m_agentID;
-            task->m_slotID = _info.m_slotID;
-            task->m_itemID = _info.m_taskID;
-            task->m_path = _info.m_path;
-            task->m_host = _info.m_host;
-            task->m_wrkDir = _info.m_wrkDir;
-            sessionInfo->addToTaskCache(task);
+        if (res.m_activated) {
+            TopoTaskInfo task{res.m_agentID, res.m_slotID, res.m_taskID, res.m_path, res.m_host, res.m_wrkDir};
+            sessionInfo->addToTaskCache(std::move(task));
 
-            if (_info.m_collectionID > 0) {
-                auto collection(make_shared<STopoItemInfo>(*task));
-                collection->m_itemID = _info.m_collectionID;
-                auto pos = collection->m_path.rfind('/');
+            if (res.m_collectionID > 0) {
+                TopoCollectionInfo collection{res.m_agentID, res.m_slotID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir};
+                auto pos = collection.mPath.rfind('/');
                 if (pos != std::string::npos) {
-                    collection->m_path.erase(pos);
+                    collection.mPath.erase(pos);
                 }
-                sessionInfo->addToCollectionCache(collection);
+                sessionInfo->addToCollectionCache(std::move(collection));
             }
         }
     });
@@ -247,15 +240,17 @@ bool CControlService::activateDDSTopology(const SCommonParams& _common, SError& 
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus{ cv.wait_for(lock, requestTimeout(_common)) };
+    std::cv_status waitStatus{ cv.wait_for(lock, requestTimeout(common)) };
 
     if (waitStatus == std::cv_status::timeout) {
         success = false;
-        fillError(_common, _error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
-        OLOG(error, _common) << _error;
+        fillError(common, _error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
+        OLOG(error, common) << _error;
     }
 
-    OLOG(info, _common) << "Topology " << quoted(_topologyFile) << ((success) ? " activated successfully" : " failed to activate");
+    sessionInfo->debug();
+
+    OLOG(info, common) << "Topology " << quoted(_topologyFile) << ((success) ? " activated successfully" : " failed to activate");
     return success;
 }
 
@@ -454,8 +449,8 @@ bool CControlService::setProperties(const SCommonParams& _common, SError& _error
             ss << "List of failed devices for SetProperties request (" << result.second.size() << "):" << endl;
             for (auto taskId : result.second) {
                 try {
-                    auto item{ info->getFromTaskCache(taskId) };
-                    ss << right << setw(7) << count << "   Task: " << item->toString() << endl;
+                    TopoTaskInfo& taskInfo = info->getFromTaskCache(taskId);
+                    ss << right << setw(7) << count << "   Task: " << taskInfo << endl;
                 } catch (const exception& _e) {
                     OLOG(error, _common) << "Set properties error: " << _e.what();
                 }
@@ -594,8 +589,8 @@ string CControlService::stateSummaryString(const SCommonParams& _common, const F
            << "subscribed (" << status.subscribed_to_state_changes << ")";
 
         try {
-            auto item{ _info->getFromTaskCache(status.taskId) };
-            ss << ", " << item->toString();
+            TopoTaskInfo& taskInfo = _info->getFromTaskCache(status.taskId);
+            ss << ", " << taskInfo;
         } catch (const exception& _e) {
             OLOG(error, _common) << "State summary error: " << _e.what();
         }
@@ -618,8 +613,8 @@ string CControlService::stateSummaryString(const SCommonParams& _common, const F
         ss << endl << right << setw(7) << collectionFailedCount << "   Collection: state (" << collectionState << ")";
 
         try {
-            auto item{ _info->getFromCollectionCache(collectionId) };
-            ss << ", " << item->toString();
+            TopoCollectionInfo& collectionInfo = _info->getFromCollectionCache(collectionId);
+            ss << ", " << collectionInfo;
         } catch (const exception& _e) {
             OLOG(error, _common) << "State summary error: " << _e.what();
         }
