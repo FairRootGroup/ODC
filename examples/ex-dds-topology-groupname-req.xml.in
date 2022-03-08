@@ -1,5 +1,7 @@
 <topology name="Example">
 
+    <var name="nminProcessorGroup" value="2" />
+
     <declrequirement name="onlineReq" type="groupname" value="online"/>
     <declrequirement name="calibReq" type="groupname" value="calib"/>
 

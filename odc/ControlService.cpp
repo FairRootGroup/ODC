@@ -131,7 +131,7 @@ bool CControlService::submitDDSAgents(const SCommonParams& _common, SError& _err
     requestPtr->setMessageCallback([&success, &_error, &_common, this](const SMessageResponseData& _message) {
         if (_message.m_severity == dds::intercom_api::EMsgSeverity::error) {
             success = false;
-            fillError(_common, _error, ErrorCode::DDSSubmitAgentsFailed, toString("Sumbit error: ", _message.m_msg));
+            fillError(_common, _error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit error: ", _message.m_msg));
         } else {
             OLOG(info, _common) << "Submit: " << _message.m_msg;
         }
@@ -195,7 +195,7 @@ bool CControlService::activateDDSTopology(const SCommonParams& _common, SError& 
     topoInfo.m_updateType = _updateType;
 
     std::condition_variable cv;
-    auto info{ getOrCreateSessionInfo(_common) };
+    auto sessionInfo{ getOrCreateSessionInfo(_common) };
 
     STopologyRequest::ptr_t requestPtr{ STopologyRequest::makeRequest(topoInfo) };
 
@@ -215,7 +215,7 @@ bool CControlService::activateDDSTopology(const SCommonParams& _common, SError& 
         }
     });
 
-    requestPtr->setResponseCallback([&_common, info](const STopologyResponseData& _info) {
+    requestPtr->setResponseCallback([&_common, sessionInfo](const STopologyResponseData& _info) {
         OLOG(debug, _common) << "Activate: " << _info;
 
         // We are not interested in stopped tasks
@@ -227,7 +227,7 @@ bool CControlService::activateDDSTopology(const SCommonParams& _common, SError& 
             task->m_path = _info.m_path;
             task->m_host = _info.m_host;
             task->m_wrkDir = _info.m_wrkDir;
-            info->addToTaskCache(task);
+            sessionInfo->addToTaskCache(task);
 
             if (_info.m_collectionID > 0) {
                 auto collection(make_shared<STopoItemInfo>(*task));
@@ -236,14 +236,14 @@ bool CControlService::activateDDSTopology(const SCommonParams& _common, SError& 
                 if (pos != std::string::npos) {
                     collection->m_path.erase(pos);
                 }
-                info->addToCollectionCache(collection);
+                sessionInfo->addToCollectionCache(collection);
             }
         }
     });
 
     requestPtr->setDoneCallback([&cv]() { cv.notify_all(); });
 
-    info->m_session->sendRequest<STopologyRequest>(requestPtr);
+    sessionInfo->m_session->sendRequest<STopologyRequest>(requestPtr);
 
     std::mutex mtx;
     std::unique_lock<std::mutex> lock(mtx);
@@ -288,7 +288,7 @@ bool CControlService::createTopo(const SCommonParams& _common, SError& _error, c
 {
     try {
         auto info{ getOrCreateSessionInfo(_common) };
-        info->m_topo = make_shared<dds::topology_api::CTopology>(_topologyFile);
+        info->m_topo = make_unique<dds::topology_api::CTopology>(_topologyFile);
         OLOG(info, _common) << "DDS topology " << std::quoted(_topologyFile) << " created successfully";
     } catch (exception& _e) {
         fillError(_common, _error, ErrorCode::DDSCreateTopologyFailed, toString("Failed to initialize DDS topology: ", _e.what()));
@@ -317,83 +317,84 @@ bool CControlService::createFairMQTopo(const SCommonParams& _common, SError& _er
     return info->m_fairmqTopology != nullptr;
 }
 
-bool CControlService::changeState(const SCommonParams& _common,
-                                         SError& _error,
-                                         TopologyTransition _transition,
-                                         const string& _path,
-                                         AggregatedTopologyState& _aggregatedState,
-                                         TopologyState* _topologyState)
+bool CControlService::changeState(const SCommonParams& common,
+                                         SError& error,
+                                         TopologyTransition transition,
+                                         const string& path,
+                                         AggregatedTopologyState& aggregatedState,
+                                         TopologyState* topologyState)
 {
-    auto info{ getOrCreateSessionInfo(_common) };
+    auto info{ getOrCreateSessionInfo(common) };
     if (info->m_fairmqTopology == nullptr) {
-        fillError(_common, _error, ErrorCode::FairMQChangeStateFailed, "FairMQ topology is not initialized");
+        fillError(common, error, ErrorCode::FairMQChangeStateFailed, "FairMQ topology is not initialized");
         return false;
     }
 
-    auto it{ expectedState.find(_transition) };
+    auto it{ expectedState.find(transition) };
     DeviceState _expectedState{ it != expectedState.end() ? it->second : DeviceState::Undefined };
     if (_expectedState == DeviceState::Undefined) {
-        fillError(_common, _error, ErrorCode::FairMQChangeStateFailed, toString("Unexpected FairMQ transition ", _transition));
+        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Unexpected FairMQ transition ", transition));
         return false;
     }
 
     bool success(true);
 
     try {
-        auto result{ info->m_fairmqTopology->ChangeState(_transition, _path, requestTimeout(_common)) };
+        auto result{ info->m_fairmqTopology->ChangeState(transition, path, requestTimeout(common)) };
 
         success = !result.first;
         if (success) {
             try {
-                _aggregatedState = AggregateState(result.second);
+                aggregatedState = AggregateState(result.second);
             } catch (exception& _e) {
                 success = false;
-                fillError(_common, _error, ErrorCode::FairMQChangeStateFailed, toString("Aggregate topology state failed: ", _e.what()));
-                OLOG(error, _common) << stateSummaryString(_common, result.second, _expectedState, info);
+                fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Aggregate topology state failed: ", _e.what()));
+                OLOG(error, common) << stateSummaryString(common, result.second, _expectedState, info);
             }
-            if (_topologyState != nullptr)
-                fairMQToODCTopologyState(info->m_topo, result.second, _topologyState);
+            if (topologyState != nullptr) {
+                fairMQToODCTopologyState(info->m_topo.get(), result.second, topologyState);
+            }
         } else {
             switch (static_cast<ErrorCode>(result.first.value())) {
                 case ErrorCode::OperationTimeout:
-                    fillError(_common, _error, ErrorCode::RequestTimeout, toString("Timed out waiting for change state ", _transition));
+                    fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for change state ", transition));
                     break;
                 default:
-                    fillError(_common, _error, ErrorCode::FairMQChangeStateFailed, toString("FairMQ change state failed: ", result.first.message()));
+                    fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("FairMQ change state failed: ", result.first.message()));
                     break;
             }
-            OLOG(error, _common) << stateSummaryString(_common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
+            OLOG(error, common) << stateSummaryString(common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
         }
     } catch (exception& _e) {
         success = false;
-        fillError(_common, _error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
-        OLOG(error, _common) << stateSummaryString(_common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
+        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
+        OLOG(error, common) << stateSummaryString(common, info->m_fairmqTopology->GetCurrentState(), _expectedState, info);
     }
 
     if (success) {
-        OLOG(info, _common) << "State changed to " << _aggregatedState << " via " << _transition << " transition";
+        OLOG(info, common) << "State changed to " << aggregatedState << " via " << transition << " transition";
     }
 
     const auto stats{ SStateStats(info->m_fairmqTopology->GetCurrentState()) };
-    OLOG(info, _common) << stats.tasksString();
-    OLOG(info, _common) << stats.collectionsString();
+    OLOG(info, common) << stats.tasksString();
+    OLOG(info, common) << stats.collectionsString();
 
     return success;
 }
 
-bool CControlService::changeStateConfigure(const SCommonParams& _common, SError& _error, const string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState)
+bool CControlService::changeStateConfigure(const SCommonParams& common, SError& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
 {
-    return changeState(_common, _error, TopologyTransition::InitDevice,   _path, _aggregatedState, _topologyState)
-        && changeState(_common, _error, TopologyTransition::CompleteInit, _path, _aggregatedState, _topologyState)
-        && changeState(_common, _error, TopologyTransition::Bind,         _path, _aggregatedState, _topologyState)
-        && changeState(_common, _error, TopologyTransition::Connect,      _path, _aggregatedState, _topologyState)
-        && changeState(_common, _error, TopologyTransition::InitTask,     _path, _aggregatedState, _topologyState);
+    return changeState(common, error, TopologyTransition::InitDevice,   path, aggregatedState, topologyState)
+        && changeState(common, error, TopologyTransition::CompleteInit, path, aggregatedState, topologyState)
+        && changeState(common, error, TopologyTransition::Bind,         path, aggregatedState, topologyState)
+        && changeState(common, error, TopologyTransition::Connect,      path, aggregatedState, topologyState)
+        && changeState(common, error, TopologyTransition::InitTask,     path, aggregatedState, topologyState);
 }
 
-bool CControlService::changeStateReset(const SCommonParams& _common, SError& _error, const string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState)
+bool CControlService::changeStateReset(const SCommonParams& common, SError& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
 {
-    return changeState(_common, _error, TopologyTransition::ResetTask, _path, _aggregatedState, _topologyState)
-           && changeState(_common, _error, TopologyTransition::ResetDevice, _path, _aggregatedState, _topologyState);
+    return changeState(common, error, TopologyTransition::ResetTask, path, aggregatedState, topologyState)
+        && changeState(common, error, TopologyTransition::ResetDevice, path, aggregatedState, topologyState);
 }
 
 bool CControlService::getState(const SCommonParams& _common, SError& _error, const string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState)
@@ -408,13 +409,13 @@ bool CControlService::getState(const SCommonParams& _common, SError& _error, con
     auto const state(info->m_fairmqTopology->GetCurrentState());
 
     try {
-        _aggregatedState = aggregateStateForPath(info->m_topo, state, _path);
+        _aggregatedState = aggregateStateForPath(info->m_topo.get(), state, _path);
     } catch (exception& _e) {
         success = false;
         fillError(_common, _error, ErrorCode::FairMQGetStateFailed, toString("Get state failed: ", _e.what()));
     }
     if (_topologyState != nullptr)
-        fairMQToODCTopologyState(info->m_topo, state, _topologyState);
+        fairMQToODCTopologyState(info->m_topo.get(), state, _topologyState);
 
     const auto stats{ SStateStats(state) };
     OLOG(info, _common) << stats.tasksString();
@@ -470,7 +471,7 @@ bool CControlService::setProperties(const SCommonParams& _common, SError& _error
     return success;
 }
 
-AggregatedTopologyState CControlService::aggregateStateForPath(const DDSTopologyPtr_t& _topo, const FairMQTopologyState& _topoState, const string& _path)
+AggregatedTopologyState CControlService::aggregateStateForPath(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _topoState, const string& _path)
 {
     if (_path.empty())
         return AggregateState(_topoState);
@@ -515,7 +516,7 @@ AggregatedTopologyState CControlService::aggregateStateForPath(const DDSTopology
     }
 }
 
-void CControlService::fairMQToODCTopologyState(const DDSTopologyPtr_t& _topo, const FairMQTopologyState& _fairmq, TopologyState* _odc)
+void CControlService::fairMQToODCTopologyState(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _fairmq, TopologyState* _odc)
 {
     if (_odc == nullptr || _topo == nullptr)
         return;
@@ -759,18 +760,19 @@ RequestResult CControlService::execSubmit(const SCommonParams& _common, const SS
     if (!error.m_code) {
         size_t totalRequiredSlots = 0;
         for (const auto& param : ddsParams) {
-            OLOG(info) << "Submitting " << param;
+            // OLOG(info) << "Submitting " << param;
             // Submit DDS agents
             if (submitDDSAgents(_common, error, param)) {
                 totalRequiredSlots += param.m_numRequiredSlots;
-                // TODO: wait for all submissions only once. Depends on https://github.com/FairRootGroup/DDS/issues/411
-                OLOG(info) << "Waiting for " << totalRequiredSlots << " available slots...";
-                waitForNumActiveAgents(_common, error, totalRequiredSlots);
                 OLOG(info) << "Done waiting for slots.";
             } else {
                 OLOG(error) << "Submission failed";
                 break;
             }
+        }
+        if (!error.m_code) {
+            OLOG(info) << "Waiting for " << totalRequiredSlots << " slots...";
+            waitForNumActiveAgents(_common, error, totalRequiredSlots);
         }
     }
     execRequestTrigger("Submit", _common);
@@ -934,7 +936,7 @@ RequestResult CControlService::execTerminate(const SCommonParams& _common, const
     return createRequestResult(_common, error, "Terminate done", measure.duration(), state, std::move(fullState));
 }
 
-StatusRequestResult CControlService::execStatus(const SStatusParams& _params)
+StatusRequestResult CControlService::execStatus(const SStatusParams& params)
 {
     lock_guard<mutex> lock(m_sessionsMutex);
     STimeMeasure<std::chrono::milliseconds> measure;
@@ -951,10 +953,13 @@ StatusRequestResult CControlService::execStatus(const SStatusParams& _params)
         }
 
         // Filter running sessions if needed
-        if ((_params.m_running && status.m_sessionStatus == ESessionStatus::running) || (!_params.m_running)) {
+        if ((params.m_running && status.m_sessionStatus == ESessionStatus::running) || (!params.m_running)) {
             try {
-                status.m_aggregatedState = (info->m_fairmqTopology != nullptr && info->m_topo != nullptr) ? aggregateStateForPath(info->m_topo, info->m_fairmqTopology->GetCurrentState(), "")
-                                                                                                          : AggregatedTopologyState::Undefined;
+                status.m_aggregatedState = (info->m_fairmqTopology != nullptr && info->m_topo != nullptr)
+                ?
+                aggregateStateForPath(info->m_topo.get(), info->m_fairmqTopology->GetCurrentState(), "")
+                :
+                AggregatedTopologyState::Undefined;
             } catch (exception& _e) {
                 OLOG(warning, status.m_partitionID, 0) << "Failed to get an aggregated state: " << _e.what();
             }

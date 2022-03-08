@@ -295,7 +295,6 @@ struct SStatusParams
 class CControlService
 {
   public:
-    using DDSTopologyPtr_t = std::shared_ptr<dds::topology_api::CTopology>;
     using DDSSessionPtr_t = std::shared_ptr<dds::tools_api::CSession>;
 
     struct STopoItemInfo
@@ -326,7 +325,7 @@ class CControlService
         using Ptr_t = std::shared_ptr<SSessionInfo>;
         using Map_t = std::map<std::string, Ptr_t>;
 
-        DDSTopologyPtr_t m_topo = nullptr;              ///< DDS topology
+        std::unique_ptr<dds::topology_api::CTopology> m_topo = nullptr;              ///< DDS topology
         DDSSessionPtr_t m_session = nullptr;            ///< DDS session
         std::unique_ptr<Topology> m_fairmqTopology = nullptr; ///< FairMQ topology
         std::string m_partitionID;                     ///< External partition ID of this DDS session
@@ -468,14 +467,14 @@ class CControlService
                      AggregatedTopologyState& _aggregatedState,
                      TopologyState* _topologyState = nullptr);
     bool getState(const SCommonParams& _common, SError& _error, const std::string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState = nullptr);
-    bool changeStateConfigure(const SCommonParams& _common, SError& _error, const std::string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState = nullptr);
-    bool changeStateReset(const SCommonParams& _common, SError& _error, const std::string& _path, AggregatedTopologyState& _aggregatedState, TopologyState* _topologyState = nullptr);
+    bool changeStateConfigure(const SCommonParams& common, SError& error, const std::string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState = nullptr);
+    bool changeStateReset(const SCommonParams& common, SError& error, const std::string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState = nullptr);
 
     void fillError(const SCommonParams& _common, SError& _error, ErrorCode _errorCode, const std::string& _msg);
     void fillFatalError(const SCommonParams& _common, SError& _error, ErrorCode _errorCode, const std::string& _msg);
 
-    AggregatedTopologyState aggregateStateForPath(const DDSTopologyPtr_t& _topo, const FairMQTopologyState& _fairmq, const std::string& _path);
-    void fairMQToODCTopologyState(const DDSTopologyPtr_t& _topo, const FairMQTopologyState& _fairmq, TopologyState* _odc);
+    AggregatedTopologyState aggregateStateForPath(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _fairmq, const std::string& _path);
+    void fairMQToODCTopologyState(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _fairmq, TopologyState* _odc);
 
     SSessionInfo::Ptr_t getOrCreateSessionInfo(const SCommonParams& _common);
 
