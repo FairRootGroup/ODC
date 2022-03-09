@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <numeric>
+#include <sstream>
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/Topology.h>
@@ -114,17 +115,41 @@ void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_r
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::GetState(::grpc::ServerContext* context, const odc::StateRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::GetState(::grpc::ServerContext* ctx, const odc::StateRequest* req, odc::StateReply* res)
 {
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(request) };
+    assert(ctx);
+    const auto client{ clientMetadataAsString(*ctx) };
+    const auto common{ commonParams(req) };
     lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "GetState request from " << client << ":\n" << request->DebugString();
-    SDeviceParams params{ request->path(), request->detailed() };
+    OLOG(info, common) << "GetState request from " << client << ":\n" << req->DebugString();
+    SDeviceParams params{ req->path(), req->detailed() };
     RequestResult result{ m_service.execGetState(common, params) };
-    setupStateReply(response, result);
-    logResponse("GetState response:\n", common, response);
+    setupStateReply(res, result);
+
+    if (res->reply().status() == odc::ReplyStatus::ERROR) {
+        OLOG(error, common) << "GetState response:" << " ERROR"
+            << " (" << res->reply().error().code()
+            << "), sessionId: " << res->reply().sessionid()
+            << ", partitionId: " << res->reply().partitionid()
+            << ", state: " << res->reply().state()
+            << ", msg: " << res->reply().error().msg();
+    } else if (res->reply().status() == odc::ReplyStatus::SUCCESS) {
+        stringstream ss;
+        ss << "GetState response: "
+           << "state: " << res->reply().state()
+           << ", sessionId: " << res->reply().sessionid()
+           << ", partitionId: " << res->reply().partitionid();
+        if (req->detailed()) {
+            ss << ", Devices:\n";
+            for (const auto& d : res->devices()) {
+                ss << "id: " << d.id() << ", state: " << d.state() << ", path: " << d.path() << "\n";
+            }
+        }
+        OLOG(info, common) << ss.str();
+    } else {
+        OLOG(info, common) << "GetState response: " << res->DebugString();
+    }
+
     return ::grpc::Status::OK;
 }
 

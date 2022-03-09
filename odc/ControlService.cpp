@@ -79,7 +79,6 @@ RequestResult ControlService::createRequestResult(const SCommonParams& common,
                                                 AggregatedTopologyState aggregatedState,
                                                 std::unique_ptr<TopologyState> fullState/*  = nullptr */)
 {
-    OLOG(debug, common) << "Creating return value...";
     auto& info = getOrCreateSessionInfo(common);
     string sidStr{ to_string(info.m_session->getSessionID()) };
     EStatusCode status{ error.m_code ? EStatusCode::error : EStatusCode::ok };
@@ -401,7 +400,8 @@ bool ControlService::getState(const SCommonParams& common, SError& error, const 
 {
     auto& info = getOrCreateSessionInfo(common);
     if (info.m_fairmqTopology == nullptr) {
-        fillError(common, error, ErrorCode::FairMQGetStateFailed, "FairMQ topology is not initialized");
+        error.m_code = MakeErrorCode(ErrorCode::FairMQGetStateFailed);
+        error.m_details = "FairMQ topology is not initialized";
         return false;
     }
 
@@ -556,10 +556,10 @@ ControlService::SessionInfo& ControlService::getOrCreateSessionInfo(const SCommo
         newSessionInfo->m_session = make_unique<CSession>();
         newSessionInfo->m_partitionID = common.m_partitionID;
         auto ret = m_sessions.emplace(common.m_partitionID, std::move(newSessionInfo));
-        OLOG(debug, common) << "Return new session info";
+        OLOG(debug, common) << "Return new session info for partition ID " << quoted(common.m_partitionID);
         return *(ret.first->second);
     }
-    OLOG(debug, common) << "Return existing session info";
+    OLOG(debug, common) << "Return existing session info for partition ID " << quoted(common.m_partitionID);
     return *(it->second);
 }
 
