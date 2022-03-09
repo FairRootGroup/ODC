@@ -57,7 +57,7 @@ class CGrpcService final
     void logResponse(const std::string& _msg, const core::SCommonParams& _common, const Response_t* _response);
     void logResponse(const std::string& _msg, const core::SCommonParams& _common, const odc::StateReply* _response);
 
-    odc::core::CControlService m_service; ///< Core ODC service
+    odc::core::ControlService m_service; ///< Core ODC service
 
     // Mutex for each partition.
     // All requests for a certain partition are processed sequentially.

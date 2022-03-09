@@ -55,7 +55,7 @@ namespace odc::cli
         std::string statusReply(const odc::core::StatusRequestResult& result);
 
       private:
-        std::shared_ptr<odc::core::CControlService> m_service; ///< Core ODC service
+        std::shared_ptr<odc::core::ControlService> m_service; ///< Core ODC service
     };
 } // namespace odc::cli
 
