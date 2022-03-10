@@ -26,7 +26,7 @@
 namespace odc::core {
 
 /// \brief Return status code of request
-enum EStatusCode
+enum StatusCode
 {
     unknown = 0,
     ok,
@@ -34,28 +34,28 @@ enum EStatusCode
 };
 
 /// \brief General error
-struct SError
+struct Error
 {
-    SError() {}
-    SError(std::error_code _code, const std::string& _details)
-        : m_code(_code)
-        , m_details(_details)
+    Error() {}
+    Error(std::error_code code, const std::string& details)
+        : m_code(code)
+        , m_details(details)
     {}
 
     std::error_code m_code; ///< Error code
     std::string m_details;  ///< Details of the error
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& _os, const SError& error) { return _os << error.m_code << " (" << error.m_details << ")"; }
+    friend std::ostream& operator<<(std::ostream& os, const Error& error) { return os << error.m_code << " (" << error.m_details << ")"; }
 };
 
 /// \brief Holds device status of detailed output
 struct SDeviceStatus
 {
     SDeviceStatus() {}
-    SDeviceStatus(const DeviceStatus& _status, const std::string& _path)
-        : m_status(_status)
-        , m_path(_path)
+    SDeviceStatus(const DeviceStatus& status, const std::string& path)
+        : m_status(status)
+        , m_path(path)
     {}
 
     DeviceStatus m_status;
@@ -65,7 +65,7 @@ struct SDeviceStatus
 /// \brief Aggregated topology state
 using TopologyState = std::vector<SDeviceStatus>;
 
-enum class ESessionStatus
+enum class DDSSessionStatus
 {
     unknown = 0,
     running = 1,
@@ -75,51 +75,51 @@ enum class ESessionStatus
 struct SPartitionStatus
 {
     SPartitionStatus() {}
-    SPartitionStatus(const std::string& _partitionID, const std::string& _sessionID, ESessionStatus _sessionStatus, AggregatedTopologyState aggregatedState)
-        : m_partitionID(_partitionID)
-        , m_sessionID(_sessionID)
-        , m_sessionStatus(_sessionStatus)
+    SPartitionStatus(const std::string& partitionID, const std::string& sessionID, DDSSessionStatus sessionStatus, AggregatedTopologyState aggregatedState)
+        : m_partitionID(partitionID)
+        , m_sessionID(sessionID)
+        , m_sessionStatus(sessionStatus)
         , m_aggregatedState(aggregatedState)
     {}
 
     std::string m_partitionID;                                                      ///< Partition ID
     std::string m_sessionID;                                                        ///< Session ID of DDS
-    ESessionStatus m_sessionStatus = ESessionStatus::unknown;                       ///< DDS session status
+    DDSSessionStatus m_sessionStatus = DDSSessionStatus::unknown;                       ///< DDS session status
     AggregatedTopologyState m_aggregatedState = AggregatedTopologyState::Undefined; ///< Aggregated state of the affected divices
 };
 
 struct BaseRequestResult
 {
     BaseRequestResult() {}
-    BaseRequestResult(EStatusCode statusCode, const std::string& msg, size_t execTime, const SError& error)
+    BaseRequestResult(StatusCode statusCode, const std::string& msg, size_t execTime, const Error& error)
         : m_statusCode(statusCode)
         , m_msg(msg)
         , m_execTime(execTime)
         , m_error(error)
     {}
-    EStatusCode m_statusCode = EStatusCode::unknown; ///< Operation status code
+    StatusCode m_statusCode = StatusCode::unknown; ///< Operation status code
     std::string m_msg;                               ///< General message about the status
     size_t m_execTime = 0;                           ///< Execution time in milliseconds
-    SError m_error;                                  ///< In case of error containes information about the error
+    Error m_error;                                  ///< In case of error containes information about the error
 };
 
 /// \brief Request result
 struct RequestResult : public BaseRequestResult
 {
     RequestResult() {}
-    RequestResult(EStatusCode statusCode,
+    RequestResult(StatusCode statusCode,
                  const std::string& msg,
                  size_t execTime,
-                 const SError& error,
-                 const std::string& _partitionID,
-                 uint64_t _runNr,
-                 const std::string& _sessionID,
+                 const Error& error,
+                 const std::string& partitionID,
+                 uint64_t runNr,
+                 const std::string& sessionID,
                  AggregatedTopologyState aggregatedState,
                  std::unique_ptr<TopologyState> fullState = nullptr)
         : BaseRequestResult(statusCode, msg, execTime, error)
-        , m_partitionID(_partitionID)
-        , m_runNr(_runNr)
-        , m_sessionID(_sessionID)
+        , m_partitionID(partitionID)
+        , m_runNr(runNr)
+        , m_sessionID(sessionID)
         , m_aggregatedState(aggregatedState)
         , mFullState(std::move(fullState))
     {}
@@ -137,7 +137,7 @@ struct RequestResult : public BaseRequestResult
 struct StatusRequestResult : public BaseRequestResult
 {
     StatusRequestResult() {}
-    StatusRequestResult(EStatusCode statusCode, const std::string& msg, size_t execTime, const SError& error)
+    StatusRequestResult(StatusCode statusCode, const std::string& msg, size_t execTime, const Error& error)
         : BaseRequestResult(statusCode, msg, execTime, error)
     {}
 
@@ -145,13 +145,13 @@ struct StatusRequestResult : public BaseRequestResult
 };
 
 /// \brief Structure holds common request parameters
-struct SCommonParams
+struct CommonParams
 {
-    SCommonParams() {}
-    SCommonParams(const std::string& _partitionID, uint64_t _runNr, int _timeout)
-        : m_partitionID(_partitionID)
-        , m_runNr(_runNr)
-        , m_timeout(_timeout)
+    CommonParams() {}
+    CommonParams(const std::string& partitionID, uint64_t runNr, int timeout)
+        : m_partitionID(partitionID)
+        , m_runNr(runNr)
+        , m_timeout(timeout)
     {}
 
     std::string m_partitionID; ///< Partition ID.
@@ -159,7 +159,7 @@ struct SCommonParams
     size_t m_timeout = 0;       ///< Request timeout in seconds. 0 means "not set"
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& os, const SCommonParams& p)
+    friend std::ostream& operator<<(std::ostream& os, const CommonParams& p)
     {
         return os << "CommonParams: partitionID=" << quoted(p.m_partitionID) << ", runNr=" << p.m_runNr << ", timeout=" << p.m_timeout;
     }
@@ -169,7 +169,7 @@ struct SCommonParams
 struct SInitializeParams
 {
     SInitializeParams() {}
-    SInitializeParams(const std::string& _sessionID) : m_sessionID(_sessionID) {}
+    SInitializeParams(const std::string& sessionID) : m_sessionID(sessionID) {}
 
     std::string m_sessionID; ///< DDS session ID
 
@@ -181,9 +181,9 @@ struct SInitializeParams
 struct SSubmitParams
 {
     SSubmitParams() {}
-    SSubmitParams(const std::string& _plugin, const std::string& _resources)
-        : m_plugin(_plugin)
-        , m_resources(_resources)
+    SSubmitParams(const std::string& plugin, const std::string& resources)
+        : m_plugin(plugin)
+        , m_resources(resources)
     {}
     std::string m_plugin;    ///< ODC resource plugin name. Plugin has to be registered in ODC server.
     std::string m_resources; ///< Parcable description of the requested resources.
@@ -244,9 +244,9 @@ struct SSetPropertiesParams
     using Properties_t = std::vector<Property_t>;
 
     SSetPropertiesParams() {}
-    SSetPropertiesParams(const Properties_t& _properties, const std::string& _path)
-        : m_path(_path)
-        , m_properties(_properties)
+    SSetPropertiesParams(const Properties_t& properties, const std::string& path)
+        : m_path(path)
+        , m_properties(properties)
     {}
     std::string m_path;        ///< Path in the topology
     Properties_t m_properties; ///< List of device configuration properties
@@ -266,9 +266,9 @@ struct SSetPropertiesParams
 struct SDeviceParams
 {
     SDeviceParams() {}
-    SDeviceParams(const std::string& _path, bool _detailed)
-        : m_path(_path)
-        , m_detailed(_detailed)
+    SDeviceParams(const std::string& path, bool detailed)
+        : m_path(path)
+        , m_detailed(detailed)
     {}
     std::string m_path;       ///< Path to the topoloy file
     bool m_detailed{ false }; ///< If True than return also detailed information
@@ -284,7 +284,7 @@ struct SDeviceParams
 struct SStatusParams
 {
     SStatusParams() {}
-    SStatusParams(bool _running) : m_running(_running) {}
+    SStatusParams(bool running) : m_running(running) {}
 
     bool m_running{ false }; ///< Select only running DDS sessions
 
@@ -398,58 +398,58 @@ class ControlService
 
     /// \brief Set timeout of requests
     /// \param [in] _timeout Timeout in seconds
-    void setTimeout(const std::chrono::seconds& _timeout) { m_timeout = _timeout; }
+    void setTimeout(const std::chrono::seconds& timeout) { m_timeout = timeout; }
 
     /// \brief Register resource plugins
-    /// \param [in] _pluginMap Map of plugin name to path
-    void registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap);
+    /// \param [in] pluginMap Map of plugin name to path
+    void registerResourcePlugins(const CPluginManager::PluginMap_t& pluginMap);
 
     /// \brief Register request triggers
-    /// \param [in] _triggerMap Map of plugin name to path
-    void registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap);
+    /// \param [in] triggerMap Map of plugin name to path
+    void registerRequestTriggers(const CPluginManager::PluginMap_t& triggerMap);
 
     /// \brief Restore sessions for the specified ID
     ///  The function has to be called before the service start accepting request.
-    /// \param [in] _id ID of the restore file
-    void restore(const std::string& _id);
+    /// \param [in] id ID of the restore file
+    void restore(const std::string& id);
 
     // DDS topology and session requests
 
     /// \brief Initialize DDS session
-    RequestResult execInitialize(const SCommonParams& common, const SInitializeParams& _params);
+    RequestResult execInitialize(const CommonParams& common, const SInitializeParams& params);
     /// \brief Submit DDS agents. Can be called multiple times in order to submit more agents.
-    RequestResult execSubmit(const SCommonParams& common, const SSubmitParams& _params);
+    RequestResult execSubmit(const CommonParams& common, const SSubmitParams& params);
     /// \brief Activate topology
-    RequestResult execActivate(const SCommonParams& common, const SActivateParams& _params);
+    RequestResult execActivate(const CommonParams& common, const SActivateParams& params);
     /// \brief Run request combines Initialize, Submit and Activate
-    RequestResult execRun(const SCommonParams& common, const SInitializeParams& _initializeParams, const SSubmitParams& _submitParams, const SActivateParams& _activateParams);
+    RequestResult execRun(const CommonParams& common, const SInitializeParams& _initializeParams, const SSubmitParams& _submitParams, const SActivateParams& _activateParams);
     /// \brief Update topology. Can be called multiple times in order to update topology.
-    RequestResult execUpdate(const SCommonParams& common, const SUpdateParams& _params);
+    RequestResult execUpdate(const CommonParams& common, const SUpdateParams& params);
     /// \brief Shutdown DDS session
-    RequestResult execShutdown(const SCommonParams& common);
+    RequestResult execShutdown(const CommonParams& common);
 
     /// \brief Set properties
-    RequestResult execSetProperties(const SCommonParams& common, const SSetPropertiesParams& _params);
+    RequestResult execSetProperties(const CommonParams& common, const SSetPropertiesParams& params);
     /// \brief Get state
-    RequestResult execGetState(const SCommonParams& common, const SDeviceParams& _params);
+    RequestResult execGetState(const CommonParams& common, const SDeviceParams& params);
 
     // FairMQ device change state requests
 
     /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
-    RequestResult execConfigure(const SCommonParams& common, const SDeviceParams& _params);
+    RequestResult execConfigure(const CommonParams& common, const SDeviceParams& params);
     /// \brief Start devices: Run
-    RequestResult execStart(const SCommonParams& common, const SDeviceParams& _params);
+    RequestResult execStart(const CommonParams& common, const SDeviceParams& params);
     /// \brief Stop devices: Stop
-    RequestResult execStop(const SCommonParams& common, const SDeviceParams& _params);
+    RequestResult execStop(const CommonParams& common, const SDeviceParams& params);
     /// \brief Reset devices: ResetTask->ResetDevice
-    RequestResult execReset(const SCommonParams& common, const SDeviceParams& _params);
+    RequestResult execReset(const CommonParams& common, const SDeviceParams& params);
     /// \brief Terminate devices: End
-    RequestResult execTerminate(const SCommonParams& common, const SDeviceParams& _params);
+    RequestResult execTerminate(const CommonParams& common, const SDeviceParams& params);
 
     // Generic requests
 
     /// \brief Status request
-    StatusRequestResult execStatus(const SStatusParams& _params);
+    StatusRequestResult execStatus(const SStatusParams& params);
 
   private:
     std::map<std::string, std::unique_ptr<SessionInfo>> m_sessions; ///< Map of partition ID to session info
@@ -459,101 +459,55 @@ class ControlService
     CPluginManager m_triggers;            ///< Request triggers
     std::string m_restoreId;              ///< Restore ID
 
-    void execRequestTrigger(const std::string& _plugin, const SCommonParams& common);
+    void execRequestTrigger(const std::string& plugin, const CommonParams& common);
     void updateRestore();
 
-    RequestResult createRequestResult(const SCommonParams& common,
-                                      const SError& error,
+    RequestResult createRequestResult(const CommonParams& common,
+                                      const Error& error,
                                       const std::string& msg,
                                       size_t execTime,
                                       AggregatedTopologyState aggregatedState,
                                       std::unique_ptr<TopologyState> fullState = nullptr);
-    bool createDDSSession(const SCommonParams& common, SError& error);
-    bool attachToDDSSession(const SCommonParams& common, SError& error, const std::string& _sessionID);
-    bool submitDDSAgents(const SCommonParams& common, SError& error, const CDDSSubmit::SParams& _params);
-    bool activateDDSTopology(const SCommonParams& common, SError& error, const std::string& _topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType _updateType);
-    bool waitForNumActiveAgents(const SCommonParams& common, SError& error, size_t _numAgents);
-    bool requestCommanderInfo(const SCommonParams& common, SError& error, dds::tools_api::SCommanderInfoRequest::response_t& _commanderInfo);
-    bool shutdownDDSSession(const SCommonParams& common, SError& error);
-    bool resetFairMQTopo(const SCommonParams& common);
-    bool createFairMQTopo(const SCommonParams& common, SError& error, const std::string& _topologyFile);
-    bool createTopo(const SCommonParams& common, SError& error, const std::string& _topologyFile);
-    bool setProperties(const SCommonParams& common, SError& error, const SSetPropertiesParams& _params);
-    bool changeState(const SCommonParams& common,
-                     SError& error,
-                     TopologyTransition _transition,
-                     const std::string& _path,
+    bool createDDSSession(const CommonParams& common, Error& error);
+    bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
+    bool submitDDSAgents(const CommonParams& common, Error& error, const CDDSSubmit::SParams& _params);
+    bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
+    bool waitForNumActiveAgents(const CommonParams& common, Error& error, size_t numAgents);
+    bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
+    bool shutdownDDSSession(const CommonParams& common, Error& error);
+    bool resetFairMQTopo(const CommonParams& common);
+    bool createFairMQTopo(const CommonParams& common, Error& error, const std::string& topologyFile);
+    bool createTopo(const CommonParams& common, Error& error, const std::string& topologyFile);
+    bool setProperties(const CommonParams& common, Error& error, const SSetPropertiesParams& params);
+    bool changeState(const CommonParams& common,
+                     Error& error,
+                     TopologyTransition transition,
+                     const std::string& path,
                      AggregatedTopologyState& aggregatedState,
-                     TopologyState* _topologyState = nullptr);
-    bool getState(const SCommonParams& common, SError& error, const std::string& _path, AggregatedTopologyState& aggregatedState, TopologyState* _topologyState = nullptr);
-    bool changeStateConfigure(const SCommonParams& common, SError& error, const std::string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState = nullptr);
-    bool changeStateReset(const SCommonParams& common, SError& error, const std::string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState = nullptr);
+                     TopologyState* topologyState = nullptr);
+    bool getState(const CommonParams& common, Error& error, const std::string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState = nullptr);
+    bool changeStateConfigure(const CommonParams& common, Error& error, const std::string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState = nullptr);
+    bool changeStateReset(const CommonParams& common, Error& error, const std::string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState = nullptr);
 
     void updateTopologyOnFailure();
 
-    void fillError(const SCommonParams& common, SError& error, ErrorCode errorCode, const std::string& msg);
-    void fillFatalError(const SCommonParams& common, SError& error, ErrorCode errorCode, const std::string& msg);
+    void fillError(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
+    void fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
 
-    AggregatedTopologyState aggregateStateForPath(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _fairmq, const std::string& _path);
-    void fairMQToODCTopologyState(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _fairmq, TopologyState* _odc);
+    AggregatedTopologyState aggregateStateForPath(const dds::topology_api::CTopology* topo, const FairMQTopologyState& fairmq, const std::string& path);
+    void fairMQToODCTopologyState(const dds::topology_api::CTopology* topo, const FairMQTopologyState& fairmq, TopologyState* odc);
 
-    SessionInfo& getOrCreateSessionInfo(const SCommonParams& common);
+    SessionInfo& getOrCreateSessionInfo(const CommonParams& common);
 
-    SError checkSessionIsRunning(const SCommonParams& common, ErrorCode errorCode);
+    Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
 
-    std::string stateSummaryString(const SCommonParams& common, const FairMQTopologyState& _topologyState, DeviceState _expectedState, SessionInfo& sessionInfo);
+    std::string stateSummaryString(const CommonParams& common, const FairMQTopologyState& topologyState, DeviceState expectedState, SessionInfo& sessionInfo);
 
-    bool subscribeToDDSSession(const SCommonParams& common, SError& error);
+    bool subscribeToDDSSession(const CommonParams& common, Error& error);
 
-    template<class Params_t>
-    std::string topoFilepath(const SCommonParams& common, const Params_t& _params)
-    {
-        int count{ (_params.m_topologyFile.empty() ? 0 : 1) + (_params.m_topologyContent.empty() ? 0 : 1) + (_params.m_topologyScript.empty() ? 0 : 1) };
-        if (count != 1) {
-            throw std::runtime_error("Either topology filepath, content or script has to be set");
-        }
-        if (!_params.m_topologyFile.empty()) {
-            return _params.m_topologyFile;
-        }
+    std::string topoFilepath(const CommonParams& common, const std::string& topologyFile, const std::string& topologyContent, const std::string& topologyScript);
 
-        std::string content{ _params.m_topologyContent };
-
-        // Execute topology script if needed
-        if (!_params.m_topologyScript.empty()) {
-            std::stringstream ssCmd;
-            ssCmd << boost::process::search_path("bash").string() << " -c " << quoted(_params.m_topologyScript);
-            const std::chrono::seconds timeout{ 30 };
-            std::string out;
-            std::string err;
-            int exitCode{ EXIT_SUCCESS };
-            std::string cmd{ ssCmd.str() };
-            OLOG(info, common) << "Executing topology script " << std::quoted(cmd);
-            execute(cmd, timeout, &out, &err, &exitCode);
-
-            if (exitCode != EXIT_SUCCESS) {
-                throw std::runtime_error(toString("Topology generation script ", quoted(cmd), " failed with exit code: ", exitCode, "; stderr: ", quoted(err), "; stdout: ", quoted(out)));
-            }
-
-            const std::string sout{ out.substr(0, std::min(out.length(), size_t(20))) };
-            OLOG(info, common) << "Topology script executed successfully: stdout (" << quoted(sout) << "...) stderr (" << quoted(err) << ")";
-
-            content = out;
-        }
-
-        // Create temp topology file with `content`
-        const boost::filesystem::path tmpPath{ boost::filesystem::temp_directory_path() / boost::filesystem::unique_path() };
-        boost::filesystem::create_directories(tmpPath);
-        const boost::filesystem::path filepath{ tmpPath / "topology.xml" };
-        std::ofstream file(filepath.string());
-        if (!file.is_open()) {
-            throw std::runtime_error(toString("Failed to create temp topology file ", quoted(filepath.string())));
-        }
-        file << content;
-        OLOG(info, common) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
-        return filepath.string();
-    }
-
-    std::chrono::seconds requestTimeout(const SCommonParams& common) const;
+    std::chrono::seconds requestTimeout(const CommonParams& common) const;
 };
 } // namespace odc::core
 

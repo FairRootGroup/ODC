@@ -22,10 +22,10 @@ using namespace std;
 
 namespace {
 
-auto clientMetadataAsString(const ::grpc::ServerContext& context) -> std::string
+std::string clientMetadataAsString(const ::grpc::ServerContext& ctx)
 {
-    const auto clientMetadata{ context.client_metadata() };
-    return toString("[", context.peer(), "]{",
+    const auto clientMetadata{ ctx.client_metadata() };
+    return toString("[", ctx.peer(), "]{",
                     std::accumulate(clientMetadata.begin(),
                                     clientMetadata.end(),
                                     std::string{},
@@ -35,273 +35,270 @@ auto clientMetadataAsString(const ::grpc::ServerContext& context) -> std::string
 
 } // namespace
 
-void CGrpcService::setTimeout(const std::chrono::seconds& _timeout) { m_service.setTimeout(_timeout); }
+void CGrpcService::setTimeout(const std::chrono::seconds& timeout) { mService.setTimeout(timeout); }
+void CGrpcService::registerResourcePlugins(const CPluginManager::PluginMap_t& pluginMap) { mService.registerResourcePlugins(pluginMap); }
+void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& triggerMap) { mService.registerRequestTriggers(triggerMap); }
+void CGrpcService::restore(const std::string& restoreId) { mService.restore(restoreId); }
 
-void CGrpcService::registerResourcePlugins(const CPluginManager::PluginMap_t& _pluginMap) { m_service.registerResourcePlugins(_pluginMap); }
-
-void CGrpcService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap) { m_service.registerRequestTriggers(_triggerMap); }
-
-void CGrpcService::restore(const std::string& _restoreId) { m_service.restore(_restoreId); }
-
-::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* context, const odc::InitializeRequest* request, odc::GeneralReply* response)
-{
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(request) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Initialize request from " << client << ":\n" << request->DebugString();
-    SInitializeParams params{ request->sessionid() };
-    RequestResult result{ m_service.execInitialize(common, params) };
-    setupGeneralReply(response, result);
-    logResponse("Initialize response:\n", common, response);
-    return ::grpc::Status::OK;
-}
-
-::grpc::Status CGrpcService::Submit(::grpc::ServerContext* context, const odc::SubmitRequest* request, odc::GeneralReply* response)
-{
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(request) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Submit request from " << client << ":\n" << request->DebugString();
-    SSubmitParams params{ request->plugin(), request->resources() };
-    RequestResult result{ m_service.execSubmit(common, params) };
-    setupGeneralReply(response, result);
-    logResponse("Submit response:\n", common, response);
-    return ::grpc::Status::OK;
-}
-
-::grpc::Status CGrpcService::Activate(::grpc::ServerContext* context, const odc::ActivateRequest* request, odc::GeneralReply* response)
-{
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(request) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Activate request from " << client << ":\n" << request->DebugString();
-    SActivateParams params{ request->topology(), request->content(), request->script() };
-    RequestResult result{ m_service.execActivate(common, params) };
-    setupGeneralReply(response, result);
-    logResponse("Activate response:\n", common, response);
-    return ::grpc::Status::OK;
-}
-
-::grpc::Status CGrpcService::Run(::grpc::ServerContext* context, const odc::RunRequest* request, odc::GeneralReply* response)
-{
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(request) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Run request from " << client << ":\n" << request->DebugString();
-    SInitializeParams initializeParams{ "" };
-    SSubmitParams submitParams{ request->plugin(), request->resources() };
-    SActivateParams activateParams{ request->topology(), request->content(), request->script() };
-    RequestResult result{ m_service.execRun(common, initializeParams, submitParams, activateParams) };
-    setupGeneralReply(response, result);
-    logResponse("Run response:\n", common, response);
-    return ::grpc::Status::OK;
-}
-
-::grpc::Status CGrpcService::Update(::grpc::ServerContext* context, const odc::UpdateRequest* request, odc::GeneralReply* response)
-{
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(request) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Update request from " << client << ":\n" << request->DebugString();
-    SUpdateParams params{ request->topology(), request->content(), request->script() };
-    RequestResult result{ m_service.execUpdate(common, params) };
-    setupGeneralReply(response, result);
-    logResponse("Update response:\n", common, response);
-    return ::grpc::Status::OK;
-}
-
-::grpc::Status CGrpcService::GetState(::grpc::ServerContext* ctx, const odc::StateRequest* req, odc::StateReply* res)
+::grpc::Status CGrpcService::Initialize(::grpc::ServerContext* ctx, const odc::InitializeRequest* req, odc::GeneralReply* rep)
 {
     assert(ctx);
-    const auto client{ clientMetadataAsString(*ctx) };
-    const auto common{ commonParams(req) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "GetState request from " << client << ":\n" << req->DebugString();
-    SDeviceParams params{ req->path(), req->detailed() };
-    RequestResult result{ m_service.execGetState(common, params) };
-    setupStateReply(res, result);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Initialize request from " << client << ":\n" << req->DebugString();
+    SInitializeParams initializeParams{ req->sessionid() };
+    RequestResult res{ mService.execInitialize(commonParams, initializeParams) };
+    setupGeneralReply(rep, res);
+    logResponse("Initialize response:\n", commonParams, rep);
+    return ::grpc::Status::OK;
+}
 
-    if (res->reply().status() == odc::ReplyStatus::ERROR) {
-        OLOG(error, common) << "GetState response:" << " ERROR"
-            << " (" << res->reply().error().code()
-            << "), sessionId: " << res->reply().sessionid()
-            << ", partitionId: " << res->reply().partitionid()
-            << ", state: " << res->reply().state()
-            << ", msg: " << res->reply().error().msg();
-    } else if (res->reply().status() == odc::ReplyStatus::SUCCESS) {
+::grpc::Status CGrpcService::Submit(::grpc::ServerContext* ctx, const odc::SubmitRequest* req, odc::GeneralReply* rep)
+{
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Submit request from " << client << ":\n" << req->DebugString();
+    SSubmitParams submitParams{ req->plugin(), req->resources() };
+    RequestResult res{ mService.execSubmit(commonParams, submitParams) };
+    setupGeneralReply(rep, res);
+    logResponse("Submit response:\n", commonParams, rep);
+    return ::grpc::Status::OK;
+}
+
+::grpc::Status CGrpcService::Activate(::grpc::ServerContext* ctx, const odc::ActivateRequest* req, odc::GeneralReply* rep)
+{
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Activate request from " << client << ":\n" << req->DebugString();
+    SActivateParams activateParams{ req->topology(), req->content(), req->script() };
+    RequestResult res{ mService.execActivate(commonParams, activateParams) };
+    setupGeneralReply(rep, res);
+    logResponse("Activate response:\n", commonParams, rep);
+    return ::grpc::Status::OK;
+}
+
+::grpc::Status CGrpcService::Run(::grpc::ServerContext* ctx, const odc::RunRequest* req, odc::GeneralReply* rep)
+{
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Run request from " << client << ":\n" << req->DebugString();
+    SInitializeParams initializeParams{ "" };
+    SSubmitParams submitParams{ req->plugin(), req->resources() };
+    SActivateParams activateParams{ req->topology(), req->content(), req->script() };
+    RequestResult res{ mService.execRun(commonParams, initializeParams, submitParams, activateParams) };
+    setupGeneralReply(rep, res);
+    logResponse("Run response:\n", commonParams, rep);
+    return ::grpc::Status::OK;
+}
+
+::grpc::Status CGrpcService::Update(::grpc::ServerContext* ctx, const odc::UpdateRequest* req, odc::GeneralReply* rep)
+{
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Update request from " << client << ":\n" << req->DebugString();
+    SUpdateParams updateParams{ req->topology(), req->content(), req->script() };
+    RequestResult res{ mService.execUpdate(commonParams, updateParams) };
+    setupGeneralReply(rep, res);
+    logResponse("Update response:\n", commonParams, rep);
+    return ::grpc::Status::OK;
+}
+
+::grpc::Status CGrpcService::GetState(::grpc::ServerContext* ctx, const odc::StateRequest* req, odc::StateReply* rep)
+{
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "GetState request from " << client << ":\n" << req->DebugString();
+    SDeviceParams deviceParams{ req->path(), req->detailed() };
+    RequestResult res{ mService.execGetState(commonParams, deviceParams) };
+    setupStateReply(rep, res);
+
+    if (rep->reply().status() == odc::ReplyStatus::ERROR) {
+        OLOG(error, commonParams) << "GetState response:" << " ERROR"
+            << " (" << rep->reply().error().code()
+            << "), sessionId: " << rep->reply().sessionid()
+            << ", partitionId: " << rep->reply().partitionid()
+            << ", state: " << rep->reply().state()
+            << ", msg: " << rep->reply().error().msg();
+    } else if (rep->reply().status() == odc::ReplyStatus::SUCCESS) {
         stringstream ss;
         ss << "GetState response: "
-           << "state: " << res->reply().state()
-           << ", sessionId: " << res->reply().sessionid()
-           << ", partitionId: " << res->reply().partitionid();
+           << "state: " << rep->reply().state()
+           << ", sessionId: " << rep->reply().sessionid()
+           << ", partitionId: " << rep->reply().partitionid();
         if (req->detailed()) {
             ss << ", Devices:\n";
-            for (const auto& d : res->devices()) {
+            for (const auto& d : rep->devices()) {
                 ss << "id: " << d.id() << ", state: " << d.state() << ", path: " << d.path() << "\n";
             }
         }
-        OLOG(info, common) << ss.str();
+        OLOG(info, commonParams) << ss.str();
     } else {
-        OLOG(info, common) << "GetState response: " << res->DebugString();
+        OLOG(info, commonParams) << "GetState response: " << rep->DebugString();
     }
 
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::SetProperties(::grpc::ServerContext* context, const odc::SetPropertiesRequest* request, odc::GeneralReply* response)
+::grpc::Status CGrpcService::SetProperties(::grpc::ServerContext* ctx, const odc::SetPropertiesRequest* req, odc::GeneralReply* rep)
 {
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(request) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "SetProperties request from " << client << ":\n" << request->DebugString();
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "SetProperties request from " << client << ":\n" << req->DebugString();
     // Convert from protobuf to ODC format
     SSetPropertiesParams::Properties_t props;
-    for (int i = 0; i < request->properties_size(); i++) {
-        auto prop{ request->properties(i) };
+    for (int i = 0; i < req->properties_size(); i++) {
+        auto prop{ req->properties(i) };
         props.push_back(SSetPropertiesParams::Property_t(prop.key(), prop.value()));
     }
 
-    SSetPropertiesParams params{ props, request->path() };
-    RequestResult result{ m_service.execSetProperties(common, params) };
-    setupGeneralReply(response, result);
-    logResponse("SetProperties response:\n", common, response);
+    SSetPropertiesParams setPropertiesParams{ props, req->path() };
+    RequestResult res{ mService.execSetProperties(commonParams, setPropertiesParams) };
+    setupGeneralReply(rep, res);
+    logResponse("SetProperties response:\n", commonParams, rep);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Configure(::grpc::ServerContext* context, const odc::ConfigureRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Configure(::grpc::ServerContext* ctx, const odc::ConfigureRequest* req, odc::StateReply* rep)
 {
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(&request->request()) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Configure request from " << client << ":\n" << request->DebugString();
-    SDeviceParams params{ request->request().path(), request->request().detailed() };
-    RequestResult result{ m_service.execConfigure(common, params) };
-    setupStateReply(response, result);
-    logResponse("Configure response:\n", common, response);
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Configure request from " << client << ":\n" << req->DebugString();
+    SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+    RequestResult res{ mService.execConfigure(commonParams, deviceParams) };
+    setupStateReply(rep, res);
+    logResponse("Configure response:\n", commonParams, rep);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Start(::grpc::ServerContext* context, const odc::StartRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Start(::grpc::ServerContext* ctx, const odc::StartRequest* req, odc::StateReply* rep)
 {
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(&request->request()) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Start request from " << client << ":\n" << request->DebugString();
-    SDeviceParams params{ request->request().path(), request->request().detailed() };
-    RequestResult result{ m_service.execStart(common, params) };
-    setupStateReply(response, result);
-    logResponse("Start response:\n", common, response);
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Start request from " << client << ":\n" << req->DebugString();
+    SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+    RequestResult res{ mService.execStart(commonParams, deviceParams) };
+    setupStateReply(rep, res);
+    logResponse("Start response:\n", commonParams, rep);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Stop(::grpc::ServerContext* context, const odc::StopRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Stop(::grpc::ServerContext* ctx, const odc::StopRequest* req, odc::StateReply* rep)
 {
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(&request->request()) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Stop request from " << client << ":\n" << request->DebugString();
-    SDeviceParams params{ request->request().path(), request->request().detailed() };
-    RequestResult result{ m_service.execStop(common, params) };
-    setupStateReply(response, result);
-    logResponse("Stop response:\n", common, response);
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Stop request from " << client << ":\n" << req->DebugString();
+    SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+    RequestResult res{ mService.execStop(commonParams, deviceParams) };
+    setupStateReply(rep, res);
+    logResponse("Stop response:\n", commonParams, rep);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Reset(::grpc::ServerContext* context, const odc::ResetRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Reset(::grpc::ServerContext* ctx, const odc::ResetRequest* req, odc::StateReply* rep)
 {
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(&request->request()) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Reset request from " << client << ":\n" << request->DebugString();
-    SDeviceParams params{ request->request().path(), request->request().detailed() };
-    RequestResult result{ m_service.execReset(common, params) };
-    setupStateReply(response, result);
-    logResponse("Reset response:\n", common, response);
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Reset request from " << client << ":\n" << req->DebugString();
+    SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+    RequestResult res{ mService.execReset(commonParams, deviceParams) };
+    setupStateReply(rep, res);
+    logResponse("Reset response:\n", commonParams, rep);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Terminate(::grpc::ServerContext* context, const odc::TerminateRequest* request, odc::StateReply* response)
+::grpc::Status CGrpcService::Terminate(::grpc::ServerContext* ctx, const odc::TerminateRequest* req, odc::StateReply* rep)
 {
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(&request->request()) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Terminate request from " << client << ":\n" << request->DebugString();
-    SDeviceParams params{ request->request().path(), request->request().detailed() };
-    RequestResult result{ m_service.execTerminate(common, params) };
-    setupStateReply(response, result);
-    logResponse("Terminate response:\n", common, response);
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Terminate request from " << client << ":\n" << req->DebugString();
+    SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+    RequestResult res{ mService.execTerminate(commonParams, deviceParams) };
+    setupStateReply(rep, res);
+    logResponse("Terminate response:\n", commonParams, rep);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Shutdown(::grpc::ServerContext* context, const odc::ShutdownRequest* request, odc::GeneralReply* response)
+::grpc::Status CGrpcService::Shutdown(::grpc::ServerContext* ctx, const odc::ShutdownRequest* req, odc::GeneralReply* rep)
 {
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    const auto common{ commonParams(request) };
-    lock_guard<mutex> lock(getMutex(common.m_partitionID));
-    OLOG(info, common) << "Shutdown request from " << client << ":\n" << request->DebugString();
-    RequestResult result{ m_service.execShutdown(common) };
-    setupGeneralReply(response, result);
-    logResponse("Shutdown response:\n", common, response);
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
+    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    OLOG(info, commonParams) << "Shutdown request from " << client << ":\n" << req->DebugString();
+    RequestResult res{ mService.execShutdown(commonParams) };
+    setupGeneralReply(rep, res);
+    logResponse("Shutdown response:\n", commonParams, rep);
     return ::grpc::Status::OK;
 }
 
-::grpc::Status CGrpcService::Status(::grpc::ServerContext* context, const odc::StatusRequest* request, odc::StatusReply* response)
+::grpc::Status CGrpcService::Status(::grpc::ServerContext* ctx, const odc::StatusRequest* req, odc::StatusReply* rep)
 {
-    assert(context);
-    const auto client{ clientMetadataAsString(*context) };
-    OLOG(info) << "Status request from " << client << ":\n" << request->DebugString();
-    StatusRequestResult result{ m_service.execStatus(SStatusParams(request->running())) };
-    setupStatusReply(response, result);
-    logResponse("Status response:\n", core::SCommonParams(), response);
+    assert(ctx);
+    const string client{ clientMetadataAsString(*ctx) };
+    OLOG(info) << "Status request from " << client << ":\n" << req->DebugString();
+    StatusRequestResult res{ mService.execStatus(SStatusParams(req->running())) };
+    setupStatusReply(rep, res);
+    logResponse("Status response:\n", core::CommonParams(), rep);
     return ::grpc::Status::OK;
 }
 
-odc::Error* CGrpcService::newError(const BaseRequestResult& result)
+odc::Error* CGrpcService::newError(const BaseRequestResult& res)
 {
     odc::Error* error{ new odc::Error() };
-    error->set_code(result.m_error.m_code.value());
-    error->set_msg(result.m_error.m_code.message() + " (" + result.m_error.m_details + ")");
+    error->set_code(res.m_error.m_code.value());
+    error->set_msg(res.m_error.m_code.message() + " (" + res.m_error.m_details + ")");
     return error;
 }
 
-void CGrpcService::setupGeneralReply(odc::GeneralReply* _response, const RequestResult& result)
+void CGrpcService::setupGeneralReply(odc::GeneralReply* rep, const RequestResult& res)
 {
-    if (result.m_statusCode == EStatusCode::ok) {
-        _response->set_status(odc::ReplyStatus::SUCCESS);
-        _response->set_msg(result.m_msg);
+    if (res.m_statusCode == StatusCode::ok) {
+        rep->set_status(odc::ReplyStatus::SUCCESS);
+        rep->set_msg(res.m_msg);
     } else {
-        _response->set_status(odc::ReplyStatus::ERROR);
-        _response->set_allocated_error(newError(result));
+        rep->set_status(odc::ReplyStatus::ERROR);
+        rep->set_allocated_error(newError(res));
     }
-    _response->set_partitionid(result.m_partitionID);
-    _response->set_runnr(result.m_runNr);
-    _response->set_sessionid(result.m_sessionID);
-    _response->set_exectime(result.m_execTime);
-    _response->set_state(GetAggregatedTopologyStateName(result.m_aggregatedState));
+    rep->set_partitionid(res.m_partitionID);
+    rep->set_runnr(res.m_runNr);
+    rep->set_sessionid(res.m_sessionID);
+    rep->set_exectime(res.m_execTime);
+    rep->set_state(GetAggregatedTopologyStateName(res.m_aggregatedState));
 }
 
-void CGrpcService::setupStateReply(odc::StateReply* _response, const odc::core::RequestResult& result)
+void CGrpcService::setupStateReply(odc::StateReply* rep, const odc::core::RequestResult& res)
 {
     // Protobuf message takes the ownership and deletes the object
     odc::GeneralReply* generalResponse{ new odc::GeneralReply() };
-    setupGeneralReply(generalResponse, result);
-    _response->set_allocated_reply(generalResponse);
+    setupGeneralReply(generalResponse, res);
+    rep->set_allocated_reply(generalResponse);
 
-    if (result.mFullState != nullptr) {
-        for (const auto& state : *(result.mFullState)) {
-            auto device{ _response->add_devices() };
+    if (res.mFullState != nullptr) {
+        for (const auto& state : *(res.mFullState)) {
+            auto device{ rep->add_devices() };
             device->set_path(state.m_path);
             device->set_id(state.m_status.taskId);
             device->set_state(fair::mq::GetStateName(state.m_status.state));
@@ -309,53 +306,47 @@ void CGrpcService::setupStateReply(odc::StateReply* _response, const odc::core::
     }
 }
 
-void CGrpcService::setupStatusReply(odc::StatusReply* _response, const odc::core::StatusRequestResult& result)
+void CGrpcService::setupStatusReply(odc::StatusReply* rep, const odc::core::StatusRequestResult& res)
 {
-    if (result.m_statusCode == EStatusCode::ok) {
-        _response->set_status(odc::ReplyStatus::SUCCESS);
-        _response->set_msg(result.m_msg);
+    if (res.m_statusCode == StatusCode::ok) {
+        rep->set_status(odc::ReplyStatus::SUCCESS);
+        rep->set_msg(res.m_msg);
     } else {
-        _response->set_status(odc::ReplyStatus::ERROR);
-        _response->set_allocated_error(newError(result));
+        rep->set_status(odc::ReplyStatus::ERROR);
+        rep->set_allocated_error(newError(res));
     }
-    _response->set_exectime(result.m_execTime);
-    for (const auto& p : result.m_partitions) {
-        auto partition{ _response->add_partitions() };
+    rep->set_exectime(res.m_execTime);
+    for (const auto& p : res.m_partitions) {
+        auto partition{ rep->add_partitions() };
         partition->set_partitionid(p.m_partitionID);
         partition->set_sessionid(p.m_sessionID);
-        partition->set_status((p.m_sessionStatus == ESessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
+        partition->set_status((p.m_sessionStatus == DDSSessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
         partition->set_state(GetAggregatedTopologyStateName(p.m_aggregatedState));
     }
 }
 
-std::mutex& CGrpcService::getMutex(const std::string& _partitionID)
+std::mutex& CGrpcService::getMutex(const std::string& partitionID)
 {
-    std::lock_guard<std::mutex> lock(m_mutexMapMutex);
-    auto it{ m_mutexMap.find(_partitionID) };
-    return (it == m_mutexMap.end()) ? m_mutexMap[_partitionID] : it->second;
-}
-
-template<typename Request_t>
-core::SCommonParams CGrpcService::commonParams(const Request_t* _request)
-{
-    return core::SCommonParams(_request->partitionid(), _request->runnr(), _request->timeout());
+    std::lock_guard<std::mutex> lock(mMutexMapMutex);
+    auto it{ mMutexMap.find(partitionID) };
+    return (it == mMutexMap.end()) ? mMutexMap[partitionID] : it->second;
 }
 
 template<typename Response_t>
-void CGrpcService::logResponse(const string& _msg, const core::SCommonParams& _common, const Response_t* _response)
+void CGrpcService::logResponse(const string& msg, const core::CommonParams& commonParams, const Response_t* res)
 {
-    if (_response->status() == odc::ReplyStatus::ERROR) {
-        OLOG(error, _common) << _msg << _response->DebugString();
+    if (res->status() == odc::ReplyStatus::ERROR) {
+        OLOG(error, commonParams) << msg << res->DebugString();
     } else {
-        OLOG(info, _common) << _msg << _response->DebugString();
+        OLOG(info, commonParams) << msg << res->DebugString();
     }
 }
 
-void CGrpcService::logResponse(const std::string& _msg, const core::SCommonParams& _common, const odc::StateReply* _response)
+void CGrpcService::logResponse(const std::string& msg, const core::CommonParams& commonParams, const odc::StateReply* rep)
 {
-    if (_response->reply().status() == odc::ReplyStatus::ERROR) {
-        OLOG(error, _common) << _msg << _response->DebugString();
+    if (rep->reply().status() == odc::ReplyStatus::ERROR) {
+        OLOG(error, commonParams) << msg << rep->DebugString();
     } else {
-        OLOG(info, _common) << _msg << _response->DebugString();
+        OLOG(info, commonParams) << msg << rep->DebugString();
     }
 }

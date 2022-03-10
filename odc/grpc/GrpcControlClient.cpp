@@ -17,7 +17,7 @@ CGrpcControlClient::CGrpcControlClient(shared_ptr<grpc::Channel> channel)
 {
 }
 
-std::string CGrpcControlClient::requestInitialize(const SCommonParams& _common, const SInitializeParams& _params)
+std::string CGrpcControlClient::requestInitialize(const CommonParams& _common, const SInitializeParams& _params)
 {
     odc::InitializeRequest request;
     updateCommonParams(_common, &request);
@@ -28,7 +28,7 @@ std::string CGrpcControlClient::requestInitialize(const SCommonParams& _common, 
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestSubmit(const SCommonParams& _common, const SSubmitParams& _params)
+std::string CGrpcControlClient::requestSubmit(const CommonParams& _common, const SSubmitParams& _params)
 {
     // Submit parameters are not used for the request.
 
@@ -42,7 +42,7 @@ std::string CGrpcControlClient::requestSubmit(const SCommonParams& _common, cons
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestActivate(const SCommonParams& _common, const SActivateParams& _params)
+std::string CGrpcControlClient::requestActivate(const CommonParams& _common, const SActivateParams& _params)
 {
     odc::ActivateRequest request;
     updateCommonParams(_common, &request);
@@ -55,7 +55,7 @@ std::string CGrpcControlClient::requestActivate(const SCommonParams& _common, co
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestRun(const SCommonParams& _common,
+std::string CGrpcControlClient::requestRun(const CommonParams& _common,
                                            const odc::core::SInitializeParams& /*_initializeParams*/,
                                            const odc::core::SSubmitParams& _submitParams,
                                            const odc::core::SActivateParams& _activateParams)
@@ -73,17 +73,17 @@ std::string CGrpcControlClient::requestRun(const SCommonParams& _common,
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestUpscale(const SCommonParams& _common, const SUpdateParams& _params)
+std::string CGrpcControlClient::requestUpscale(const CommonParams& _common, const SUpdateParams& _params)
 {
     return updateRequest(_common, _params);
 }
 
-std::string CGrpcControlClient::requestDownscale(const SCommonParams& _common, const SUpdateParams& _params)
+std::string CGrpcControlClient::requestDownscale(const CommonParams& _common, const SUpdateParams& _params)
 {
     return updateRequest(_common, _params);
 }
 
-std::string CGrpcControlClient::requestGetState(const SCommonParams& _common, const odc::core::SDeviceParams& _params)
+std::string CGrpcControlClient::requestGetState(const CommonParams& _common, const odc::core::SDeviceParams& _params)
 {
     odc::StateRequest request;
     updateCommonParams(_common, &request);
@@ -95,7 +95,7 @@ std::string CGrpcControlClient::requestGetState(const SCommonParams& _common, co
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestSetProperties(const SCommonParams& _common,
+std::string CGrpcControlClient::requestSetProperties(const CommonParams& _common,
                                                      const odc::core::SSetPropertiesParams& _params)
 {
     odc::SetPropertiesRequest request;
@@ -113,32 +113,32 @@ std::string CGrpcControlClient::requestSetProperties(const SCommonParams& _commo
     return GetReplyString(status, reply);
 }
 
-std::string CGrpcControlClient::requestConfigure(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestConfigure(const CommonParams& _common, const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::ConfigureRequest>(_common, _params, &odc::ODC::Stub::Configure);
 }
 
-std::string CGrpcControlClient::requestStart(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestStart(const CommonParams& _common, const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::StartRequest>(_common, _params, &odc::ODC::Stub::Start);
 }
 
-std::string CGrpcControlClient::requestStop(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestStop(const CommonParams& _common, const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::StopRequest>(_common, _params, &odc::ODC::Stub::Stop);
 }
 
-std::string CGrpcControlClient::requestReset(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestReset(const CommonParams& _common, const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::ResetRequest>(_common, _params, &odc::ODC::Stub::Reset);
 }
 
-std::string CGrpcControlClient::requestTerminate(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CGrpcControlClient::requestTerminate(const CommonParams& _common, const SDeviceParams& _params)
 {
     return stateChangeRequest<odc::TerminateRequest>(_common, _params, &odc::ODC::Stub::Terminate);
 }
 
-std::string CGrpcControlClient::requestShutdown(const SCommonParams& _common)
+std::string CGrpcControlClient::requestShutdown(const CommonParams& _common)
 {
     odc::ShutdownRequest request;
     updateCommonParams(_common, &request);
@@ -173,7 +173,7 @@ std::string CGrpcControlClient::GetReplyString(const grpc::Status& _status, cons
     }
 }
 
-std::string CGrpcControlClient::updateRequest(const SCommonParams& _common, const SUpdateParams& _params)
+std::string CGrpcControlClient::updateRequest(const CommonParams& _common, const SUpdateParams& _params)
 {
     odc::UpdateRequest request;
     updateCommonParams(_common, &request);
@@ -185,7 +185,7 @@ std::string CGrpcControlClient::updateRequest(const SCommonParams& _common, cons
 }
 
 template <typename Request_t, typename StubFunc_t>
-std::string CGrpcControlClient::stateChangeRequest(const SCommonParams& _common,
+std::string CGrpcControlClient::stateChangeRequest(const CommonParams& _common,
                                                    const SDeviceParams& _params,
                                                    StubFunc_t _stubFunc)
 {
@@ -205,7 +205,7 @@ std::string CGrpcControlClient::stateChangeRequest(const SCommonParams& _common,
 }
 
 template <typename Request_t>
-void CGrpcControlClient::updateCommonParams(const odc::core::SCommonParams& _common, Request_t* _request)
+void CGrpcControlClient::updateCommonParams(const odc::core::CommonParams& _common, Request_t* _request)
 {
     _request->set_partitionid(_common.m_partitionID);
     _request->set_runnr(_common.m_runNr);

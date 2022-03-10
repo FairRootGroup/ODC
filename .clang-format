@@ -30,4 +30,12 @@ SortIncludes: true
 SpacesBeforeTrailingComments: 1
 Standard: c++17
 UseTab: Never
+BreakBeforeBraces: Custom
+BraceWrapping:
+    AfterCaseLabel: false
+    AfterClass: true
+    AfterEnum: true
+    AfterFunction: true
+    AfterNamespace: true
+    AfterStruct: true
 ...

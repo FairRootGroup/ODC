@@ -127,7 +127,7 @@ void CCliHelper::addPartitionOptions(bpo::options_description& options, std::str
     options.add_options()("id", bpo::value<std::string>(&partitionID)->default_value(""), "Partition ID");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SCommonParams& common)
+void CCliHelper::addOptions(bpo::options_description& options, CommonParams& common)
 {
     options.add_options()("id", bpo::value<std::string>(&common.m_partitionID)->default_value(""), "Partition ID");
     options.add_options()("run", bpo::value<uint64_t>(&common.m_runNr)->default_value(0), "Run Nr");

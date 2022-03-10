@@ -57,7 +57,7 @@ class CCliHelper
     // Request specific options
 
     static void addPartitionOptions(boost::program_options::options_description& options, std::string& partitionID);
-    static void addOptions(boost::program_options::options_description& options, SCommonParams& common);
+    static void addOptions(boost::program_options::options_description& options, CommonParams& common);
     static void addOptions(boost::program_options::options_description& options, SInitializeParams& params);
     static void addOptions(boost::program_options::options_description& options, SActivateParams& params);
     static void addOptions(boost::program_options::options_description& options, SUpdateParams& params);

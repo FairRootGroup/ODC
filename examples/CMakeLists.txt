@@ -45,6 +45,7 @@ macro(odcConfigExampleTopo N FILE_IN FILE_OUT)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${FILE_OUT} DESTINATION ${PROJECT_INSTALL_DATADIR})
 endmacro()
 
+odcConfigExampleTopo(4 ex-dds-topology-groupname-req-crashing.xml.in ex-dds-topology-groupname-req-crashing.xml)
 odcConfigExampleTopo(4 ex-dds-topology-groupname-req.xml.in ex-dds-topology-groupname-req.xml)
 odcConfigExampleTopo(1 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite.xml)
 odcConfigExampleTopo(3 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite-up.xml)

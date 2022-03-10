@@ -41,22 +41,22 @@ void CCliControlService::restore(const std::string& _restoreId)
     m_service->restore(_restoreId);
 }
 
-std::string CCliControlService::requestInitialize(const SCommonParams& _common, const SInitializeParams& _params)
+std::string CCliControlService::requestInitialize(const CommonParams& _common, const SInitializeParams& _params)
 {
     return generalReply(m_service->execInitialize(_common, _params));
 }
 
-std::string CCliControlService::requestSubmit(const SCommonParams& _common, const SSubmitParams& _params)
+std::string CCliControlService::requestSubmit(const CommonParams& _common, const SSubmitParams& _params)
 {
     return generalReply(m_service->execSubmit(_common, _params));
 }
 
-std::string CCliControlService::requestActivate(const SCommonParams& _common, const SActivateParams& _params)
+std::string CCliControlService::requestActivate(const CommonParams& _common, const SActivateParams& _params)
 {
     return generalReply(m_service->execActivate(_common, _params));
 }
 
-std::string CCliControlService::requestRun(const SCommonParams& _common,
+std::string CCliControlService::requestRun(const CommonParams& _common,
                                            const SInitializeParams& _initializeParams,
                                            const SSubmitParams& _submitParams,
                                            const SActivateParams& _activateParams)
@@ -64,52 +64,52 @@ std::string CCliControlService::requestRun(const SCommonParams& _common,
     return generalReply(m_service->execRun(_common, _initializeParams, _submitParams, _activateParams));
 }
 
-std::string CCliControlService::requestUpscale(const SCommonParams& _common, const SUpdateParams& _params)
+std::string CCliControlService::requestUpscale(const CommonParams& _common, const SUpdateParams& _params)
 {
     return generalReply(m_service->execUpdate(_common, _params));
 }
 
-std::string CCliControlService::requestDownscale(const SCommonParams& _common, const SUpdateParams& _params)
+std::string CCliControlService::requestDownscale(const CommonParams& _common, const SUpdateParams& _params)
 {
     return generalReply(m_service->execUpdate(_common, _params));
 }
 
-std::string CCliControlService::requestGetState(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CCliControlService::requestGetState(const CommonParams& _common, const SDeviceParams& _params)
 {
     return generalReply(m_service->execGetState(_common, _params));
 }
 
-std::string CCliControlService::requestSetProperties(const SCommonParams& _common, const SSetPropertiesParams& _params)
+std::string CCliControlService::requestSetProperties(const CommonParams& _common, const SSetPropertiesParams& _params)
 {
     return generalReply(m_service->execSetProperties(_common, _params));
 }
 
-std::string CCliControlService::requestConfigure(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CCliControlService::requestConfigure(const CommonParams& _common, const SDeviceParams& _params)
 {
     return generalReply(m_service->execConfigure(_common, _params));
 }
 
-std::string CCliControlService::requestStart(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CCliControlService::requestStart(const CommonParams& _common, const SDeviceParams& _params)
 {
     return generalReply(m_service->execStart(_common, _params));
 }
 
-std::string CCliControlService::requestStop(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CCliControlService::requestStop(const CommonParams& _common, const SDeviceParams& _params)
 {
     return generalReply(m_service->execStop(_common, _params));
 }
 
-std::string CCliControlService::requestReset(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CCliControlService::requestReset(const CommonParams& _common, const SDeviceParams& _params)
 {
     return generalReply(m_service->execReset(_common, _params));
 }
 
-std::string CCliControlService::requestTerminate(const SCommonParams& _common, const SDeviceParams& _params)
+std::string CCliControlService::requestTerminate(const CommonParams& _common, const SDeviceParams& _params)
 {
     return generalReply(m_service->execTerminate(_common, _params));
 }
 
-std::string CCliControlService::requestShutdown(const SCommonParams& _common)
+std::string CCliControlService::requestShutdown(const CommonParams& _common)
 {
     return generalReply(m_service->execShutdown(_common));
 }
@@ -123,7 +123,7 @@ string CCliControlService::generalReply(const RequestResult& result)
 {
     stringstream ss;
 
-    if (result.m_statusCode == EStatusCode::ok)
+    if (result.m_statusCode == StatusCode::ok)
     {
         ss << "  Status code: SUCCESS\n  Message: " << result.m_msg << endl;
     }
@@ -158,7 +158,7 @@ string CCliControlService::generalReply(const RequestResult& result)
 std::string CCliControlService::statusReply(const StatusRequestResult& result)
 {
     stringstream ss;
-    if (result.m_statusCode == EStatusCode::ok)
+    if (result.m_statusCode == StatusCode::ok)
     {
         ss << "  Status code: SUCCESS\n  Message: " << result.m_msg << endl;
     }
@@ -172,7 +172,7 @@ std::string CCliControlService::statusReply(const StatusRequestResult& result)
     for (const auto& p : result.m_partitions)
     {
         ss << "    { partition ID: " << p.m_partitionID << "; session ID: " << p.m_sessionID
-           << "; status: " << ((p.m_sessionStatus == ESessionStatus::running) ? "RUNNING" : "STOPPED")
+           << "; status: " << ((p.m_sessionStatus == DDSSessionStatus::running) ? "RUNNING" : "STOPPED")
            << "; state: " << GetAggregatedTopologyStateName(p.m_aggregatedState) << " }" << endl;
     }
     ss << "  Execution time: " << result.m_execTime << " msec" << endl;

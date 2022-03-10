@@ -209,33 +209,33 @@ class CCliServiceHelper
         std::string cmd{ args.empty() ? "" : args.front() };
 
         if (cmd == ".init") {
-            replyString = request<SCommonParams, SInitializeParams>("Sending Initialize request...", args, &OwnerT::requestInitialize);
+            replyString = request<CommonParams, SInitializeParams>("Sending Initialize request...", args, &OwnerT::requestInitialize);
         } else if (cmd == ".submit") {
-            replyString = request<SCommonParams, SSubmitParams>("Sending Submit request...", args, &OwnerT::requestSubmit);
+            replyString = request<CommonParams, SSubmitParams>("Sending Submit request...", args, &OwnerT::requestSubmit);
         } else if (cmd == ".activate") {
-            replyString = request<SCommonParams, SActivateParams>("Sending Activate request...", args, &OwnerT::requestActivate);
+            replyString = request<CommonParams, SActivateParams>("Sending Activate request...", args, &OwnerT::requestActivate);
         } else if (cmd == ".run") {
-            replyString = request<SCommonParams, SInitializeParams, SSubmitParams, SActivateParams>("Sending Run request...", args, &OwnerT::requestRun);
+            replyString = request<CommonParams, SInitializeParams, SSubmitParams, SActivateParams>("Sending Run request...", args, &OwnerT::requestRun);
         } else if (cmd == ".upscale") {
-            replyString = request<SCommonParams, SUpdateParams>("Sending Upscale request...", args, &OwnerT::requestUpscale);
+            replyString = request<CommonParams, SUpdateParams>("Sending Upscale request...", args, &OwnerT::requestUpscale);
         } else if (cmd == ".downscale") {
-            replyString = request<SCommonParams, SUpdateParams>("Sending Downscale request...", args, &OwnerT::requestDownscale);
+            replyString = request<CommonParams, SUpdateParams>("Sending Downscale request...", args, &OwnerT::requestDownscale);
         } else if (cmd == ".config") {
-            replyString = request<SCommonParams, SDeviceParams>("Sending Configure request...", args, &OwnerT::requestConfigure);
+            replyString = request<CommonParams, SDeviceParams>("Sending Configure request...", args, &OwnerT::requestConfigure);
         } else if (cmd == ".state") {
-            replyString = request<SCommonParams, SDeviceParams>("Sending GetState request...", args, &OwnerT::requestGetState);
+            replyString = request<CommonParams, SDeviceParams>("Sending GetState request...", args, &OwnerT::requestGetState);
         } else if (cmd == ".prop") {
-            replyString = request<SCommonParams, SSetPropertiesParams>("Sending SetProperties request...", args, &OwnerT::requestSetProperties);
+            replyString = request<CommonParams, SSetPropertiesParams>("Sending SetProperties request...", args, &OwnerT::requestSetProperties);
         } else if (cmd == ".start") {
-            replyString = request<SCommonParams, SDeviceParams>("Sending Start request...", args, &OwnerT::requestStart);
+            replyString = request<CommonParams, SDeviceParams>("Sending Start request...", args, &OwnerT::requestStart);
         } else if (cmd == ".stop") {
-            replyString = request<SCommonParams, SDeviceParams>("Sending Stop request...", args, &OwnerT::requestStop);
+            replyString = request<CommonParams, SDeviceParams>("Sending Stop request...", args, &OwnerT::requestStop);
         } else if (cmd == ".reset") {
-            replyString = request<SCommonParams, SDeviceParams>("Sending Reset request...", args, &OwnerT::requestReset);
+            replyString = request<CommonParams, SDeviceParams>("Sending Reset request...", args, &OwnerT::requestReset);
         } else if (cmd == ".term") {
-            replyString = request<SCommonParams, SDeviceParams>("Sending Terminate request...", args, &OwnerT::requestTerminate);
+            replyString = request<CommonParams, SDeviceParams>("Sending Terminate request...", args, &OwnerT::requestTerminate);
         } else if (cmd == ".down") {
-            replyString = request<SCommonParams>("Sending Shutdown request...", args, &OwnerT::requestShutdown);
+            replyString = request<CommonParams>("Sending Shutdown request...", args, &OwnerT::requestShutdown);
         } else if (cmd == ".status") {
             replyString = request<SStatusParams>("Sending Status request...", args, &OwnerT::requestStatus);
         } else if (cmd == ".batch") {

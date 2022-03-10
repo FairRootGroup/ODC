@@ -31,18 +31,18 @@ using namespace dds;
 using namespace dds::tools_api;
 using namespace dds::topology_api;
 
-void ControlService::execRequestTrigger(const string& _plugin, const SCommonParams& common)
+void ControlService::execRequestTrigger(const string& plugin, const CommonParams& common)
 {
-    if (m_triggers.isPluginRegistered(_plugin)) {
+    if (m_triggers.isPluginRegistered(plugin)) {
         try {
-            OLOG(debug, common) << "Executing request trigger " << quoted(_plugin);
-            string out{ m_triggers.execPlugin(_plugin, "", common.m_partitionID, common.m_runNr) };
-            OLOG(debug, common) << "Request trigger " << quoted(_plugin) << " done: " << out;
+            OLOG(debug, common) << "Executing request trigger " << quoted(plugin);
+            string out{ m_triggers.execPlugin(plugin, "", common.m_partitionID, common.m_runNr) };
+            OLOG(debug, common) << "Request trigger " << quoted(plugin) << " done: " << out;
         } catch (exception& _e) {
-            OLOG(error, common) << "Request trigger " << quoted(_plugin) << " failed: " << _e.what();
+            OLOG(error, common) << "Request trigger " << quoted(plugin) << " failed: " << _e.what();
         }
     } else {
-        OLOG(debug, common) << "No plugins registered for " << quoted(_plugin);
+        // OLOG(debug, common) << "No plugins registered for " << quoted(plugin);
     }
 }
 
@@ -72,20 +72,20 @@ void ControlService::updateRestore()
     CRestoreFile(m_restoreId, data).write();
 }
 
-RequestResult ControlService::createRequestResult(const SCommonParams& common,
-                                                const SError& error,
-                                                const std::string& msg,
+RequestResult ControlService::createRequestResult(const CommonParams& common,
+                                                const Error& error,
+                                                const string& msg,
                                                 size_t execTime,
                                                 AggregatedTopologyState aggregatedState,
-                                                std::unique_ptr<TopologyState> fullState/*  = nullptr */)
+                                                unique_ptr<TopologyState> fullState/*  = nullptr */)
 {
     auto& info = getOrCreateSessionInfo(common);
     string sidStr{ to_string(info.m_session->getSessionID()) };
-    EStatusCode status{ error.m_code ? EStatusCode::error : EStatusCode::ok };
-    return RequestResult(status, msg, execTime, error, common.m_partitionID, common.m_runNr, sidStr, aggregatedState, std::move(fullState));
+    StatusCode status{ error.m_code ? StatusCode::error : StatusCode::ok };
+    return RequestResult(status, msg, execTime, error, common.m_partitionID, common.m_runNr, sidStr, aggregatedState, move(fullState));
 }
 
-bool ControlService::createDDSSession(const SCommonParams& common, SError& error)
+bool ControlService::createDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
@@ -98,12 +98,12 @@ bool ControlService::createDDSSession(const SCommonParams& common, SError& error
     return true;
 }
 
-bool ControlService::attachToDDSSession(const SCommonParams& common, SError& error, const std::string& _sessionID)
+bool ControlService::attachToDDSSession(const CommonParams& common, Error& error, const string& sessionID)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
-        info.m_session->attach(_sessionID);
-        OLOG(info, common) << "Attach to a DDS session with session ID: " << _sessionID;
+        info.m_session->attach(sessionID);
+        OLOG(info, common) << "Attach to a DDS session with session ID: " << sessionID;
     } catch (exception& _e) {
         fillError(common, error, ErrorCode::DDSAttachToSessionFailed, toString("Failed to attach to a DDS session: ", _e.what()));
         return false;
@@ -111,28 +111,28 @@ bool ControlService::attachToDDSSession(const SCommonParams& common, SError& err
     return true;
 }
 
-bool ControlService::submitDDSAgents(const SCommonParams& common, SError& error, const CDDSSubmit::SParams& _params)
+bool ControlService::submitDDSAgents(const CommonParams& common, Error& error, const CDDSSubmit::SParams& params)
 {
     bool success(true);
 
     SSubmitRequest::request_t requestInfo;
-    requestInfo.m_rms = _params.m_rmsPlugin;
-    requestInfo.m_instances = _params.m_numAgents;
-    requestInfo.m_slots = _params.m_numSlots;
-    requestInfo.m_config = _params.m_configFile;
-    requestInfo.m_groupName = _params.m_agentGroup;
+    requestInfo.m_rms = params.m_rmsPlugin;
+    requestInfo.m_instances = params.m_numAgents;
+    requestInfo.m_slots = params.m_numSlots;
+    requestInfo.m_config = params.m_configFile;
+    requestInfo.m_groupName = params.m_agentGroup;
     OLOG(info) << "dds::tools_api::SSubmitRequest: " << requestInfo;
 
-    std::condition_variable cv;
+    condition_variable cv;
 
     SSubmitRequest::ptr_t requestPtr = SSubmitRequest::makeRequest(requestInfo);
 
-    requestPtr->setMessageCallback([&success, &error, &common, this](const SMessageResponseData& _message) {
-        if (_message.m_severity == dds::intercom_api::EMsgSeverity::error) {
+    requestPtr->setMessageCallback([&success, &error, &common, this](const SMessageResponseData& msg) {
+        if (msg.m_severity == dds::intercom_api::EMsgSeverity::error) {
             success = false;
-            fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit error: ", _message.m_msg));
+            fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit error: ", msg.m_msg));
         } else {
-            OLOG(info, common) << "Submit: " << _message.m_msg;
+            OLOG(info, common) << "Submit: " << msg.m_msg;
         }
     });
 
@@ -144,11 +144,11 @@ bool ControlService::submitDDSAgents(const SCommonParams& common, SError& error,
     auto& info = getOrCreateSessionInfo(common);
     info.m_session->sendRequest<SSubmitRequest>(requestPtr);
 
-    std::mutex mtx;
-    std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus = cv.wait_for(lock, requestTimeout(common));
+    mutex mtx;
+    unique_lock<mutex> lock(mtx);
+    cv_status waitStatus = cv.wait_for(lock, requestTimeout(common));
 
-    if (waitStatus == std::cv_status::timeout) {
+    if (waitStatus == cv_status::timeout) {
         success = false;
         fillError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
     } else {
@@ -157,14 +157,14 @@ bool ControlService::submitDDSAgents(const SCommonParams& common, SError& error,
     return success;
 }
 
-bool ControlService::requestCommanderInfo(const SCommonParams& common, SError& error, SCommanderInfoRequest::response_t& _commanderInfo)
+bool ControlService::requestCommanderInfo(const CommonParams& common, Error& error, SCommanderInfoRequest::response_t& commanderInfo)
 {
     try {
         stringstream ss;
         auto& info = getOrCreateSessionInfo(common);
-        info.m_session->syncSendRequest<SCommanderInfoRequest>(SCommanderInfoRequest::request_t(), _commanderInfo, requestTimeout(common), &ss);
+        info.m_session->syncSendRequest<SCommanderInfoRequest>(SCommanderInfoRequest::request_t(), commanderInfo, requestTimeout(common), &ss);
         OLOG(info, common) << ss.str();
-        OLOG(debug, common) << "Commander info: " << _commanderInfo;
+        OLOG(debug, common) << "Commander info: " << commanderInfo;
         return true;
     } catch (exception& _e) {
         fillError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Error getting DDS commander info: ", _e.what()));
@@ -172,28 +172,28 @@ bool ControlService::requestCommanderInfo(const SCommonParams& common, SError& e
     }
 }
 
-bool ControlService::waitForNumActiveAgents(const SCommonParams& common, SError& error, size_t _numAgents)
+bool ControlService::waitForNumActiveAgents(const CommonParams& common, Error& error, size_t numAgents)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
-        info.m_session->waitForNumAgents<CSession::EAgentState::active>(_numAgents, requestTimeout(common));
-    } catch (std::exception& _e) {
+        info.m_session->waitForNumAgents<CSession::EAgentState::active>(numAgents, requestTimeout(common));
+    } catch (exception& _e) {
         fillError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS agents: ", _e.what()));
         return false;
     }
     return true;
 }
 
-bool ControlService::activateDDSTopology(const SCommonParams& common, SError& error, const string& _topologyFile, STopologyRequest::request_t::EUpdateType _updateType)
+bool ControlService::activateDDSTopology(const CommonParams& common, Error& error, const string& topologyFile, STopologyRequest::request_t::EUpdateType _updateType)
 {
     bool success(true);
 
     STopologyRequest::request_t topoInfo;
-    topoInfo.m_topologyFile = _topologyFile;
+    topoInfo.m_topologyFile = topologyFile;
     topoInfo.m_disableValidation = true;
     topoInfo.m_updateType = _updateType;
 
-    std::condition_variable cv;
+    condition_variable cv;
     auto& sessionInfo = getOrCreateSessionInfo(common);
 
     STopologyRequest::ptr_t requestPtr{ STopologyRequest::makeRequest(topoInfo) };
@@ -220,15 +220,15 @@ bool ControlService::activateDDSTopology(const SCommonParams& common, SError& er
         // We are not interested in stopped tasks
         if (res.m_activated) {
             TopoTaskInfo task{res.m_agentID, res.m_slotID, res.m_taskID, res.m_path, res.m_host, res.m_wrkDir};
-            sessionInfo.addToTaskCache(std::move(task));
+            sessionInfo.addToTaskCache(move(task));
 
             if (res.m_collectionID > 0) {
                 TopoCollectionInfo collection{res.m_agentID, res.m_slotID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir};
                 auto pos = collection.mPath.rfind('/');
-                if (pos != std::string::npos) {
+                if (pos != string::npos) {
                     collection.mPath.erase(pos);
                 }
-                sessionInfo.addToCollectionCache(std::move(collection));
+                sessionInfo.addToCollectionCache(move(collection));
             }
         }
     });
@@ -237,11 +237,11 @@ bool ControlService::activateDDSTopology(const SCommonParams& common, SError& er
 
     sessionInfo.m_session->sendRequest<STopologyRequest>(requestPtr);
 
-    std::mutex mtx;
-    std::unique_lock<std::mutex> lock(mtx);
-    std::cv_status waitStatus{ cv.wait_for(lock, requestTimeout(common)) };
+    mutex mtx;
+    unique_lock<mutex> lock(mtx);
+    cv_status waitStatus{ cv.wait_for(lock, requestTimeout(common)) };
 
-    if (waitStatus == std::cv_status::timeout) {
+    if (waitStatus == cv_status::timeout) {
         success = false;
         fillError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
         OLOG(error, common) << error;
@@ -249,11 +249,11 @@ bool ControlService::activateDDSTopology(const SCommonParams& common, SError& er
 
     sessionInfo.debug();
 
-    OLOG(info, common) << "Topology " << quoted(_topologyFile) << ((success) ? " activated successfully" : " failed to activate");
+    OLOG(info, common) << "Topology " << quoted(topologyFile) << ((success) ? " activated successfully" : " failed to activate");
     return success;
 }
 
-bool ControlService::shutdownDDSSession(const SCommonParams& common, SError& error)
+bool ControlService::shutdownDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
@@ -278,12 +278,12 @@ bool ControlService::shutdownDDSSession(const SCommonParams& common, SError& err
     return true;
 }
 
-bool ControlService::createTopo(const SCommonParams& common, SError& error, const std::string& _topologyFile)
+bool ControlService::createTopo(const CommonParams& common, Error& error, const string& topologyFile)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
-        info.m_topo = make_unique<dds::topology_api::CTopology>(_topologyFile);
-        OLOG(info, common) << "DDS topology " << std::quoted(_topologyFile) << " created successfully";
+        info.m_topo = make_unique<dds::topology_api::CTopology>(topologyFile);
+        OLOG(info, common) << "DDS topology " << quoted(topologyFile) << " created successfully";
     } catch (exception& _e) {
         fillError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed to initialize DDS topology: ", _e.what()));
         return false;
@@ -291,19 +291,19 @@ bool ControlService::createTopo(const SCommonParams& common, SError& error, cons
     return true;
 }
 
-bool ControlService::resetFairMQTopo(const SCommonParams& common)
+bool ControlService::resetFairMQTopo(const CommonParams& common)
 {
     auto& info = getOrCreateSessionInfo(common);
     info.m_fairmqTopology.reset();
     return true;
 }
 
-bool ControlService::createFairMQTopo(const SCommonParams& common, SError& error, const std::string& _topologyFile)
+bool ControlService::createFairMQTopo(const CommonParams& common, Error& error, const string& topologyFile)
 {
     auto& info = getOrCreateSessionInfo(common);
     try {
         info.m_fairmqTopology.reset();
-        info.m_fairmqTopology = make_unique<Topology>(dds::topology_api::CTopology(_topologyFile), info.m_session);
+        info.m_fairmqTopology = make_unique<Topology>(dds::topology_api::CTopology(topologyFile), info.m_session);
     } catch (exception& _e) {
         info.m_fairmqTopology = nullptr;
         fillError(common, error, ErrorCode::FairMQCreateTopologyFailed, toString("Failed to initialize FairMQ topology: ", _e.what()));
@@ -311,8 +311,8 @@ bool ControlService::createFairMQTopo(const SCommonParams& common, SError& error
     return info.m_fairmqTopology != nullptr;
 }
 
-bool ControlService::changeState(const SCommonParams& common,
-                                         SError& error,
+bool ControlService::changeState(const CommonParams& common,
+                                         Error& error,
                                          TopologyTransition transition,
                                          const string& path,
                                          AggregatedTopologyState& aggregatedState,
@@ -325,8 +325,8 @@ bool ControlService::changeState(const SCommonParams& common,
     }
 
     auto it{ expectedState.find(transition) };
-    DeviceState _expectedState{ it != expectedState.end() ? it->second : DeviceState::Undefined };
-    if (_expectedState == DeviceState::Undefined) {
+    DeviceState expState{ it != expectedState.end() ? it->second : DeviceState::Undefined };
+    if (expState == DeviceState::Undefined) {
         fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Unexpected FairMQ transition ", transition));
         return false;
     }
@@ -343,7 +343,7 @@ bool ControlService::changeState(const SCommonParams& common,
             } catch (exception& _e) {
                 success = false;
                 fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Aggregate topology state failed: ", _e.what()));
-                OLOG(error, common) << stateSummaryString(common, result.second, _expectedState, info);
+                OLOG(error, common) << stateSummaryString(common, result.second, expState, info);
             }
             if (topologyState != nullptr) {
                 fairMQToODCTopologyState(info.m_topo.get(), result.second, topologyState);
@@ -357,12 +357,12 @@ bool ControlService::changeState(const SCommonParams& common,
                     fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("FairMQ change state failed: ", result.first.message()));
                     break;
             }
-            OLOG(error, common) << stateSummaryString(common, info.m_fairmqTopology->GetCurrentState(), _expectedState, info);
+            OLOG(error, common) << stateSummaryString(common, info.m_fairmqTopology->GetCurrentState(), expState, info);
         }
     } catch (exception& _e) {
         success = false;
         fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
-        OLOG(error, common) << stateSummaryString(common, info.m_fairmqTopology->GetCurrentState(), _expectedState, info);
+        OLOG(error, common) << stateSummaryString(common, info.m_fairmqTopology->GetCurrentState(), expState, info);
     }
 
     if (success) {
@@ -376,7 +376,7 @@ bool ControlService::changeState(const SCommonParams& common,
     return success;
 }
 
-bool ControlService::changeStateConfigure(const SCommonParams& common, SError& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
+bool ControlService::changeStateConfigure(const CommonParams& common, Error& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
 {
     return changeState(common, error, TopologyTransition::InitDevice,   path, aggregatedState, topologyState)
         && changeState(common, error, TopologyTransition::CompleteInit, path, aggregatedState, topologyState)
@@ -385,7 +385,7 @@ bool ControlService::changeStateConfigure(const SCommonParams& common, SError& e
         && changeState(common, error, TopologyTransition::InitTask,     path, aggregatedState, topologyState);
 }
 
-bool ControlService::changeStateReset(const SCommonParams& common, SError& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
+bool ControlService::changeStateReset(const CommonParams& common, Error& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
 {
     return changeState(common, error, TopologyTransition::ResetTask, path, aggregatedState, topologyState)
         && changeState(common, error, TopologyTransition::ResetDevice, path, aggregatedState, topologyState);
@@ -393,10 +393,35 @@ bool ControlService::changeStateReset(const SCommonParams& common, SError& error
 
 void ControlService::updateTopologyOnFailure()
 {
+    // get failed tasks
+    // determine failed collections
 
+    // get the topology file
+    // extract the nmin variables and detect corresponding collections
+
+    // proceed if remaining collections > nmin.
+
+    // destroy Topology
+
+    // kill agents responsible for failed collections
+    // https://github.com/FairRootGroup/DDS/blob/master/dds-tools-lib/tests/TestSession.cpp#L632
+
+        // SAgentCommandRequest::request_t agentCmd;
+        // agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
+        // agentCmd.m_arg1 = agentID;
+        // session.syncSendRequest<SAgentCommandRequest>(agentCmd, kTimeout, &cout);
+
+        // this_thread::sleep_for(sleepTime);
+        // BOOST_CHECK_NO_THROW(session.syncSendRequest<SAgentInfoRequest>(SAgentInfoRequest::request_t(), agentInfo, kTimeout, &cout));
+
+        // BOOST_CHECK(agentInfo.size() == 0);
+
+    // update topology with n = remaining collections
+
+    // recreate Topology
 }
 
-bool ControlService::getState(const SCommonParams& common, SError& error, const string& _path, AggregatedTopologyState& aggregatedState, TopologyState* _topologyState)
+bool ControlService::getState(const CommonParams& common, Error& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
 {
     auto& info = getOrCreateSessionInfo(common);
     if (info.m_fairmqTopology == nullptr) {
@@ -409,13 +434,13 @@ bool ControlService::getState(const SCommonParams& common, SError& error, const 
     auto const state(info.m_fairmqTopology->GetCurrentState());
 
     try {
-        aggregatedState = aggregateStateForPath(info.m_topo.get(), state, _path);
+        aggregatedState = aggregateStateForPath(info.m_topo.get(), state, path);
     } catch (exception& _e) {
         success = false;
         fillError(common, error, ErrorCode::FairMQGetStateFailed, toString("Get state failed: ", _e.what()));
     }
-    if (_topologyState != nullptr)
-        fairMQToODCTopologyState(info.m_topo.get(), state, _topologyState);
+    if (topologyState != nullptr)
+        fairMQToODCTopologyState(info.m_topo.get(), state, topologyState);
 
     const auto stats{ SStateStats(state) };
     OLOG(info, common) << stats.tasksString();
@@ -424,7 +449,7 @@ bool ControlService::getState(const SCommonParams& common, SError& error, const 
     return success;
 }
 
-bool ControlService::setProperties(const SCommonParams& common, SError& error, const SSetPropertiesParams& _params)
+bool ControlService::setProperties(const CommonParams& common, Error& error, const SSetPropertiesParams& params)
 {
     auto& info = getOrCreateSessionInfo(common);
     if (info.m_fairmqTopology == nullptr) {
@@ -435,7 +460,7 @@ bool ControlService::setProperties(const SCommonParams& common, SError& error, c
     bool success(true);
 
     try {
-        auto result{ info.m_fairmqTopology->SetProperties(_params.m_properties, _params.m_path, requestTimeout(common)) };
+        auto result{ info.m_fairmqTopology->SetProperties(params.m_properties, params.m_path, requestTimeout(common)) };
 
         success = !result.first;
         if (success) {
@@ -471,12 +496,12 @@ bool ControlService::setProperties(const SCommonParams& common, SError& error, c
     return success;
 }
 
-AggregatedTopologyState ControlService::aggregateStateForPath(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _topoState, const string& _path)
+AggregatedTopologyState ControlService::aggregateStateForPath(const dds::topology_api::CTopology* topo, const FairMQTopologyState& topoState, const string& path)
 {
-    if (_path.empty())
-        return AggregateState(_topoState);
+    if (path.empty())
+        return AggregateState(topoState);
 
-    if (_topo == nullptr)
+    if (topo == nullptr)
         throw runtime_error("DDS topology is not initialized");
 
     try {
@@ -484,31 +509,31 @@ AggregatedTopologyState ControlService::aggregateStateForPath(const dds::topolog
         // If task is found than return it's state as an aggregated topology state
 
         // Throws if task not found for path
-        const auto& task{ _topo->getRuntimeTask(_path) };
-        auto it{ find_if(_topoState.cbegin(), _topoState.cend(), [&](const FairMQTopologyState::value_type& _v) { return _v.taskId == task.m_taskId; }) };
-        if (it != _topoState.cend())
+        const auto& task{ topo->getRuntimeTask(path) };
+        auto it{ find_if(topoState.cbegin(), topoState.cend(), [&](const FairMQTopologyState::value_type& v) { return v.taskId == task.m_taskId; }) };
+        if (it != topoState.cend())
             return static_cast<AggregatedTopologyState>(it->state);
 
-        throw runtime_error("Device not found for path " + _path);
+        throw runtime_error("Device not found for path " + path);
     } catch (exception& _e) {
         // In case of exception check that path contains multiple tasks
 
         // Collect all task IDs to a set for fast search
         set<Id_t> taskIds;
-        auto it{ _topo->getRuntimeTaskIteratorMatchingPath(_path) };
-        for_each(it.first, it.second, [&](const STopoRuntimeTask::FilterIterator_t::value_type& _v) { taskIds.insert(_v.second.m_taskId); });
+        auto it{ topo->getRuntimeTaskIteratorMatchingPath(path) };
+        for_each(it.first, it.second, [&](const STopoRuntimeTask::FilterIterator_t::value_type& v) { taskIds.insert(v.second.m_taskId); });
 
         if (taskIds.empty())
-            throw runtime_error("No tasks found matching the path " + _path);
+            throw runtime_error("No tasks found matching the path " + path);
 
         // Find a state of a first task
-        auto firstIt{ find_if(_topoState.cbegin(), _topoState.cend(), [&](const FairMQTopologyState::value_type& _v) { return _v.taskId == *(taskIds.begin()); }) };
-        if (firstIt == _topoState.cend())
-            throw runtime_error("No states found for path " + _path);
+        auto firstIt{ find_if(topoState.cbegin(), topoState.cend(), [&](const FairMQTopologyState::value_type& v) { return v.taskId == *(taskIds.begin()); }) };
+        if (firstIt == topoState.cend())
+            throw runtime_error("No states found for path " + path);
 
         // Check that all selected devices have the same state
         AggregatedTopologyState first{ static_cast<AggregatedTopologyState>(firstIt->state) };
-        if (std::all_of(_topoState.cbegin(), _topoState.cend(), [&](const FairMQTopologyState::value_type& _v) { return (taskIds.count(_v.taskId) > 0) ? _v.state == first : true; })) {
+        if (all_of(topoState.cbegin(), topoState.cend(), [&](const FairMQTopologyState::value_type& v) { return (taskIds.count(v.taskId) > 0) ? v.state == first : true; })) {
             return first;
         }
 
@@ -516,38 +541,38 @@ AggregatedTopologyState ControlService::aggregateStateForPath(const dds::topolog
     }
 }
 
-void ControlService::fairMQToODCTopologyState(const dds::topology_api::CTopology* _topo, const FairMQTopologyState& _fairmq, TopologyState* _odc)
+void ControlService::fairMQToODCTopologyState(const dds::topology_api::CTopology* topo, const FairMQTopologyState& fairmq, TopologyState* odc)
 {
-    if (_odc == nullptr || _topo == nullptr)
+    if (odc == nullptr || topo == nullptr)
         return;
 
-    _odc->reserve(_fairmq.size());
-    for (const auto& state : _fairmq) {
-        const auto& task = _topo->getRuntimeTaskById(state.taskId);
-        _odc->push_back(SDeviceStatus(state, task.m_taskPath));
+    odc->reserve(fairmq.size());
+    for (const auto& state : fairmq) {
+        const auto& task = topo->getRuntimeTaskById(state.taskId);
+        odc->push_back(SDeviceStatus(state, task.m_taskPath));
     }
 }
 
-void ControlService::fillError(const SCommonParams& common, SError& error, ErrorCode errorCode, const string& msg)
+void ControlService::fillError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
 {
     error.m_code = MakeErrorCode(errorCode);
     error.m_details = msg;
     OLOG(error, common) << error;
 }
 
-void ControlService::fillFatalError(const SCommonParams& common, SError& error, ErrorCode errorCode, const string& msg)
+void ControlService::fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
 {
     error.m_code = MakeErrorCode(errorCode);
     error.m_details = msg;
     stringstream ss(error.m_details);
-    std::string line;
+    string line;
     OLOG(fatal, common) << error.m_code;
-    while (std::getline(ss, line, '\n')) {
+    while (getline(ss, line, '\n')) {
         OLOG(fatal, common) << line;
     }
 }
 
-ControlService::SessionInfo& ControlService::getOrCreateSessionInfo(const SCommonParams& common)
+ControlService::SessionInfo& ControlService::getOrCreateSessionInfo(const CommonParams& common)
 {
     lock_guard<mutex> lock(mSessionsMtx);
     auto it = m_sessions.find(common.m_partitionID);
@@ -555,17 +580,17 @@ ControlService::SessionInfo& ControlService::getOrCreateSessionInfo(const SCommo
         auto newSessionInfo = make_unique<SessionInfo>();
         newSessionInfo->m_session = make_unique<CSession>();
         newSessionInfo->m_partitionID = common.m_partitionID;
-        auto ret = m_sessions.emplace(common.m_partitionID, std::move(newSessionInfo));
-        OLOG(debug, common) << "Return new session info for partition ID " << quoted(common.m_partitionID);
+        auto ret = m_sessions.emplace(common.m_partitionID, move(newSessionInfo));
+        OLOG(debug, common) << "Created session info for partition ID " << quoted(common.m_partitionID);
         return *(ret.first->second);
     }
-    OLOG(debug, common) << "Return existing session info for partition ID " << quoted(common.m_partitionID);
+    OLOG(debug, common) << "Found session info for partition ID " << quoted(common.m_partitionID);
     return *(it->second);
 }
 
-SError ControlService::checkSessionIsRunning(const SCommonParams& common, ErrorCode errorCode)
+Error ControlService::checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode)
 {
-    SError error;
+    Error error;
     auto& info = getOrCreateSessionInfo(common);
     if (!info.m_session->IsRunning()) {
         fillError(common, error, errorCode, "DDS session is not running. Use Init or Run to start the session.");
@@ -573,19 +598,19 @@ SError ControlService::checkSessionIsRunning(const SCommonParams& common, ErrorC
     return error;
 }
 
-string ControlService::stateSummaryString(const SCommonParams& common, const FairMQTopologyState& _topologyState, DeviceState _expectedState, SessionInfo& sessionInfo)
+string ControlService::stateSummaryString(const CommonParams& common, const FairMQTopologyState& topologyState, DeviceState expectedState, SessionInfo& sessionInfo)
 {
-    size_t taskTotalCount{ _topologyState.size() };
+    size_t taskTotalCount{ topologyState.size() };
     size_t taskFailedCount{ 0 };
     stringstream ss;
-    for (const auto& status : _topologyState) {
+    for (const auto& status : topologyState) {
         // Print only failed devices
-        if (status.state == _expectedState)
+        if (status.state == expectedState)
             continue;
 
         taskFailedCount++;
         if (taskFailedCount == 1) {
-            ss << "List of failed devices for an expected state " << _expectedState << ":";
+            ss << "List of failed devices for an expected state " << expectedState << ":";
         }
         ss << endl
            << right << setw(7) << taskFailedCount << " Device: state (" << status.state << "), last state (" << status.lastState << "), task ID (" << status.taskId << "), collection ID ("
@@ -595,57 +620,57 @@ string ControlService::stateSummaryString(const SCommonParams& common, const Fai
         try {
             TopoTaskInfo& taskInfo = sessionInfo.getFromTaskCache(status.taskId);
             ss << ", " << taskInfo;
-        } catch (const exception& _e) {
-            OLOG(error, common) << "State summary error: " << _e.what();
+        } catch (const exception& e) {
+            OLOG(error, common) << "State summary error: " << e.what();
         }
     }
 
-    auto collectionMap{ GroupByCollectionId(_topologyState) };
+    auto collectionMap{ GroupByCollectionId(topologyState) };
     size_t collectionTotalCount{ collectionMap.size() };
     size_t collectionFailedCount{ 0 };
     for (const auto& states : collectionMap) {
         auto collectionState{ AggregateState(states.second) };
         auto collectionId{ states.first };
         // Print only failed collections
-        if (collectionState == _expectedState)
+        if (collectionState == expectedState)
             continue;
 
         collectionFailedCount++;
         if (collectionFailedCount == 1) {
-            ss << endl << "List of failed collections for an expected state " << _expectedState << ":";
+            ss << endl << "List of failed collections for an expected state " << expectedState << ":";
         }
         ss << endl << right << setw(7) << collectionFailedCount << "   Collection: state (" << collectionState << ")";
 
         try {
             TopoCollectionInfo& collectionInfo = sessionInfo.getFromCollectionCache(collectionId);
             ss << ", " << collectionInfo;
-        } catch (const exception& _e) {
-            OLOG(error, common) << "State summary error: " << _e.what();
+        } catch (const exception& e) {
+            OLOG(error, common) << "State summary error: " << e.what();
         }
     }
 
     size_t taskSuccessCount{ taskTotalCount - taskFailedCount };
     size_t collectionSuccessCount{ collectionTotalCount - collectionFailedCount };
     ss << endl
-       << "Summary for expected state (" << _expectedState << "): " << endl
+       << "Summary for expected state (" << expectedState << "): " << endl
        << "   Tasks total/success/failed (" << taskTotalCount << "/" << taskSuccessCount << "/" << taskFailedCount << ")" << endl
        << "   Collections total/success/failed (" << collectionTotalCount << "/" << collectionSuccessCount << "/" << collectionFailedCount << ")";
 
     return ss.str();
 }
 
-bool ControlService::subscribeToDDSSession(const SCommonParams& common, SError& error)
+bool ControlService::subscribeToDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
         if (info.m_session->IsRunning()) {
             // Subscrube on TaskDone events
             auto request{ SOnTaskDoneRequest::makeRequest(SOnTaskDoneRequest::request_t()) };
-            request->setResponseCallback([common](const SOnTaskDoneResponseData& _info) {
+            request->setResponseCallback([common](const SOnTaskDoneResponseData& info) {
                 stringstream ss;
-                ss << "Task (" << _info.m_taskID << ") with path (" << _info.m_taskPath << ") exited with code (" << _info.m_exitCode << ") and signal (" << _info.m_signal << ") on ("
-                   << _info.m_host << ") in working directory (" << _info.m_wrkDir << ")";
-                if (_info.m_exitCode != 0 || _info.m_signal != 0) {
+                ss << "Task (" << info.m_taskID << ") with path (" << info.m_taskPath << ") exited with code (" << info.m_exitCode << ") and signal (" << info.m_signal << ") on ("
+                   << info.m_host << ") in working directory (" << info.m_wrkDir << ")";
+                if (info.m_exitCode != 0 || info.m_signal != 0) {
                     OLOG(fatal, common) << ss.str();
                 } else {
                     OLOG(debug, common) << ss.str();
@@ -664,28 +689,71 @@ bool ControlService::subscribeToDDSSession(const SCommonParams& common, SError& 
     return true;
 }
 
-chrono::seconds ControlService::requestTimeout(const SCommonParams& common) const
+string ControlService::topoFilepath(const CommonParams& common, const string& topologyFile, const string& topologyContent, const string& topologyScript)
+{
+    int count{ (topologyFile.empty() ? 0 : 1) + (topologyContent.empty() ? 0 : 1) + (topologyScript.empty() ? 0 : 1) };
+    if (count != 1) {
+        throw runtime_error("Either topology filepath, content or script has to be set");
+    }
+    if (!topologyFile.empty()) {
+        return topologyFile;
+    }
+
+    string content{ topologyContent };
+
+    // Execute topology script if needed
+    if (!topologyScript.empty()) {
+        stringstream ssCmd;
+        ssCmd << boost::process::search_path("bash").string() << " -c " << quoted(topologyScript);
+        const chrono::seconds timeout{ 30 };
+        string out;
+        string err;
+        int exitCode{ EXIT_SUCCESS };
+        string cmd{ ssCmd.str() };
+        OLOG(info, common) << "Executing topology script " << quoted(cmd);
+        execute(cmd, timeout, &out, &err, &exitCode);
+
+        if (exitCode != EXIT_SUCCESS) {
+            throw runtime_error(toString("Topology generation script ", quoted(cmd), " failed with exit code: ", exitCode, "; stderr: ", quoted(err), "; stdout: ", quoted(out)));
+        }
+
+        const string sout{ out.substr(0, min(out.length(), size_t(20))) };
+        OLOG(info, common) << "Topology script executed successfully: stdout (" << quoted(sout) << "...) stderr (" << quoted(err) << ")";
+
+        content = out;
+    }
+
+    // Create temp topology file with `content`
+    const boost::filesystem::path tmpPath{ boost::filesystem::temp_directory_path() / boost::filesystem::unique_path() };
+    boost::filesystem::create_directories(tmpPath);
+    const boost::filesystem::path filepath{ tmpPath / "topology.xml" };
+    ofstream file(filepath.string());
+    if (!file.is_open()) {
+        throw runtime_error(toString("Failed to create temp topology file ", quoted(filepath.string())));
+    }
+    file << content;
+    OLOG(info, common) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
+    return filepath.string();
+}
+
+chrono::seconds ControlService::requestTimeout(const CommonParams& common) const
 {
     auto timeout{ (common.m_timeout == 0) ? m_timeout : chrono::seconds(common.m_timeout) };
     OLOG(debug, common) << "Request timeout: " << timeout.count() << " sec";
     return timeout;
 }
 
-//
-// ControlService
-//
-
-void ControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& _pluginMap)
+void ControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& pluginMap)
 {
-    for (const auto& v : _pluginMap) {
+    for (const auto& v : pluginMap) {
         m_submit.registerPlugin(v.first, v.second);
     }
 }
 
-void ControlService::registerRequestTriggers(const CPluginManager::PluginMap_t& _triggerMap)
+void ControlService::registerRequestTriggers(const CPluginManager::PluginMap_t& triggerMap)
 {
     const set<string> avail{ "Initialize", "Submit", "Activate", "Run", "Update", "Configure", "SetProperties", "GetState", "Start", "Stop", "Reset", "Terminate", "Shutdown", "Status" };
-    for (const auto& v : _triggerMap) {
+    for (const auto& v : triggerMap) {
         if (avail.count(v.first) == 0) {
             throw runtime_error(toString("Failed to add request trigger ", quoted(v.first), ". Invalid request name. Valid names are: ", quoted(boost::algorithm::join(avail, ", "))));
         }
@@ -693,37 +761,37 @@ void ControlService::registerRequestTriggers(const CPluginManager::PluginMap_t& 
     }
 }
 
-void ControlService::restore(const std::string& _id)
+void ControlService::restore(const string& id)
 {
-    m_restoreId = _id;
+    m_restoreId = id;
 
-    OLOG(info) << "Restoring sessions for " << quoted(_id);
-    auto data{ CRestoreFile(_id).read() };
+    OLOG(info) << "Restoring sessions for " << quoted(id);
+    auto data{ CRestoreFile(id).read() };
     for (const auto& v : data.m_partitions) {
         OLOG(info, v.m_partitionId, 0) << "Restoring (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
-        auto result{ execInitialize(SCommonParams(v.m_partitionId, 0, 0), SInitializeParams(v.m_sessionId)) };
+        auto result{ execInitialize(CommonParams(v.m_partitionId, 0, 0), SInitializeParams(v.m_sessionId)) };
         if (result.m_error.m_code) {
             OLOG(info, v.m_partitionId, 0) << "Failed to attach to the session. Executing Shutdown trigger for (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
-            execRequestTrigger("Shutdown", SCommonParams(v.m_partitionId, 0, 0));
+            execRequestTrigger("Shutdown", CommonParams(v.m_partitionId, 0, 0));
         } else {
             OLOG(info, v.m_partitionId, 0) << "Successfully attached to the session (" << quoted(v.m_partitionId) << "/" << quoted(v.m_sessionId) << ")";
         }
     }
 }
 
-RequestResult ControlService::execInitialize(const SCommonParams& common, const SInitializeParams& _params)
+RequestResult ControlService::execInitialize(const CommonParams& common, const SInitializeParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
 
-    SError error;
-    if (_params.m_sessionID.empty()) {
+    Error error;
+    if (params.m_sessionID.empty()) {
         // Shutdown DDS session if it is running already
         // Create new DDS session
         shutdownDDSSession(common, error) && createDDSSession(common, error) && subscribeToDDSSession(common, error);
     } else {
         // Shutdown DDS session if it is running already
         // Attach to an existing DDS session
-        bool success{ shutdownDDSSession(common, error) && attachToDDSSession(common, error, _params.m_sessionID) && subscribeToDDSSession(common, error) };
+        bool success{ shutdownDDSSession(common, error) && attachToDDSSession(common, error, params.m_sessionID) && subscribeToDDSSession(common, error) };
 
         // Request current active topology, if any
         // If topology is active, create DDS and FairMQ topology
@@ -738,17 +806,17 @@ RequestResult ControlService::execInitialize(const SCommonParams& common, const 
     return createRequestResult(common, error, "Initialize done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
-RequestResult ControlService::execSubmit(const SCommonParams& common, const SSubmitParams& _params)
+RequestResult ControlService::execSubmit(const CommonParams& common, const SSubmitParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
 
-    SError error{ checkSessionIsRunning(common, ErrorCode::DDSSubmitAgentsFailed) };
+    Error error{ checkSessionIsRunning(common, ErrorCode::DDSSubmitAgentsFailed) };
 
     // Get DDS submit parameters from ODC resource plugin
-    std::vector<CDDSSubmit::SParams> ddsParams;
+    vector<CDDSSubmit::SParams> ddsParams;
     if (!error.m_code) {
         try {
-            ddsParams = m_submit.makeParams(_params.m_plugin, _params.m_resources, common.m_partitionID, common.m_runNr);
+            ddsParams = m_submit.makeParams(params.m_plugin, params.m_resources, common.m_partitionID, common.m_runNr);
         } catch (exception& _e) {
             fillError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", _e.what()));
         }
@@ -778,16 +846,16 @@ RequestResult ControlService::execSubmit(const SCommonParams& common, const SSub
     return createRequestResult(common, error, "Submit done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
-RequestResult ControlService::execActivate(const SCommonParams& common, const SActivateParams& _params)
+RequestResult ControlService::execActivate(const CommonParams& common, const SActivateParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     // Activate DDS topology
     // Create Topology
-    SError error{ checkSessionIsRunning(common, ErrorCode::DDSActivateTopologyFailed) };
+    Error error{ checkSessionIsRunning(common, ErrorCode::DDSActivateTopologyFailed) };
     if (!error.m_code) {
         string topo;
         try {
-            topo = topoFilepath(common, _params);
+            topo = topoFilepath(common, params.m_topologyFile, params.m_topologyContent, params.m_topologyScript);
         } catch (exception& _e) {
             fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
         }
@@ -800,20 +868,21 @@ RequestResult ControlService::execActivate(const SCommonParams& common, const SA
     return createRequestResult(common, error, "Activate done", measure.duration(), state);
 }
 
-RequestResult ControlService::execRun(const SCommonParams& common, const SInitializeParams& _initializeParams, const SSubmitParams& _submitParams, const SActivateParams& _activateParams)
+RequestResult ControlService::execRun(const CommonParams& common, const SInitializeParams& initializeParams, const SSubmitParams& submitParams, const SActivateParams& activateParams)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     // Run request doesn't support attachment to a DDS session.
     // Execute consecuently Initialize, Submit and Activate.
-    SError error;
-    if (!_initializeParams.m_sessionID.empty()) {
-        error = SError(MakeErrorCode(ErrorCode::RequestNotSupported), "Attachment to a DDS session not supported");
+
+    Error error;
+    if (!initializeParams.m_sessionID.empty()) {
+        error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Attachment to a DDS session not supported");
     } else {
-        error = execInitialize(common, _initializeParams).m_error;
+        error = execInitialize(common, initializeParams).m_error;
         if (!error.m_code) {
-            error = execSubmit(common, _submitParams).m_error;
+            error = execSubmit(common, submitParams).m_error;
             if (!error.m_code) {
-                error = execActivate(common, _activateParams).m_error;
+                error = execActivate(common, activateParams).m_error;
             }
         }
     }
@@ -822,19 +891,19 @@ RequestResult ControlService::execRun(const SCommonParams& common, const SInitia
     return createRequestResult(common, error, "Run done", measure.duration(), state);
 }
 
-RequestResult ControlService::execUpdate(const SCommonParams& common, const SUpdateParams& _params)
+RequestResult ControlService::execUpdate(const CommonParams& common, const SUpdateParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
     // Reset devices' state
     // Update DDS topology
     // Create Topology
     // Configure devices' state
-    SError error;
+    Error error;
 
     string topo;
     try {
-        topo = topoFilepath(common, _params);
+        topo = topoFilepath(common, params.m_topologyFile, params.m_topologyContent, params.m_topologyScript);
     } catch (exception& _e) {
         fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
     }
@@ -851,94 +920,94 @@ RequestResult ControlService::execUpdate(const SCommonParams& common, const SUpd
     return createRequestResult(common, error, "Update done", measure.duration(), state);
 }
 
-RequestResult ControlService::execShutdown(const SCommonParams& common)
+RequestResult ControlService::execShutdown(const CommonParams& common)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
-    SError error;
+    STimeMeasure<chrono::milliseconds> measure;
+    Error error;
     shutdownDDSSession(common, error);
     execRequestTrigger("Shutdown", common);
     return createRequestResult(common, error, "Shutdown done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
-RequestResult ControlService::execSetProperties(const SCommonParams& common, const SSetPropertiesParams& _params)
+RequestResult ControlService::execSetProperties(const CommonParams& common, const SSetPropertiesParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
-    SError error;
-    setProperties(common, error, _params);
+    STimeMeasure<chrono::milliseconds> measure;
+    Error error;
+    setProperties(common, error, params);
     execRequestTrigger("SetProperties", common);
     return createRequestResult(common, error, "SetProperties done", measure.duration(), AggregatedTopologyState::Undefined);
 }
 
-RequestResult ControlService::execGetState(const SCommonParams& common, const SDeviceParams& _params)
+RequestResult ControlService::execGetState(const CommonParams& common, const SDeviceParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
-    SError error;
-    getState(common, error, _params.m_path, state, fullState.get());
+    unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
+    Error error;
+    getState(common, error, params.m_path, state, fullState.get());
     execRequestTrigger("GetState", common);
-    return createRequestResult(common, error, "GetState done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(common, error, "GetState done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execConfigure(const SCommonParams& common, const SDeviceParams& _params)
+RequestResult ControlService::execConfigure(const CommonParams& common, const SDeviceParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
-    SError error;
-    changeStateConfigure(common, error, _params.m_path, state, fullState.get());
+    unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
+    Error error;
+    changeStateConfigure(common, error, params.m_path, state, fullState.get());
     execRequestTrigger("Configure", common);
-    return createRequestResult(common, error, "Configure done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(common, error, "Configure done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execStart(const SCommonParams& common, const SDeviceParams& _params)
+RequestResult ControlService::execStart(const CommonParams& common, const SDeviceParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
-    SError error;
-    changeState(common, error, TopologyTransition::Run, _params.m_path, state, fullState.get());
+    unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
+    Error error;
+    changeState(common, error, TopologyTransition::Run, params.m_path, state, fullState.get());
     execRequestTrigger("Start", common);
-    return createRequestResult(common, error, "Start done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(common, error, "Start done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execStop(const SCommonParams& common, const SDeviceParams& _params)
+RequestResult ControlService::execStop(const CommonParams& common, const SDeviceParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
-    SError error;
-    changeState(common, error, TopologyTransition::Stop, _params.m_path, state, fullState.get());
+    unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
+    Error error;
+    changeState(common, error, TopologyTransition::Stop, params.m_path, state, fullState.get());
     execRequestTrigger("Stop", common);
-    return createRequestResult(common, error, "Stop done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(common, error, "Stop done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execReset(const SCommonParams& common, const SDeviceParams& _params)
+RequestResult ControlService::execReset(const CommonParams& common, const SDeviceParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
-    SError error;
-    changeStateReset(common, error, _params.m_path, state, fullState.get());
+    unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
+    Error error;
+    changeStateReset(common, error, params.m_path, state, fullState.get());
     execRequestTrigger("Reset", common);
-    return createRequestResult(common, error, "Reset done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(common, error, "Reset done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execTerminate(const SCommonParams& common, const SDeviceParams& _params)
+RequestResult ControlService::execTerminate(const CommonParams& common, const SDeviceParams& params)
 {
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
-    std::unique_ptr<TopologyState> fullState = _params.m_detailed ? make_unique<TopologyState>() : nullptr;
-    SError error;
-    changeState(common, error, TopologyTransition::End, _params.m_path, state, fullState.get());
+    unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
+    Error error;
+    changeState(common, error, TopologyTransition::End, params.m_path, state, fullState.get());
     execRequestTrigger("Terminate", common);
-    return createRequestResult(common, error, "Terminate done", measure.duration(), state, std::move(fullState));
+    return createRequestResult(common, error, "Terminate done", measure.duration(), state, move(fullState));
 }
 
 StatusRequestResult ControlService::execStatus(const SStatusParams& params)
 {
     lock_guard<mutex> lock(mSessionsMtx);
-    STimeMeasure<std::chrono::milliseconds> measure;
+    STimeMeasure<chrono::milliseconds> measure;
     StatusRequestResult result;
     for (const auto& v : m_sessions) {
         const auto& info{ v.second };
@@ -946,13 +1015,13 @@ StatusRequestResult ControlService::execStatus(const SStatusParams& params)
         status.m_partitionID = info->m_partitionID;
         try {
             status.m_sessionID = to_string(info->m_session->getSessionID());
-            status.m_sessionStatus = (info->m_session->IsRunning()) ? ESessionStatus::running : ESessionStatus::stopped;
+            status.m_sessionStatus = (info->m_session->IsRunning()) ? DDSSessionStatus::running : DDSSessionStatus::stopped;
         } catch (exception& _e) {
             OLOG(warning, status.m_partitionID, 0) << "Failed to get session ID or session status: " << _e.what();
         }
 
         // Filter running sessions if needed
-        if ((params.m_running && status.m_sessionStatus == ESessionStatus::running) || (!params.m_running)) {
+        if ((params.m_running && status.m_sessionStatus == DDSSessionStatus::running) || (!params.m_running)) {
             try {
                 status.m_aggregatedState = (info->m_fairmqTopology != nullptr && info->m_topo != nullptr)
                 ?
@@ -965,9 +1034,9 @@ StatusRequestResult ControlService::execStatus(const SStatusParams& params)
             result.m_partitions.push_back(status);
         }
     }
-    result.m_statusCode = EStatusCode::ok;
+    result.m_statusCode = StatusCode::ok;
     result.m_msg = "Status done";
     result.m_execTime = measure.duration();
-    execRequestTrigger("Status", SCommonParams());
+    execRequestTrigger("Status", CommonParams());
     return result;
 }
