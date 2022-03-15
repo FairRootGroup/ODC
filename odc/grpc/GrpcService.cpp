@@ -158,13 +158,13 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
     OLOG(info, commonParams) << "SetProperties request from " << client << ":\n" << req->DebugString();
     // Convert from protobuf to ODC format
-    SSetPropertiesParams::Properties_t props;
+    SetPropertiesParams::Properties_t props;
     for (int i = 0; i < req->properties_size(); i++) {
         auto prop{ req->properties(i) };
-        props.push_back(SSetPropertiesParams::Property_t(prop.key(), prop.value()));
+        props.push_back(SetPropertiesParams::Property_t(prop.key(), prop.value()));
     }
 
-    SSetPropertiesParams setPropertiesParams{ props, req->path() };
+    SetPropertiesParams setPropertiesParams{ props, req->path() };
     RequestResult res{ mService.execSetProperties(commonParams, setPropertiesParams) };
     setupGeneralReply(rep, res);
     logResponse("SetProperties response:\n", commonParams, rep);
@@ -286,7 +286,7 @@ void CGrpcService::setupGeneralReply(odc::GeneralReply* rep, const RequestResult
     rep->set_runnr(res.m_runNr);
     rep->set_sessionid(res.m_sessionID);
     rep->set_exectime(res.m_execTime);
-    rep->set_state(GetAggregatedTopologyStateName(res.m_aggregatedState));
+    rep->set_state(GetAggregatedStateName(res.m_aggregatedState));
 }
 
 void CGrpcService::setupStateReply(odc::StateReply* rep, const odc::core::RequestResult& res)
@@ -321,7 +321,7 @@ void CGrpcService::setupStatusReply(odc::StatusReply* rep, const odc::core::Stat
         partition->set_partitionid(p.m_partitionID);
         partition->set_sessionid(p.m_sessionID);
         partition->set_status((p.m_sessionStatus == DDSSessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
-        partition->set_state(GetAggregatedTopologyStateName(p.m_aggregatedState));
+        partition->set_state(GetAggregatedStateName(p.m_aggregatedState));
     }
 }
 

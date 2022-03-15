@@ -79,7 +79,7 @@ std::string CCliControlService::requestGetState(const CommonParams& _common, con
     return generalReply(m_service->execGetState(_common, _params));
 }
 
-std::string CCliControlService::requestSetProperties(const CommonParams& _common, const SSetPropertiesParams& _params)
+std::string CCliControlService::requestSetProperties(const CommonParams& _common, const SetPropertiesParams& _params)
 {
     return generalReply(m_service->execSetProperties(_common, _params));
 }
@@ -173,7 +173,7 @@ std::string CCliControlService::statusReply(const StatusRequestResult& result)
     {
         ss << "    { partition ID: " << p.m_partitionID << "; session ID: " << p.m_sessionID
            << "; status: " << ((p.m_sessionStatus == DDSSessionStatus::running) ? "RUNNING" : "STOPPED")
-           << "; state: " << GetAggregatedTopologyStateName(p.m_aggregatedState) << " }" << endl;
+           << "; state: " << GetAggregatedStateName(p.m_aggregatedState) << " }" << endl;
     }
     ss << "  Execution time: " << result.m_execTime << " msec" << endl;
     return ss.str();

@@ -96,7 +96,7 @@ std::string CGrpcControlClient::requestGetState(const CommonParams& _common, con
 }
 
 std::string CGrpcControlClient::requestSetProperties(const CommonParams& _common,
-                                                     const odc::core::SSetPropertiesParams& _params)
+                                                     const odc::core::SetPropertiesParams& _params)
 {
     odc::SetPropertiesRequest request;
     updateCommonParams(_common, &request);

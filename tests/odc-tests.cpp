@@ -276,20 +276,20 @@ BOOST_AUTO_TEST_CASE(mixed_state)
     BOOST_TEST_MESSAGE(result1.first);
 
     BOOST_CHECK_EQUAL(result1.first, std::error_code());
-    BOOST_CHECK_EQUAL(AggregateState(result1.second), AggregatedTopologyState::Mixed);
+    BOOST_CHECK_EQUAL(AggregateState(result1.second), AggregatedState::Mixed);
     BOOST_CHECK_EQUAL(StateEqualsTo(result1.second, DeviceState::InitializingDevice), false);
     auto const currentState1 = topo.GetCurrentState();
-    BOOST_CHECK_EQUAL(AggregateState(currentState1), AggregatedTopologyState::Mixed);
+    BOOST_CHECK_EQUAL(AggregateState(currentState1), AggregatedState::Mixed);
     BOOST_CHECK_EQUAL(StateEqualsTo(currentState1, DeviceState::InitializingDevice), false);
 
     auto result2(topo.ChangeState(TopologyTransition::InitDevice, ".*/(Processor|Sink).*"));
     BOOST_TEST_MESSAGE(result2.first);
 
     BOOST_CHECK_EQUAL(result2.first, std::error_code());
-    BOOST_CHECK_EQUAL(AggregateState(result2.second), AggregatedTopologyState::InitializingDevice);
+    BOOST_CHECK_EQUAL(AggregateState(result2.second), AggregatedState::InitializingDevice);
     BOOST_CHECK_EQUAL(StateEqualsTo(result2.second, DeviceState::InitializingDevice), true);
     auto const currentState2 = topo.GetCurrentState();
-    BOOST_CHECK_EQUAL(AggregateState(currentState2), AggregatedTopologyState::InitializingDevice);
+    BOOST_CHECK_EQUAL(AggregateState(currentState2), AggregatedState::InitializingDevice);
     BOOST_CHECK_EQUAL(StateEqualsTo(currentState2, DeviceState::InitializingDevice), true);
 }
 
@@ -357,10 +357,10 @@ BOOST_AUTO_TEST_CASE(async_change_state_collection_view)
                               for (const auto& c : cstate)
                               {
                                   BOOST_TEST_MESSAGE("\t" << c.first);
-                                  AggregatedTopologyState s;
+                                  AggregatedState s;
                                   BOOST_REQUIRE_NO_THROW(s = AggregateState(c.second));
                                   BOOST_REQUIRE_EQUAL(
-                                      s, static_cast<AggregatedTopologyState>(fair::mq::State::InitializingDevice));
+                                      s, static_cast<AggregatedState>(fair::mq::State::InitializingDevice));
                                   BOOST_TEST_MESSAGE("\tAggregated state: " << s);
                                   for (const auto& ds : c.second)
                                   {
@@ -600,59 +600,59 @@ BOOST_AUTO_TEST_CASE(set_and_get_properties)
 
 BOOST_AUTO_TEST_CASE(aggregated_topology_state_comparison)
 {
-    BOOST_REQUIRE(DeviceState::Undefined == AggregatedTopologyState::Undefined);
-    BOOST_REQUIRE(AggregatedTopologyState::Undefined == DeviceState::Undefined);
-    BOOST_REQUIRE(DeviceState::Ok == AggregatedTopologyState::Ok);
-    BOOST_REQUIRE(DeviceState::Error == AggregatedTopologyState::Error);
-    BOOST_REQUIRE(DeviceState::Idle == AggregatedTopologyState::Idle);
-    BOOST_REQUIRE(DeviceState::InitializingDevice == AggregatedTopologyState::InitializingDevice);
-    BOOST_REQUIRE(DeviceState::Initialized == AggregatedTopologyState::Initialized);
-    BOOST_REQUIRE(DeviceState::Binding == AggregatedTopologyState::Binding);
-    BOOST_REQUIRE(DeviceState::Bound == AggregatedTopologyState::Bound);
-    BOOST_REQUIRE(DeviceState::Connecting == AggregatedTopologyState::Connecting);
-    BOOST_REQUIRE(DeviceState::DeviceReady == AggregatedTopologyState::DeviceReady);
-    BOOST_REQUIRE(DeviceState::InitializingTask == AggregatedTopologyState::InitializingTask);
-    BOOST_REQUIRE(DeviceState::Ready == AggregatedTopologyState::Ready);
-    BOOST_REQUIRE(DeviceState::Running == AggregatedTopologyState::Running);
-    BOOST_REQUIRE(DeviceState::ResettingTask == AggregatedTopologyState::ResettingTask);
-    BOOST_REQUIRE(DeviceState::ResettingDevice == AggregatedTopologyState::ResettingDevice);
-    BOOST_REQUIRE(DeviceState::Exiting == AggregatedTopologyState::Exiting);
+    BOOST_REQUIRE(DeviceState::Undefined == AggregatedState::Undefined);
+    BOOST_REQUIRE(AggregatedState::Undefined == DeviceState::Undefined);
+    BOOST_REQUIRE(DeviceState::Ok == AggregatedState::Ok);
+    BOOST_REQUIRE(DeviceState::Error == AggregatedState::Error);
+    BOOST_REQUIRE(DeviceState::Idle == AggregatedState::Idle);
+    BOOST_REQUIRE(DeviceState::InitializingDevice == AggregatedState::InitializingDevice);
+    BOOST_REQUIRE(DeviceState::Initialized == AggregatedState::Initialized);
+    BOOST_REQUIRE(DeviceState::Binding == AggregatedState::Binding);
+    BOOST_REQUIRE(DeviceState::Bound == AggregatedState::Bound);
+    BOOST_REQUIRE(DeviceState::Connecting == AggregatedState::Connecting);
+    BOOST_REQUIRE(DeviceState::DeviceReady == AggregatedState::DeviceReady);
+    BOOST_REQUIRE(DeviceState::InitializingTask == AggregatedState::InitializingTask);
+    BOOST_REQUIRE(DeviceState::Ready == AggregatedState::Ready);
+    BOOST_REQUIRE(DeviceState::Running == AggregatedState::Running);
+    BOOST_REQUIRE(DeviceState::ResettingTask == AggregatedState::ResettingTask);
+    BOOST_REQUIRE(DeviceState::ResettingDevice == AggregatedState::ResettingDevice);
+    BOOST_REQUIRE(DeviceState::Exiting == AggregatedState::Exiting);
 
-    BOOST_REQUIRE(GetAggregatedTopologyState("UNDEFINED") == AggregatedTopologyState::Undefined);
-    BOOST_REQUIRE(GetAggregatedTopologyState("OK") == AggregatedTopologyState::Ok);
-    BOOST_REQUIRE(GetAggregatedTopologyState("ERROR") == AggregatedTopologyState::Error);
-    BOOST_REQUIRE(GetAggregatedTopologyState("IDLE") == AggregatedTopologyState::Idle);
-    BOOST_REQUIRE(GetAggregatedTopologyState("INITIALIZING DEVICE") == AggregatedTopologyState::InitializingDevice);
-    BOOST_REQUIRE(GetAggregatedTopologyState("INITIALIZED") == AggregatedTopologyState::Initialized);
-    BOOST_REQUIRE(GetAggregatedTopologyState("BINDING") == AggregatedTopologyState::Binding);
-    BOOST_REQUIRE(GetAggregatedTopologyState("BOUND") == AggregatedTopologyState::Bound);
-    BOOST_REQUIRE(GetAggregatedTopologyState("CONNECTING") == AggregatedTopologyState::Connecting);
-    BOOST_REQUIRE(GetAggregatedTopologyState("DEVICE READY") == AggregatedTopologyState::DeviceReady);
-    BOOST_REQUIRE(GetAggregatedTopologyState("INITIALIZING TASK") == AggregatedTopologyState::InitializingTask);
-    BOOST_REQUIRE(GetAggregatedTopologyState("READY") == AggregatedTopologyState::Ready);
-    BOOST_REQUIRE(GetAggregatedTopologyState("RUNNING") == AggregatedTopologyState::Running);
-    BOOST_REQUIRE(GetAggregatedTopologyState("RESETTING TASK") == AggregatedTopologyState::ResettingTask);
-    BOOST_REQUIRE(GetAggregatedTopologyState("RESETTING DEVICE") == AggregatedTopologyState::ResettingDevice);
-    BOOST_REQUIRE(GetAggregatedTopologyState("EXITING") == AggregatedTopologyState::Exiting);
-    BOOST_REQUIRE(GetAggregatedTopologyState("MIXED") == AggregatedTopologyState::Mixed);
+    BOOST_REQUIRE(GetAggregatedState("UNDEFINED") == AggregatedState::Undefined);
+    BOOST_REQUIRE(GetAggregatedState("OK") == AggregatedState::Ok);
+    BOOST_REQUIRE(GetAggregatedState("ERROR") == AggregatedState::Error);
+    BOOST_REQUIRE(GetAggregatedState("IDLE") == AggregatedState::Idle);
+    BOOST_REQUIRE(GetAggregatedState("INITIALIZING DEVICE") == AggregatedState::InitializingDevice);
+    BOOST_REQUIRE(GetAggregatedState("INITIALIZED") == AggregatedState::Initialized);
+    BOOST_REQUIRE(GetAggregatedState("BINDING") == AggregatedState::Binding);
+    BOOST_REQUIRE(GetAggregatedState("BOUND") == AggregatedState::Bound);
+    BOOST_REQUIRE(GetAggregatedState("CONNECTING") == AggregatedState::Connecting);
+    BOOST_REQUIRE(GetAggregatedState("DEVICE READY") == AggregatedState::DeviceReady);
+    BOOST_REQUIRE(GetAggregatedState("INITIALIZING TASK") == AggregatedState::InitializingTask);
+    BOOST_REQUIRE(GetAggregatedState("READY") == AggregatedState::Ready);
+    BOOST_REQUIRE(GetAggregatedState("RUNNING") == AggregatedState::Running);
+    BOOST_REQUIRE(GetAggregatedState("RESETTING TASK") == AggregatedState::ResettingTask);
+    BOOST_REQUIRE(GetAggregatedState("RESETTING DEVICE") == AggregatedState::ResettingDevice);
+    BOOST_REQUIRE(GetAggregatedState("EXITING") == AggregatedState::Exiting);
+    BOOST_REQUIRE(GetAggregatedState("MIXED") == AggregatedState::Mixed);
 
-    BOOST_REQUIRE("UNDEFINED" == GetAggregatedTopologyStateName(AggregatedTopologyState::Undefined));
-    BOOST_REQUIRE("OK" == GetAggregatedTopologyStateName(AggregatedTopologyState::Ok));
-    BOOST_REQUIRE("ERROR" == GetAggregatedTopologyStateName(AggregatedTopologyState::Error));
-    BOOST_REQUIRE("IDLE" == GetAggregatedTopologyStateName(AggregatedTopologyState::Idle));
-    BOOST_REQUIRE("INITIALIZING DEVICE" == GetAggregatedTopologyStateName(AggregatedTopologyState::InitializingDevice));
-    BOOST_REQUIRE("INITIALIZED" == GetAggregatedTopologyStateName(AggregatedTopologyState::Initialized));
-    BOOST_REQUIRE("BINDING" == GetAggregatedTopologyStateName(AggregatedTopologyState::Binding));
-    BOOST_REQUIRE("BOUND" == GetAggregatedTopologyStateName(AggregatedTopologyState::Bound));
-    BOOST_REQUIRE("CONNECTING" == GetAggregatedTopologyStateName(AggregatedTopologyState::Connecting));
-    BOOST_REQUIRE("DEVICE READY" == GetAggregatedTopologyStateName(AggregatedTopologyState::DeviceReady));
-    BOOST_REQUIRE("INITIALIZING TASK" == GetAggregatedTopologyStateName(AggregatedTopologyState::InitializingTask));
-    BOOST_REQUIRE("READY" == GetAggregatedTopologyStateName(AggregatedTopologyState::Ready));
-    BOOST_REQUIRE("RUNNING" == GetAggregatedTopologyStateName(AggregatedTopologyState::Running));
-    BOOST_REQUIRE("RESETTING TASK" == GetAggregatedTopologyStateName(AggregatedTopologyState::ResettingTask));
-    BOOST_REQUIRE("RESETTING DEVICE" == GetAggregatedTopologyStateName(AggregatedTopologyState::ResettingDevice));
-    BOOST_REQUIRE("EXITING" == GetAggregatedTopologyStateName(AggregatedTopologyState::Exiting));
-    BOOST_REQUIRE("MIXED" == GetAggregatedTopologyStateName(AggregatedTopologyState::Mixed));
+    BOOST_REQUIRE("UNDEFINED" == GetAggregatedStateName(AggregatedState::Undefined));
+    BOOST_REQUIRE("OK" == GetAggregatedStateName(AggregatedState::Ok));
+    BOOST_REQUIRE("ERROR" == GetAggregatedStateName(AggregatedState::Error));
+    BOOST_REQUIRE("IDLE" == GetAggregatedStateName(AggregatedState::Idle));
+    BOOST_REQUIRE("INITIALIZING DEVICE" == GetAggregatedStateName(AggregatedState::InitializingDevice));
+    BOOST_REQUIRE("INITIALIZED" == GetAggregatedStateName(AggregatedState::Initialized));
+    BOOST_REQUIRE("BINDING" == GetAggregatedStateName(AggregatedState::Binding));
+    BOOST_REQUIRE("BOUND" == GetAggregatedStateName(AggregatedState::Bound));
+    BOOST_REQUIRE("CONNECTING" == GetAggregatedStateName(AggregatedState::Connecting));
+    BOOST_REQUIRE("DEVICE READY" == GetAggregatedStateName(AggregatedState::DeviceReady));
+    BOOST_REQUIRE("INITIALIZING TASK" == GetAggregatedStateName(AggregatedState::InitializingTask));
+    BOOST_REQUIRE("READY" == GetAggregatedStateName(AggregatedState::Ready));
+    BOOST_REQUIRE("RUNNING" == GetAggregatedStateName(AggregatedState::Running));
+    BOOST_REQUIRE("RESETTING TASK" == GetAggregatedStateName(AggregatedState::ResettingTask));
+    BOOST_REQUIRE("RESETTING DEVICE" == GetAggregatedStateName(AggregatedState::ResettingDevice));
+    BOOST_REQUIRE("EXITING" == GetAggregatedStateName(AggregatedState::Exiting));
+    BOOST_REQUIRE("MIXED" == GetAggregatedStateName(AggregatedState::Mixed));
 }
 
 BOOST_AUTO_TEST_CASE(device_crashed)

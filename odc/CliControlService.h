@@ -41,7 +41,7 @@ namespace odc::cli
         std::string requestDownscale(const odc::core::CommonParams& _common, const odc::core::SUpdateParams& _params);
         std::string requestGetState(const odc::core::CommonParams& _common, const odc::core::SDeviceParams& _params);
         std::string requestSetProperties(const odc::core::CommonParams& _common,
-                                         const odc::core::SSetPropertiesParams& _params);
+                                         const odc::core::SetPropertiesParams& _params);
         std::string requestConfigure(const odc::core::CommonParams& _common, const odc::core::SDeviceParams& _params);
         std::string requestStart(const odc::core::CommonParams& _common, const odc::core::SDeviceParams& _params);
         std::string requestStop(const odc::core::CommonParams& _common, const odc::core::SDeviceParams& _params);

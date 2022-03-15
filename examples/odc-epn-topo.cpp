@@ -171,7 +171,7 @@ int main(int argc, char** argv)
             CTopoVars vars;
             vars.initFromXML(outputTopo);
             // "odc_nmin_" is a convention. ODC will look for this prefix, to map reco collections to their nmin value
-            vars.add("odc_nmin_RecoCollection", std::to_string(recoNmin));
+            vars.add("odc_nmin_RecoGroup", std::to_string(recoNmin));
             vars.saveToXML(outputTopo);
         }
 

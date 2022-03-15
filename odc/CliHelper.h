@@ -63,7 +63,7 @@ class CCliHelper
     static void addOptions(boost::program_options::options_description& options, SUpdateParams& params);
     static void addOptions(boost::program_options::options_description& options, SSubmitParams& params);
     static void addOptions(boost::program_options::options_description& options, SDeviceParams& params);
-    static void addOptions(boost::program_options::options_description& options, SSetPropertiesParams& params);
+    static void addOptions(boost::program_options::options_description& options, SetPropertiesParams& params);
     static void addOptions(boost::program_options::options_description& options, SStatusParams& params);
 
     // Plugin options
@@ -77,7 +77,7 @@ class CCliHelper
 
     template<typename... RequestParams_t>
     static void parseOptions(const boost::program_options::variables_map& /*vm*/, RequestParams_t&&... /*params*/) {} // Default implementation does nothing
-    static void parseOptions(const boost::program_options::variables_map& vm, std::string& partitionID, SSetPropertiesParams& params);
+    static void parseOptions(const boost::program_options::variables_map& vm, std::string& partitionID, SetPropertiesParams& params);
     static void parseOptions(const boost::program_options::variables_map& vm, CCliHelper::SBatchOptions& params);
 };
 

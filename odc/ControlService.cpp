@@ -76,7 +76,7 @@ RequestResult ControlService::createRequestResult(const CommonParams& common,
                                                 const Error& error,
                                                 const string& msg,
                                                 size_t execTime,
-                                                AggregatedTopologyState aggregatedState,
+                                                AggregatedState aggregatedState,
                                                 unique_ptr<TopologyState> fullState/*  = nullptr */)
 {
     auto& info = getOrCreateSessionInfo(common);
@@ -312,11 +312,11 @@ bool ControlService::createFairMQTopo(const CommonParams& common, Error& error, 
 }
 
 bool ControlService::changeState(const CommonParams& common,
-                                         Error& error,
-                                         TopologyTransition transition,
-                                         const string& path,
-                                         AggregatedTopologyState& aggregatedState,
-                                         TopologyState* topologyState)
+                                       Error& error,
+                                       TopologyTransition transition,
+                                       const string& path,
+                                       AggregatedState& aggregatedState,
+                                       TopologyState* topologyState)
 {
     auto& info = getOrCreateSessionInfo(common);
     if (info.m_fairmqTopology == nullptr) {
@@ -343,7 +343,7 @@ bool ControlService::changeState(const CommonParams& common,
             } catch (exception& _e) {
                 success = false;
                 fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Aggregate topology state failed: ", _e.what()));
-                OLOG(error, common) << stateSummaryString(common, result.second, expState, info);
+                printStateSummaryOnFailure(common, result.second, expState, info);
             }
             if (topologyState != nullptr) {
                 fairMQToODCTopologyState(info.m_topo.get(), result.second, topologyState);
@@ -351,18 +351,18 @@ bool ControlService::changeState(const CommonParams& common,
         } else {
             switch (static_cast<ErrorCode>(result.first.value())) {
                 case ErrorCode::OperationTimeout:
-                    fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for change state ", transition));
+                    fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", transition, " transition"));
                     break;
                 default:
                     fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("FairMQ change state failed: ", result.first.message()));
                     break;
             }
-            OLOG(error, common) << stateSummaryString(common, info.m_fairmqTopology->GetCurrentState(), expState, info);
+            printStateSummaryOnFailure(common, info.m_fairmqTopology->GetCurrentState(), expState, info);
         }
     } catch (exception& _e) {
         success = false;
         fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", _e.what()));
-        OLOG(error, common) << stateSummaryString(common, info.m_fairmqTopology->GetCurrentState(), expState, info);
+        printStateSummaryOnFailure(common, info.m_fairmqTopology->GetCurrentState(), expState, info);
     }
 
     if (success) {
@@ -376,7 +376,7 @@ bool ControlService::changeState(const CommonParams& common,
     return success;
 }
 
-bool ControlService::changeStateConfigure(const CommonParams& common, Error& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
+bool ControlService::changeStateConfigure(const CommonParams& common, Error& error, const string& path, AggregatedState& aggregatedState, TopologyState* topologyState)
 {
     return changeState(common, error, TopologyTransition::InitDevice,   path, aggregatedState, topologyState)
         && changeState(common, error, TopologyTransition::CompleteInit, path, aggregatedState, topologyState)
@@ -385,7 +385,7 @@ bool ControlService::changeStateConfigure(const CommonParams& common, Error& err
         && changeState(common, error, TopologyTransition::InitTask,     path, aggregatedState, topologyState);
 }
 
-bool ControlService::changeStateReset(const CommonParams& common, Error& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
+bool ControlService::changeStateReset(const CommonParams& common, Error& error, const string& path, AggregatedState& aggregatedState, TopologyState* topologyState)
 {
     return changeState(common, error, TopologyTransition::ResetTask, path, aggregatedState, topologyState)
         && changeState(common, error, TopologyTransition::ResetDevice, path, aggregatedState, topologyState);
@@ -421,7 +421,7 @@ void ControlService::updateTopologyOnFailure()
     // recreate Topology
 }
 
-bool ControlService::getState(const CommonParams& common, Error& error, const string& path, AggregatedTopologyState& aggregatedState, TopologyState* topologyState)
+bool ControlService::getState(const CommonParams& common, Error& error, const string& path, AggregatedState& aggregatedState, TopologyState* topologyState)
 {
     auto& info = getOrCreateSessionInfo(common);
     if (info.m_fairmqTopology == nullptr) {
@@ -449,7 +449,7 @@ bool ControlService::getState(const CommonParams& common, Error& error, const st
     return success;
 }
 
-bool ControlService::setProperties(const CommonParams& common, Error& error, const SSetPropertiesParams& params)
+bool ControlService::setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params)
 {
     auto& info = getOrCreateSessionInfo(common);
     if (info.m_fairmqTopology == nullptr) {
@@ -496,7 +496,7 @@ bool ControlService::setProperties(const CommonParams& common, Error& error, con
     return success;
 }
 
-AggregatedTopologyState ControlService::aggregateStateForPath(const dds::topology_api::CTopology* topo, const FairMQTopologyState& topoState, const string& path)
+AggregatedState ControlService::aggregateStateForPath(const dds::topology_api::CTopology* topo, const FairMQTopologyState& topoState, const string& path)
 {
     if (path.empty())
         return AggregateState(topoState);
@@ -512,7 +512,7 @@ AggregatedTopologyState ControlService::aggregateStateForPath(const dds::topolog
         const auto& task{ topo->getRuntimeTask(path) };
         auto it{ find_if(topoState.cbegin(), topoState.cend(), [&](const FairMQTopologyState::value_type& v) { return v.taskId == task.m_taskId; }) };
         if (it != topoState.cend())
-            return static_cast<AggregatedTopologyState>(it->state);
+            return static_cast<AggregatedState>(it->state);
 
         throw runtime_error("Device not found for path " + path);
     } catch (exception& _e) {
@@ -532,12 +532,12 @@ AggregatedTopologyState ControlService::aggregateStateForPath(const dds::topolog
             throw runtime_error("No states found for path " + path);
 
         // Check that all selected devices have the same state
-        AggregatedTopologyState first{ static_cast<AggregatedTopologyState>(firstIt->state) };
+        AggregatedState first{ static_cast<AggregatedState>(firstIt->state) };
         if (all_of(topoState.cbegin(), topoState.cend(), [&](const FairMQTopologyState::value_type& v) { return (taskIds.count(v.taskId) > 0) ? v.state == first : true; })) {
             return first;
         }
 
-        return AggregatedTopologyState::Mixed;
+        return AggregatedState::Mixed;
     }
 }
 
@@ -549,7 +549,7 @@ void ControlService::fairMQToODCTopologyState(const dds::topology_api::CTopology
     odc->reserve(fairmq.size());
     for (const auto& state : fairmq) {
         const auto& task = topo->getRuntimeTaskById(state.taskId);
-        odc->push_back(SDeviceStatus(state, task.m_taskPath));
+        odc->push_back(TaskStatus(state, task.m_taskPath));
     }
 }
 
@@ -598,24 +598,24 @@ Error ControlService::checkSessionIsRunning(const CommonParams& common, ErrorCod
     return error;
 }
 
-string ControlService::stateSummaryString(const CommonParams& common, const FairMQTopologyState& topologyState, DeviceState expectedState, SessionInfo& sessionInfo)
+void ControlService::printStateSummaryOnFailure(const CommonParams& common, const FairMQTopologyState& topologyState, DeviceState expectedState, SessionInfo& sessionInfo)
 {
-    size_t taskTotalCount{ topologyState.size() };
-    size_t taskFailedCount{ 0 };
+    size_t numTasks = topologyState.size();
+    size_t numFailedTasks = 0;
     stringstream ss;
     for (const auto& status : topologyState) {
         // Print only failed devices
-        if (status.state == expectedState)
+        if (status.state == expectedState) {
             continue;
-
-        taskFailedCount++;
-        if (taskFailedCount == 1) {
-            ss << "List of failed devices for an expected state " << expectedState << ":";
         }
-        ss << endl
-           << right << setw(7) << taskFailedCount << " Device: state (" << status.state << "), last state (" << status.lastState << "), task ID (" << status.taskId << "), collection ID ("
-           << status.collectionId << "), "
-           << "subscribed (" << status.subscribed_to_state_changes << ")";
+
+        numFailedTasks++;
+        if (numFailedTasks == 1) {
+            ss << "Following devices failed to transition to " << expectedState << " state:";
+        }
+        ss << "\n" << right << setw(7) << numFailedTasks << " Device: state: " << status.state << ", previous state: " << status.lastState
+           << ", taskID: " << status.taskId << ", collectionID: " << status.collectionId << ", "
+           << "subscribed: " << std::boolalpha << status.subscribedToStateChanges;
 
         try {
             TopoTaskInfo& taskInfo = sessionInfo.getFromTaskCache(status.taskId);
@@ -625,21 +625,27 @@ string ControlService::stateSummaryString(const CommonParams& common, const Fair
         }
     }
 
-    auto collectionMap{ GroupByCollectionId(topologyState) };
-    size_t collectionTotalCount{ collectionMap.size() };
-    size_t collectionFailedCount{ 0 };
-    for (const auto& states : collectionMap) {
-        auto collectionState{ AggregateState(states.second) };
-        auto collectionId{ states.first };
-        // Print only failed collections
-        if (collectionState == expectedState)
-            continue;
+    if (numFailedTasks > 0) {
+        OLOG(error, common) << ss.str();
+        ss.str(std::string());
+    }
 
-        collectionFailedCount++;
-        if (collectionFailedCount == 1) {
-            ss << endl << "List of failed collections for an expected state " << expectedState << ":";
+    auto collectionMap{ GroupByCollectionId(topologyState) };
+    size_t numCollections = collectionMap.size();
+    size_t numFailedCollections = 0;
+    for (const auto& states : collectionMap) {
+        auto collectionState = AggregateState(states.second);
+        auto collectionId = states.first;
+        // Print only failed collections
+        if (collectionState == expectedState) {
+            continue;
         }
-        ss << endl << right << setw(7) << collectionFailedCount << "   Collection: state (" << collectionState << ")";
+
+        numFailedCollections++;
+        if (numFailedCollections == 1) {
+            ss << "\n" << "Following collections failed to transition to " << expectedState << " state:";
+        }
+        ss << "\n" << right << setw(7) << numFailedCollections << " Collection: state: " << collectionState;
 
         try {
             TopoCollectionInfo& collectionInfo = sessionInfo.getFromCollectionCache(collectionId);
@@ -649,14 +655,16 @@ string ControlService::stateSummaryString(const CommonParams& common, const Fair
         }
     }
 
-    size_t taskSuccessCount{ taskTotalCount - taskFailedCount };
-    size_t collectionSuccessCount{ collectionTotalCount - collectionFailedCount };
-    ss << endl
-       << "Summary for expected state (" << expectedState << "): " << endl
-       << "   Tasks total/success/failed (" << taskTotalCount << "/" << taskSuccessCount << "/" << taskFailedCount << ")" << endl
-       << "   Collections total/success/failed (" << collectionTotalCount << "/" << collectionSuccessCount << "/" << collectionFailedCount << ")";
+    if (numFailedCollections > 0) {
+        OLOG(error, common) << ss.str();
+        ss.str(std::string());
+    }
 
-    return ss.str();
+    size_t numSuccessfulTasks = numTasks - numFailedTasks;
+    size_t numSuccessfulCollections = numCollections - numFailedCollections;
+    OLOG(error, common) << "\nSummary after transitioning to " << expectedState << " state:\n"
+       << "  [tasks] total: " << numTasks << ", successful: " << numSuccessfulTasks << ", failed: " << numFailedTasks << "\n"
+       << "  [collections] total: " << numCollections << ", successful: " << numSuccessfulCollections << ", failed: " << numFailedCollections;
 }
 
 bool ControlService::subscribeToDDSSession(const CommonParams& common, Error& error)
@@ -666,11 +674,11 @@ bool ControlService::subscribeToDDSSession(const CommonParams& common, Error& er
         if (info.m_session->IsRunning()) {
             // Subscrube on TaskDone events
             auto request{ SOnTaskDoneRequest::makeRequest(SOnTaskDoneRequest::request_t()) };
-            request->setResponseCallback([common](const SOnTaskDoneResponseData& info) {
+            request->setResponseCallback([common](const SOnTaskDoneResponseData& i) {
                 stringstream ss;
-                ss << "Task (" << info.m_taskID << ") with path (" << info.m_taskPath << ") exited with code (" << info.m_exitCode << ") and signal (" << info.m_signal << ") on ("
-                   << info.m_host << ") in working directory (" << info.m_wrkDir << ")";
-                if (info.m_exitCode != 0 || info.m_signal != 0) {
+                ss << "Task " << i.m_taskID << " with path '" << i.m_taskPath << "' exited with code " << i.m_exitCode << " and signal " << i.m_signal << " on host "
+                   << i.m_host << " in working directory '" << i.m_wrkDir << "'";
+                if (i.m_exitCode != 0 || i.m_signal != 0) {
                     OLOG(fatal, common) << ss.str();
                 } else {
                     OLOG(debug, common) << ss.str();
@@ -803,7 +811,7 @@ RequestResult ControlService::execInitialize(const CommonParams& common, const S
     }
     execRequestTrigger("Initialize", common);
     updateRestore();
-    return createRequestResult(common, error, "Initialize done", measure.duration(), AggregatedTopologyState::Undefined);
+    return createRequestResult(common, error, "Initialize done", measure.duration(), AggregatedState::Undefined);
 }
 
 RequestResult ControlService::execSubmit(const CommonParams& common, const SSubmitParams& params)
@@ -843,7 +851,7 @@ RequestResult ControlService::execSubmit(const CommonParams& common, const SSubm
         }
     }
     execRequestTrigger("Submit", common);
-    return createRequestResult(common, error, "Submit done", measure.duration(), AggregatedTopologyState::Undefined);
+    return createRequestResult(common, error, "Submit done", measure.duration(), AggregatedState::Undefined);
 }
 
 RequestResult ControlService::execActivate(const CommonParams& common, const SActivateParams& params)
@@ -863,7 +871,7 @@ RequestResult ControlService::execActivate(const CommonParams& common, const SAc
             activateDDSTopology(common, error, topo, STopologyRequest::request_t::EUpdateType::ACTIVATE) && createTopo(common, error, topo) && createFairMQTopo(common, error, topo);
         }
     }
-    AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle : AggregatedTopologyState::Undefined };
+    AggregatedState state{ !error.m_code ? AggregatedState::Idle : AggregatedState::Undefined };
     execRequestTrigger("Activate", common);
     return createRequestResult(common, error, "Activate done", measure.duration(), state);
 }
@@ -886,7 +894,7 @@ RequestResult ControlService::execRun(const CommonParams& common, const SInitial
             }
         }
     }
-    AggregatedTopologyState state{ !error.m_code ? AggregatedTopologyState::Idle : AggregatedTopologyState::Undefined };
+    AggregatedState state{ !error.m_code ? AggregatedState::Idle : AggregatedState::Undefined };
     execRequestTrigger("Run", common);
     return createRequestResult(common, error, "Run done", measure.duration(), state);
 }
@@ -894,7 +902,7 @@ RequestResult ControlService::execRun(const CommonParams& common, const SInitial
 RequestResult ControlService::execUpdate(const CommonParams& common, const SUpdateParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
-    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
+    AggregatedState state{ AggregatedState::Undefined };
     // Reset devices' state
     // Update DDS topology
     // Create Topology
@@ -926,22 +934,22 @@ RequestResult ControlService::execShutdown(const CommonParams& common)
     Error error;
     shutdownDDSSession(common, error);
     execRequestTrigger("Shutdown", common);
-    return createRequestResult(common, error, "Shutdown done", measure.duration(), AggregatedTopologyState::Undefined);
+    return createRequestResult(common, error, "Shutdown done", measure.duration(), AggregatedState::Undefined);
 }
 
-RequestResult ControlService::execSetProperties(const CommonParams& common, const SSetPropertiesParams& params)
+RequestResult ControlService::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     Error error;
     setProperties(common, error, params);
     execRequestTrigger("SetProperties", common);
-    return createRequestResult(common, error, "SetProperties done", measure.duration(), AggregatedTopologyState::Undefined);
+    return createRequestResult(common, error, "SetProperties done", measure.duration(), AggregatedState::Undefined);
 }
 
 RequestResult ControlService::execGetState(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
-    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
+    AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
     Error error;
     getState(common, error, params.m_path, state, fullState.get());
@@ -952,7 +960,7 @@ RequestResult ControlService::execGetState(const CommonParams& common, const SDe
 RequestResult ControlService::execConfigure(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
-    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
+    AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
     Error error;
     changeStateConfigure(common, error, params.m_path, state, fullState.get());
@@ -963,7 +971,7 @@ RequestResult ControlService::execConfigure(const CommonParams& common, const SD
 RequestResult ControlService::execStart(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
-    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
+    AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
     Error error;
     changeState(common, error, TopologyTransition::Run, params.m_path, state, fullState.get());
@@ -974,7 +982,7 @@ RequestResult ControlService::execStart(const CommonParams& common, const SDevic
 RequestResult ControlService::execStop(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
-    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
+    AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
     Error error;
     changeState(common, error, TopologyTransition::Stop, params.m_path, state, fullState.get());
@@ -985,7 +993,7 @@ RequestResult ControlService::execStop(const CommonParams& common, const SDevice
 RequestResult ControlService::execReset(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
-    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
+    AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
     Error error;
     changeStateReset(common, error, params.m_path, state, fullState.get());
@@ -996,7 +1004,7 @@ RequestResult ControlService::execReset(const CommonParams& common, const SDevic
 RequestResult ControlService::execTerminate(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
-    AggregatedTopologyState state{ AggregatedTopologyState::Undefined };
+    AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<TopologyState> fullState = params.m_detailed ? make_unique<TopologyState>() : nullptr;
     Error error;
     changeState(common, error, TopologyTransition::End, params.m_path, state, fullState.get());
@@ -1011,7 +1019,7 @@ StatusRequestResult ControlService::execStatus(const SStatusParams& params)
     StatusRequestResult result;
     for (const auto& v : m_sessions) {
         const auto& info{ v.second };
-        SPartitionStatus status;
+        PartitionStatus status;
         status.m_partitionID = info->m_partitionID;
         try {
             status.m_sessionID = to_string(info->m_session->getSessionID());
@@ -1027,7 +1035,7 @@ StatusRequestResult ControlService::execStatus(const SStatusParams& params)
                 ?
                 aggregateStateForPath(info->m_topo.get(), info->m_fairmqTopology->GetCurrentState(), "")
                 :
-                AggregatedTopologyState::Undefined;
+                AggregatedState::Undefined;
             } catch (exception& _e) {
                 OLOG(warning, status.m_partitionID, 0) << "Failed to get an aggregated state: " << _e.what();
             }

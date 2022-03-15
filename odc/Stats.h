@@ -30,7 +30,7 @@ struct SStateInfo
 };
 
 using STaskState = SStateInfo<DeviceState>;
-using SCollectionState = SStateInfo<AggregatedTopologyState>;
+using SCollectionState = SStateInfo<AggregatedState>;
 
 struct SStateStats
 {
@@ -40,7 +40,7 @@ struct SStateStats
     std::string collectionsString() const;
 
     std::map<DeviceState, STaskState> m_tasks;
-    std::map<AggregatedTopologyState, SCollectionState> m_collections;
+    std::map<AggregatedState, SCollectionState> m_collections;
 
     size_t m_taskCount{ 0 };
     size_t m_collectionCount{ 0 };

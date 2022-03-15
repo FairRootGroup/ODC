@@ -55,7 +55,7 @@ string SStateStats::collectionsString() const
     stringstream ss;
     ss << "Collection states:";
     for (const auto& v : m_collections) {
-        ss << " " << GetAggregatedTopologyStateName(v.first) << " (" << v.second.m_ids.size() << "/" << m_collectionCount << ")";
+        ss << " " << GetAggregatedStateName(v.first) << " (" << v.second.m_ids.size() << "/" << m_collectionCount << ")";
     }
     return ss.str();
 }

@@ -225,7 +225,7 @@ class CCliServiceHelper
         } else if (cmd == ".state") {
             replyString = request<CommonParams, SDeviceParams>("Sending GetState request...", args, &OwnerT::requestGetState);
         } else if (cmd == ".prop") {
-            replyString = request<CommonParams, SSetPropertiesParams>("Sending SetProperties request...", args, &OwnerT::requestSetProperties);
+            replyString = request<CommonParams, SetPropertiesParams>("Sending SetProperties request...", args, &OwnerT::requestSetProperties);
         } else if (cmd == ".start") {
             replyString = request<CommonParams, SDeviceParams>("Sending Start request...", args, &OwnerT::requestStart);
         } else if (cmd == ".stop") {

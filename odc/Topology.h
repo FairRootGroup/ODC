@@ -133,7 +133,7 @@ namespace odc::core
 
     // mirrors DeviceState, but adds a "Mixed" state that represents a topology where devices are currently not in the
     // same state.
-    enum class AggregatedTopologyState : int
+    enum class AggregatedState : int
     {
         Undefined = static_cast<int>(fair::mq::State::Undefined),
         Ok = static_cast<int>(fair::mq::State::Ok),
@@ -154,19 +154,19 @@ namespace odc::core
         Mixed
     };
 
-    inline auto operator==(DeviceState lhs, AggregatedTopologyState rhs) -> bool
+    inline auto operator==(DeviceState lhs, AggregatedState rhs) -> bool
     {
         return static_cast<int>(lhs) == static_cast<int>(rhs);
     }
 
-    inline auto operator==(AggregatedTopologyState lhs, DeviceState rhs) -> bool
+    inline auto operator==(AggregatedState lhs, DeviceState rhs) -> bool
     {
         return static_cast<int>(lhs) == static_cast<int>(rhs);
     }
 
-    inline std::ostream& operator<<(std::ostream& os, const AggregatedTopologyState& state)
+    inline std::ostream& operator<<(std::ostream& os, const AggregatedState& state)
     {
-        if (state == AggregatedTopologyState::Mixed)
+        if (state == AggregatedState::Mixed)
         {
             return os << "MIXED";
         }
@@ -176,9 +176,9 @@ namespace odc::core
         }
     }
 
-    inline std::string GetAggregatedTopologyStateName(AggregatedTopologyState s)
+    inline std::string GetAggregatedStateName(AggregatedState s)
     {
-        if (s == AggregatedTopologyState::Mixed)
+        if (s == AggregatedState::Mixed)
         {
             return "MIXED";
         }
@@ -188,21 +188,21 @@ namespace odc::core
         }
     }
 
-    inline AggregatedTopologyState GetAggregatedTopologyState(const std::string& state)
+    inline AggregatedState GetAggregatedState(const std::string& state)
     {
         if (state == "MIXED")
         {
-            return AggregatedTopologyState::Mixed;
+            return AggregatedState::Mixed;
         }
         else
         {
-            return static_cast<AggregatedTopologyState>(fair::mq::GetState(state));
+            return static_cast<AggregatedState>(fair::mq::GetState(state));
         }
     }
 
     struct DeviceStatus
     {
-        bool subscribed_to_state_changes;
+        bool subscribedToStateChanges;
         DeviceState lastState;
         DeviceState state;
         DDSTask::Id taskId;
@@ -232,7 +232,7 @@ namespace odc::core
     using FairMQTopologyStateByCollection = std::unordered_map<DDSCollection::Id, std::vector<DeviceStatus>>;
     using TopologyTransition = fair::mq::Transition;
 
-    inline AggregatedTopologyState AggregateState(const FairMQTopologyState& topologyState)
+    inline AggregatedState AggregateState(const FairMQTopologyState& topologyState)
     {
         DeviceState first = topologyState.begin()->state;
 
@@ -240,15 +240,15 @@ namespace odc::core
                         topologyState.cend(),
                         [&](FairMQTopologyState::value_type i) { return i.state == first; }))
         {
-            return static_cast<AggregatedTopologyState>(first);
+            return static_cast<AggregatedState>(first);
         }
 
-        return AggregatedTopologyState::Mixed;
+        return AggregatedState::Mixed;
     }
 
     inline bool StateEqualsTo(const FairMQTopologyState& topologyState, DeviceState state)
     {
-        return AggregateState(topologyState) == static_cast<AggregatedTopologyState>(state);
+        return AggregateState(topologyState) == static_cast<AggregatedState>(state);
     }
 
     inline FairMQTopologyStateByCollection GroupByCollectionId(const FairMQTopologyState& topologyState)
@@ -419,9 +419,9 @@ namespace odc::core
                 {
                     std::unique_lock<std::mutex> lk(*fMtx);
                     DeviceStatus& task = fStateData.at(fStateIndex.at(_info.m_taskID));
-                    if (task.subscribed_to_state_changes)
+                    if (task.subscribedToStateChanges)
                     {
-                        task.subscribed_to_state_changes = false;
+                        task.subscribedToStateChanges = false;
                         --fNumStateChangePublishers;
                     }
                     task.exitCode = _info.m_exitCode;
@@ -533,9 +533,9 @@ namespace odc::core
                 {
                     std::unique_lock<std::mutex> lk(*fMtx);
                     DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
-                    if (!task.subscribed_to_state_changes)
+                    if (!task.subscribedToStateChanges)
                     {
-                        task.subscribed_to_state_changes = true;
+                        task.subscribedToStateChanges = true;
                         ++fNumStateChangePublishers;
                     }
                     else
@@ -555,8 +555,7 @@ namespace odc::core
             }
             else
             {
-                OLOG(error) << "State change subscription failed for device: " << cmd.GetDeviceId()
-                                       << ", task id: " << cmd.GetTaskId();
+                OLOG(error) << "State change subscription failed for device: " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
             }
         }
 
@@ -570,9 +569,9 @@ namespace odc::core
                 {
                     std::unique_lock<std::mutex> lk(*fMtx);
                     DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
-                    if (task.subscribed_to_state_changes)
+                    if (task.subscribedToStateChanges)
                     {
-                        task.subscribed_to_state_changes = false;
+                        task.subscribedToStateChanges = false;
                         --fNumStateChangePublishers;
                     }
                     else
@@ -591,8 +590,7 @@ namespace odc::core
             }
             else
             {
-                OLOG(error) << "State change unsubscription failed for device: " << cmd.GetDeviceId()
-                                       << ", task id: " << cmd.GetTaskId();
+                OLOG(error) << "State change unsubscription failed for device: " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
             }
         }
 
@@ -615,7 +613,7 @@ namespace odc::core
                 // if the task is exiting, it will not respond to unsubscription request anymore, set it to false now.
                 if (task.state == DeviceState::Exiting)
                 {
-                    task.subscribed_to_state_changes = false;
+                    task.subscribedToStateChanges = false;
                     --fNumStateChangePublishers;
                 }
                 // FAIR_LOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << state;

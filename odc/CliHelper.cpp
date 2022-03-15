@@ -170,13 +170,13 @@ void CCliHelper::addOptions(bpo::options_description& options, SDeviceParams& pa
     options.add_options()("detailed", bpo::bool_switch(&params.m_detailed)->default_value(false), "Detailed reply of devices");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SSetPropertiesParams& params)
+void CCliHelper::addOptions(bpo::options_description& options, SetPropertiesParams& params)
 {
     options.add_options()("path", bpo::value<string>(&params.m_path)->default_value(""), "Path for a set property request");
 
-    const SSetPropertiesParams::Properties_t props{ { "key1", "value1" }, { "key2", "value2" } };
+    const SetPropertiesParams::Properties_t props{ { "key1", "value1" }, { "key2", "value2" } };
     vector<string> defaults;
-    transform(props.begin(), props.end(), back_inserter(defaults), [](const SSetPropertiesParams::Property_t& p) -> string { return p.first + ":" + p.second; });
+    transform(props.begin(), props.end(), back_inserter(defaults), [](const SetPropertiesParams::Property_t& p) -> string { return p.first + ":" + p.second; });
     string defaultsStr{ boost::algorithm::join(defaults, " ") };
     options.add_options()("prop", bpo::value<vector<string>>()->multitoken()->default_value(defaults, defaultsStr), "Key-value pairs for a set properties request ( key1:value1 key2:value2 )");
 }
@@ -198,11 +198,11 @@ void CCliHelper::addRequestTriggersOptions(bpo::options_description& options, CP
 
 // Extra step of options parsing
 
-void CCliHelper::parseOptions(const bpo::variables_map& vm, std::string& /* partitionID */, SSetPropertiesParams& params)
+void CCliHelper::parseOptions(const bpo::variables_map& vm, std::string& /* partitionID */, SetPropertiesParams& params)
 {
     if (vm.count("prop")) {
         const auto& kvp(vm["prop"].as<vector<string>>());
-        SSetPropertiesParams::Properties_t props;
+        SetPropertiesParams::Properties_t props;
         for (const auto& v : kvp) {
             vector<string> strs;
             boost::split(strs, v, boost::is_any_of(":"));
