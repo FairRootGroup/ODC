@@ -32,9 +32,9 @@ struct SStateInfo
 using STaskState = SStateInfo<DeviceState>;
 using SCollectionState = SStateInfo<AggregatedState>;
 
-struct SStateStats
+struct StateStats
 {
-    SStateStats(const FairMQTopologyState& _topoState);
+    StateStats(const TopologyState& _topoState);
 
     std::string tasksString() const;
     std::string collectionsString() const;

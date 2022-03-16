@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(async_change_state)
     SharedSemaphore blocker;
     Topology topo(f.mDDSTopo, f.mDDSSession);
     topo.AsyncChangeState(TopologyTransition::InitDevice,
-                          [=](std::error_code ec, FairMQTopologyState) mutable
+                          [=](std::error_code ec, TopologyState) mutable
                           {
                               BOOST_TEST_MESSAGE(ec);
                               BOOST_CHECK_EQUAL(ec, std::error_code());
@@ -181,7 +181,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_with_executor)
 
     Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession);
     topo.AsyncChangeState(TopologyTransition::InitDevice,
-                          [](std::error_code ec, FairMQTopologyState)
+                          [](std::error_code ec, TopologyState)
                           {
                               BOOST_TEST_MESSAGE(ec);
                               BOOST_CHECK_EQUAL(ec, std::error_code());
@@ -231,7 +231,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_coroutine)
             Topology topo(executor, f.mDDSTopo, f.mDDSSession);
             try
             {
-                FairMQTopologyState state =
+                TopologyState state =
                     co_await topo.AsyncChangeState(TopologyTransition::InitDevice, asio::use_awaitable);
                 success = true;
             }
@@ -302,14 +302,14 @@ BOOST_AUTO_TEST_CASE(async_change_state_concurrent)
     Topology topo(f.mDDSTopo, f.mDDSSession);
     topo.AsyncChangeState(TopologyTransition::InitDevice,
                           ".*/(Sampler|Sink).*",
-                          [](std::error_code ec, FairMQTopologyState) mutable
+                          [](std::error_code ec, TopologyState) mutable
                           {
                               BOOST_TEST_MESSAGE("ChangeState for Sampler|Sink: " << ec);
                               BOOST_CHECK_EQUAL(ec, std::error_code());
                           });
     topo.AsyncChangeState(TopologyTransition::InitDevice,
                           ".*/Processor.*",
-                          [](std::error_code ec, FairMQTopologyState) mutable
+                          [](std::error_code ec, TopologyState) mutable
                           {
                               BOOST_TEST_MESSAGE("ChangeState for Processors: " << ec);
                               BOOST_CHECK_EQUAL(ec, std::error_code());
@@ -330,7 +330,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_timeout)
     Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession);
     topo.AsyncChangeState(TopologyTransition::InitDevice,
                           std::chrono::milliseconds(1),
-                          [](std::error_code ec, FairMQTopologyState)
+                          [](std::error_code ec, TopologyState)
                           {
                               BOOST_TEST_MESSAGE(ec);
                               BOOST_CHECK_EQUAL(ec, MakeErrorCode(ErrorCode::OperationTimeout));
@@ -348,10 +348,10 @@ BOOST_AUTO_TEST_CASE(async_change_state_collection_view)
     SharedSemaphore blocker;
     Topology topo(f.mDDSTopo, f.mDDSSession);
     topo.AsyncChangeState(TopologyTransition::InitDevice,
-                          [=](std::error_code ec, FairMQTopologyState state) mutable
+                          [=](std::error_code ec, TopologyState state) mutable
                           {
                               BOOST_TEST_MESSAGE(ec);
-                              FairMQTopologyStateByCollection cstate(GroupByCollectionId(state));
+                              TopologyStateByCollection cstate(GroupByCollectionId(state));
                               BOOST_TEST_MESSAGE("num collections: " << cstate.size());
                               BOOST_REQUIRE_EQUAL(cstate.size(), 1);
                               for (const auto& c : cstate)
@@ -397,7 +397,7 @@ BOOST_AUTO_TEST_CASE(wait_for_state_full_device_lifecycle)
         [&](TopologyTransition transition)
         {
             topo.ChangeState(transition);
-            BOOST_REQUIRE_EQUAL(topo.WaitForState(expectedState.at(transition)), std::error_code());
+            BOOST_REQUIRE_EQUAL(topo.WaitForState(gExpectedState.at(transition)), std::error_code());
         });
 }
 

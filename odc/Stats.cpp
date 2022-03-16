@@ -13,10 +13,10 @@ using namespace std;
 using namespace odc::core;
 
 //
-// SStateStats
+// StateStats
 //
 
-SStateStats::SStateStats(const FairMQTopologyState& _topoState)
+StateStats::StateStats(const TopologyState& _topoState)
 {
     for (const auto& v : _topoState) {
         if (m_tasks.find(v.state) == m_tasks.end()) {
@@ -40,7 +40,7 @@ SStateStats::SStateStats(const FairMQTopologyState& _topoState)
     m_collectionCount = collectionMap.size();
 }
 
-string SStateStats::tasksString() const
+string StateStats::tasksString() const
 {
     stringstream ss;
     ss << "Task states:";
@@ -50,7 +50,7 @@ string SStateStats::tasksString() const
     return ss.str();
 }
 
-string SStateStats::collectionsString() const
+string StateStats::collectionsString() const
 {
     stringstream ss;
     ss << "Collection states:";

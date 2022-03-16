@@ -118,7 +118,7 @@ namespace odc::core
         DDSCollection::Id fCollectionId;
     };
 
-    const std::map<DeviceTransition, DeviceState> expectedState = {
+    static const std::map<DeviceTransition, DeviceState> gExpectedState = {
         { DeviceTransition::InitDevice, DeviceState::InitializingDevice },
         { DeviceTransition::CompleteInit, DeviceState::Initialized },
         { DeviceTransition::Bind, DeviceState::Bound },
@@ -226,19 +226,19 @@ namespace odc::core
         FailedDevices failed;
     };
 
-    using FairMQTopologyState = std::vector<DeviceStatus>;
-    using FairMQTopologyStateIndex = std::unordered_map<DDSTask::Id, int>; //  task id -> index in the data vector
-    using FairMQTopologyStateByTask = std::unordered_map<DDSTask::Id, DeviceStatus>;
-    using FairMQTopologyStateByCollection = std::unordered_map<DDSCollection::Id, std::vector<DeviceStatus>>;
+    using TopologyState = std::vector<DeviceStatus>;
+    using TopologyStateIndex = std::unordered_map<DDSTask::Id, int>; //  task id -> index in the data vector
+    using TopologyStateByTask = std::unordered_map<DDSTask::Id, DeviceStatus>;
+    using TopologyStateByCollection = std::unordered_map<DDSCollection::Id, std::vector<DeviceStatus>>;
     using TopologyTransition = fair::mq::Transition;
 
-    inline AggregatedState AggregateState(const FairMQTopologyState& topologyState)
+    inline AggregatedState AggregateState(const TopologyState& topologyState)
     {
         DeviceState first = topologyState.begin()->state;
 
         if (std::all_of(topologyState.cbegin(),
                         topologyState.cend(),
-                        [&](FairMQTopologyState::value_type i) { return i.state == first; }))
+                        [&](TopologyState::value_type i) { return i.state == first; }))
         {
             return static_cast<AggregatedState>(first);
         }
@@ -246,14 +246,14 @@ namespace odc::core
         return AggregatedState::Mixed;
     }
 
-    inline bool StateEqualsTo(const FairMQTopologyState& topologyState, DeviceState state)
+    inline bool StateEqualsTo(const TopologyState& topologyState, DeviceState state)
     {
         return AggregateState(topologyState) == static_cast<AggregatedState>(state);
     }
 
-    inline FairMQTopologyStateByCollection GroupByCollectionId(const FairMQTopologyState& topologyState)
+    inline TopologyStateByCollection GroupByCollectionId(const TopologyState& topologyState)
     {
-        FairMQTopologyStateByCollection state;
+        TopologyStateByCollection state;
         for (const auto& ds : topologyState)
         {
             if (ds.collectionId != 0)
@@ -265,9 +265,9 @@ namespace odc::core
         return state;
     }
 
-    inline FairMQTopologyStateByTask GroupByTaskId(const FairMQTopologyState& topologyState)
+    inline TopologyStateByTask GroupByTaskId(const TopologyState& topologyState)
     {
-        FairMQTopologyStateByTask state;
+        TopologyStateByTask state;
         for (const auto& ds : topologyState)
         {
             state[ds.taskId] = ds;
@@ -290,35 +290,6 @@ namespace odc::core
     class BasicTopology : public AsioBase<Executor, Allocator>
     {
       public:
-        auto GetTasks(const std::string& path = "") const -> std::vector<DDSTask>
-        {
-            std::vector<DDSTask> list;
-
-            dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t itPair;
-            if (path.empty())
-            {
-                itPair = fDDSTopo.getRuntimeTaskIterator(nullptr); // passing nullptr will get all tasks
-            }
-            else
-            {
-                itPair = fDDSTopo.getRuntimeTaskIteratorMatchingPath(path);
-            }
-            auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
-
-            list.reserve(boost::size(tasks));
-
-            for (const auto& task : tasks)
-            {
-                // LOG(debug) << "Found task with id: " << task.first << ", "
-                //            << "Path: " << task.second.m_taskPath << ", "
-                //            << "Collection id: " << task.second.m_taskCollectionId << ", "
-                //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
-                list.emplace_back(task.first, task.second.m_taskCollectionId);
-            }
-
-            return list;
-        }
-
         /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
         /// @param topo CTopology
         /// @param session CSession
@@ -396,6 +367,36 @@ namespace odc::core
             catch (...)
             {
             }
+        }
+
+
+        auto GetTasks(const std::string& path = "") const -> std::vector<DDSTask>
+        {
+            std::vector<DDSTask> list;
+
+            dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t itPair;
+            if (path.empty())
+            {
+                itPair = fDDSTopo.getRuntimeTaskIterator(nullptr); // passing nullptr will get all tasks
+            }
+            else
+            {
+                itPair = fDDSTopo.getRuntimeTaskIteratorMatchingPath(path);
+            }
+            auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
+
+            list.reserve(boost::size(tasks));
+
+            for (const auto& task : tasks)
+            {
+                // LOG(debug) << "Found task with id: " << task.first << ", "
+                //            << "Path: " << task.second.m_taskPath << ", "
+                //            << "Collection id: " << task.second.m_taskCollectionId << ", "
+                //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
+                list.emplace_back(task.first, task.second.m_taskCollectionId);
+            }
+
+            return list;
         }
 
         void SubscribeToStateChanges()
@@ -698,7 +699,7 @@ namespace odc::core
         }
 
         using Duration = std::chrono::microseconds;
-        using ChangeStateCompletionSignature = void(std::error_code, FairMQTopologyState);
+        using ChangeStateCompletionSignature = void(std::error_code, TopologyState);
 
       private:
         struct ChangeStateOp
@@ -710,7 +711,7 @@ namespace odc::core
             ChangeStateOp(Id id,
                           const TopologyTransition transition,
                           std::vector<DDSTask> tasks,
-                          FairMQTopologyState& stateData,
+                          TopologyState& stateData,
                           Duration timeout,
                           std::mutex& mutex,
                           Executor const& ex,
@@ -722,7 +723,7 @@ namespace odc::core
                 , fTimer(ex)
                 , fCount(0)
                 , fTasks(std::move(tasks))
-                , fTargetState(expectedState.at(transition))
+                , fTargetState(gExpectedState.at(transition))
                 , fMtx(mutex)
             {
                 if (timeout > std::chrono::milliseconds(0))
@@ -752,7 +753,7 @@ namespace odc::core
             ~ChangeStateOp() = default;
 
             /// precondition: fMtx is locked.
-            auto ResetCount(const FairMQTopologyStateIndex& stateIndex, const FairMQTopologyState& stateData) -> void
+            auto ResetCount(const TopologyStateIndex& stateIndex, const TopologyState& stateData) -> void
             {
                 fCount = std::count_if(stateIndex.cbegin(),
                                        stateIndex.cend(),
@@ -819,7 +820,7 @@ namespace odc::core
           private:
             Id const fId;
             AsioAsyncOp<Executor, Allocator, ChangeStateCompletionSignature> fOp;
-            FairMQTopologyState& fStateData;
+            TopologyState& fStateData;
             boost::asio::steady_timer fTimer;
             Count fCount;
             std::vector<DDSTask> fTasks;
@@ -842,7 +843,7 @@ namespace odc::core
         /// topo.AsyncChangeState(
         ///     odc::core::TopologyTransition::InitDevice,
         ///     std::chrono::milliseconds(500),
-        ///     [](std::error_code ec, odc::core::FairMQTopologyState state) {
+        ///     [](std::error_code ec, odc::core::TopologyState state) {
         ///         if (!ec) {
         ///             // success
         ///          } else if (ec.category().name() == "fairmq") {
@@ -865,7 +866,7 @@ namespace odc::core
         ///                                  std::chrono::milliseconds(500),
         ///                                  boost::asio::use_future);
         /// try {
-        ///     odc::core::FairMQTopologyState state = fut.get();
+        ///     odc::core::TopologyState state = fut.get();
         ///     // success
         /// } catch (const std::system_error& ex) {
         ///     auto ec(ex.code());
@@ -885,7 +886,7 @@ namespace odc::core
         /// With coroutine (C++20, see https://en.cppreference.com/w/cpp/language/coroutines):
         /// @code
         /// try {
-        ///     odc::core::FairMQTopologyState state = co_await
+        ///     odc::core::TopologyState state = co_await
         ///         topo.AsyncChangeState(odc::core::TopologyTransition::InitDevice,
         ///                               std::chrono::milliseconds(500),
         ///                               boost::asio::use_awaitable);
@@ -996,15 +997,15 @@ namespace odc::core
         /// @throws std::system_error
         auto ChangeState(const TopologyTransition transition,
                          const std::string& path = "",
-                         Duration timeout = Duration(0)) -> std::pair<std::error_code, FairMQTopologyState>
+                         Duration timeout = Duration(0)) -> std::pair<std::error_code, TopologyState>
         {
             SharedSemaphore blocker;
             std::error_code ec;
-            FairMQTopologyState state;
+            TopologyState state;
             AsyncChangeState(transition,
                              path,
                              timeout,
-                             [&, blocker](std::error_code _ec, FairMQTopologyState _state) mutable
+                             [&, blocker](std::error_code _ec, TopologyState _state) mutable
                              {
                                  ec = _ec;
                                  state = _state;
@@ -1019,14 +1020,14 @@ namespace odc::core
         /// @param timeout Timeout in milliseconds, 0 means no timeout
         /// @throws std::system_error
         auto ChangeState(const TopologyTransition transition, Duration timeout)
-            -> std::pair<std::error_code, FairMQTopologyState>
+            -> std::pair<std::error_code, TopologyState>
         {
             return ChangeState(transition, "", timeout);
         }
 
         /// @brief Returns the current state of the topology
         /// @return map of id : DeviceStatus
-        auto GetCurrentState() const -> FairMQTopologyState
+        auto GetCurrentState() const -> TopologyState
         {
             std::lock_guard<std::mutex> lk(*fMtx);
             return fStateData;
@@ -1096,7 +1097,7 @@ namespace odc::core
             ~WaitForStateOp() = default;
 
             /// precondition: fMtx is locked.
-            auto ResetCount(const FairMQTopologyStateIndex& stateIndex, const FairMQTopologyState& stateData) -> void
+            auto ResetCount(const TopologyStateIndex& stateIndex, const TopologyState& stateData) -> void
             {
                 fCount = std::count_if(stateIndex.cbegin(),
                                        stateIndex.cend(),
@@ -1670,8 +1671,8 @@ namespace odc::core
         dds::intercom_api::CIntercomService fDDSService;
         dds::intercom_api::CCustomCmd fDDSCustomCmd;
         dds::topology_api::CTopology fDDSTopo;
-        FairMQTopologyState fStateData;
-        FairMQTopologyStateIndex fStateIndex;
+        TopologyState fStateData;
+        TopologyStateIndex fStateIndex;
 
         mutable std::unique_ptr<std::mutex> fMtx;
 
@@ -1706,7 +1707,7 @@ namespace odc::core
         }
 
         /// precodition: fMtx is locked.
-        auto GetCurrentStateUnsafe() const -> FairMQTopologyState
+        auto GetCurrentStateUnsafe() const -> TopologyState
         {
             return fStateData;
         }

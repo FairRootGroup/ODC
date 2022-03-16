@@ -50,10 +50,10 @@ struct Error
 };
 
 /// \brief Holds device status of detailed output
-struct TaskStatus
+struct DetailedTaskStatus
 {
-    TaskStatus() {}
-    TaskStatus(const DeviceStatus& status, const std::string& path)
+    DetailedTaskStatus() {}
+    DetailedTaskStatus(const DeviceStatus& status, const std::string& path)
         : m_status(status)
         , m_path(path)
     {}
@@ -63,7 +63,7 @@ struct TaskStatus
 };
 
 /// \brief Aggregated topology state
-using TopologyState = std::vector<TaskStatus>;
+using DetailedState = std::vector<DetailedTaskStatus>;
 
 enum class DDSSessionStatus
 {
@@ -115,13 +115,13 @@ struct RequestResult : public BaseRequestResult
                  uint64_t runNr,
                  const std::string& sessionID,
                  AggregatedState aggregatedState,
-                 std::unique_ptr<TopologyState> fullState = nullptr)
+                 std::unique_ptr<DetailedState> detailedState = nullptr)
         : BaseRequestResult(statusCode, msg, execTime, error)
         , m_partitionID(partitionID)
         , m_runNr(runNr)
         , m_sessionID(sessionID)
         , m_aggregatedState(aggregatedState)
-        , mFullState(std::move(fullState))
+        , mFullState(std::move(detailedState))
     {}
 
     std::string m_partitionID;                                                      ///< Partition ID
@@ -130,7 +130,7 @@ struct RequestResult : public BaseRequestResult
     AggregatedState m_aggregatedState = AggregatedState::Undefined; ///< Aggregated state of the affected divices
 
     // Optional parameters
-    std::unique_ptr<TopologyState> mFullState = nullptr;
+    std::unique_ptr<DetailedState> mFullState = nullptr;
 };
 
 /// \brief Status Request Result
@@ -464,12 +464,7 @@ class Controller
     void execRequestTrigger(const std::string& plugin, const CommonParams& common);
     void updateRestore();
 
-    RequestResult createRequestResult(const CommonParams& common,
-                                      const Error& error,
-                                      const std::string& msg,
-                                      size_t execTime,
-                                      AggregatedState aggregatedState,
-                                      std::unique_ptr<TopologyState> fullState = nullptr);
+    RequestResult createRequestResult(const CommonParams& common, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
     bool createDDSSession(const CommonParams& common, Error& error);
     bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
     bool submitDDSAgents(const CommonParams& common, Error& error, const CDDSSubmit::SParams& _params);
@@ -481,29 +476,25 @@ class Controller
     bool createFairMQTopo(const CommonParams& common, Error& error, const std::string& topologyFile);
     bool createTopo(const CommonParams& common, Error& error, const std::string& topologyFile);
     bool setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params);
-    bool changeState(const CommonParams& common,
-                     Error& error,
-                     TopologyTransition transition,
-                     const std::string& path,
-                     AggregatedState& aggregatedState,
-                     TopologyState* topologyState = nullptr);
-    bool getState(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggregatedState, TopologyState* topologyState = nullptr);
-    bool changeStateConfigure(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggregatedState, TopologyState* topologyState = nullptr);
-    bool changeStateReset(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggregatedState, TopologyState* topologyState = nullptr);
+    bool changeState(const CommonParams& common, Error& error, TopologyTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool changeStateConfigure(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool changeStateReset(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
 
     void updateTopologyOnFailure();
+
+    bool getState(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
 
     void fillError(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
 
-    AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* topo, const FairMQTopologyState& fairmq, const std::string& path);
-    void fairMQToODCTopologyState(const dds::topology_api::CTopology* topo, const FairMQTopologyState& fairmq, TopologyState* odc);
+    AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, const std::string& path);
+    void getDetailedState(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, DetailedState* detailedState);
 
     SessionInfo& getOrCreateSessionInfo(const CommonParams& common);
 
     Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
 
-    void printStateSummaryOnFailure(const CommonParams& common, const FairMQTopologyState& topologyState, DeviceState expectedState, SessionInfo& sessionInfo);
+    void printStateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo);
 
     bool subscribeToDDSSession(const CommonParams& common, Error& error);
 
@@ -511,6 +502,7 @@ class Controller
 
     std::chrono::seconds requestTimeout(const CommonParams& common) const;
 };
+
 } // namespace odc::core
 
 #endif /* defined(ODC_CORE_CONTROLLER) */
