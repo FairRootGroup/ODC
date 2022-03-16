@@ -17,7 +17,7 @@ using namespace odc::cli;
 using namespace std;
 
 CCliControlService::CCliControlService()
-    : m_service(make_shared<ControlService>())
+    : m_service(make_shared<Controller>())
 {
 }
 

@@ -11,7 +11,7 @@
 
 // ODC
 #include <odc/CliHelper.h>
-#include <odc/ControlService.h>
+#include <odc/Controller.h>
 #include <odc/Logger.h>
 // STD
 #include <iostream>

@@ -6,24 +6,24 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef __ODC__ControlService__
-#define __ODC__ControlService__
+#ifndef ODC_CORE_CONTROLLER
+#define ODC_CORE_CONTROLLER
 
-// ODC
 #include <odc/DDSSubmit.h>
 #include <odc/Process.h>
 #include <odc/Topology.h>
-// BOOST
+
 #include <boost/filesystem.hpp>
 #include <boost/process.hpp>
-// STD
+
 #include <map>
 #include <memory>
 #include <string>
 #include <system_error>
 #include <unordered_map>
 
-namespace odc::core {
+namespace odc::core
+{
 
 /// \brief Return status code of request
 enum StatusCode
@@ -324,7 +324,7 @@ struct TopoCollectionInfo
     }
 };
 
-class ControlService
+class Controller
 {
   public:
     struct SessionInfo
@@ -391,12 +391,12 @@ class ControlService
         std::unordered_map<uint64_t, TopoCollectionInfo> mCollectionCache; ///< Additional information about collection
     };
 
-    ControlService() {}
+    Controller() {}
     // Disable copy constructors and assignment operators
-    ControlService(const ControlService&) = delete;
-    ControlService(ControlService&&) = delete;
-    ControlService& operator=(const ControlService&) = delete;
-    ControlService& operator=(ControlService&&) = delete;
+    Controller(const Controller&) = delete;
+    Controller(Controller&&) = delete;
+    Controller& operator=(const Controller&) = delete;
+    Controller& operator=(Controller&&) = delete;
 
     /// \brief Set timeout of requests
     /// \param [in] _timeout Timeout in seconds
@@ -513,4 +513,4 @@ class ControlService
 };
 } // namespace odc::core
 
-#endif /* defined(__ODC__ControlService__) */
+#endif /* defined(ODC_CORE_CONTROLLER) */

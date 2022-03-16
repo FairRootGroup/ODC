@@ -12,7 +12,7 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <cstddef>
-#include <odc/ControlService.h>
+#include <odc/Controller.h>
 #include <odc/Logger.h>
 #include <odc/PluginManager.h>
 #include <string>

@@ -10,7 +10,7 @@
 #define __ODC__GrpcService__
 
 // ODC
-#include <odc/ControlService.h>
+#include <odc/Controller.h>
 #include <odc/DDSSubmit.h>
 // GRPC
 #include <odc/grpc/odc.grpc.pb.h>
@@ -54,7 +54,7 @@ class CGrpcService final
     void logResponse(const std::string& msg, const core::CommonParams& common, const Response_t* res);
     void logResponse(const std::string& msg, const core::CommonParams& common, const odc::StateReply* rep);
 
-    odc::core::ControlService mService; ///< Core ODC service
+    odc::core::Controller mService; ///< Core ODC service
 
     // Mutex for each partition.
     // All requests for a certain partition are processed sequentially.

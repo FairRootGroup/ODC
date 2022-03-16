@@ -7,7 +7,7 @@
  ********************************************************************************/
 
 // ODC
-#include <odc/ControlService.h>
+#include <odc/Controller.h>
 #include <odc/DDSSubmit.h>
 #include <odc/Error.h>
 #include <odc/Logger.h>
@@ -31,7 +31,7 @@ using namespace dds;
 using namespace dds::tools_api;
 using namespace dds::topology_api;
 
-void ControlService::execRequestTrigger(const string& plugin, const CommonParams& common)
+void Controller::execRequestTrigger(const string& plugin, const CommonParams& common)
 {
     if (m_triggers.isPluginRegistered(plugin)) {
         try {
@@ -46,7 +46,7 @@ void ControlService::execRequestTrigger(const string& plugin, const CommonParams
     }
 }
 
-void ControlService::updateRestore()
+void Controller::updateRestore()
 {
     if (m_restoreId.empty()) {
         return;
@@ -72,7 +72,7 @@ void ControlService::updateRestore()
     CRestoreFile(m_restoreId, data).write();
 }
 
-RequestResult ControlService::createRequestResult(const CommonParams& common,
+RequestResult Controller::createRequestResult(const CommonParams& common,
                                                 const Error& error,
                                                 const string& msg,
                                                 size_t execTime,
@@ -85,7 +85,7 @@ RequestResult ControlService::createRequestResult(const CommonParams& common,
     return RequestResult(status, msg, execTime, error, common.m_partitionID, common.m_runNr, sidStr, aggregatedState, move(fullState));
 }
 
-bool ControlService::createDDSSession(const CommonParams& common, Error& error)
+bool Controller::createDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
@@ -98,7 +98,7 @@ bool ControlService::createDDSSession(const CommonParams& common, Error& error)
     return true;
 }
 
-bool ControlService::attachToDDSSession(const CommonParams& common, Error& error, const string& sessionID)
+bool Controller::attachToDDSSession(const CommonParams& common, Error& error, const string& sessionID)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
@@ -111,7 +111,7 @@ bool ControlService::attachToDDSSession(const CommonParams& common, Error& error
     return true;
 }
 
-bool ControlService::submitDDSAgents(const CommonParams& common, Error& error, const CDDSSubmit::SParams& params)
+bool Controller::submitDDSAgents(const CommonParams& common, Error& error, const CDDSSubmit::SParams& params)
 {
     bool success(true);
 
@@ -157,7 +157,7 @@ bool ControlService::submitDDSAgents(const CommonParams& common, Error& error, c
     return success;
 }
 
-bool ControlService::requestCommanderInfo(const CommonParams& common, Error& error, SCommanderInfoRequest::response_t& commanderInfo)
+bool Controller::requestCommanderInfo(const CommonParams& common, Error& error, SCommanderInfoRequest::response_t& commanderInfo)
 {
     try {
         stringstream ss;
@@ -172,7 +172,7 @@ bool ControlService::requestCommanderInfo(const CommonParams& common, Error& err
     }
 }
 
-bool ControlService::waitForNumActiveAgents(const CommonParams& common, Error& error, size_t numAgents)
+bool Controller::waitForNumActiveAgents(const CommonParams& common, Error& error, size_t numAgents)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
@@ -184,7 +184,7 @@ bool ControlService::waitForNumActiveAgents(const CommonParams& common, Error& e
     return true;
 }
 
-bool ControlService::activateDDSTopology(const CommonParams& common, Error& error, const string& topologyFile, STopologyRequest::request_t::EUpdateType _updateType)
+bool Controller::activateDDSTopology(const CommonParams& common, Error& error, const string& topologyFile, STopologyRequest::request_t::EUpdateType _updateType)
 {
     bool success(true);
 
@@ -253,7 +253,7 @@ bool ControlService::activateDDSTopology(const CommonParams& common, Error& erro
     return success;
 }
 
-bool ControlService::shutdownDDSSession(const CommonParams& common, Error& error)
+bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
@@ -278,7 +278,7 @@ bool ControlService::shutdownDDSSession(const CommonParams& common, Error& error
     return true;
 }
 
-bool ControlService::createTopo(const CommonParams& common, Error& error, const string& topologyFile)
+bool Controller::createTopo(const CommonParams& common, Error& error, const string& topologyFile)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
@@ -291,14 +291,14 @@ bool ControlService::createTopo(const CommonParams& common, Error& error, const 
     return true;
 }
 
-bool ControlService::resetFairMQTopo(const CommonParams& common)
+bool Controller::resetFairMQTopo(const CommonParams& common)
 {
     auto& info = getOrCreateSessionInfo(common);
     info.m_fairmqTopology.reset();
     return true;
 }
 
-bool ControlService::createFairMQTopo(const CommonParams& common, Error& error, const string& topologyFile)
+bool Controller::createFairMQTopo(const CommonParams& common, Error& error, const string& topologyFile)
 {
     auto& info = getOrCreateSessionInfo(common);
     try {
@@ -311,7 +311,7 @@ bool ControlService::createFairMQTopo(const CommonParams& common, Error& error, 
     return info.m_fairmqTopology != nullptr;
 }
 
-bool ControlService::changeState(const CommonParams& common,
+bool Controller::changeState(const CommonParams& common,
                                        Error& error,
                                        TopologyTransition transition,
                                        const string& path,
@@ -376,7 +376,7 @@ bool ControlService::changeState(const CommonParams& common,
     return success;
 }
 
-bool ControlService::changeStateConfigure(const CommonParams& common, Error& error, const string& path, AggregatedState& aggregatedState, TopologyState* topologyState)
+bool Controller::changeStateConfigure(const CommonParams& common, Error& error, const string& path, AggregatedState& aggregatedState, TopologyState* topologyState)
 {
     return changeState(common, error, TopologyTransition::InitDevice,   path, aggregatedState, topologyState)
         && changeState(common, error, TopologyTransition::CompleteInit, path, aggregatedState, topologyState)
@@ -385,13 +385,13 @@ bool ControlService::changeStateConfigure(const CommonParams& common, Error& err
         && changeState(common, error, TopologyTransition::InitTask,     path, aggregatedState, topologyState);
 }
 
-bool ControlService::changeStateReset(const CommonParams& common, Error& error, const string& path, AggregatedState& aggregatedState, TopologyState* topologyState)
+bool Controller::changeStateReset(const CommonParams& common, Error& error, const string& path, AggregatedState& aggregatedState, TopologyState* topologyState)
 {
     return changeState(common, error, TopologyTransition::ResetTask, path, aggregatedState, topologyState)
         && changeState(common, error, TopologyTransition::ResetDevice, path, aggregatedState, topologyState);
 }
 
-void ControlService::updateTopologyOnFailure()
+void Controller::updateTopologyOnFailure()
 {
     // get failed tasks
     // determine failed collections
@@ -421,7 +421,7 @@ void ControlService::updateTopologyOnFailure()
     // recreate Topology
 }
 
-bool ControlService::getState(const CommonParams& common, Error& error, const string& path, AggregatedState& aggregatedState, TopologyState* topologyState)
+bool Controller::getState(const CommonParams& common, Error& error, const string& path, AggregatedState& aggregatedState, TopologyState* topologyState)
 {
     auto& info = getOrCreateSessionInfo(common);
     if (info.m_fairmqTopology == nullptr) {
@@ -449,7 +449,7 @@ bool ControlService::getState(const CommonParams& common, Error& error, const st
     return success;
 }
 
-bool ControlService::setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params)
+bool Controller::setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params)
 {
     auto& info = getOrCreateSessionInfo(common);
     if (info.m_fairmqTopology == nullptr) {
@@ -496,7 +496,7 @@ bool ControlService::setProperties(const CommonParams& common, Error& error, con
     return success;
 }
 
-AggregatedState ControlService::aggregateStateForPath(const dds::topology_api::CTopology* topo, const FairMQTopologyState& topoState, const string& path)
+AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopology* topo, const FairMQTopologyState& topoState, const string& path)
 {
     if (path.empty())
         return AggregateState(topoState);
@@ -541,7 +541,7 @@ AggregatedState ControlService::aggregateStateForPath(const dds::topology_api::C
     }
 }
 
-void ControlService::fairMQToODCTopologyState(const dds::topology_api::CTopology* topo, const FairMQTopologyState& fairmq, TopologyState* odc)
+void Controller::fairMQToODCTopologyState(const dds::topology_api::CTopology* topo, const FairMQTopologyState& fairmq, TopologyState* odc)
 {
     if (odc == nullptr || topo == nullptr)
         return;
@@ -553,14 +553,14 @@ void ControlService::fairMQToODCTopologyState(const dds::topology_api::CTopology
     }
 }
 
-void ControlService::fillError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
+void Controller::fillError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
 {
     error.m_code = MakeErrorCode(errorCode);
     error.m_details = msg;
     OLOG(error, common) << error;
 }
 
-void ControlService::fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
+void Controller::fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
 {
     error.m_code = MakeErrorCode(errorCode);
     error.m_details = msg;
@@ -572,7 +572,7 @@ void ControlService::fillFatalError(const CommonParams& common, Error& error, Er
     }
 }
 
-ControlService::SessionInfo& ControlService::getOrCreateSessionInfo(const CommonParams& common)
+Controller::SessionInfo& Controller::getOrCreateSessionInfo(const CommonParams& common)
 {
     lock_guard<mutex> lock(mSessionsMtx);
     auto it = m_sessions.find(common.m_partitionID);
@@ -588,7 +588,7 @@ ControlService::SessionInfo& ControlService::getOrCreateSessionInfo(const Common
     return *(it->second);
 }
 
-Error ControlService::checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode)
+Error Controller::checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode)
 {
     Error error;
     auto& info = getOrCreateSessionInfo(common);
@@ -598,7 +598,7 @@ Error ControlService::checkSessionIsRunning(const CommonParams& common, ErrorCod
     return error;
 }
 
-void ControlService::printStateSummaryOnFailure(const CommonParams& common, const FairMQTopologyState& topologyState, DeviceState expectedState, SessionInfo& sessionInfo)
+void Controller::printStateSummaryOnFailure(const CommonParams& common, const FairMQTopologyState& topologyState, DeviceState expectedState, SessionInfo& sessionInfo)
 {
     size_t numTasks = topologyState.size();
     size_t numFailedTasks = 0;
@@ -667,7 +667,7 @@ void ControlService::printStateSummaryOnFailure(const CommonParams& common, cons
        << "  [collections] total: " << numCollections << ", successful: " << numSuccessfulCollections << ", failed: " << numFailedCollections;
 }
 
-bool ControlService::subscribeToDDSSession(const CommonParams& common, Error& error)
+bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
@@ -697,7 +697,7 @@ bool ControlService::subscribeToDDSSession(const CommonParams& common, Error& er
     return true;
 }
 
-string ControlService::topoFilepath(const CommonParams& common, const string& topologyFile, const string& topologyContent, const string& topologyScript)
+string Controller::topoFilepath(const CommonParams& common, const string& topologyFile, const string& topologyContent, const string& topologyScript)
 {
     int count{ (topologyFile.empty() ? 0 : 1) + (topologyContent.empty() ? 0 : 1) + (topologyScript.empty() ? 0 : 1) };
     if (count != 1) {
@@ -744,21 +744,21 @@ string ControlService::topoFilepath(const CommonParams& common, const string& to
     return filepath.string();
 }
 
-chrono::seconds ControlService::requestTimeout(const CommonParams& common) const
+chrono::seconds Controller::requestTimeout(const CommonParams& common) const
 {
     auto timeout{ (common.m_timeout == 0) ? m_timeout : chrono::seconds(common.m_timeout) };
     OLOG(debug, common) << "Request timeout: " << timeout.count() << " sec";
     return timeout;
 }
 
-void ControlService::registerResourcePlugins(const CDDSSubmit::PluginMap_t& pluginMap)
+void Controller::registerResourcePlugins(const CDDSSubmit::PluginMap_t& pluginMap)
 {
     for (const auto& v : pluginMap) {
         m_submit.registerPlugin(v.first, v.second);
     }
 }
 
-void ControlService::registerRequestTriggers(const CPluginManager::PluginMap_t& triggerMap)
+void Controller::registerRequestTriggers(const CPluginManager::PluginMap_t& triggerMap)
 {
     const set<string> avail{ "Initialize", "Submit", "Activate", "Run", "Update", "Configure", "SetProperties", "GetState", "Start", "Stop", "Reset", "Terminate", "Shutdown", "Status" };
     for (const auto& v : triggerMap) {
@@ -769,7 +769,7 @@ void ControlService::registerRequestTriggers(const CPluginManager::PluginMap_t& 
     }
 }
 
-void ControlService::restore(const string& id)
+void Controller::restore(const string& id)
 {
     m_restoreId = id;
 
@@ -787,7 +787,7 @@ void ControlService::restore(const string& id)
     }
 }
 
-RequestResult ControlService::execInitialize(const CommonParams& common, const SInitializeParams& params)
+RequestResult Controller::execInitialize(const CommonParams& common, const SInitializeParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
 
@@ -814,7 +814,7 @@ RequestResult ControlService::execInitialize(const CommonParams& common, const S
     return createRequestResult(common, error, "Initialize done", measure.duration(), AggregatedState::Undefined);
 }
 
-RequestResult ControlService::execSubmit(const CommonParams& common, const SSubmitParams& params)
+RequestResult Controller::execSubmit(const CommonParams& common, const SSubmitParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
 
@@ -854,7 +854,7 @@ RequestResult ControlService::execSubmit(const CommonParams& common, const SSubm
     return createRequestResult(common, error, "Submit done", measure.duration(), AggregatedState::Undefined);
 }
 
-RequestResult ControlService::execActivate(const CommonParams& common, const SActivateParams& params)
+RequestResult Controller::execActivate(const CommonParams& common, const SActivateParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     // Activate DDS topology
@@ -876,7 +876,7 @@ RequestResult ControlService::execActivate(const CommonParams& common, const SAc
     return createRequestResult(common, error, "Activate done", measure.duration(), state);
 }
 
-RequestResult ControlService::execRun(const CommonParams& common, const SInitializeParams& initializeParams, const SSubmitParams& submitParams, const SActivateParams& activateParams)
+RequestResult Controller::execRun(const CommonParams& common, const SInitializeParams& initializeParams, const SSubmitParams& submitParams, const SActivateParams& activateParams)
 {
     STimeMeasure<chrono::milliseconds> measure;
     // Run request doesn't support attachment to a DDS session.
@@ -899,7 +899,7 @@ RequestResult ControlService::execRun(const CommonParams& common, const SInitial
     return createRequestResult(common, error, "Run done", measure.duration(), state);
 }
 
-RequestResult ControlService::execUpdate(const CommonParams& common, const SUpdateParams& params)
+RequestResult Controller::execUpdate(const CommonParams& common, const SUpdateParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -928,7 +928,7 @@ RequestResult ControlService::execUpdate(const CommonParams& common, const SUpda
     return createRequestResult(common, error, "Update done", measure.duration(), state);
 }
 
-RequestResult ControlService::execShutdown(const CommonParams& common)
+RequestResult Controller::execShutdown(const CommonParams& common)
 {
     STimeMeasure<chrono::milliseconds> measure;
     Error error;
@@ -937,7 +937,7 @@ RequestResult ControlService::execShutdown(const CommonParams& common)
     return createRequestResult(common, error, "Shutdown done", measure.duration(), AggregatedState::Undefined);
 }
 
-RequestResult ControlService::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
+RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     Error error;
@@ -946,7 +946,7 @@ RequestResult ControlService::execSetProperties(const CommonParams& common, cons
     return createRequestResult(common, error, "SetProperties done", measure.duration(), AggregatedState::Undefined);
 }
 
-RequestResult ControlService::execGetState(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execGetState(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -957,7 +957,7 @@ RequestResult ControlService::execGetState(const CommonParams& common, const SDe
     return createRequestResult(common, error, "GetState done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execConfigure(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execConfigure(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -968,7 +968,7 @@ RequestResult ControlService::execConfigure(const CommonParams& common, const SD
     return createRequestResult(common, error, "Configure done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execStart(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execStart(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -979,7 +979,7 @@ RequestResult ControlService::execStart(const CommonParams& common, const SDevic
     return createRequestResult(common, error, "Start done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execStop(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execStop(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -990,7 +990,7 @@ RequestResult ControlService::execStop(const CommonParams& common, const SDevice
     return createRequestResult(common, error, "Stop done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execReset(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execReset(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -1001,7 +1001,7 @@ RequestResult ControlService::execReset(const CommonParams& common, const SDevic
     return createRequestResult(common, error, "Reset done", measure.duration(), state, move(fullState));
 }
 
-RequestResult ControlService::execTerminate(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execTerminate(const CommonParams& common, const SDeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -1012,7 +1012,7 @@ RequestResult ControlService::execTerminate(const CommonParams& common, const SD
     return createRequestResult(common, error, "Terminate done", measure.duration(), state, move(fullState));
 }
 
-StatusRequestResult ControlService::execStatus(const SStatusParams& params)
+StatusRequestResult Controller::execStatus(const SStatusParams& params)
 {
     lock_guard<mutex> lock(mSessionsMtx);
     STimeMeasure<chrono::milliseconds> measure;
