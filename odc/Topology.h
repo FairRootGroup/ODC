@@ -333,7 +333,7 @@ namespace odc::core
             // }
 
             SubscribeToCommands();
-            // SubscribeToTaskDoneEvents();
+            SubscribeToTaskDoneEvents();
 
             fDDSService.start(to_string(fDDSSession->getSessionID()));
             SubscribeToStateChanges();
@@ -357,18 +357,14 @@ namespace odc::core
 
             std::lock_guard<std::mutex> lk(*fMtx);
             fDDSCustomCmd.unsubscribe();
-            try
-            {
-                for (auto& op : fChangeStateOps)
-                {
+            try {
+                for (auto& op : fChangeStateOps) {
                     op.second.Complete(MakeErrorCode(ErrorCode::OperationCanceled));
                 }
+            } catch (...) {
             }
-            catch (...)
-            {
-            }
+            fDDSOnTaskDoneRequest->unsubscribeResponseCallback();
         }
-
 
         auto GetTasks(const std::string& path = "") const -> std::vector<DDSTask>
         {
@@ -406,31 +402,27 @@ namespace odc::core
             fDDSCustomCmd.send(cmds.Serialize(), "");
 
             fHeartbeatsTimer.expires_after(fHeartbeatInterval);
-            fHeartbeatsTimer.async_wait(
-                std::bind(&BasicTopology::SendSubscriptionHeartbeats, this, std::placeholders::_1));
+            fHeartbeatsTimer.async_wait(std::bind(&BasicTopology::SendSubscriptionHeartbeats, this, std::placeholders::_1));
         }
 
         void SubscribeToTaskDoneEvents()
         {
             using namespace dds::tools_api;
             SOnTaskDoneRequest::request_t request;
-            SOnTaskDoneRequest::ptr_t requestPtr = SOnTaskDoneRequest::makeRequest(request);
-            requestPtr->setResponseCallback(
-                [&](const SOnTaskDoneResponseData& _info)
-                {
-                    std::unique_lock<std::mutex> lk(*fMtx);
-                    DeviceStatus& task = fStateData.at(fStateIndex.at(_info.m_taskID));
-                    if (task.subscribedToStateChanges)
-                    {
-                        task.subscribedToStateChanges = false;
-                        --fNumStateChangePublishers;
-                    }
-                    task.exitCode = _info.m_exitCode;
-                    task.signal = _info.m_signal;
-                    task.lastState = task.state;
-                    task.state = DeviceState::Error;
-                });
-            fDDSSession->sendRequest<SOnTaskDoneRequest>(requestPtr);
+            fDDSOnTaskDoneRequest = SOnTaskDoneRequest::makeRequest(request);
+            fDDSOnTaskDoneRequest->setResponseCallback([&](const SOnTaskDoneResponseData& info) {
+                std::unique_lock<std::mutex> lk(*fMtx);
+                DeviceStatus& task = fStateData.at(fStateIndex.at(info.m_taskID));
+                if (task.subscribedToStateChanges) {
+                    task.subscribedToStateChanges = false;
+                    --fNumStateChangePublishers;
+                }
+                task.exitCode = info.m_exitCode;
+                task.signal = info.m_signal;
+                task.lastState = task.state;
+                task.state = DeviceState::Error;
+            });
+            fDDSSession->sendRequest<SOnTaskDoneRequest>(fDDSOnTaskDoneRequest);
         }
 
         void WaitForPublisherCount(unsigned int number)
@@ -560,37 +552,26 @@ namespace odc::core
             }
         }
 
-        auto HandleCmd(cc::StateChangeUnsubscription const& cmd) -> void
+        void HandleCmd(cc::StateChangeUnsubscription const& cmd)
         {
-            if (cmd.GetResult() == cc::Result::Ok)
-            {
+            if (cmd.GetResult() == cc::Result::Ok) {
                 DDSTask::Id taskId(cmd.GetTaskId());
 
-                try
-                {
+                try {
                     std::unique_lock<std::mutex> lk(*fMtx);
                     DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
-                    if (task.subscribedToStateChanges)
-                    {
+                    if (task.subscribedToStateChanges) {
                         task.subscribedToStateChanges = false;
                         --fNumStateChangePublishers;
-                    }
-                    else
-                    {
-                        OLOG(warning)
-                            << "Task '" << task.taskId << "' sent unsubscription confirmation more than once";
+                    } else {
+                        OLOG(warning) << "Task '" << task.taskId << "' sent unsubscription confirmation more than once";
                     }
                     lk.unlock();
                     fStateChangeSubscriptionsCV->notify_one();
+                } catch (const std::exception& e) {
+                    OLOG(error) << "Exception in HandleCmd(cc::StateChangeUnsubscription const&): " << e.what();
                 }
-                catch (const std::exception& e)
-                {
-                    OLOG(error)
-                        << "Exception in HandleCmd(cc::StateChangeUnsubscription const&): " << e.what();
-                }
-            }
-            else
-            {
+            } else {
                 OLOG(error) << "State change unsubscription failed for device: " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
             }
         }
@@ -1671,6 +1652,7 @@ namespace odc::core
         dds::intercom_api::CIntercomService fDDSService;
         dds::intercom_api::CCustomCmd fDDSCustomCmd;
         dds::topology_api::CTopology fDDSTopo;
+        dds::tools_api::SOnTaskDoneRequest::ptr_t fDDSOnTaskDoneRequest;
         TopologyState fStateData;
         TopologyStateIndex fStateIndex;
 

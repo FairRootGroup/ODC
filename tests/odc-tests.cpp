@@ -391,14 +391,11 @@ BOOST_AUTO_TEST_CASE(wait_for_state_full_device_lifecycle)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mDDSTopo, f.mDDSSession);
-    topo.AsyncWaitForState(DeviceState::ResettingDevice,
-                           [](std::error_code ec) { BOOST_REQUIRE_EQUAL(ec, std::error_code()); });
-    full_device_lifecycle(
-        [&](TopologyTransition transition)
-        {
-            topo.ChangeState(transition);
-            BOOST_REQUIRE_EQUAL(topo.WaitForState(gExpectedState.at(transition)), std::error_code());
-        });
+    topo.AsyncWaitForState(DeviceState::ResettingDevice, [](std::error_code ec) { BOOST_REQUIRE_EQUAL(ec, std::error_code()); });
+    full_device_lifecycle([&](TopologyTransition transition) {
+        topo.ChangeState(transition);
+        BOOST_REQUIRE_EQUAL(topo.WaitForState(gExpectedState.at(transition)), std::error_code());
+    });
 }
 
 BOOST_AUTO_TEST_CASE(change_state_full_device_lifecycle2)
