@@ -360,6 +360,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             task.signal = info.m_signal;
             task.lastState = task.state;
             task.state = DeviceState::Error;
+
+            if (task.exitCode > 0) {
+                for (auto& op : fChangeStateOps) {
+                    op.second.Update(task.taskId, DeviceState::Error);
+                }
+                for (auto& op : fWaitForStateOps) {
+                    op.second.Update(task.taskId, DeviceState::Error, DeviceState::Error);
+                }
+                // TODO: include set/get property ops
+            }
         });
         fDDSSession->sendRequest<SOnTaskDoneRequest>(fDDSOnTaskDoneRequest);
     }
@@ -594,6 +604,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             , fTasks(std::move(tasks))
             , fTargetState(gExpectedState.at(transition))
             , fMtx(mutex)
+            , fErrored(false)
         {
             if (timeout > std::chrono::milliseconds(0)) {
                 fTimer.expires_after(timeout);
@@ -634,6 +645,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 if (currentState == fTargetState) {
                     ++fCount;
                 }
+                if (currentState == DeviceState::Error) {
+                    fErrored = true;
+                    ++fCount;
+                }
                 TryCompletion();
             }
         }
@@ -642,7 +657,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         auto TryCompletion() -> void
         {
             if (!fOp.IsCompleted() && fCount == fTasks.size()) {
-                Complete(std::error_code());
+                if (fErrored) {
+                    Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
+                } else {
+                    Complete(std::error_code());
+                }
             }
         }
 
@@ -673,6 +692,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         std::vector<DDSTask> fTasks;
         DeviceState fTargetState;
         std::mutex& fMtx;
+        bool fErrored;
     };
 
   public:
@@ -891,6 +911,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             , fTargetLastState(targetLastState)
             , fTargetCurrentState(targetCurrentState)
             , fMtx(mutex)
+            , fErrored(false)
         {
             if (timeout > std::chrono::milliseconds(0)) {
                 fTimer.expires_after(timeout);
@@ -931,6 +952,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 if (currentState == fTargetCurrentState && (lastState == fTargetLastState || fTargetLastState == DeviceState::Undefined)) {
                     ++fCount;
                 }
+                if (currentState == DeviceState::Error) {
+                    fErrored = true;
+                    ++fCount;
+                }
                 TryCompletion();
             }
         }
@@ -940,7 +965,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         {
             if (!fOp.IsCompleted() && fCount == fTasks.size()) {
                 fTimer.cancel();
-                fOp.Complete();
+                if (fErrored) {
+                    fOp.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
+                } else {
+                    fOp.Complete();
+                }
             }
         }
 
@@ -955,6 +984,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         DeviceState fTargetLastState;
         DeviceState fTargetCurrentState;
         std::mutex& fMtx;
+        bool fErrored;
 
         /// precondition: fMtx is locked.
         auto ContainsTask(DDSTask::Id id) -> bool
@@ -1242,8 +1272,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 fFailedDevices.emplace(task.GetId());
             }
 
-            // OLOG(debug) << "SetProperties " << fId << " with expected count of " << fTasks.size() <<
-            // " started.";
+            // OLOG(debug) << "SetProperties " << fId << " with expected count of " << fTasks.size() << " started.";
         }
         SetPropertiesOp() = delete;
         SetPropertiesOp(const SetPropertiesOp&) = delete;
