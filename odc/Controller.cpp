@@ -16,6 +16,7 @@
 #include <odc/TimeMeasure.h>
 #include <odc/Topology.h>
 
+#include <dds/TopoVars.h>
 #include <dds/Tools.h>
 #include <dds/Topology.h>
 
@@ -180,7 +181,7 @@ bool Controller::waitForNumActiveAgents(const CommonParams& common, Error& error
 
 bool Controller::activateDDSTopology(const CommonParams& common, Error& error, const string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType _updateType)
 {
-    bool success(true);
+    bool success = true;
 
     dds::tools_api::STopologyRequest::request_t topoInfo;
     topoInfo.m_topologyFile = topologyFile;
@@ -189,6 +190,18 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
 
     condition_variable cv;
     auto& sessionInfo = getOrCreateSessionInfo(common);
+
+    dds::topology_api::CTopoVars vars;
+    vars.initFromXML(topologyFile);
+    for (const auto& [var, nmin] : vars.getMap()) {
+        if (0 == var.compare(0, 9, "odc_nmin_")) {
+            sessionInfo.mNmin.emplace(var.substr(9), stoll(nmin));
+        }
+    }
+
+    for (const auto& [group, nmin] : sessionInfo.mNmin) {
+        OLOG(info) << group << ":" << nmin;
+    }
 
     dds::tools_api::STopologyRequest::ptr_t requestPtr{ dds::tools_api::STopologyRequest::makeRequest(topoInfo) };
 

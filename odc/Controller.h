@@ -333,6 +333,7 @@ class Controller
         std::shared_ptr<dds::tools_api::CSession> m_session = nullptr; ///< DDS session
         std::unique_ptr<Topology> m_fairmqTopology = nullptr; ///< FairMQ topology
         std::string m_partitionID; ///< External partition ID of this DDS session
+        std::map<std::string, uint64_t> mNmin; ///< Holds information on minimum number of groups, by group name
 
         void addToTaskCache(TopoTaskInfo&& taskInfo)
         {
