@@ -1,5 +1,15 @@
 # ODC Release Notes
 
+## 0.66 (2022-03-18)
+
+- Require DDS 3.7.5
+- Fail earlier if devices crash or transition to Error state.
+- Reduce verbosity of GetState responses.
+- Add stdout to failed topology generation error.
+- Add .help command to CLI.
+- odc-epn-topo: add support for --nmin parameter. Currently still unused in ODC controller, usage to be added in the next release.
+- odc-grpc-server: make System, Facility and Role InfoLogger fields customizable via --infologger-system, --infologger-facility and --infologger-role cmd args.
+
 ## 0.65 (2022-02-23)
 
 - odc-grpc-client: Add missing Run request parameters for plugin and resource.
