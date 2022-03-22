@@ -45,7 +45,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Initialize request from " << client << ":\n" << req->DebugString();
     SInitializeParams initializeParams{ req->sessionid() };
     RequestResult res{ mService.execInitialize(commonParams, initializeParams) };
@@ -59,7 +59,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Submit request from " << client << ":\n" << req->DebugString();
     SSubmitParams submitParams{ req->plugin(), req->resources() };
     RequestResult res{ mService.execSubmit(commonParams, submitParams) };
@@ -73,7 +73,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Activate request from " << client << ":\n" << req->DebugString();
     SActivateParams activateParams{ req->topology(), req->content(), req->script() };
     RequestResult res{ mService.execActivate(commonParams, activateParams) };
@@ -87,7 +87,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Run request from " << client << ":\n" << req->DebugString();
     SInitializeParams initializeParams{ "" };
     SSubmitParams submitParams{ req->plugin(), req->resources() };
@@ -103,7 +103,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Update request from " << client << ":\n" << req->DebugString();
     SUpdateParams updateParams{ req->topology(), req->content(), req->script() };
     RequestResult res{ mService.execUpdate(commonParams, updateParams) };
@@ -117,7 +117,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "GetState request from " << client << ":\n" << req->DebugString();
     SDeviceParams deviceParams{ req->path(), req->detailed() };
     RequestResult res{ mService.execGetState(commonParams, deviceParams) };
@@ -155,7 +155,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "SetProperties request from " << client << ":\n" << req->DebugString();
     // Convert from protobuf to ODC format
     SetPropertiesParams::Properties_t props;
@@ -176,7 +176,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Configure request from " << client << ":\n" << req->DebugString();
     SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
     RequestResult res{ mService.execConfigure(commonParams, deviceParams) };
@@ -190,7 +190,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Start request from " << client << ":\n" << req->DebugString();
     SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
     RequestResult res{ mService.execStart(commonParams, deviceParams) };
@@ -204,7 +204,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Stop request from " << client << ":\n" << req->DebugString();
     SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
     RequestResult res{ mService.execStop(commonParams, deviceParams) };
@@ -218,7 +218,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Reset request from " << client << ":\n" << req->DebugString();
     SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
     RequestResult res{ mService.execReset(commonParams, deviceParams) };
@@ -232,7 +232,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Terminate request from " << client << ":\n" << req->DebugString();
     SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
     RequestResult res{ mService.execTerminate(commonParams, deviceParams) };
@@ -246,7 +246,7 @@ void CGrpcService::restore(const std::string& restoreId) { mService.restore(rest
     assert(ctx);
     const string client{ clientMetadataAsString(*ctx) };
     const CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
-    lock_guard<mutex> lock(getMutex(commonParams.m_partitionID));
+    lock_guard<mutex> lock(getMutex(commonParams.mPartitionID));
     OLOG(info, commonParams) << "Shutdown request from " << client << ":\n" << req->DebugString();
     RequestResult res{ mService.execShutdown(commonParams) };
     setupGeneralReply(rep, res);
@@ -282,9 +282,9 @@ void CGrpcService::setupGeneralReply(odc::GeneralReply* rep, const RequestResult
         rep->set_status(odc::ReplyStatus::ERROR);
         rep->set_allocated_error(newError(res));
     }
-    rep->set_partitionid(res.m_partitionID);
-    rep->set_runnr(res.m_runNr);
-    rep->set_sessionid(res.m_sessionID);
+    rep->set_partitionid(res.mPartitionID);
+    rep->set_runnr(res.mRunNr);
+    rep->set_sessionid(res.mDDSSessionID);
     rep->set_exectime(res.m_execTime);
     rep->set_state(GetAggregatedStateName(res.m_aggregatedState));
 }
@@ -318,9 +318,9 @@ void CGrpcService::setupStatusReply(odc::StatusReply* rep, const odc::core::Stat
     rep->set_exectime(res.m_execTime);
     for (const auto& p : res.m_partitions) {
         auto partition{ rep->add_partitions() };
-        partition->set_partitionid(p.m_partitionID);
-        partition->set_sessionid(p.m_sessionID);
-        partition->set_status((p.m_sessionStatus == DDSSessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
+        partition->set_partitionid(p.mPartitionID);
+        partition->set_sessionid(p.mDDSSessionID);
+        partition->set_status((p.mDDSSessionStatus == DDSSessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
         partition->set_state(GetAggregatedStateName(p.m_aggregatedState));
     }
 }

@@ -135,9 +135,9 @@ string CCliControlService::generalReply(const RequestResult& result)
     }
 
     ss << "  Aggregated state: " << result.m_aggregatedState << endl;
-    ss << "  Partition ID: " << result.m_partitionID << endl;
-    ss << "  Run Nr: " << result.m_runNr << endl;
-    ss << "  Session ID: " << result.m_sessionID << endl;
+    ss << "  Partition ID: " << result.mPartitionID << endl;
+    ss << "  Run Nr: " << result.mRunNr << endl;
+    ss << "  Session ID: " << result.mDDSSessionID << endl;
 
     if (result.mFullState != nullptr)
     {
@@ -171,8 +171,8 @@ std::string CCliControlService::statusReply(const StatusRequestResult& result)
     ss << "  Partitions: " << endl;
     for (const auto& p : result.m_partitions)
     {
-        ss << "    { partition ID: " << p.m_partitionID << "; session ID: " << p.m_sessionID
-           << "; status: " << ((p.m_sessionStatus == DDSSessionStatus::running) ? "RUNNING" : "STOPPED")
+        ss << "    { partition ID: " << p.mPartitionID << "; session ID: " << p.mDDSSessionID
+           << "; status: " << ((p.mDDSSessionStatus == DDSSessionStatus::running) ? "RUNNING" : "STOPPED")
            << "; state: " << GetAggregatedStateName(p.m_aggregatedState) << " }" << endl;
     }
     ss << "  Execution time: " << result.m_execTime << " msec" << endl;

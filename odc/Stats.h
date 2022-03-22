@@ -12,38 +12,80 @@
 // ODC
 #include <odc/Topology.h>
 // STD
-#include <vector>
+#include <map>
+#include <set>
+#include <string>
+#include <sstream>
 
 namespace odc::core {
 
-template<class State_t>
-struct SStateInfo
+template<class State>
+struct StateInfo
 {
-    SStateInfo() {}
+    StateInfo() {}
 
-    SStateInfo(State_t _state)
-        : m_state(_state)
+    StateInfo(State state)
+        : mState(state)
     {}
 
-    State_t m_state;
-    std::set<uint64_t> m_ids;
+    State mState;
+    std::set<uint64_t> mIds;
 };
 
-using STaskState = SStateInfo<DeviceState>;
-using SCollectionState = SStateInfo<AggregatedState>;
+using TaskState = StateInfo<DeviceState>;
+using CollectionState = StateInfo<AggregatedState>;
 
 struct StateStats
 {
-    StateStats(const TopologyState& _topoState);
+    StateStats(const TopologyState& topoState)
+    {
+        for (const auto& v : topoState) {
+            if (mTasks.find(v.state) == mTasks.end()) {
+                mTasks[v.state] = TaskState(v.state);
+            }
+            mTasks[v.state].mIds.insert(v.taskId);
+        }
 
-    std::string tasksString() const;
-    std::string collectionsString() const;
+        auto collectionMap{ GroupByCollectionId(topoState) };
+        for (const auto& states : collectionMap) {
+            auto collectionState{ AggregateState(states.second) };
+            auto collectionId{ states.first };
 
-    std::map<DeviceState, STaskState> m_tasks;
-    std::map<AggregatedState, SCollectionState> m_collections;
+            if (mCollections.find(collectionState) == mCollections.end()) {
+                mCollections[collectionState] = CollectionState(collectionState);
+            }
+            mCollections[collectionState].mIds.insert(collectionId);
+        }
 
-    size_t m_taskCount{ 0 };
-    size_t m_collectionCount{ 0 };
+        mTaskCount = topoState.size();
+        mCollectionCount = collectionMap.size();
+    }
+
+    std::string tasksString() const
+    {
+        std::stringstream ss;
+        ss << "Task states:";
+        for (const auto& v : mTasks) {
+            ss << " " << fair::mq::GetStateName(v.first) << " (" << v.second.mIds.size() << "/" << mTaskCount << ")";
+        }
+        return ss.str();
+    }
+
+    std::string collectionsString() const
+    {
+        std::stringstream ss;
+        ss << "Collection states:";
+        for (const auto& v : mCollections) {
+            ss << " " << GetAggregatedStateName(v.first) << " (" << v.second.mIds.size() << "/" << mCollectionCount << ")";
+        }
+        return ss.str();
+    }
+
+    std::map<DeviceState, TaskState> mTasks;
+    std::map<AggregatedState, CollectionState> mCollections;
+
+    size_t mTaskCount = 0;
+    size_t mCollectionCount = 0;
 };
 } // namespace odc::core
 

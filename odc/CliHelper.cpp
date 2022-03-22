@@ -59,12 +59,13 @@ void CCliHelper::addLogOptions(bpo::options_description& options, CLogger::SConf
 {
     string defaultLogDir{ smart_path(string("$HOME/.ODC/log")) };
 
-    options.add_options()("logdir", bpo::value<string>(&config.m_logDir)->default_value(defaultLogDir), "Log files directory");
-    options.add_options()("severity", bpo::value<ESeverity>(&config.m_severity)->default_value(ESeverity::info), "Log severity level");
-    options.add_options()("infologger", bpo::bool_switch(&config.m_infologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)");
-    options.add_options()("infologger-system", bpo::value<string>(&config.m_infologgerSystem)->default_value("ODC"), "Fills the InfoLogger 'System' field");
-    options.add_options()("infologger-facility", bpo::value<string>(&config.m_infologgerFacility)->default_value("ODC"), "Fills the InfoLogger 'Facility' field");
-    options.add_options()("infologger-role", bpo::value<string>(&config.m_infologgerRole)->default_value("production"), "Fills the InfoLogger 'Role' field");
+    options.add_options()
+        ("logdir", bpo::value<string>(&config.m_logDir)->default_value(defaultLogDir), "Log files directory")
+        ("severity", bpo::value<ESeverity>(&config.m_severity)->default_value(ESeverity::info), "Log severity level")
+        ("infologger", bpo::bool_switch(&config.m_infologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
+        ("infologger-system", bpo::value<string>(&config.m_infologgerSystem)->default_value("ODC"), "Fills the InfoLogger 'System' field")
+        ("infologger-facility", bpo::value<string>(&config.m_infologgerFacility)->default_value("ODC"), "Fills the InfoLogger 'Facility' field")
+        ("infologger-role", bpo::value<string>(&config.m_infologgerRole)->default_value("production"), "Fills the InfoLogger 'Role' field");
 }
 
 void CCliHelper::addTimeoutOptions(bpo::options_description& options, size_t& timeout)
@@ -129,45 +130,50 @@ void CCliHelper::addPartitionOptions(bpo::options_description& options, std::str
 
 void CCliHelper::addOptions(bpo::options_description& options, CommonParams& common)
 {
-    options.add_options()("id", bpo::value<std::string>(&common.m_partitionID)->default_value(""), "Partition ID");
-    options.add_options()("run", bpo::value<uint64_t>(&common.m_runNr)->default_value(0), "Run Nr");
-    options.add_options()("timeout", bpo::value<size_t>(&common.m_timeout)->default_value(0), "Request timeout");
+    options.add_options()
+        ("id", bpo::value<std::string>(&common.mPartitionID)->default_value(""), "Partition ID")
+        ("run", bpo::value<uint64_t>(&common.mRunNr)->default_value(0), "Run Nr")
+        ("timeout", bpo::value<size_t>(&common.mTimeout)->default_value(0), "Request timeout");
 }
 
 void CCliHelper::addOptions(bpo::options_description& options, SInitializeParams& params)
 {
-    options.add_options()("sid", bpo::value<string>(&params.m_sessionID)->default_value(""), "Session ID of DDS");
+    options.add_options()("sid", bpo::value<string>(&params.mDDSSessionID)->default_value(""), "Session ID of DDS");
 }
 
 void CCliHelper::addOptions(bpo::options_description& options, SActivateParams& params)
 {
     string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
-    options.add_options()("topo", bpo::value<string>(&params.m_topologyFile)->implicit_value("")->default_value(defaultTopo), "Topology filepath");
-    options.add_options()("content", bpo::value<string>(&params.m_topologyContent)->implicit_value("")->default_value(""), "Topology content");
-    options.add_options()("script", bpo::value<string>(&params.m_topologyScript)->implicit_value("")->default_value(""), "Topology script");
+    options.add_options()
+        ("topo", bpo::value<string>(&params.mDDSTopologyFile)->implicit_value("")->default_value(defaultTopo), "Topology filepath")
+        ("content", bpo::value<string>(&params.mDDSTopologyContent)->implicit_value("")->default_value(""), "Topology content")
+        ("script", bpo::value<string>(&params.mDDSTopologyScript)->implicit_value("")->default_value(""), "Topology script");
 }
 
 void CCliHelper::addOptions(bpo::options_description& options, SUpdateParams& params)
 {
     string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");
     // string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-down.xml");
-    options.add_options()("topo", bpo::value<string>(&params.m_topologyFile)->default_value(defaultTopo), "Topology filepath");
-    options.add_options()("content", bpo::value<string>(&params.m_topologyContent)->default_value(""), "Topology content");
-    options.add_options()("script", bpo::value<string>(&params.m_topologyScript)->implicit_value("")->default_value(""), "Topology script");
+    options.add_options()
+        ("topo", bpo::value<string>(&params.mDDSTopologyFile)->default_value(defaultTopo), "Topology filepath")
+        ("content", bpo::value<string>(&params.mDDSTopologyContent)->default_value(""), "Topology content")
+        ("script", bpo::value<string>(&params.mDDSTopologyScript)->implicit_value("")->default_value(""), "Topology script");
 }
 
 void CCliHelper::addOptions(bpo::options_description& options, SSubmitParams& params)
 {
-    options.add_options()("plugin,p", bpo::value<string>(&params.m_plugin)->default_value("odc-rp-same"), "ODC resource plugin name.");
-    options.add_options()("resources,r",
-                          bpo::value<string>(&params.m_resources)->default_value("<rms>localhost</rms><agents>1</agents><slots>36</slots><requiredSlots>36</requiredSlots>"),
-                          "A resource description for a corresponding ODC resource plugin.");
+    options.add_options()
+        ("plugin,p", bpo::value<string>(&params.m_plugin)->default_value("odc-rp-same"), "ODC resource plugin name.")
+        ("resources,r",
+            bpo::value<string>(&params.m_resources)->default_value("<rms>localhost</rms><agents>1</agents><slots>36</slots><requiredSlots>36</requiredSlots>"),
+            "A resource description for a corresponding ODC resource plugin.");
 }
 
 void CCliHelper::addOptions(bpo::options_description& options, SDeviceParams& params)
 {
-    options.add_options()("path", bpo::value<string>(&params.m_path)->default_value(""), "Topology path of devices");
-    options.add_options()("detailed", bpo::bool_switch(&params.m_detailed)->default_value(false), "Detailed reply of devices");
+    options.add_options()
+        ("path", bpo::value<string>(&params.m_path)->default_value(""), "Topology path of devices")
+        ("detailed", bpo::bool_switch(&params.m_detailed)->default_value(false), "Detailed reply of devices");
 }
 
 void CCliHelper::addOptions(bpo::options_description& options, SetPropertiesParams& params)

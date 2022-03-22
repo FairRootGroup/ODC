@@ -38,7 +38,6 @@ add_library(${target} STATIC
   "Process.h"
   "Restore.h"
   "Semaphore.h"
-  "Stats.cpp"
   "Stats.h"
   "TimeMeasure.h"
   "Topology.h"

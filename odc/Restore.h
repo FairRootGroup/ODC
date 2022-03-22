@@ -23,27 +23,27 @@ struct SRestorePartition
     using Vector_t = std::vector<SRestorePartition>;
 
     SRestorePartition() {}
-    SRestorePartition(const std::string& _partitionId, const std::string& _sessionId)
-        : m_partitionId(_partitionId)
-        , m_sessionId(_sessionId)
+    SRestorePartition(const std::string& _partitionId, const std::string& sessionId)
+        : mPartitionID(_partitionId)
+        , mDDSSessionId(sessionId)
     {}
     SRestorePartition(const boost::property_tree::ptree& _pt) { fromPT(_pt); }
 
     boost::property_tree::ptree toPT() const
     {
         boost::property_tree::ptree pt;
-        pt.put<std::string>("partition", m_partitionId);
-        pt.put<std::string>("session", m_sessionId);
+        pt.put<std::string>("partition", mPartitionID);
+        pt.put<std::string>("session", mDDSSessionId);
         return pt;
     }
     void fromPT(const boost::property_tree::ptree& _pt)
     {
-        m_partitionId = _pt.get<std::string>("partition", "");
-        m_sessionId = _pt.get<std::string>("session", "");
+        mPartitionID = _pt.get<std::string>("partition", "");
+        mDDSSessionId = _pt.get<std::string>("session", "");
     }
 
-    std::string m_partitionId;
-    std::string m_sessionId;
+    std::string mPartitionID;
+    std::string mDDSSessionId;
 };
 
 struct SRestoreData

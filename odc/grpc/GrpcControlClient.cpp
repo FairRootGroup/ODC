@@ -21,7 +21,7 @@ std::string CGrpcControlClient::requestInitialize(const CommonParams& _common, c
 {
     odc::InitializeRequest request;
     updateCommonParams(_common, &request);
-    request.set_sessionid(_params.m_sessionID);
+    request.set_sessionid(_params.mDDSSessionID);
     odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Initialize(&context, request, &reply);
@@ -46,9 +46,9 @@ std::string CGrpcControlClient::requestActivate(const CommonParams& _common, con
 {
     odc::ActivateRequest request;
     updateCommonParams(_common, &request);
-    request.set_topology(_params.m_topologyFile);
-    request.set_content(_params.m_topologyContent);
-    request.set_script(_params.m_topologyScript);
+    request.set_topology(_params.mDDSTopologyFile);
+    request.set_content(_params.mDDSTopologyContent);
+    request.set_script(_params.mDDSTopologyScript);
     odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Activate(&context, request, &reply);
@@ -64,9 +64,9 @@ std::string CGrpcControlClient::requestRun(const CommonParams& _common,
     updateCommonParams(_common, &request);
     request.set_plugin(_submitParams.m_plugin);
     request.set_resources(_submitParams.m_resources);
-    request.set_topology(_activateParams.m_topologyFile);
-    request.set_content(_activateParams.m_topologyContent);
-    request.set_script(_activateParams.m_topologyScript);
+    request.set_topology(_activateParams.mDDSTopologyFile);
+    request.set_content(_activateParams.mDDSTopologyContent);
+    request.set_script(_activateParams.mDDSTopologyScript);
     odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Run(&context, request, &reply);
@@ -177,7 +177,7 @@ std::string CGrpcControlClient::updateRequest(const CommonParams& _common, const
 {
     odc::UpdateRequest request;
     updateCommonParams(_common, &request);
-    request.set_topology(_params.m_topologyFile);
+    request.set_topology(_params.mDDSTopologyFile);
     odc::GeneralReply reply;
     grpc::ClientContext context;
     grpc::Status status = m_stub->Update(&context, request, &reply);
@@ -207,7 +207,7 @@ std::string CGrpcControlClient::stateChangeRequest(const CommonParams& _common,
 template <typename Request_t>
 void CGrpcControlClient::updateCommonParams(const odc::core::CommonParams& _common, Request_t* _request)
 {
-    _request->set_partitionid(_common.m_partitionID);
-    _request->set_runnr(_common.m_runNr);
-    _request->set_timeout(_common.m_timeout);
+    _request->set_partitionid(_common.mPartitionID);
+    _request->set_runnr(_common.mRunNr);
+    _request->set_timeout(_common.mTimeout);
 }
