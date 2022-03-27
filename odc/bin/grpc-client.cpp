@@ -30,7 +30,6 @@ int main(int argc, char** argv)
         CCliHelper::SBatchOptions bopt;
         bool batch;
 
-        // Generic options
         bpo::options_description options("grpc-client options");
         CCliHelper::addHelpOptions(options);
         CCliHelper::addVersionOptions(options);
@@ -38,7 +37,6 @@ int main(int argc, char** argv)
         CCliHelper::addLogOptions(options, logConfig);
         CCliHelper::addBatchOptions(options, bopt, batch);
 
-        // Parsing command-line
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
         bpo::notify(vm);

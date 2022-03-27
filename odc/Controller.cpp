@@ -16,6 +16,7 @@
 #include <odc/TimeMeasure.h>
 #include <odc/Topology.h>
 
+#include <dds/dds.h>
 #include <dds/TopoVars.h>
 #include <dds/Tools.h>
 #include <dds/Topology.h>
@@ -27,6 +28,7 @@
 using namespace odc;
 using namespace odc::core;
 using namespace std;
+namespace bfs = boost::filesystem;
 
 void Controller::execRequestTrigger(const string& plugin, const CommonParams& common)
 {
@@ -179,14 +181,14 @@ bool Controller::waitForNumActiveAgents(const CommonParams& common, Error& error
     return true;
 }
 
-bool Controller::activateDDSTopology(const CommonParams& common, Error& error, const string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType _updateType)
+bool Controller::activateDDSTopology(const CommonParams& common, Error& error, const string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType)
 {
     bool success = true;
 
     dds::tools_api::STopologyRequest::request_t topoInfo;
     topoInfo.m_topologyFile = topologyFile;
     topoInfo.m_disableValidation = true;
-    topoInfo.m_updateType = _updateType;
+    topoInfo.m_updateType = updateType;
 
     condition_variable cv;
     auto& sessionInfo = getOrCreateSessionInfo(common);
@@ -238,7 +240,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
 
     if (waitStatus == cv_status::timeout) {
         success = false;
-        fillError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
+        fillError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for topology activation");
         OLOG(error, common) << error;
     }
 
@@ -275,10 +277,13 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
 
 bool Controller::createDDSTopology(const CommonParams& common, Error& error, const string& topologyFile)
 {
+    using namespace dds::topology_api;
     try {
         auto& sInfo = getOrCreateSessionInfo(common);
 
-        dds::topology_api::CTopoVars vars;
+        // extract the nmin variables and detect corresponding collections
+        sInfo.mNmin.clear();
+        CTopoVars vars;
         vars.initFromXML(topologyFile);
         for (const auto& [var, nmin] : vars.getMap()) {
             if (0 == var.compare(0, 9, "odc_nmin_")) {
@@ -286,11 +291,11 @@ bool Controller::createDDSTopology(const CommonParams& common, Error& error, con
             }
         }
 
-        sInfo.mDDSTopo = make_unique<dds::topology_api::CTopology>(topologyFile);
+        sInfo.mDDSTopo = make_unique<CTopology>(topologyFile);
 
-        auto groups = sInfo.mDDSTopo->getMainGroup()->getElementsByType(dds::topology_api::CTopoBase::EType::GROUP);
+        auto groups = sInfo.mDDSTopo->getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
         for (const auto& group : groups) {
-            dds::topology_api::CTopoGroup::Ptr_t g = dynamic_pointer_cast<dds::topology_api::CTopoGroup>(group);
+            CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
             try {
                 sInfo.mNmin.at(g->getName()).n = g->getN();
             } catch (out_of_range&) {
@@ -347,7 +352,6 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
     }
 
     bool success = true;
-    std::vector<TopoCollectionInfo*> failedCollections;
 
     try {
         const auto [errorCode, fmqTopoState] = info.mTopology->ChangeState(transition, path, requestTimeout(common));
@@ -357,28 +361,35 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
             try {
                 aggrState = AggregateState(fmqTopoState);
             } catch (exception& e) {
-                success = false;
-                fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Aggregate topology state failed: ", e.what()));
-                success = stateSummaryOnFailure(common, fmqTopoState, expState, info);
+                auto failedCollections = stateSummaryOnFailure(common, fmqTopoState, expState, info);
+                success = false; // attemptRecovery(failedCollections, info, common);
+                if (!success) {
+                    fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Aggregate topology state failed: ", e.what()));
+                }
             }
             if (detailedState != nullptr) {
                 getDetailedState(info.mDDSTopo.get(), fmqTopoState, detailedState);
             }
         } else {
-            switch (static_cast<ErrorCode>(errorCode.value())) {
-                case ErrorCode::OperationTimeout:
-                    fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", transition, " transition"));
-                    break;
-                default:
-                    fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("FairMQ change state failed: ", errorCode.message()));
-                    break;
+            auto failedCollections = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
+            success = false; // attemptRecovery(failedCollections, info, common);
+            if (!success) {
+                switch (static_cast<ErrorCode>(errorCode.value())) {
+                    case ErrorCode::OperationTimeout:
+                        fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", transition, " transition"));
+                        break;
+                    default:
+                        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("FairMQ change state failed: ", errorCode.message()));
+                        break;
+                }
             }
-            success = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
         }
     } catch (exception& e) {
-        success = false;
-        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
-        success = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
+        auto failedCollections = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
+        success = false; // attemptRecovery(failedCollections, info, common);
+        if (!success) {
+            fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
+        }
     }
 
     if (success) {
@@ -406,38 +417,6 @@ bool Controller::changeStateReset(const CommonParams& common, Error& error, cons
     return changeState(common, error, TopologyTransition::ResetTask, path, aggrState, detailedState)
         && changeState(common, error, TopologyTransition::ResetDevice, path, aggrState, detailedState);
 }
-
-// void Controller::updateTopologyOnFailure(const CommonParams& common, const SessionInfo &info, const vector<TopoCollectionInfo*>& failedCollections)
-// {
-    // get failed tasks
-    // determine failed collections
-
-
-
-    // get the topology file
-    // extract the nmin variables and detect corresponding collections
-
-    // proceed if remaining collections > nmin.
-
-    // destroy Topology
-
-    // kill agents responsible for failed collections
-    // https://github.com/FairRootGroup/DDS/blob/master/dds-tools-lib/tests/TestSession.cpp#L632
-
-        // SAgentCommandRequest::request_t agentCmd;
-        // agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
-        // agentCmd.m_arg1 = agentID;
-        // session.syncSendRequest<SAgentCommandRequest>(agentCmd, kTimeout, &cout);
-
-        // this_thread::sleep_for(sleepTime);
-        // BOOST_CHECK_NO_THROW(session.syncSendRequest<SAgentInfoRequest>(SAgentInfoRequest::request_t(), agentInfo, kTimeout, &cout));
-
-        // BOOST_CHECK(agentInfo.size() == 0);
-
-    // update topology with n = remaining collections
-
-    // recreate Topology
-// }
 
 bool Controller::getState(const CommonParams& common, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
 {
@@ -623,7 +602,7 @@ Error Controller::checkSessionIsRunning(const CommonParams& common, ErrorCode er
     return error;
 }
 
-bool Controller::stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo)
+vector<TopoCollectionInfo*> Controller::stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo)
 {
     size_t numTasks = topoState.size();
     size_t numFailedTasks = 0;
@@ -640,7 +619,7 @@ bool Controller::stateSummaryOnFailure(const CommonParams& common, const Topolog
         }
         ss << "\n" << right << setw(7) << numFailedTasks << " Device: state: " << status.state << ", previous state: " << status.lastState
            << ", taskID: " << status.taskId << ", collectionID: " << status.collectionId << ", "
-           << "subscribed: " << std::boolalpha << status.subscribedToStateChanges;
+           << "subscribed: " << boolalpha << status.subscribedToStateChanges;
 
         try {
             TopoTaskInfo& taskInfo = sessionInfo.getFromTaskCache(status.taskId);
@@ -652,10 +631,10 @@ bool Controller::stateSummaryOnFailure(const CommonParams& common, const Topolog
 
     if (numFailedTasks > 0) {
         OLOG(error, common) << ss.str();
-        ss.str(std::string());
+        ss.str(string());
     }
 
-    std::vector<TopoCollectionInfo*> failedCollections;
+    vector<TopoCollectionInfo*> failedCollections;
 
     auto collectionMap{ GroupByCollectionId(topoState) };
     size_t numCollections = collectionMap.size();
@@ -684,7 +663,7 @@ bool Controller::stateSummaryOnFailure(const CommonParams& common, const Topolog
 
     if (numFailedCollections > 0) {
         OLOG(error, common) << ss.str();
-        ss.str(std::string());
+        ss.str(string());
     }
 
     size_t numSuccessfulTasks = numTasks - numFailedTasks;
@@ -693,18 +672,177 @@ bool Controller::stateSummaryOnFailure(const CommonParams& common, const Topolog
        << "  [tasks] total: " << numTasks << ", successful: " << numSuccessfulTasks << ", failed: " << numFailedTasks << "\n"
        << "  [collections] total: " << numCollections << ", successful: " << numSuccessfulCollections << ", failed: " << numFailedCollections;
 
+    return failedCollections;
+}
+
+bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections, SessionInfo& sessionInfo, const CommonParams& common)
+{
     if (!failedCollections.empty() && !sessionInfo.mNmin.empty()) {
-        OLOG(info, common) << "FAILED COLLECTIONS:";
+        OLOG(info, common) << "Attemping recovery";
+        // get failed collections and determine if recovery makes sense:
+        //   - are failed collections inside of a group?
+        //   - do all failed collections have nMin parameter defined?
+        //   - is the nMin parameter satisfied?
+        map<string, uint64_t> failedCollectionsCount;
         for (const auto& c : failedCollections) {
-            OLOG(info, common) << c->mPath << " " << c->mAgentID;
+            OLOG(info, common) << "Checking collection '" << c->mPath << "' with agend id " << c->mAgentID;
+            string collectionParentName = sessionInfo.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getParent()->getName();
+            for (const auto& [groupName, groupInfo] : sessionInfo.mNmin) {
+                if (collectionParentName != groupName) {
+                    // stop recovery, conditions not satisifed
+                    OLOG(error, common) << "Failed collection '" << c->mPath << "' is not in a group that has the nmin parameter specified";
+                    return false;
+                } else {
+                    // increment failed collection count per group name
+                    if (failedCollectionsCount.find(groupName) == failedCollectionsCount.end()) {
+                        failedCollectionsCount.emplace(groupName, 1);
+                    } else {
+                        failedCollectionsCount[groupName]++;
+                    }
+                    OLOG(info, common) << "Group '" << groupName << "', failed collection count " << failedCollectionsCount.at(groupName);
+                }
+            }
         }
 
-        // for (const auto& [groupName, nmin] : sessionInfo.mNmin) {
+        // proceed only if remaining collections > nmin.
+        for (const auto& [groupName, groupInfo] : sessionInfo.mNmin) {
+            uint64_t failedCount = failedCollectionsCount.at(groupName);
+            uint64_t remainingCount = groupInfo.n - failedCount;
+            OLOG(info, common) << "Group '" << groupName << "' with n: " << groupInfo.n << " and nmin: " << groupInfo.nmin << ". Failed count: " << failedCount;
+            if (remainingCount < groupInfo.nmin) {
+                OLOG(error, common) << "Number of remaining collections in group '" << groupName << "' (" << remainingCount << ") is below nmin (" << groupInfo.nmin << ")";
+                return false;
+            }
+        }
 
-        // }
+        // destroy Topology
+        // OLOG(info, common) << "Resetting Topology...";
+        // sessionInfo.mTopology.reset();
+        // OLOG(info, common) << "Done!";
+
+        // shutdown agents responsible for failed collections (https://github.com/FairRootGroup/DDS/blob/master/dds-tools-lib/tests/TestSession.cpp#L632)
+
+        using namespace dds::tools_api;
+        using namespace dds::topology_api;
+
+        try {
+            size_t currentAgentsCount = getNumAgents(sessionInfo.mDDSSession);
+            size_t expectedAgentsCount = currentAgentsCount - failedCollections.size();
+            OLOG(info, common) << "Current number of agents: " << currentAgentsCount << ", expecting to reduce to " << expectedAgentsCount;
+
+
+            const chrono::seconds timeout{ 30 };
+            for (const auto& c : failedCollections) {
+                OLOG(info, common) << "Sending shutdown signal to agent " << c->mAgentID << ", responsible for " << c->mPath;
+                SAgentCommandRequest::request_t agentCmd;
+                agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
+                agentCmd.m_arg1 = c->mAgentID;
+                sessionInfo.mDDSSession->syncSendRequest<SAgentCommandRequest>(agentCmd, timeout);
+            }
+
+            // TODO: notification on agent shutdown in development in DDS
+            OLOG(info, common) << "Current number of agents: " << getNumAgents(sessionInfo.mDDSSession);
+            currentAgentsCount = getNumAgents(sessionInfo.mDDSSession);
+            size_t attempts = 0;
+            while (currentAgentsCount != expectedAgentsCount && attempts < 400) {
+                this_thread::sleep_for(chrono::milliseconds(50));
+                currentAgentsCount = getNumAgents(sessionInfo.mDDSSession);
+                OLOG(info, common) << "Current number of agents: " << currentAgentsCount;
+                ++attempts;
+            }
+            if (expectedAgentsCount != currentAgentsCount) {
+                OLOG(info, common) << "Could not reduce the number of agents to " << expectedAgentsCount << ", current count is: " << currentAgentsCount;
+            } else {
+                OLOG(info, common) << "Successfully reduced number of agents to " << currentAgentsCount;
+            }
+        } catch (exception& e) {
+            OLOG(error, common) << "Failed updating nubmer of agents: " << e.what();
+            return false;
+        }
+
+        // create new DDS topology with updated n = remaining collections
+
+        OLOG(info, common) << "Updating current topology file (" << sessionInfo.mTopoFilePath << ") to reflect the reduced number of groups";
+
+        CTopoCreator creator;
+        creator.getMainGroup()->initFromXML(sessionInfo.mTopoFilePath);
+        auto groups = creator.getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
+        for (const auto& group : groups) {
+            CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
+            try {
+                uint64_t failedCount = failedCollectionsCount.at(g->getName());
+                uint64_t n = sessionInfo.mNmin.at(g->getName()).n;
+                uint64_t remainingCount = n - failedCount;
+                g->setN(remainingCount);
+            } catch (out_of_range&) {
+                continue;
+            }
+        }
+
+        string name("topo_" + sessionInfo.mPartitionID + "_reduced.xml");
+        const bfs::path tmpPath{ bfs::temp_directory_path() / bfs::unique_path() };
+        bfs::create_directories(tmpPath);
+        const bfs::path filepath{ tmpPath / name };
+        creator.save(filepath.string());
+
+        // re-add the nmin variables
+        CTopoVars vars;
+        vars.initFromXML(filepath.string());
+        for (const auto& [groupName, groupInfo] : sessionInfo.mNmin) {
+            string varName("odc_nmin_" + groupName);
+            vars.add(varName, std::to_string(groupInfo.nmin));
+        }
+        vars.saveToXML(filepath.string());
+
+        OLOG(info, common) << "Saved updated topology file as " << filepath.string();
+
+        sessionInfo.mTopoFilePath = filepath.string();
+
+        // issue DDS topology update
+        Error error;
+        if (!activateDDSTopology(common, error, sessionInfo.mTopoFilePath, STopologyRequest::request_t::EUpdateType::UPDATE)) {
+            OLOG(error, common) << "Failed to update running topology";
+            return false;
+        }
+
+        if (!createDDSTopology(common, error, sessionInfo.mTopoFilePath)) {
+            OLOG(error, common) << "Failed to reinitialize dds::topology_api::CTopology";
+            return false;
+        }
+
+        // update dds::topology_api::CTopology
+        if (!createTopology(common, error, sessionInfo.mTopoFilePath)) {
+            OLOG(error, common) << "Failed recreate Topology";
+            return false;
+        }
+
+        if (error.m_code) {
+            OLOG(error, common) << "Recovery failed";
+            fillError(common, error, ErrorCode::TopologyFailed, "Recovery of the remaining collections failed");
+            return false;
+        }
+
+        return true;
     }
 
     return false;
+}
+
+uint64_t Controller::getNumAgents(shared_ptr<dds::tools_api::CSession> ddsSession)
+{
+    using namespace dds::tools_api;
+    // const chrono::seconds timeout{ 30 };
+    // SAgentCountRequest::response_t agentCountInfo;
+    // ddsSession->syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), agentCountInfo, timeout, &cout);
+    // agentCountInfo.
+    // return agentInfo.size();
+
+    const chrono::seconds timeout{ 30 };
+    SAgentInfoRequest::request_t agentInfoRequest;
+    SAgentInfoRequest::responseVector_t agentInfo;
+    ddsSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, timeout);
+
+    return agentInfo.size();
 }
 
 bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
@@ -772,9 +910,9 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
     }
 
     // Create temp topology file with `content`
-    const boost::filesystem::path tmpPath{ boost::filesystem::temp_directory_path() / boost::filesystem::unique_path() };
-    boost::filesystem::create_directories(tmpPath);
-    const boost::filesystem::path filepath{ tmpPath / "topology.xml" };
+    const bfs::path tmpPath{ bfs::temp_directory_path() / bfs::unique_path() };
+    bfs::create_directories(tmpPath);
+    const bfs::path filepath{ tmpPath / "topology.xml" };
     ofstream file(filepath.string());
     if (!file.is_open()) {
         throw runtime_error(toString("Failed to create temp topology file ", quoted(filepath.string())));
@@ -833,14 +971,14 @@ RequestResult Controller::execInitialize(const CommonParams& common, const SInit
 
     Error error;
     if (params.mDDSSessionID.empty()) {
-        // Shutdown DDS session if it is running already
         // Create new DDS session
+        // Shutdown DDS session if it is running already
         shutdownDDSSession(common, error)
             && createDDSSession(common, error)
             && subscribeToDDSSession(common, error);
     } else {
-        // Shutdown DDS session if it is running already
         // Attach to an existing DDS session
+        // Shutdown DDS session if it is running already
         bool success = shutdownDDSSession(common, error)
             && attachToDDSSession(common, error, params.mDDSSessionID)
             && subscribeToDDSSession(common, error);
@@ -903,20 +1041,20 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SSubmitPa
 RequestResult Controller::execActivate(const CommonParams& common, const SActivateParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
+    auto& sessionInfo = getOrCreateSessionInfo(common);
     // Activate DDS topology
     // Create Topology
     Error error{ checkSessionIsRunning(common, ErrorCode::DDSActivateTopologyFailed) };
     if (!error.m_code) {
-        string topo;
         try {
-            topo = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
+            sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
         } catch (exception& _e) {
             fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
         }
         if (!error.m_code) {
-            activateDDSTopology(common, error, topo, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
-                && createDDSTopology(common, error, topo)
-                && createTopology(common, error, topo);
+            activateDDSTopology(common, error, sessionInfo.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
+                && createDDSTopology(common, error, sessionInfo.mTopoFilePath)
+                && createTopology(common, error, sessionInfo.mTopoFilePath);
         }
     }
     AggregatedState state{ !error.m_code ? AggregatedState::Idle : AggregatedState::Undefined };
@@ -950,6 +1088,7 @@ RequestResult Controller::execRun(const CommonParams& common, const SInitializeP
 RequestResult Controller::execUpdate(const CommonParams& common, const SUpdateParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
+    auto& sessionInfo = getOrCreateSessionInfo(common);
     AggregatedState state{ AggregatedState::Undefined };
     // Reset devices' state
     // Update DDS topology
@@ -957,9 +1096,8 @@ RequestResult Controller::execUpdate(const CommonParams& common, const SUpdatePa
     // Configure devices' state
     Error error;
 
-    string topo;
     try {
-        topo = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
+        sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
     } catch (exception& _e) {
         fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
     }
@@ -967,9 +1105,9 @@ RequestResult Controller::execUpdate(const CommonParams& common, const SUpdatePa
     if (!error.m_code) {
         changeStateReset(common, error, "", state) &&
         resetTopology(common) &&
-        activateDDSTopology(common, error, topo, dds::tools_api::STopologyRequest::request_t::EUpdateType::UPDATE) &&
-        createDDSTopology(common, error, topo) &&
-        createTopology(common, error, topo) &&
+        activateDDSTopology(common, error, sessionInfo.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::UPDATE) &&
+        createDDSTopology(common, error, sessionInfo.mTopoFilePath) &&
+        createTopology(common, error, sessionInfo.mTopoFilePath) &&
         changeStateConfigure(common, error, "", state);
     }
     execRequestTrigger("Update", common);

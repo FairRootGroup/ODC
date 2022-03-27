@@ -9,11 +9,11 @@
 // ODC
 #include <odc/BuildConstants.h>
 #include <odc/CliHelper.h>
-#include <odc/grpc/GrpcAsyncService.h>
-#include <odc/grpc/GrpcSyncService.h>
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/Version.h>
+#include <odc/grpc/GrpcAsyncService.h>
+#include <odc/grpc/GrpcSyncService.h>
 // STD
 #include <cstdlib>
 #include <iostream>
@@ -39,7 +39,6 @@ int main(int argc, char** argv)
         CPluginManager::PluginMap_t triggerMap;
         string restoreId;
 
-        // Generic options
         bpo::options_description options("dds-control-server options");
         CCliHelper::addHelpOptions(options);
         CCliHelper::addVersionOptions(options);
@@ -51,7 +50,6 @@ int main(int argc, char** argv)
         CCliHelper::addRequestTriggersOptions(options, triggerMap);
         CCliHelper::addRestoreOptions(options, restoreId);
 
-        // Parsing command-line
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
         bpo::notify(vm);

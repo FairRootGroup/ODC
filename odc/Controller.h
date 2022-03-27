@@ -340,6 +340,7 @@ class Controller
         std::unique_ptr<Topology> mTopology = nullptr; ///< Topology
         std::string mPartitionID; ///< External partition ID of this DDS session
         std::map<std::string, TopoGroupInfo> mNmin; ///< Holds information on minimum number of groups, by group name
+        std::string mTopoFilePath;
 
         void addToTaskCache(TopoTaskInfo&& taskInfo)
         {
@@ -474,7 +475,7 @@ class Controller
     RequestResult createRequestResult(const CommonParams& common, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
     bool createDDSSession(const CommonParams& common, Error& error);
     bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
-    bool submitDDSAgents(const CommonParams& common, Error& error, const CDDSSubmit::SParams& _params);
+    bool submitDDSAgents(const CommonParams& common, Error& error, const CDDSSubmit::SParams& params);
     bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
     bool waitForNumActiveAgents(const CommonParams& common, Error& error, size_t numAgents);
     bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
@@ -499,13 +500,16 @@ class Controller
 
     Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
 
-    bool stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo);
+    std::vector<TopoCollectionInfo*> stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo);
+    bool attemptRecovery(std::vector<TopoCollectionInfo*>& failedCollections, SessionInfo& sessionInfo, const CommonParams& common);
 
     bool subscribeToDDSSession(const CommonParams& common, Error& error);
 
     std::string topoFilepath(const CommonParams& common, const std::string& topologyFile, const std::string& topologyContent, const std::string& topologyScript);
 
     std::chrono::seconds requestTimeout(const CommonParams& common) const;
+
+    uint64_t getNumAgents(std::shared_ptr<dds::tools_api::CSession> ddsSession);
 };
 
 } // namespace odc::core

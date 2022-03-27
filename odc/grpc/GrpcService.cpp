@@ -25,12 +25,13 @@ namespace {
 std::string clientMetadataAsString(const ::grpc::ServerContext& ctx)
 {
     const auto clientMetadata{ ctx.client_metadata() };
-    return toString("[", ctx.peer(), "]{",
+    return toString("[", ctx.peer(), "] ",
                     std::accumulate(clientMetadata.begin(),
                                     clientMetadata.end(),
                                     std::string{},
-                                    [](std::string prefix, const auto element) { return toString(std::move(prefix), prefix.empty() ? "" : ",", element.first, ":", element.second); }),
-                    "}");
+                                    [](std::string prefix, const auto element) {
+                                        return toString(std::move(prefix), prefix.empty() ? "" : ",", element.first, ":", element.second);
+                                    }));
 }
 
 } // namespace
