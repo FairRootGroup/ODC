@@ -119,10 +119,10 @@ class AsyncController final
     {
         new Call_t(_cq,
                    std::bind(_requestFunc, _service, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6),
-                   std::bind(_processFunc, mCtrl, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+                   std::bind(_processFunc, &mCtrl, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     }
 
-    std::shared_ptr<odc::grpc::Controller> mCtrl; ///< Core gRPC service
+    odc::grpc::Controller mCtrl; ///< Core gRPC service
 };
 
 } // namespace odc::grpc

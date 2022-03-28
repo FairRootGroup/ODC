@@ -15,17 +15,15 @@ using namespace odc::core;
 using namespace odc::grpc;
 using namespace std;
 
-AsyncController::AsyncController()
-    : mCtrl(make_shared<odc::grpc::Controller>())
-{}
+AsyncController::AsyncController() {}
 
-void AsyncController::setTimeout(const std::chrono::seconds& timeout) { mCtrl->setTimeout(timeout); }
+void AsyncController::setTimeout(const std::chrono::seconds& timeout) { mCtrl.setTimeout(timeout); }
 
-void AsyncController::registerResourcePlugins(const CPluginManager::PluginMap_t& pluginMap) { mCtrl->registerResourcePlugins(pluginMap); }
+void AsyncController::registerResourcePlugins(const CPluginManager::PluginMap_t& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
 
-void AsyncController::registerRequestTriggers(const CPluginManager::PluginMap_t& triggerMap) { mCtrl->registerRequestTriggers(triggerMap); }
+void AsyncController::registerRequestTriggers(const CPluginManager::PluginMap_t& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
 
-void AsyncController::restore(const std::string& restoreId) { mCtrl->restore(restoreId); }
+void AsyncController::restore(const std::string& restoreId) { mCtrl.restore(restoreId); }
 
 void AsyncController::run(const std::string& host)
 {
