@@ -8,7 +8,7 @@
 
 // ODC
 #include <odc/BuildConstants.h>
-#include <odc/CliControlService.h>
+#include <odc/CliController.h>
 #include <odc/CliHelper.h>
 #include <odc/Logger.h>
 #include <odc/Version.h>
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
         CCliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
         CCliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
 
-        odc::cli::CCliControlService control;
+        odc::cli::Controller control;
         control.setTimeout(chrono::seconds(timeout));
         control.registerResourcePlugins(pluginMap);
         control.registerRequestTriggers(triggerMap);
