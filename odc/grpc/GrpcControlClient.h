@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef __ODC__GrpcControlClient__
-#define __ODC__GrpcControlClient__
+#ifndef ODC_GRPCCONTROLCLIENT
+#define ODC_GRPCCONTROLCLIENT
 
 // ODC
 #include <odc/CliServiceHelper.h>
@@ -20,10 +20,10 @@
 #include <grpcpp/grpcpp.h>
 #include <odc/grpc/odc.grpc.pb.h>
 
-class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClient>
+class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
 {
   public:
-    CGrpcControlClient(std::shared_ptr<grpc::Channel> channel)
+    GrpcControlClient(std::shared_ptr<grpc::Channel> channel)
         : mStub(odc::ODC::NewStub(channel))
     {}
 
@@ -212,4 +212,4 @@ class CGrpcControlClient : public odc::core::CCliServiceHelper<CGrpcControlClien
     std::unique_ptr<odc::ODC::Stub> mStub;
 };
 
-#endif /* defined(__ODC__GrpcControlClient__) */
+#endif /* defined(ODC_GRPCCONTROLCLIENT) */

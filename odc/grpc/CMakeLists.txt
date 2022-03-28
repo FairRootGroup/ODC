@@ -16,11 +16,11 @@ add_library(${target} STATIC
   ${proto_hdrs}
   ${grpc_srcs}
   ${grpc_hdrs}
-  "GrpcAsyncService.cpp"
-  "GrpcAsyncService.h"
+  "AsyncController.cpp"
+  "AsyncController.h"
   "GrpcControlClient.h"
-  "GrpcController.h"
-  "GrpcSyncService.h"
+  "Controller.h"
+  "SyncController.h"
 )
 add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
 set_target_properties(${target} PROPERTIES OUTPUT_NAME "${PROJECT_NAME_LOWER}-${target}")

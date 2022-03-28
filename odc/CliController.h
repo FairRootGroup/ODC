@@ -23,38 +23,38 @@ class Controller : public core::CCliServiceHelper<Controller>
   public:
     Controller() {}
 
-    void setTimeout(const std::chrono::seconds& timeout) { mSrv.setTimeout(timeout); }
+    void setTimeout(const std::chrono::seconds& timeout) { mCtrl.setTimeout(timeout); }
 
-    void registerResourcePlugins(const core::CPluginManager::PluginMap_t& pluginMap) { mSrv.registerResourcePlugins(pluginMap); }
-    void registerRequestTriggers(const core::CPluginManager::PluginMap_t& triggerMap) { mSrv.registerRequestTriggers(triggerMap); }
-    void restore(const std::string& restoreId) { mSrv.restore(restoreId); }
+    void registerResourcePlugins(const core::CPluginManager::PluginMap_t& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
+    void registerRequestTriggers(const core::CPluginManager::PluginMap_t& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
+    void restore(const std::string& restoreId) { mCtrl.restore(restoreId); }
 
-    std::string requestInitialize(const core::CommonParams& common, const core::SInitializeParams& params) { return generalReply(mSrv.execInitialize(common, params)); }
-    std::string requestSubmit(const core::CommonParams& common, const core::SSubmitParams& params) { return generalReply(mSrv.execSubmit(common, params)); }
-    std::string requestActivate(const core::CommonParams& common, const core::SActivateParams& params) { return generalReply(mSrv.execActivate(common, params)); }
+    std::string requestInitialize(const core::CommonParams& common, const core::SInitializeParams& params) { return generalReply(mCtrl.execInitialize(common, params)); }
+    std::string requestSubmit(const core::CommonParams& common, const core::SSubmitParams& params) { return generalReply(mCtrl.execSubmit(common, params)); }
+    std::string requestActivate(const core::CommonParams& common, const core::SActivateParams& params) { return generalReply(mCtrl.execActivate(common, params)); }
     std::string requestRun(const core::CommonParams& common,
                            const core::SInitializeParams& initializeParams,
                            const core::SSubmitParams& submitParams,
                            const core::SActivateParams& activateParams)
     {
-        return generalReply(mSrv.execRun(common, initializeParams, submitParams, activateParams));
+        return generalReply(mCtrl.execRun(common, initializeParams, submitParams, activateParams));
     }
 
-    std::string requestUpscale(const core::CommonParams& common, const core::SUpdateParams& params) { return generalReply(mSrv.execUpdate(common, params)); }
-    std::string requestDownscale(const core::CommonParams& common, const core::SUpdateParams& params) { return generalReply(mSrv.execUpdate(common, params)); }
-    std::string requestGetState(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mSrv.execGetState(common, params)); }
+    std::string requestUpscale(const core::CommonParams& common, const core::SUpdateParams& params) { return generalReply(mCtrl.execUpdate(common, params)); }
+    std::string requestDownscale(const core::CommonParams& common, const core::SUpdateParams& params) { return generalReply(mCtrl.execUpdate(common, params)); }
+    std::string requestGetState(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execGetState(common, params)); }
     std::string requestSetProperties(const core::CommonParams& common, const core::SetPropertiesParams& params)
     {
-        return generalReply(mSrv.execSetProperties(common, params));
+        return generalReply(mCtrl.execSetProperties(common, params));
     }
-    std::string requestConfigure(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mSrv.execConfigure(common, params)); }
-    std::string requestStart(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mSrv.execStart(common, params)); }
+    std::string requestConfigure(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execConfigure(common, params)); }
+    std::string requestStart(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execStart(common, params)); }
 
-    std::string requestStop(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mSrv.execStop(common, params)); }
-    std::string requestReset(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mSrv.execReset(common, params)); }
-    std::string requestTerminate(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mSrv.execTerminate(common, params)); }
-    std::string requestShutdown(const core::CommonParams& common) { return generalReply(mSrv.execShutdown(common)); }
-    std::string requestStatus(const core::SStatusParams& params) { return statusReply(mSrv.execStatus(params)); }
+    std::string requestStop(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execStop(common, params)); }
+    std::string requestReset(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execReset(common, params)); }
+    std::string requestTerminate(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execTerminate(common, params)); }
+    std::string requestShutdown(const core::CommonParams& common) { return generalReply(mCtrl.execShutdown(common)); }
+    std::string requestStatus(const core::SStatusParams& params) { return statusReply(mCtrl.execStatus(params)); }
 
   private:
     std::string generalReply(const core::RequestResult& result)
@@ -107,7 +107,7 @@ class Controller : public core::CCliServiceHelper<Controller>
     }
 
   private:
-    core::Controller mSrv; ///< Core ODC service
+    core::Controller mCtrl; ///< Core ODC service
 };
 } // namespace odc::cli
 

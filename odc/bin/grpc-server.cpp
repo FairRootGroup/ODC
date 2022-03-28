@@ -12,8 +12,8 @@
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/Version.h>
-#include <odc/grpc/GrpcAsyncService.h>
-#include <odc/grpc/GrpcSyncService.h>
+#include <odc/grpc/AsyncController.h>
+#include <odc/grpc/SyncController.h>
 // STD
 #include <cstdlib>
 #include <iostream>
@@ -77,23 +77,23 @@ int main(int argc, char** argv)
         CCliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
 
         if (sync) {
-            odc::grpc::CGrpcSyncService server;
-            server.setTimeout(chrono::seconds(timeout));
-            server.registerResourcePlugins(pluginMap);
-            server.registerRequestTriggers(triggerMap);
+            odc::grpc::SyncController ctrl;
+            ctrl.setTimeout(chrono::seconds(timeout));
+            ctrl.registerResourcePlugins(pluginMap);
+            ctrl.registerRequestTriggers(triggerMap);
             if (!restoreId.empty()) {
-                server.restore(restoreId);
+                ctrl.restore(restoreId);
             }
-            server.run(host);
+            ctrl.run(host);
         } else {
-            odc::grpc::CGrpcAsyncService server;
-            server.setTimeout(chrono::seconds(timeout));
-            server.registerResourcePlugins(pluginMap);
-            server.registerRequestTriggers(triggerMap);
+            odc::grpc::AsyncController ctrl;
+            ctrl.setTimeout(chrono::seconds(timeout));
+            ctrl.registerResourcePlugins(pluginMap);
+            ctrl.registerRequestTriggers(triggerMap);
             if (!restoreId.empty()) {
-                server.restore(restoreId);
+                ctrl.restore(restoreId);
             }
-            server.run(host);
+            ctrl.run(host);
         }
     } catch (exception& _e) {
         OLOG(clean) << _e.what();

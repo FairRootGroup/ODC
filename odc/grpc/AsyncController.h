@@ -6,22 +6,22 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef __ODC__GrpcAsyncService__
-#define __ODC__GrpcAsyncService__
+#ifndef ODC_GRPC_ASYNCCONTROLLER
+#define ODC_GRPC_ASYNCCONTROLLER
 
 // ODC
 #include <odc/DDSSubmit.h>
-#include <odc/grpc/GrpcController.h>
+#include <odc/grpc/Controller.h>
 #include <odc/Logger.h>
 // GRPC
 #include <grpcpp/grpcpp.h>
 
 namespace odc::grpc {
 
-class CGrpcAsyncService final
+class AsyncController final
 {
   public:
-    CGrpcAsyncService();
+    AsyncController();
 
     void run(const std::string& _host);
     void setTimeout(const std::chrono::seconds& _timeout);
@@ -98,20 +98,20 @@ class CGrpcAsyncService final
     };
 
     // Actual calls
-    using CCallInitialize = CCallData<InitializeRequest, GeneralReply>;
-    using CCallSubmit = CCallData<SubmitRequest, GeneralReply>;
-    using CCallActivate = CCallData<ActivateRequest, GeneralReply>;
-    using CCallRun = CCallData<RunRequest, GeneralReply>;
-    using CCallGetState = CCallData<StateRequest, StateReply>;
+    using CCallInitialize =    CCallData<InitializeRequest, GeneralReply>;
+    using CCallSubmit =        CCallData<SubmitRequest, GeneralReply>;
+    using CCallActivate =      CCallData<ActivateRequest, GeneralReply>;
+    using CCallRun =           CCallData<RunRequest, GeneralReply>;
+    using CCallGetState =      CCallData<StateRequest, StateReply>;
     using CCallSetProperties = CCallData<SetPropertiesRequest, GeneralReply>;
-    using CCallUpdate = CCallData<UpdateRequest, GeneralReply>;
-    using CCallConfigure = CCallData<ConfigureRequest, StateReply>;
-    using CCallStart = CCallData<StartRequest, StateReply>;
-    using CCallStop = CCallData<StopRequest, StateReply>;
-    using CCallReset = CCallData<ResetRequest, StateReply>;
-    using CCallTerminate = CCallData<TerminateRequest, StateReply>;
-    using CCallShutdown = CCallData<ShutdownRequest, GeneralReply>;
-    using CCallStatus = CCallData<StatusRequest, StatusReply>;
+    using CCallUpdate =        CCallData<UpdateRequest, GeneralReply>;
+    using CCallConfigure =     CCallData<ConfigureRequest, StateReply>;
+    using CCallStart =         CCallData<StartRequest, StateReply>;
+    using CCallStop =          CCallData<StopRequest, StateReply>;
+    using CCallReset =         CCallData<ResetRequest, StateReply>;
+    using CCallTerminate =     CCallData<TerminateRequest, StateReply>;
+    using CCallShutdown =      CCallData<ShutdownRequest, GeneralReply>;
+    using CCallStatus =        CCallData<StatusRequest, StatusReply>;
 
   private:
     template<class Call_t, class RequestFunc_t, class ProcessFunc_t>
@@ -119,12 +119,12 @@ class CGrpcAsyncService final
     {
         new Call_t(_cq,
                    std::bind(_requestFunc, _service, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, std::placeholders::_4, std::placeholders::_5, std::placeholders::_6),
-                   std::bind(_processFunc, m_service, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+                   std::bind(_processFunc, mCtrl, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     }
 
-    std::shared_ptr<odc::grpc::GrpcController> m_service; ///< Core gRPC service
+    std::shared_ptr<odc::grpc::Controller> mCtrl; ///< Core gRPC service
 };
 
 } // namespace odc::grpc
 
-#endif /* defined(__ODC__GrpcAsyncService__) */
+#endif /* defined(ODC_GRPC_ASYNCCONTROLLER) */

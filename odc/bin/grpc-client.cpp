@@ -55,7 +55,7 @@ int main(int argc, char** argv)
         CCliHelper::batchCmds(vm, batch, bopt);
         setupGrpcVerbosity(gRPCSeverity);
 
-        CGrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
+        GrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
         control.run(bopt.m_outputCmds);
     } catch (exception& e) {
         std::cout << e.what() << std::endl;

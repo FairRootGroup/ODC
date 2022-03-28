@@ -26,10 +26,10 @@
 namespace odc::grpc
 {
 
-class GrpcController final
+class Controller final
 {
   public:
-    GrpcController() {}
+    Controller() {}
 
     void setTimeout(const std::chrono::seconds& timeout) { mController.setTimeout(timeout); }
     void registerResourcePlugins(const core::CPluginManager::PluginMap_t& pluginMap) { mController.registerResourcePlugins(pluginMap); }
