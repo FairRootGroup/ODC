@@ -509,7 +509,7 @@ class Controller
 
     std::chrono::seconds requestTimeout(const CommonParams& common) const;
 
-    uint64_t getNumAgents(std::shared_ptr<dds::tools_api::CSession> ddsSession);
+    uint64_t getNumAgents(std::shared_ptr<dds::tools_api::CSession> ddsSession, const CommonParams& common) const;
 };
 
 } // namespace odc::core

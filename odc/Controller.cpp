@@ -726,27 +726,25 @@ bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections,
         using namespace dds::topology_api;
 
         try {
-            size_t currentAgentsCount = getNumAgents(sessionInfo.mDDSSession);
+            size_t currentAgentsCount = getNumAgents(sessionInfo.mDDSSession, common);
             size_t expectedAgentsCount = currentAgentsCount - failedCollections.size();
             OLOG(info, common) << "Current number of agents: " << currentAgentsCount << ", expecting to reduce to " << expectedAgentsCount;
 
-
-            const chrono::seconds timeout{ 30 };
             for (const auto& c : failedCollections) {
                 OLOG(info, common) << "Sending shutdown signal to agent " << c->mAgentID << ", responsible for " << c->mPath;
                 SAgentCommandRequest::request_t agentCmd;
                 agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
                 agentCmd.m_arg1 = c->mAgentID;
-                sessionInfo.mDDSSession->syncSendRequest<SAgentCommandRequest>(agentCmd, timeout);
+                sessionInfo.mDDSSession->syncSendRequest<SAgentCommandRequest>(agentCmd, requestTimeout(common));
             }
 
             // TODO: notification on agent shutdown in development in DDS
-            OLOG(info, common) << "Current number of agents: " << getNumAgents(sessionInfo.mDDSSession);
-            currentAgentsCount = getNumAgents(sessionInfo.mDDSSession);
+            OLOG(info, common) << "Current number of agents: " << getNumAgents(sessionInfo.mDDSSession, common);
+            currentAgentsCount = getNumAgents(sessionInfo.mDDSSession, common);
             size_t attempts = 0;
             while (currentAgentsCount != expectedAgentsCount && attempts < 400) {
                 this_thread::sleep_for(chrono::milliseconds(50));
-                currentAgentsCount = getNumAgents(sessionInfo.mDDSSession);
+                currentAgentsCount = getNumAgents(sessionInfo.mDDSSession, common);
                 OLOG(info, common) << "Current number of agents: " << currentAgentsCount;
                 ++attempts;
             }
@@ -828,19 +826,17 @@ bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections,
     return false;
 }
 
-uint64_t Controller::getNumAgents(shared_ptr<dds::tools_api::CSession> ddsSession)
+uint64_t Controller::getNumAgents(shared_ptr<dds::tools_api::CSession> ddsSession, const CommonParams& common) const
 {
     using namespace dds::tools_api;
-    // const chrono::seconds timeout{ 30 };
     // SAgentCountRequest::response_t agentCountInfo;
-    // ddsSession->syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), agentCountInfo, timeout, &cout);
+    // ddsSession->syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), agentCountInfo, requestTimeout(common));
     // agentCountInfo.
     // return agentInfo.size();
 
-    const chrono::seconds timeout{ 30 };
     SAgentInfoRequest::request_t agentInfoRequest;
     SAgentInfoRequest::responseVector_t agentInfo;
-    ddsSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, timeout);
+    ddsSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
 
     return agentInfo.size();
 }
@@ -891,13 +887,12 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
     if (!topologyScript.empty()) {
         stringstream ssCmd;
         ssCmd << boost::process::search_path("bash").string() << " -c " << quoted(topologyScript);
-        const chrono::seconds timeout{ 30 };
         string out;
         string err;
         int exitCode{ EXIT_SUCCESS };
         string cmd{ ssCmd.str() };
         OLOG(info, common) << "Executing topology script " << quoted(cmd);
-        execute(cmd, timeout, &out, &err, &exitCode);
+        execute(cmd, requestTimeout(common), &out, &err, &exitCode);
 
         if (exitCode != EXIT_SUCCESS) {
             throw runtime_error(toString("Topology generation script ", quoted(cmd), " failed with exit code: ", exitCode, "; stderr: ", quoted(err), "; stdout: ", quoted(out)));
