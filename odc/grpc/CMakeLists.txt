@@ -18,7 +18,6 @@ add_library(${target} STATIC
   ${grpc_hdrs}
   "GrpcAsyncService.cpp"
   "GrpcAsyncService.h"
-  "GrpcControlClient.cpp"
   "GrpcControlClient.h"
   "GrpcService.cpp"
   "GrpcService.h"

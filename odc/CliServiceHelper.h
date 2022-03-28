@@ -31,7 +31,7 @@ namespace bpo = boost::program_options;
 
 namespace odc::core {
 
-template<typename OwnerT>
+template<typename Owner>
 class CCliServiceHelper
 {
   public:
@@ -55,7 +55,7 @@ class CCliServiceHelper
                     cmd = std::string(buf);
                     free(buf);
                 } else {
-                    OLOG(clean) << std::endl;
+                    std::cout << std::endl << std::endl;
                     break; // ^D
                 }
 
@@ -63,7 +63,7 @@ class CCliServiceHelper
                     add_history(cmd.c_str());
                 }
 #else
-                OLOG(clean) << "Please enter command: ";
+                std::cout << "Please enter command: " << std::cout;
                 getline(std::cin, cmd);
 #endif
 
@@ -121,7 +121,7 @@ class CCliServiceHelper
     void execCmds(const std::vector<std::string>& _cmds)
     {
         for (const auto& cmd : _cmds) {
-            OLOG(clean) << "Executing command " << std::quoted(cmd);
+            std::cout << "Executing command " << std::quoted(cmd) << std::endl;
             processRequest(cmd);
         }
     }
@@ -139,7 +139,7 @@ class CCliServiceHelper
         CCliHelper::SSleepOptions sopt;
         if (parseCommand(_args, sopt)) {
             if (sopt.m_ms > 0) {
-                OLOG(clean) << "Sleeping " << sopt.m_ms << " ms";
+                std::cout << "Sleeping " << sopt.m_ms << " ms" << std::endl;
                 std::this_thread::sleep_for(std::chrono::milliseconds(sopt.m_ms));
             }
         }
@@ -164,11 +164,11 @@ class CCliServiceHelper
             CCliHelper::parseOptions(vm, _params...);
 
             if (vm.count("help")) {
-                OLOG(clean) << options;
+                std::cout << options << std::endl;
                 return false;
             }
         } catch (std::exception& _e) {
-            OLOG(clean) << "Error parsing options: " << _e.what();
+            std::cout << "Error parsing options: " << _e.what() << std::endl;
             return false;
         }
         return true;
@@ -177,7 +177,7 @@ class CCliServiceHelper
     template<typename T>
     void print(const T& _value)
     {
-        OLOG(clean) << _value;
+        std::cout << _value << std::endl;
     }
 
     template<typename... RequestParams_t, typename StubFunc_t>
@@ -188,9 +188,9 @@ class CCliServiceHelper
         std::apply(
             [&result, &_msg, &_args, &_stubFunc, this](auto&&... params) {
                 if (parseCommand(_args, params...)) {
-                    OLOG(clean) << _msg;
+                    std::cout << _msg << std::endl;
                     std::apply([this](auto&&... args) { ((this->print(args)), ...); }, std::tie(params...));
-                    OwnerT* p = reinterpret_cast<OwnerT*>(this);
+                    Owner* p = reinterpret_cast<Owner*>(this);
                     result = (p->*_stubFunc)(params...);
                 }
             },
@@ -209,35 +209,35 @@ class CCliServiceHelper
         std::string cmd{ args.empty() ? "" : args.front() };
 
         if (cmd == ".init") {
-            replyString = request<CommonParams, SInitializeParams>("Sending Initialize request...", args, &OwnerT::requestInitialize);
+            replyString = request<CommonParams, SInitializeParams>("Sending Initialize request...", args, &Owner::requestInitialize);
         } else if (cmd == ".submit") {
-            replyString = request<CommonParams, SSubmitParams>("Sending Submit request...", args, &OwnerT::requestSubmit);
+            replyString = request<CommonParams, SSubmitParams>("Sending Submit request...", args, &Owner::requestSubmit);
         } else if (cmd == ".activate") {
-            replyString = request<CommonParams, SActivateParams>("Sending Activate request...", args, &OwnerT::requestActivate);
+            replyString = request<CommonParams, SActivateParams>("Sending Activate request...", args, &Owner::requestActivate);
         } else if (cmd == ".run") {
-            replyString = request<CommonParams, SInitializeParams, SSubmitParams, SActivateParams>("Sending Run request...", args, &OwnerT::requestRun);
+            replyString = request<CommonParams, SInitializeParams, SSubmitParams, SActivateParams>("Sending Run request...", args, &Owner::requestRun);
         } else if (cmd == ".upscale") {
-            replyString = request<CommonParams, SUpdateParams>("Sending Upscale request...", args, &OwnerT::requestUpscale);
+            replyString = request<CommonParams, SUpdateParams>("Sending Upscale request...", args, &Owner::requestUpscale);
         } else if (cmd == ".downscale") {
-            replyString = request<CommonParams, SUpdateParams>("Sending Downscale request...", args, &OwnerT::requestDownscale);
+            replyString = request<CommonParams, SUpdateParams>("Sending Downscale request...", args, &Owner::requestDownscale);
         } else if (cmd == ".config") {
-            replyString = request<CommonParams, SDeviceParams>("Sending Configure request...", args, &OwnerT::requestConfigure);
+            replyString = request<CommonParams, SDeviceParams>("Sending Configure request...", args, &Owner::requestConfigure);
         } else if (cmd == ".state") {
-            replyString = request<CommonParams, SDeviceParams>("Sending GetState request...", args, &OwnerT::requestGetState);
+            replyString = request<CommonParams, SDeviceParams>("Sending GetState request...", args, &Owner::requestGetState);
         } else if (cmd == ".prop") {
-            replyString = request<CommonParams, SetPropertiesParams>("Sending SetProperties request...", args, &OwnerT::requestSetProperties);
+            replyString = request<CommonParams, SetPropertiesParams>("Sending SetProperties request...", args, &Owner::requestSetProperties);
         } else if (cmd == ".start") {
-            replyString = request<CommonParams, SDeviceParams>("Sending Start request...", args, &OwnerT::requestStart);
+            replyString = request<CommonParams, SDeviceParams>("Sending Start request...", args, &Owner::requestStart);
         } else if (cmd == ".stop") {
-            replyString = request<CommonParams, SDeviceParams>("Sending Stop request...", args, &OwnerT::requestStop);
+            replyString = request<CommonParams, SDeviceParams>("Sending Stop request...", args, &Owner::requestStop);
         } else if (cmd == ".reset") {
-            replyString = request<CommonParams, SDeviceParams>("Sending Reset request...", args, &OwnerT::requestReset);
+            replyString = request<CommonParams, SDeviceParams>("Sending Reset request...", args, &Owner::requestReset);
         } else if (cmd == ".term") {
-            replyString = request<CommonParams, SDeviceParams>("Sending Terminate request...", args, &OwnerT::requestTerminate);
+            replyString = request<CommonParams, SDeviceParams>("Sending Terminate request...", args, &Owner::requestTerminate);
         } else if (cmd == ".down") {
-            replyString = request<CommonParams>("Sending Shutdown request...", args, &OwnerT::requestShutdown);
+            replyString = request<CommonParams>("Sending Shutdown request...", args, &Owner::requestShutdown);
         } else if (cmd == ".status") {
-            replyString = request<SStatusParams>("Sending Status request...", args, &OwnerT::requestStatus);
+            replyString = request<SStatusParams>("Sending Status request...", args, &Owner::requestStatus);
         } else if (cmd == ".batch") {
             execBatch(args);
         } else if (cmd == ".sleep") {
@@ -246,12 +246,12 @@ class CCliServiceHelper
             printDescription();
         } else {
             if (cmd.length() > 0) {
-                OLOG(clean) << "Unknown command " << _cmd;
+                std::cout << "Unknown command " << _cmd << std::endl;
             }
         }
 
         if (!replyString.empty()) {
-            OLOG(clean) << "Reply: (\n" << replyString << ")";
+            std::cout << "Reply: (\n" << replyString << ")" << std::endl;
         }
     }
 
