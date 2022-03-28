@@ -43,7 +43,7 @@ class Controller final
         const core::CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Initialize request from " << client << ":\n" << req->DebugString();
-        core::SInitializeParams initializeParams{ req->sessionid() };
+        core::InitializeParams initializeParams{ req->sessionid() };
         core::RequestResult res{ mController.execInitialize(commonParams, initializeParams) };
         setupGeneralReply(rep, res);
         logResponse("Initialize response:\n", commonParams, rep);
@@ -57,7 +57,7 @@ class Controller final
         const core::CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Submit request from " << client << ":\n" << req->DebugString();
-        core::SSubmitParams submitParams{ req->plugin(), req->resources() };
+        core::SubmitParams submitParams{ req->plugin(), req->resources() };
         core::RequestResult res{ mController.execSubmit(commonParams, submitParams) };
         setupGeneralReply(rep, res);
         logResponse("Submit response:\n", commonParams, rep);
@@ -71,7 +71,7 @@ class Controller final
         const core::CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Activate request from " << client << ":\n" << req->DebugString();
-        core::SActivateParams activateParams{ req->topology(), req->content(), req->script() };
+        core::ActivateParams activateParams{ req->topology(), req->content(), req->script() };
         core::RequestResult res{ mController.execActivate(commonParams, activateParams) };
         setupGeneralReply(rep, res);
         logResponse("Activate response:\n", commonParams, rep);
@@ -85,9 +85,9 @@ class Controller final
         const core::CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Run request from " << client << ":\n" << req->DebugString();
-        core::SInitializeParams initializeParams{ "" };
-        core::SSubmitParams submitParams{ req->plugin(), req->resources() };
-        core::SActivateParams activateParams{ req->topology(), req->content(), req->script() };
+        core::InitializeParams initializeParams{ "" };
+        core::SubmitParams submitParams{ req->plugin(), req->resources() };
+        core::ActivateParams activateParams{ req->topology(), req->content(), req->script() };
         core::RequestResult res{ mController.execRun(commonParams, initializeParams, submitParams, activateParams) };
         setupGeneralReply(rep, res);
         logResponse("Run response:\n", commonParams, rep);
@@ -101,7 +101,7 @@ class Controller final
         const core::CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "GetState request from " << client << ":\n" << req->DebugString();
-        core::SDeviceParams deviceParams{ req->path(), req->detailed() };
+        core::DeviceParams deviceParams{ req->path(), req->detailed() };
         core::RequestResult res{ mController.execGetState(commonParams, deviceParams) };
         setupStateReply(rep, res);
 
@@ -157,7 +157,7 @@ class Controller final
         const core::CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Update request from " << client << ":\n" << req->DebugString();
-        core::SUpdateParams updateParams{ req->topology(), req->content(), req->script() };
+        core::UpdateParams updateParams{ req->topology(), req->content(), req->script() };
         core::RequestResult res{ mController.execUpdate(commonParams, updateParams) };
         setupGeneralReply(rep, res);
         logResponse("Update response:\n", commonParams, rep);
@@ -171,7 +171,7 @@ class Controller final
         const core::CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Configure request from " << client << ":\n" << req->DebugString();
-        core::SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execConfigure(commonParams, deviceParams) };
         setupStateReply(rep, res);
         logResponse("Configure response:\n", commonParams, rep);
@@ -185,7 +185,7 @@ class Controller final
         const core::CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Start request from " << client << ":\n" << req->DebugString();
-        core::SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execStart(commonParams, deviceParams) };
         setupStateReply(rep, res);
         logResponse("Start response:\n", commonParams, rep);
@@ -199,7 +199,7 @@ class Controller final
         const core::CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Stop request from " << client << ":\n" << req->DebugString();
-        core::SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execStop(commonParams, deviceParams) };
         setupStateReply(rep, res);
         logResponse("Stop response:\n", commonParams, rep);
@@ -213,7 +213,7 @@ class Controller final
         const core::CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Reset request from " << client << ":\n" << req->DebugString();
-        core::SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execReset(commonParams, deviceParams) };
         setupStateReply(rep, res);
         logResponse("Reset response:\n", commonParams, rep);
@@ -227,7 +227,7 @@ class Controller final
         const core::CommonParams commonParams(req->request().partitionid(), req->request().runnr(), req->request().timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
         OLOG(info, commonParams) << "Terminate request from " << client << ":\n" << req->DebugString();
-        core::SDeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execTerminate(commonParams, deviceParams) };
         setupStateReply(rep, res);
         logResponse("Terminate response:\n", commonParams, rep);
@@ -252,7 +252,7 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         OLOG(info) << "Status request from " << client << ":\n" << req->DebugString();
-        core::StatusRequestResult res{ mController.execStatus(core::SStatusParams(req->running())) };
+        core::StatusRequestResult res{ mController.execStatus(core::StatusParams(req->running())) };
         setupStatusReply(rep, res);
         logResponse("Status response:\n", core::CommonParams(), rep);
         return ::grpc::Status::OK;
@@ -280,7 +280,7 @@ class Controller final
         rep->set_runnr(res.mRunNr);
         rep->set_sessionid(res.mDDSSessionID);
         rep->set_exectime(res.m_execTime);
-        rep->set_state(GetAggregatedStateName(res.m_aggregatedState));
+        rep->set_state(GetAggregatedStateName(res.mAggregatedState));
     }
 
     void setupStateReply(odc::StateReply* rep, const core::RequestResult& res)
@@ -315,7 +315,7 @@ class Controller final
             partition->set_partitionid(p.mPartitionID);
             partition->set_sessionid(p.mDDSSessionID);
             partition->set_status((p.mDDSSessionStatus == core::DDSSessionStatus::running ? SessionStatus::RUNNING : SessionStatus::STOPPED));
-            partition->set_state(GetAggregatedStateName(p.m_aggregatedState));
+            partition->set_state(GetAggregatedStateName(p.mAggregatedState));
         }
     }
 

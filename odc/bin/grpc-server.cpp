@@ -40,15 +40,15 @@ int main(int argc, char** argv)
         string restoreId;
 
         bpo::options_description options("dds-control-server options");
-        CCliHelper::addHelpOptions(options);
-        CCliHelper::addVersionOptions(options);
-        CCliHelper::addSyncOptions(options, sync);
-        CCliHelper::addTimeoutOptions(options, timeout);
-        CCliHelper::addHostOptions(options, host);
-        CCliHelper::addLogOptions(options, logConfig);
-        CCliHelper::addResourcePluginOptions(options, pluginMap);
-        CCliHelper::addRequestTriggersOptions(options, triggerMap);
-        CCliHelper::addRestoreOptions(options, restoreId);
+        CliHelper::addHelpOptions(options);
+        CliHelper::addVersionOptions(options);
+        CliHelper::addSyncOptions(options, sync);
+        CliHelper::addTimeoutOptions(options, timeout);
+        CliHelper::addHostOptions(options, host);
+        CliHelper::addLogOptions(options, logConfig);
+        CliHelper::addResourcePluginOptions(options, pluginMap);
+        CliHelper::addRequestTriggersOptions(options, triggerMap);
+        CliHelper::addRestoreOptions(options, restoreId);
 
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
@@ -73,8 +73,8 @@ int main(int argc, char** argv)
 
         setupGrpcVerbosity(logConfig.m_severity);
 
-        CCliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
-        CCliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
+        CliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
+        CliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
 
         if (sync) {
             odc::grpc::SyncController ctrl;

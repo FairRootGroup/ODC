@@ -18,7 +18,7 @@
 
 namespace odc::cli
 {
-class Controller : public core::CCliServiceHelper<Controller>
+class Controller : public core::CliServiceHelper<Controller>
 {
   public:
     Controller() {}
@@ -29,32 +29,32 @@ class Controller : public core::CCliServiceHelper<Controller>
     void registerRequestTriggers(const core::CPluginManager::PluginMap_t& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId) { mCtrl.restore(restoreId); }
 
-    std::string requestInitialize(const core::CommonParams& common, const core::SInitializeParams& params) { return generalReply(mCtrl.execInitialize(common, params)); }
-    std::string requestSubmit(const core::CommonParams& common, const core::SSubmitParams& params) { return generalReply(mCtrl.execSubmit(common, params)); }
-    std::string requestActivate(const core::CommonParams& common, const core::SActivateParams& params) { return generalReply(mCtrl.execActivate(common, params)); }
+    std::string requestInitialize(const core::CommonParams& common, const core::InitializeParams& params) { return generalReply(mCtrl.execInitialize(common, params)); }
+    std::string requestSubmit(const core::CommonParams& common, const core::SubmitParams& params) { return generalReply(mCtrl.execSubmit(common, params)); }
+    std::string requestActivate(const core::CommonParams& common, const core::ActivateParams& params) { return generalReply(mCtrl.execActivate(common, params)); }
     std::string requestRun(const core::CommonParams& common,
-                           const core::SInitializeParams& initializeParams,
-                           const core::SSubmitParams& submitParams,
-                           const core::SActivateParams& activateParams)
+                           const core::InitializeParams& initializeParams,
+                           const core::SubmitParams& submitParams,
+                           const core::ActivateParams& activateParams)
     {
         return generalReply(mCtrl.execRun(common, initializeParams, submitParams, activateParams));
     }
 
-    std::string requestUpscale(const core::CommonParams& common, const core::SUpdateParams& params) { return generalReply(mCtrl.execUpdate(common, params)); }
-    std::string requestDownscale(const core::CommonParams& common, const core::SUpdateParams& params) { return generalReply(mCtrl.execUpdate(common, params)); }
-    std::string requestGetState(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execGetState(common, params)); }
+    std::string requestUpscale(const core::CommonParams& common, const core::UpdateParams& params) { return generalReply(mCtrl.execUpdate(common, params)); }
+    std::string requestDownscale(const core::CommonParams& common, const core::UpdateParams& params) { return generalReply(mCtrl.execUpdate(common, params)); }
+    std::string requestGetState(const core::CommonParams& common, const core::DeviceParams& params) { return generalReply(mCtrl.execGetState(common, params)); }
     std::string requestSetProperties(const core::CommonParams& common, const core::SetPropertiesParams& params)
     {
         return generalReply(mCtrl.execSetProperties(common, params));
     }
-    std::string requestConfigure(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execConfigure(common, params)); }
-    std::string requestStart(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execStart(common, params)); }
+    std::string requestConfigure(const core::CommonParams& common, const core::DeviceParams& params) { return generalReply(mCtrl.execConfigure(common, params)); }
+    std::string requestStart(const core::CommonParams& common, const core::DeviceParams& params) { return generalReply(mCtrl.execStart(common, params)); }
 
-    std::string requestStop(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execStop(common, params)); }
-    std::string requestReset(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execReset(common, params)); }
-    std::string requestTerminate(const core::CommonParams& common, const core::SDeviceParams& params) { return generalReply(mCtrl.execTerminate(common, params)); }
+    std::string requestStop(const core::CommonParams& common, const core::DeviceParams& params) { return generalReply(mCtrl.execStop(common, params)); }
+    std::string requestReset(const core::CommonParams& common, const core::DeviceParams& params) { return generalReply(mCtrl.execReset(common, params)); }
+    std::string requestTerminate(const core::CommonParams& common, const core::DeviceParams& params) { return generalReply(mCtrl.execTerminate(common, params)); }
     std::string requestShutdown(const core::CommonParams& common) { return generalReply(mCtrl.execShutdown(common)); }
-    std::string requestStatus(const core::SStatusParams& params) { return statusReply(mCtrl.execStatus(params)); }
+    std::string requestStatus(const core::StatusParams& params) { return statusReply(mCtrl.execStatus(params)); }
 
   private:
     std::string generalReply(const core::RequestResult& result)
@@ -69,7 +69,7 @@ class Controller : public core::CCliServiceHelper<Controller>
                << result.m_error.m_details << ")" << std::endl;
         }
 
-        ss << "  Aggregated state: " << result.m_aggregatedState << std::endl;
+        ss << "  Aggregated state: " << result.mAggregatedState << std::endl;
         ss << "  Partition ID: " << result.mPartitionID << std::endl;
         ss << "  Run Nr: " << result.mRunNr << std::endl;
         ss << "  Session ID: " << result.mDDSSessionID << std::endl;
@@ -100,7 +100,7 @@ class Controller : public core::CCliServiceHelper<Controller>
         for (const auto& p : result.m_partitions) {
             ss << "    { partition ID: " << p.mPartitionID << "; session ID: " << p.mDDSSessionID
                << "; status: " << ((p.mDDSSessionStatus == core::DDSSessionStatus::running) ? "RUNNING" : "STOPPED")
-               << "; state: " << core::GetAggregatedStateName(p.m_aggregatedState) << " }" << std::endl;
+               << "; state: " << core::GetAggregatedStateName(p.mAggregatedState) << " }" << std::endl;
         }
         ss << "  Execution time: " << result.m_execTime << " msec" << std::endl;
         return ss.str();

@@ -20,26 +20,26 @@
 
 namespace odc::core {
 
-class CCliHelper
+class CliHelper
 {
   public:
-    struct SBatchOptions
+    struct BatchOptions
     {
-        std::vector<std::string> m_cmds;
-        std::string m_cmdsFilepath;
-        std::vector<std::string> m_outputCmds; ///> Filled after parseOptions
+        std::vector<std::string> mCmds;
+        std::string mCmdsFilepath;
+        std::vector<std::string> mOutputCmds; ///> Filled after parseOptions
     };
 
-    struct SSleepOptions
+    struct SleepOptions
     {
-        size_t m_ms; ///> Sleep time in milliseconds
+        size_t mMs; ///> Sleep time in milliseconds
     };
 
     /// Checks that '_opt1' and '_opt2' are not specified at the same time
     static void conflictingOptions(const boost::program_options::variables_map& vm, const std::string& opt1, const std::string& opt2);
 
-    /// \brief Fills SBatchOptions::m_outputCmds
-    static void batchCmds(const boost::program_options::variables_map& vm, bool batch, SBatchOptions& batchOptions);
+    /// \brief Fills BatchOptions::m_outputCmds
+    static void batchCmds(const boost::program_options::variables_map& vm, bool batch, BatchOptions& batchOptions);
 
     // Generic options
 
@@ -49,22 +49,22 @@ class CCliHelper
     static void addHostOptions(   boost::program_options::options_description& options, std::string& host);
     static void addLogOptions(    boost::program_options::options_description& options, CLogger::SConfig& config);
     static void addTimeoutOptions(boost::program_options::options_description& options, size_t& timeout);
-    static void addOptions(       boost::program_options::options_description& options, SBatchOptions& batchOptions);
-    static void addBatchOptions(  boost::program_options::options_description& options, SBatchOptions& batchOptions, bool& batch);
-    static void addOptions(       boost::program_options::options_description& options, SSleepOptions& sleepOptions);
+    static void addOptions(       boost::program_options::options_description& options, BatchOptions& batchOptions);
+    static void addBatchOptions(  boost::program_options::options_description& options, BatchOptions& batchOptions, bool& batch);
+    static void addOptions(       boost::program_options::options_description& options, SleepOptions& sleepOptions);
     static void addRestoreOptions(boost::program_options::options_description& options, std::string& restoreId);
 
     // Request specific options
 
     static void addPartitionOptions(boost::program_options::options_description& options, std::string& partitionID);
     static void addOptions(boost::program_options::options_description& options, CommonParams& common);
-    static void addOptions(boost::program_options::options_description& options, SInitializeParams& params);
-    static void addOptions(boost::program_options::options_description& options, SActivateParams& params);
-    static void addOptions(boost::program_options::options_description& options, SUpdateParams& params);
-    static void addOptions(boost::program_options::options_description& options, SSubmitParams& params);
-    static void addOptions(boost::program_options::options_description& options, SDeviceParams& params);
+    static void addOptions(boost::program_options::options_description& options, InitializeParams& params);
+    static void addOptions(boost::program_options::options_description& options, ActivateParams& params);
+    static void addOptions(boost::program_options::options_description& options, UpdateParams& params);
+    static void addOptions(boost::program_options::options_description& options, SubmitParams& params);
+    static void addOptions(boost::program_options::options_description& options, DeviceParams& params);
     static void addOptions(boost::program_options::options_description& options, SetPropertiesParams& params);
-    static void addOptions(boost::program_options::options_description& options, SStatusParams& params);
+    static void addOptions(boost::program_options::options_description& options, StatusParams& params);
 
     // Plugin options
 
@@ -78,7 +78,7 @@ class CCliHelper
     template<typename... RequestParams_t>
     static void parseOptions(const boost::program_options::variables_map& /*vm*/, RequestParams_t&&... /*params*/) {} // Default implementation does nothing
     static void parseOptions(const boost::program_options::variables_map& vm, std::string& partitionID, SetPropertiesParams& params);
-    static void parseOptions(const boost::program_options::variables_map& vm, CCliHelper::SBatchOptions& params);
+    static void parseOptions(const boost::program_options::variables_map& vm, CliHelper::BatchOptions& params);
 };
 
 } // namespace odc::core

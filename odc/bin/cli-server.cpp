@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     try {
         size_t timeout;
         CLogger::SConfig logConfig;
-        CCliHelper::SBatchOptions bopt;
+        CliHelper::BatchOptions batchOptions;
         bool batch;
         CPluginManager::PluginMap_t pluginMap;
         CPluginManager::PluginMap_t triggerMap;
@@ -40,14 +40,14 @@ int main(int argc, char** argv)
 
         // Generic options
         bpo::options_description options("odc-cli-server options");
-        CCliHelper::addHelpOptions(options);
-        CCliHelper::addVersionOptions(options);
-        CCliHelper::addTimeoutOptions(options, timeout);
-        CCliHelper::addLogOptions(options, logConfig);
-        CCliHelper::addBatchOptions(options, bopt, batch);
-        CCliHelper::addResourcePluginOptions(options, pluginMap);
-        CCliHelper::addRequestTriggersOptions(options, triggerMap);
-        CCliHelper::addRestoreOptions(options, restoreId);
+        CliHelper::addHelpOptions(options);
+        CliHelper::addVersionOptions(options);
+        CliHelper::addTimeoutOptions(options, timeout);
+        CliHelper::addLogOptions(options, logConfig);
+        CliHelper::addBatchOptions(options, batchOptions, batch);
+        CliHelper::addResourcePluginOptions(options, pluginMap);
+        CliHelper::addRequestTriggersOptions(options, triggerMap);
+        CliHelper::addRestoreOptions(options, restoreId);
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -71,9 +71,9 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        CCliHelper::batchCmds(vm, batch, bopt);
-        CCliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
-        CCliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
+        CliHelper::batchCmds(vm, batch, batchOptions);
+        CliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
+        CliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
 
         odc::cli::Controller control;
         control.setTimeout(chrono::seconds(timeout));
@@ -82,7 +82,7 @@ int main(int argc, char** argv)
         if (!restoreId.empty()) {
             control.restore(restoreId);
         }
-        control.run(bopt.m_outputCmds);
+        control.run(batchOptions.mOutputCmds);
     } catch (exception& _e) {
         OLOG(clean) << _e.what();
         OLOG(fatal) << _e.what();

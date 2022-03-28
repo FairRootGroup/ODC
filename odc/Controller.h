@@ -79,13 +79,13 @@ struct PartitionStatus
         : mPartitionID(partitionID)
         , mDDSSessionID(sessionID)
         , mDDSSessionStatus(sessionStatus)
-        , m_aggregatedState(aggregatedState)
+        , mAggregatedState(aggregatedState)
     {}
 
     std::string mPartitionID;                                                      ///< Partition ID
     std::string mDDSSessionID;                                                        ///< Session ID of DDS
     DDSSessionStatus mDDSSessionStatus = DDSSessionStatus::unknown;                       ///< DDS session status
-    AggregatedState m_aggregatedState = AggregatedState::Undefined; ///< Aggregated state of the affected divices
+    AggregatedState mAggregatedState = AggregatedState::Undefined; ///< Aggregated state of the affected divices
 };
 
 struct BaseRequestResult
@@ -120,14 +120,14 @@ struct RequestResult : public BaseRequestResult
         , mPartitionID(partitionID)
         , mRunNr(runNr)
         , mDDSSessionID(sessionID)
-        , m_aggregatedState(aggregatedState)
+        , mAggregatedState(aggregatedState)
         , mFullState(std::move(detailedState))
     {}
 
     std::string mPartitionID;                                                      ///< Partition ID
     uint64_t mRunNr = 0;                                                           ///< Run number
     std::string mDDSSessionID;                                                        ///< Session ID of DDS
-    AggregatedState m_aggregatedState = AggregatedState::Undefined; ///< Aggregated state of the affected divices
+    AggregatedState mAggregatedState = AggregatedState::Undefined; ///< Aggregated state of the affected divices
 
     // Optional parameters
     std::unique_ptr<DetailedState> mFullState = nullptr;
@@ -166,22 +166,22 @@ struct CommonParams
 };
 
 /// \brief Structure holds configuration parameters of the Initiaalize request
-struct SInitializeParams
+struct InitializeParams
 {
-    SInitializeParams() {}
-    SInitializeParams(const std::string& sessionID) : mDDSSessionID(sessionID) {}
+    InitializeParams() {}
+    InitializeParams(const std::string& sessionID) : mDDSSessionID(sessionID) {}
 
     std::string mDDSSessionID; ///< DDS session ID
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& os, const SInitializeParams& p) { return os << "InitilizeParams: sid=" << quoted(p.mDDSSessionID); }
+    friend std::ostream& operator<<(std::ostream& os, const InitializeParams& p) { return os << "InitilizeParams: sid=" << quoted(p.mDDSSessionID); }
 };
 
 /// \brief Structure holds configuration parameters of the submit request
-struct SSubmitParams
+struct SubmitParams
 {
-    SSubmitParams() {}
-    SSubmitParams(const std::string& plugin, const std::string& resources)
+    SubmitParams() {}
+    SubmitParams(const std::string& plugin, const std::string& resources)
         : m_plugin(plugin)
         , m_resources(resources)
     {}
@@ -189,17 +189,17 @@ struct SSubmitParams
     std::string m_resources; ///< Parcable description of the requested resources.
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& os, const SSubmitParams& p)
+    friend std::ostream& operator<<(std::ostream& os, const SubmitParams& p)
     {
         return os << "SubmitParams: plugin=" << quoted(p.m_plugin) << "; resources=" << quoted(p.m_resources);
     }
 };
 
 /// \brief Structure holds configuration parameters of the activate topology request
-struct SActivateParams
+struct ActivateParams
 {
-    SActivateParams() {}
-    SActivateParams(const std::string& topoFile, const std::string& topoContent, const std::string& topoScript)
+    ActivateParams() {}
+    ActivateParams(const std::string& topoFile, const std::string& topoContent, const std::string& topoScript)
         : mDDSTopologyFile(topoFile)
         , mDDSTopologyContent(topoContent)
         , mDDSTopologyScript(topoScript)
@@ -209,7 +209,7 @@ struct SActivateParams
     std::string mDDSTopologyScript;  ///< Script that generates topology content
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& os, const SActivateParams& p)
+    friend std::ostream& operator<<(std::ostream& os, const ActivateParams& p)
     {
         return os << "ActivateParams: topologyFile=" << quoted(p.mDDSTopologyFile) << "; topologyContent=" << quoted(p.mDDSTopologyContent)
                 << "; topologyScript=" << quoted(p.mDDSTopologyScript);
@@ -217,10 +217,10 @@ struct SActivateParams
 };
 
 /// \brief Structure holds configuration parameters of the updatetopology request
-struct SUpdateParams
+struct UpdateParams
 {
-    SUpdateParams() {}
-    SUpdateParams(const std::string& topoFile, const std::string& topoContent, const std::string& topoScript)
+    UpdateParams() {}
+    UpdateParams(const std::string& topoFile, const std::string& topoContent, const std::string& topoScript)
         : mDDSTopologyFile(topoFile)
         , mDDSTopologyContent(topoContent)
         , mDDSTopologyScript(topoScript)
@@ -230,7 +230,7 @@ struct SUpdateParams
     std::string mDDSTopologyScript;  ///< Script that generates topology content
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& os, const SUpdateParams& p)
+    friend std::ostream& operator<<(std::ostream& os, const UpdateParams& p)
     {
         return os << "UpdateParams: topologyFile=" << quoted(p.mDDSTopologyFile) << "; topologyContent=" << quoted(p.mDDSTopologyContent)
                   << "; topologyScript=" << quoted(p.mDDSTopologyScript);
@@ -263,10 +263,10 @@ struct SetPropertiesParams
 };
 
 /// \brief Structure holds device state params used in FairMQ device state chenge requests.
-struct SDeviceParams
+struct DeviceParams
 {
-    SDeviceParams() {}
-    SDeviceParams(const std::string& path, bool detailed)
+    DeviceParams() {}
+    DeviceParams(const std::string& path, bool detailed)
         : m_path(path)
         , m_detailed(detailed)
     {}
@@ -274,22 +274,22 @@ struct SDeviceParams
     bool m_detailed = false; ///< If True than return also detailed information
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& os, const SDeviceParams& p)
+    friend std::ostream& operator<<(std::ostream& os, const DeviceParams& p)
     {
         return os << "DeviceParams: path=" << quoted(p.m_path) << "; detailed=" << p.m_detailed;
     }
 };
 
 /// \brief Parameters of status request
-struct SStatusParams
+struct StatusParams
 {
-    SStatusParams() {}
-    SStatusParams(bool running) : m_running(running) {}
+    StatusParams() {}
+    StatusParams(bool running) : m_running(running) {}
 
     bool m_running = false; ///< Select only running DDS sessions
 
     // \brief ostream operator.
-    friend std::ostream& operator<<(std::ostream& os, const SStatusParams& p) { return os << "StatusParams: running=" << p.m_running; }
+    friend std::ostream& operator<<(std::ostream& os, const StatusParams& p) { return os << "StatusParams: running=" << p.m_running; }
 };
 
 struct TopoTaskInfo
@@ -426,40 +426,40 @@ class Controller
     // DDS topology and session requests
 
     /// \brief Initialize DDS session
-    RequestResult execInitialize(const CommonParams& common, const SInitializeParams& params);
+    RequestResult execInitialize(const CommonParams& common, const InitializeParams& params);
     /// \brief Submit DDS agents. Can be called multiple times in order to submit more agents.
-    RequestResult execSubmit(const CommonParams& common, const SSubmitParams& params);
+    RequestResult execSubmit(const CommonParams& common, const SubmitParams& params);
     /// \brief Activate topology
-    RequestResult execActivate(const CommonParams& common, const SActivateParams& params);
+    RequestResult execActivate(const CommonParams& common, const ActivateParams& params);
     /// \brief Run request combines Initialize, Submit and Activate
-    RequestResult execRun(const CommonParams& common, const SInitializeParams& _initializeParams, const SSubmitParams& _submitParams, const SActivateParams& _activateParams);
+    RequestResult execRun(const CommonParams& common, const InitializeParams& _initializeParams, const SubmitParams& _submitParams, const ActivateParams& _activateParams);
     /// \brief Update topology. Can be called multiple times in order to update topology.
-    RequestResult execUpdate(const CommonParams& common, const SUpdateParams& params);
+    RequestResult execUpdate(const CommonParams& common, const UpdateParams& params);
     /// \brief Shutdown DDS session
     RequestResult execShutdown(const CommonParams& common);
 
     /// \brief Set properties
     RequestResult execSetProperties(const CommonParams& common, const SetPropertiesParams& params);
     /// \brief Get state
-    RequestResult execGetState(const CommonParams& common, const SDeviceParams& params);
+    RequestResult execGetState(const CommonParams& common, const DeviceParams& params);
 
     // FairMQ device change state requests
 
     /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
-    RequestResult execConfigure(const CommonParams& common, const SDeviceParams& params);
+    RequestResult execConfigure(const CommonParams& common, const DeviceParams& params);
     /// \brief Start devices: Run
-    RequestResult execStart(const CommonParams& common, const SDeviceParams& params);
+    RequestResult execStart(const CommonParams& common, const DeviceParams& params);
     /// \brief Stop devices: Stop
-    RequestResult execStop(const CommonParams& common, const SDeviceParams& params);
+    RequestResult execStop(const CommonParams& common, const DeviceParams& params);
     /// \brief Reset devices: ResetTask->ResetDevice
-    RequestResult execReset(const CommonParams& common, const SDeviceParams& params);
+    RequestResult execReset(const CommonParams& common, const DeviceParams& params);
     /// \brief Terminate devices: End
-    RequestResult execTerminate(const CommonParams& common, const SDeviceParams& params);
+    RequestResult execTerminate(const CommonParams& common, const DeviceParams& params);
 
     // Generic requests
 
     /// \brief Status request
-    StatusRequestResult execStatus(const SStatusParams& params);
+    StatusRequestResult execStatus(const StatusParams& params);
 
   private:
     std::map<std::string, std::unique_ptr<SessionInfo>> mSessions; ///< Map of partition ID to session info

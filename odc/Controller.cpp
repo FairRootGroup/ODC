@@ -803,12 +803,13 @@ bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections,
             return false;
         }
 
+        // update dds::topology_api::CTopology
         if (!createDDSTopology(common, error, sessionInfo.mTopoFilePath)) {
             OLOG(error, common) << "Failed to reinitialize dds::topology_api::CTopology";
             return false;
         }
 
-        // update dds::topology_api::CTopology
+        // update odc::core::Topology
         if (!createTopology(common, error, sessionInfo.mTopoFilePath)) {
             OLOG(error, common) << "Failed recreate Topology";
             return false;
@@ -950,7 +951,7 @@ void Controller::restore(const string& id)
     auto data{ CRestoreFile(id).read() };
     for (const auto& v : data.m_partitions) {
         OLOG(info, v.mPartitionID, 0) << "Restoring (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
-        auto result{ execInitialize(CommonParams(v.mPartitionID, 0, 0), SInitializeParams(v.mDDSSessionId)) };
+        auto result{ execInitialize(CommonParams(v.mPartitionID, 0, 0), InitializeParams(v.mDDSSessionId)) };
         if (result.m_error.m_code) {
             OLOG(info, v.mPartitionID, 0) << "Failed to attach to the session. Executing Shutdown trigger for (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
             execRequestTrigger("Shutdown", CommonParams(v.mPartitionID, 0, 0));
@@ -960,7 +961,7 @@ void Controller::restore(const string& id)
     }
 }
 
-RequestResult Controller::execInitialize(const CommonParams& common, const SInitializeParams& params)
+RequestResult Controller::execInitialize(const CommonParams& common, const InitializeParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
 
@@ -993,7 +994,7 @@ RequestResult Controller::execInitialize(const CommonParams& common, const SInit
     return createRequestResult(common, error, "Initialize done", measure.duration(), AggregatedState::Undefined);
 }
 
-RequestResult Controller::execSubmit(const CommonParams& common, const SSubmitParams& params)
+RequestResult Controller::execSubmit(const CommonParams& common, const SubmitParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
 
@@ -1033,7 +1034,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SSubmitPa
     return createRequestResult(common, error, "Submit done", measure.duration(), AggregatedState::Undefined);
 }
 
-RequestResult Controller::execActivate(const CommonParams& common, const SActivateParams& params)
+RequestResult Controller::execActivate(const CommonParams& common, const ActivateParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     auto& sessionInfo = getOrCreateSessionInfo(common);
@@ -1057,7 +1058,7 @@ RequestResult Controller::execActivate(const CommonParams& common, const SActiva
     return createRequestResult(common, error, "Activate done", measure.duration(), state);
 }
 
-RequestResult Controller::execRun(const CommonParams& common, const SInitializeParams& initializeParams, const SSubmitParams& submitParams, const SActivateParams& activateParams)
+RequestResult Controller::execRun(const CommonParams& common, const InitializeParams& initializeParams, const SubmitParams& submitParams, const ActivateParams& activateParams)
 {
     STimeMeasure<chrono::milliseconds> measure;
     // Run request doesn't support attachment to a DDS session.
@@ -1080,7 +1081,7 @@ RequestResult Controller::execRun(const CommonParams& common, const SInitializeP
     return createRequestResult(common, error, "Run done", measure.duration(), state);
 }
 
-RequestResult Controller::execUpdate(const CommonParams& common, const SUpdateParams& params)
+RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     auto& sessionInfo = getOrCreateSessionInfo(common);
@@ -1127,7 +1128,7 @@ RequestResult Controller::execSetProperties(const CommonParams& common, const Se
     return createRequestResult(common, error, "SetProperties done", measure.duration(), AggregatedState::Undefined);
 }
 
-RequestResult Controller::execGetState(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execGetState(const CommonParams& common, const DeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -1138,7 +1139,7 @@ RequestResult Controller::execGetState(const CommonParams& common, const SDevice
     return createRequestResult(common, error, "GetState done", measure.duration(), state, move(detailedState));
 }
 
-RequestResult Controller::execConfigure(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execConfigure(const CommonParams& common, const DeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -1149,7 +1150,7 @@ RequestResult Controller::execConfigure(const CommonParams& common, const SDevic
     return createRequestResult(common, error, "Configure done", measure.duration(), state, move(detailedState));
 }
 
-RequestResult Controller::execStart(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execStart(const CommonParams& common, const DeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -1160,7 +1161,7 @@ RequestResult Controller::execStart(const CommonParams& common, const SDevicePar
     return createRequestResult(common, error, "Start done", measure.duration(), state, move(detailedState));
 }
 
-RequestResult Controller::execStop(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execStop(const CommonParams& common, const DeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -1171,7 +1172,7 @@ RequestResult Controller::execStop(const CommonParams& common, const SDevicePara
     return createRequestResult(common, error, "Stop done", measure.duration(), state, move(detailedState));
 }
 
-RequestResult Controller::execReset(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execReset(const CommonParams& common, const DeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -1182,7 +1183,7 @@ RequestResult Controller::execReset(const CommonParams& common, const SDevicePar
     return createRequestResult(common, error, "Reset done", measure.duration(), state, move(detailedState));
 }
 
-RequestResult Controller::execTerminate(const CommonParams& common, const SDeviceParams& params)
+RequestResult Controller::execTerminate(const CommonParams& common, const DeviceParams& params)
 {
     STimeMeasure<chrono::milliseconds> measure;
     AggregatedState state{ AggregatedState::Undefined };
@@ -1193,7 +1194,7 @@ RequestResult Controller::execTerminate(const CommonParams& common, const SDevic
     return createRequestResult(common, error, "Terminate done", measure.duration(), state, move(detailedState));
 }
 
-StatusRequestResult Controller::execStatus(const SStatusParams& params)
+StatusRequestResult Controller::execStatus(const StatusParams& params)
 {
     lock_guard<mutex> lock(mSessionsMtx);
     STimeMeasure<chrono::milliseconds> measure;
@@ -1212,7 +1213,7 @@ StatusRequestResult Controller::execStatus(const SStatusParams& params)
         // Filter running sessions if needed
         if ((params.m_running && status.mDDSSessionStatus == DDSSessionStatus::running) || (!params.m_running)) {
             try {
-                status.m_aggregatedState = (info->mTopology != nullptr && info->mDDSTopo != nullptr)
+                status.mAggregatedState = (info->mTopology != nullptr && info->mDDSTopo != nullptr)
                 ?
                 aggregateStateForPath(info->mDDSTopo.get(), info->mTopology->GetCurrentState(), "")
                 :

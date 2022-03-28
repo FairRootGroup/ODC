@@ -16,7 +16,7 @@ using namespace std;
 using namespace odc::core;
 namespace bpo = boost::program_options;
 
-void CCliHelper::conflictingOptions(const bpo::variables_map& vm, const string& opt1, const string& opt2)
+void CliHelper::conflictingOptions(const bpo::variables_map& vm, const string& opt1, const string& opt2)
 {
     if (vm.count(opt1) && !vm[opt1].defaulted() && vm.count(opt2) && !vm[opt2].defaulted()) {
         stringstream ss;
@@ -25,37 +25,37 @@ void CCliHelper::conflictingOptions(const bpo::variables_map& vm, const string& 
     }
 }
 
-void CCliHelper::batchCmds(const bpo::variables_map& vm, bool batch, SBatchOptions& batchOptions)
+void CliHelper::batchCmds(const bpo::variables_map& vm, bool batch, BatchOptions& batchOptions)
 {
-    CCliHelper::conflictingOptions(vm, "cmds", "cf");
+    CliHelper::conflictingOptions(vm, "cmds", "cf");
     if (batch) {
         if ((vm.count("cmds") && vm["cmds"].defaulted() && vm.count("cf") && vm["cf"].defaulted()) || (vm.count("cmds") && !vm["cmds"].defaulted())) {
-            batchOptions.m_outputCmds = batchOptions.m_cmds;
+            batchOptions.mOutputCmds = batchOptions.mCmds;
         } else if (vm.count("cf") && !vm["cf"].defaulted()) {
-            batchOptions.m_outputCmds = CCmdsFile::getCmds(batchOptions.m_cmdsFilepath);
+            batchOptions.mOutputCmds = CCmdsFile::getCmds(batchOptions.mCmdsFilepath);
         }
     } else {
-        batchOptions.m_outputCmds = vector<string>();
+        batchOptions.mOutputCmds = vector<string>();
     }
 }
 
 // Generic options
 
-void CCliHelper::addHelpOptions(bpo::options_description& options) { options.add_options()("help,h", "Produce help message"); }
+void CliHelper::addHelpOptions(bpo::options_description& options) { options.add_options()("help,h", "Produce help message"); }
 
-void CCliHelper::addVersionOptions(bpo::options_description& options) { options.add_options()("version,v", "Print version"); }
+void CliHelper::addVersionOptions(bpo::options_description& options) { options.add_options()("version,v", "Print version"); }
 
-void CCliHelper::addSyncOptions(bpo::options_description& options, bool& sync)
+void CliHelper::addSyncOptions(bpo::options_description& options, bool& sync)
 {
     options.add_options()("sync", bpo::bool_switch(&sync)->default_value(false), "Use sync implementation of the gRPC server");
 }
 
-void CCliHelper::addHostOptions(bpo::options_description& options, string& host)
+void CliHelper::addHostOptions(bpo::options_description& options, string& host)
 {
     options.add_options()("host", bpo::value<string>(&host)->default_value("localhost:50051"), "Server address");
 }
 
-void CCliHelper::addLogOptions(bpo::options_description& options, CLogger::SConfig& config)
+void CliHelper::addLogOptions(bpo::options_description& options, CLogger::SConfig& config)
 {
     string defaultLogDir{ smart_path(string("$HOME/.ODC/log")) };
 
@@ -68,12 +68,12 @@ void CCliHelper::addLogOptions(bpo::options_description& options, CLogger::SConf
         ("infologger-role", bpo::value<string>(&config.m_infologgerRole)->default_value("production"), "Fills the InfoLogger 'Role' field");
 }
 
-void CCliHelper::addTimeoutOptions(bpo::options_description& options, size_t& timeout)
+void CliHelper::addTimeoutOptions(bpo::options_description& options, size_t& timeout)
 {
     options.add_options()("timeout", bpo::value<size_t>(&timeout)->default_value(30), "Timeout of requests in sec");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SBatchOptions& batchOptions)
+void CliHelper::addOptions(bpo::options_description& options, BatchOptions& batchOptions)
 {
     const vector<std::string> defaultPartitions{ "a1b2c3", "d4e5f6" };
     const string defaultUpTopo{ kODCDataDir + "/ex-dds-topology-infinite-up.xml" };
@@ -99,36 +99,36 @@ void CCliHelper::addOptions(bpo::options_description& options, SBatchOptions& ba
     }
 
     const string cmdsStr{ boost::algorithm::join(cmds, " ") };
-    options.add_options()("cmds", bpo::value<vector<string>>(&batchOptions.m_cmds)->multitoken()->default_value(cmds, cmdsStr), "Array of command to be executed in batch mode");
+    options.add_options()("cmds", bpo::value<vector<string>>(&batchOptions.mCmds)->multitoken()->default_value(cmds, cmdsStr), "Array of command to be executed in batch mode");
 
     const string defaultConfig{ kODCDataDir + "/cmds.cfg" };
-    options.add_options()("cf", bpo::value<string>(&batchOptions.m_cmdsFilepath)->default_value(defaultConfig), "Config file containing an array of command to be executed in batch mode");
+    options.add_options()("cf", bpo::value<string>(&batchOptions.mCmdsFilepath)->default_value(defaultConfig), "Config file containing an array of command to be executed in batch mode");
 }
 
-void CCliHelper::addBatchOptions(bpo::options_description& options, SBatchOptions& batchOptions, bool& batch)
+void CliHelper::addBatchOptions(bpo::options_description& options, BatchOptions& batchOptions, bool& batch)
 {
     options.add_options()("batch", bpo::bool_switch(&batch)->default_value(false), "Non interactive batch mode");
     addOptions(options, batchOptions);
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SSleepOptions& sleepOptions)
+void CliHelper::addOptions(bpo::options_description& options, SleepOptions& sleepOptions)
 {
-    options.add_options()("ms", bpo::value<size_t>(&sleepOptions.m_ms)->default_value(1000), "Sleep time in ms");
+    options.add_options()("ms", bpo::value<size_t>(&sleepOptions.mMs)->default_value(1000), "Sleep time in ms");
 }
 
-void CCliHelper::addRestoreOptions(bpo::options_description& options, string& restoreId)
+void CliHelper::addRestoreOptions(bpo::options_description& options, string& restoreId)
 {
     options.add_options()("restore", bpo::value<string>(&restoreId)->default_value(""), "If set ODC will restore the sessions from file with specified ID");
 }
 
 // Request specific options
 
-void CCliHelper::addPartitionOptions(bpo::options_description& options, std::string& partitionID)
+void CliHelper::addPartitionOptions(bpo::options_description& options, std::string& partitionID)
 {
     options.add_options()("id", bpo::value<std::string>(&partitionID)->default_value(""), "Partition ID");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, CommonParams& common)
+void CliHelper::addOptions(bpo::options_description& options, CommonParams& common)
 {
     options.add_options()
         ("id", bpo::value<std::string>(&common.mPartitionID)->default_value(""), "Partition ID")
@@ -136,12 +136,12 @@ void CCliHelper::addOptions(bpo::options_description& options, CommonParams& com
         ("timeout", bpo::value<size_t>(&common.mTimeout)->default_value(0), "Request timeout");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SInitializeParams& params)
+void CliHelper::addOptions(bpo::options_description& options, InitializeParams& params)
 {
     options.add_options()("sid", bpo::value<string>(&params.mDDSSessionID)->default_value(""), "Session ID of DDS");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SActivateParams& params)
+void CliHelper::addOptions(bpo::options_description& options, ActivateParams& params)
 {
     string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
     options.add_options()
@@ -150,7 +150,7 @@ void CCliHelper::addOptions(bpo::options_description& options, SActivateParams& 
         ("script", bpo::value<string>(&params.mDDSTopologyScript)->implicit_value("")->default_value(""), "Topology script");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SUpdateParams& params)
+void CliHelper::addOptions(bpo::options_description& options, UpdateParams& params)
 {
     string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");
     // string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-down.xml");
@@ -160,7 +160,7 @@ void CCliHelper::addOptions(bpo::options_description& options, SUpdateParams& pa
         ("script", bpo::value<string>(&params.mDDSTopologyScript)->implicit_value("")->default_value(""), "Topology script");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SSubmitParams& params)
+void CliHelper::addOptions(bpo::options_description& options, SubmitParams& params)
 {
     options.add_options()
         ("plugin,p", bpo::value<string>(&params.m_plugin)->default_value("odc-rp-same"), "ODC resource plugin name.")
@@ -169,14 +169,14 @@ void CCliHelper::addOptions(bpo::options_description& options, SSubmitParams& pa
             "A resource description for a corresponding ODC resource plugin.");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SDeviceParams& params)
+void CliHelper::addOptions(bpo::options_description& options, DeviceParams& params)
 {
     options.add_options()
         ("path", bpo::value<string>(&params.m_path)->default_value(""), "Topology path of devices")
         ("detailed", bpo::bool_switch(&params.m_detailed)->default_value(false), "Detailed reply of devices");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SetPropertiesParams& params)
+void CliHelper::addOptions(bpo::options_description& options, SetPropertiesParams& params)
 {
     options.add_options()("path", bpo::value<string>(&params.m_path)->default_value(""), "Path for a set property request");
 
@@ -187,24 +187,24 @@ void CCliHelper::addOptions(bpo::options_description& options, SetPropertiesPara
     options.add_options()("prop", bpo::value<vector<string>>()->multitoken()->default_value(defaults, defaultsStr), "Key-value pairs for a set properties request ( key1:value1 key2:value2 )");
 }
 
-void CCliHelper::addOptions(bpo::options_description& options, SStatusParams& params)
+void CliHelper::addOptions(bpo::options_description& options, StatusParams& params)
 {
     options.add_options()("running", bpo::bool_switch(&params.m_running)->default_value(false), "Select only running sessions");
 }
 
-void CCliHelper::addResourcePluginOptions(bpo::options_description& options, CPluginManager::PluginMap_t& /*_pluginMap*/)
+void CliHelper::addResourcePluginOptions(bpo::options_description& options, CPluginManager::PluginMap_t& /*_pluginMap*/)
 {
     options.add_options()("rp", bpo::value<vector<string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )");
 }
 
-void CCliHelper::addRequestTriggersOptions(bpo::options_description& options, CPluginManager::PluginMap_t& /*_pluginMap*/)
+void CliHelper::addRequestTriggersOptions(bpo::options_description& options, CPluginManager::PluginMap_t& /*_pluginMap*/)
 {
     options.add_options()("rt", bpo::value<vector<string>>()->multitoken(), "Register request triggers ( name1:cmd1 name2:cmd2 )");
 }
 
 // Extra step of options parsing
 
-void CCliHelper::parseOptions(const bpo::variables_map& vm, std::string& /* partitionID */, SetPropertiesParams& params)
+void CliHelper::parseOptions(const bpo::variables_map& vm, std::string& /* partitionID */, SetPropertiesParams& params)
 {
     if (vm.count("prop")) {
         const auto& kvp(vm["prop"].as<vector<string>>());
@@ -224,7 +224,7 @@ void CCliHelper::parseOptions(const bpo::variables_map& vm, std::string& /* part
     }
 }
 
-void CCliHelper::parsePluginMapOptions(const bpo::variables_map& vm, CPluginManager::PluginMap_t& pluginMap, const string& option)
+void CliHelper::parsePluginMapOptions(const bpo::variables_map& vm, CPluginManager::PluginMap_t& pluginMap, const string& option)
 {
     if (vm.count(option)) {
         const auto& kvp(vm[option].as<vector<string>>());
@@ -242,4 +242,4 @@ void CCliHelper::parsePluginMapOptions(const bpo::variables_map& vm, CPluginMana
     }
 }
 
-void CCliHelper::parseOptions(const bpo::variables_map& vm, CCliHelper::SBatchOptions& params) { CCliHelper::batchCmds(vm, true, params); }
+void CliHelper::parseOptions(const bpo::variables_map& vm, CliHelper::BatchOptions& params) { CliHelper::batchCmds(vm, true, params); }

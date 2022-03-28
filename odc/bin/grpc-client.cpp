@@ -11,7 +11,7 @@
 #include <odc/CliHelper.h>
 #include <odc/MiscUtils.h>
 #include <odc/Version.h>
-#include <odc/grpc/GrpcControlClient.h>
+#include <odc/grpc/ControlClient.h>
 // BOOST
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -28,15 +28,15 @@ int main(int argc, char** argv)
     try {
         string host;
         ESeverity gRPCSeverity = ESeverity::info;
-        CCliHelper::SBatchOptions bopt;
+        CliHelper::BatchOptions batchOptions;
         bool batch;
 
         bpo::options_description options("grpc-client options");
         options.add_options()("severity", bpo::value<ESeverity>(&gRPCSeverity)->default_value(ESeverity::info), "gRPC verbosity (inf/dbg/err)");
-        CCliHelper::addHelpOptions(options);
-        CCliHelper::addVersionOptions(options);
-        CCliHelper::addHostOptions(options, host);
-        CCliHelper::addBatchOptions(options, bopt, batch);
+        CliHelper::addHelpOptions(options);
+        CliHelper::addVersionOptions(options);
+        CliHelper::addHostOptions(options, host);
+        CliHelper::addBatchOptions(options, batchOptions, batch);
 
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
@@ -52,11 +52,11 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        CCliHelper::batchCmds(vm, batch, bopt);
+        CliHelper::batchCmds(vm, batch, batchOptions);
         setupGrpcVerbosity(gRPCSeverity);
 
         GrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
-        control.run(bopt.m_outputCmds);
+        control.run(batchOptions.mOutputCmds);
     } catch (exception& e) {
         std::cout << e.what() << std::endl;
         return EXIT_FAILURE;

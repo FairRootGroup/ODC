@@ -27,9 +27,9 @@ int main(int argc, char** argv)
         std::string partitionID;
 
         bpo::options_description options("odc-rp-same options");
-        CCliHelper::addHelpOptions(options);
-        CCliHelper::addVersionOptions(options);
-        CCliHelper::addPartitionOptions(options, partitionID);
+        CliHelper::addHelpOptions(options);
+        CliHelper::addVersionOptions(options);
+        CliHelper::addPartitionOptions(options, partitionID);
         options.add_options()("res", bpo::value<string>(&res)->default_value(""), "Resource description");
 
         bpo::variables_map vm;

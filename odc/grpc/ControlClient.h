@@ -20,14 +20,14 @@
 #include <grpcpp/grpcpp.h>
 #include <odc/grpc/odc.grpc.pb.h>
 
-class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
+class GrpcControlClient : public odc::core::CliServiceHelper<GrpcControlClient>
 {
   public:
     GrpcControlClient(std::shared_ptr<grpc::Channel> channel)
         : mStub(odc::ODC::NewStub(channel))
     {}
 
-    std::string requestInitialize(const odc::core::CommonParams& common, const odc::core::SInitializeParams& initParams)
+    std::string requestInitialize(const odc::core::CommonParams& common, const odc::core::InitializeParams& initParams)
     {
         odc::InitializeRequest request;
         updateCommonParams(common, &request);
@@ -38,7 +38,7 @@ class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
         return GetReplyString(status, reply);
     }
 
-    std::string requestSubmit(const odc::core::CommonParams& common, const odc::core::SSubmitParams& submitParams)
+    std::string requestSubmit(const odc::core::CommonParams& common, const odc::core::SubmitParams& submitParams)
     {
         odc::SubmitRequest request;
         updateCommonParams(common, &request);
@@ -50,7 +50,7 @@ class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
         return GetReplyString(status, reply);
     }
 
-    std::string requestActivate(const odc::core::CommonParams& common, const odc::core::SActivateParams& activateParams)
+    std::string requestActivate(const odc::core::CommonParams& common, const odc::core::ActivateParams& activateParams)
     {
         odc::ActivateRequest request;
         updateCommonParams(common, &request);
@@ -64,9 +64,9 @@ class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
     }
 
     std::string requestRun(const odc::core::CommonParams& common,
-                           const odc::core::SInitializeParams& /* initializeParams */,
-                           const odc::core::SSubmitParams& submitParams,
-                           const odc::core::SActivateParams& activateParams)
+                           const odc::core::InitializeParams& /* initializeParams */,
+                           const odc::core::SubmitParams& submitParams,
+                           const odc::core::ActivateParams& activateParams)
     {
         odc::RunRequest request;
         updateCommonParams(common, &request);
@@ -81,10 +81,10 @@ class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
         return GetReplyString(status, reply);
     }
 
-    std::string requestUpscale(const odc::core::CommonParams& common, const odc::core::SUpdateParams& updateParams) { return updateRequest(common, updateParams); }
-    std::string requestDownscale(const odc::core::CommonParams& common, const odc::core::SUpdateParams& updateParams) { return updateRequest(common, updateParams); }
+    std::string requestUpscale(const odc::core::CommonParams& common, const odc::core::UpdateParams& updateParams) { return updateRequest(common, updateParams); }
+    std::string requestDownscale(const odc::core::CommonParams& common, const odc::core::UpdateParams& updateParams) { return updateRequest(common, updateParams); }
 
-    std::string requestGetState(const odc::core::CommonParams& common, const odc::core::SDeviceParams& deviceParams)
+    std::string requestGetState(const odc::core::CommonParams& common, const odc::core::DeviceParams& deviceParams)
     {
         odc::StateRequest request;
         updateCommonParams(common, &request);
@@ -112,27 +112,27 @@ class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
         return GetReplyString(status, reply);
     }
 
-    std::string requestConfigure(const odc::core::CommonParams& common, const odc::core::SDeviceParams& deviceParams)
+    std::string requestConfigure(const odc::core::CommonParams& common, const odc::core::DeviceParams& deviceParams)
     {
         return stateChangeRequest<odc::ConfigureRequest>(common, deviceParams, &odc::ODC::Stub::Configure);
     }
 
-    std::string requestStart(const odc::core::CommonParams& common, const odc::core::SDeviceParams& deviceParams)
+    std::string requestStart(const odc::core::CommonParams& common, const odc::core::DeviceParams& deviceParams)
     {
         return stateChangeRequest<odc::StartRequest>(common, deviceParams, &odc::ODC::Stub::Start);
     }
 
-    std::string requestStop(const odc::core::CommonParams& common, const odc::core::SDeviceParams& deviceParams)
+    std::string requestStop(const odc::core::CommonParams& common, const odc::core::DeviceParams& deviceParams)
     {
         return stateChangeRequest<odc::StopRequest>(common, deviceParams, &odc::ODC::Stub::Stop);
     }
 
-    std::string requestReset(const odc::core::CommonParams& common, const odc::core::SDeviceParams& deviceParams)
+    std::string requestReset(const odc::core::CommonParams& common, const odc::core::DeviceParams& deviceParams)
     {
         return stateChangeRequest<odc::ResetRequest>(common, deviceParams, &odc::ODC::Stub::Reset);
     }
 
-    std::string requestTerminate(const odc::core::CommonParams& common, const odc::core::SDeviceParams& deviceParams)
+    std::string requestTerminate(const odc::core::CommonParams& common, const odc::core::DeviceParams& deviceParams)
     {
         return stateChangeRequest<odc::TerminateRequest>(common, deviceParams, &odc::ODC::Stub::Terminate);
     }
@@ -147,7 +147,7 @@ class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
         return GetReplyString(status, reply);
     }
 
-    std::string requestStatus(const odc::core::SStatusParams& statusParams)
+    std::string requestStatus(const odc::core::StatusParams& statusParams)
     {
         odc::StatusRequest request;
         request.set_running(statusParams.m_running);
@@ -158,7 +158,7 @@ class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
     }
 
   private:
-    std::string updateRequest(const odc::core::CommonParams& common, const odc::core::SUpdateParams& updateParams)
+    std::string updateRequest(const odc::core::CommonParams& common, const odc::core::UpdateParams& updateParams)
     {
         odc::UpdateRequest request;
         updateCommonParams(common, &request);
@@ -170,7 +170,7 @@ class GrpcControlClient : public odc::core::CCliServiceHelper<GrpcControlClient>
     }
 
     template<typename Request, typename StubFunc>
-    std::string stateChangeRequest(const odc::core::CommonParams& common, const odc::core::SDeviceParams& deviceParams, StubFunc stubFunc)
+    std::string stateChangeRequest(const odc::core::CommonParams& common, const odc::core::DeviceParams& deviceParams, StubFunc stubFunc)
     {
         // Protobuf message takes the ownership and deletes the object
         odc::StateRequest* stateChange = new odc::StateRequest();

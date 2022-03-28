@@ -16,10 +16,9 @@ add_library(${target} STATIC
   ${proto_hdrs}
   ${grpc_srcs}
   ${grpc_hdrs}
-  "AsyncController.cpp"
   "AsyncController.h"
-  "GrpcControlClient.h"
   "Controller.h"
+  "ControlClient.h"
   "SyncController.h"
 )
 add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
