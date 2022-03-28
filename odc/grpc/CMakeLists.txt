@@ -19,8 +19,7 @@ add_library(${target} STATIC
   "GrpcAsyncService.cpp"
   "GrpcAsyncService.h"
   "GrpcControlClient.h"
-  "GrpcService.cpp"
-  "GrpcService.h"
+  "GrpcController.h"
   "GrpcSyncService.h"
 )
 add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")

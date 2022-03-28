@@ -10,7 +10,7 @@
 #define __ODC__GrpcSyncService__
 
 // ODC
-#include <odc/grpc/GrpcService.h>
+#include <odc/grpc/GrpcController.h>
 #include <odc/PluginManager.h>
 // GRPC
 #include <odc/grpc/odc.grpc.pb.h>
@@ -52,7 +52,7 @@ class CGrpcSyncService final : public odc::ODC::Service
     ::grpc::Status Shutdown(::grpc::ServerContext*      ctx, const odc::ShutdownRequest*      req, odc::GeneralReply* rep) override { return mService.Shutdown(ctx, req, rep); }
     ::grpc::Status Status(::grpc::ServerContext*        ctx, const odc::StatusRequest*        req, odc::StatusReply*  rep) override { return mService.Status(ctx, req, rep); }
 
-    odc::grpc::CGrpcService mService; ///< Core gRPC service
+    odc::grpc::GrpcController mService; ///< Core gRPC service
 };
 
 } // namespace odc::grpc

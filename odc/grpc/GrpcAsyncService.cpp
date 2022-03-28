@@ -16,7 +16,7 @@ using namespace odc::grpc;
 using namespace std;
 
 CGrpcAsyncService::CGrpcAsyncService()
-    : m_service(make_shared<CGrpcService>())
+    : m_service(make_shared<GrpcController>())
 {}
 
 void CGrpcAsyncService::setTimeout(const std::chrono::seconds& _timeout) { m_service->setTimeout(_timeout); }
@@ -38,22 +38,20 @@ void CGrpcAsyncService::run(const std::string& _host)
 
     // Spawn a new CallData instance for each type of request to serve new clients
     using namespace std::placeholders;
-    using AS = odc::ODC::AsyncService;
-    using GS = CGrpcService;
-    make<CCallInitialize>(cq.get(), &service, &AS::RequestInitialize, &GS::Initialize);
-    make<CCallSubmit>(cq.get(), &service, &AS::RequestSubmit, &GS::Submit);
-    make<CCallActivate>(cq.get(), &service, &AS::RequestActivate, &GS::Activate);
-    make<CCallRun>(cq.get(), &service, &AS::RequestRun, &GS::Run);
-    make<CCallGetState>(cq.get(), &service, &AS::RequestGetState, &GS::GetState);
-    make<CCallSetProperties>(cq.get(), &service, &AS::RequestSetProperties, &GS::SetProperties);
-    make<CCallUpdate>(cq.get(), &service, &AS::RequestUpdate, &GS::Update);
-    make<CCallConfigure>(cq.get(), &service, &AS::RequestConfigure, &GS::Configure);
-    make<CCallStart>(cq.get(), &service, &AS::RequestStart, &GS::Start);
-    make<CCallStop>(cq.get(), &service, &AS::RequestStop, &GS::Stop);
-    make<CCallReset>(cq.get(), &service, &AS::RequestReset, &GS::Reset);
-    make<CCallTerminate>(cq.get(), &service, &AS::RequestTerminate, &GS::Terminate);
-    make<CCallShutdown>(cq.get(), &service, &AS::RequestShutdown, &GS::Shutdown);
-    make<CCallStatus>(cq.get(), &service, &AS::RequestStatus, &GS::Status);
+    make<CCallInitialize>   (cq.get(), &service, &odc::ODC::AsyncService::RequestInitialize,    &GrpcController::Initialize);
+    make<CCallSubmit>       (cq.get(), &service, &odc::ODC::AsyncService::RequestSubmit,        &GrpcController::Submit);
+    make<CCallActivate>     (cq.get(), &service, &odc::ODC::AsyncService::RequestActivate,      &GrpcController::Activate);
+    make<CCallRun>          (cq.get(), &service, &odc::ODC::AsyncService::RequestRun,           &GrpcController::Run);
+    make<CCallGetState>     (cq.get(), &service, &odc::ODC::AsyncService::RequestGetState,      &GrpcController::GetState);
+    make<CCallSetProperties>(cq.get(), &service, &odc::ODC::AsyncService::RequestSetProperties, &GrpcController::SetProperties);
+    make<CCallUpdate>       (cq.get(), &service, &odc::ODC::AsyncService::RequestUpdate,        &GrpcController::Update);
+    make<CCallConfigure>    (cq.get(), &service, &odc::ODC::AsyncService::RequestConfigure,     &GrpcController::Configure);
+    make<CCallStart>        (cq.get(), &service, &odc::ODC::AsyncService::RequestStart,         &GrpcController::Start);
+    make<CCallStop>         (cq.get(), &service, &odc::ODC::AsyncService::RequestStop,          &GrpcController::Stop);
+    make<CCallReset>        (cq.get(), &service, &odc::ODC::AsyncService::RequestReset,         &GrpcController::Reset);
+    make<CCallTerminate>    (cq.get(), &service, &odc::ODC::AsyncService::RequestTerminate,     &GrpcController::Terminate);
+    make<CCallShutdown>     (cq.get(), &service, &odc::ODC::AsyncService::RequestShutdown,      &GrpcController::Shutdown);
+    make<CCallStatus>       (cq.get(), &service, &odc::ODC::AsyncService::RequestStatus,        &GrpcController::Status);
 
     void* tag;
     bool ok;

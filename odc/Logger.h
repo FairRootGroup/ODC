@@ -40,9 +40,9 @@
 // OLOG(info) << "My message";
 // OLOG(info, "TYrfjf", 54321) << "My message";
 // clang-format off
-#define OLOG_SEVERITY(severity)                               BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), "", ESeverity::severity)
-#define OLOG_SEVERITY_COMMON(severity, common)                BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), toString(common.mPartitionID, ":", common.mRunNr), ESeverity::severity)
-#define OLOG_SEVERITY_PARTITION_RUN(severity, partition, run) BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), toString(partition, ":", run), ESeverity::severity)
+#define OLOG_SEVERITY(severity)                               BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), "", odc::core::ESeverity::severity)
+#define OLOG_SEVERITY_COMMON(severity, common)                BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), odc::core::toString(common.mPartitionID, ":", common.mRunNr), odc::core::ESeverity::severity)
+#define OLOG_SEVERITY_PARTITION_RUN(severity, partition, run) BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), odc::core::toString(partition, ":", run), odc::core::ESeverity::severity)
 #define OLOG_GET_MACRO(arg1, arg2, arg3, NAME, ...) NAME
 #define OLOG(...) OLOG_GET_MACRO(__VA_ARGS__, OLOG_SEVERITY_PARTITION_RUN, OLOG_SEVERITY_COMMON, OLOG_SEVERITY, UNUSED)(__VA_ARGS__)
 // clang-format on

@@ -11,7 +11,7 @@
 
 // ODC
 #include <odc/DDSSubmit.h>
-#include <odc/grpc/GrpcService.h>
+#include <odc/grpc/GrpcController.h>
 #include <odc/Logger.h>
 // GRPC
 #include <grpcpp/grpcpp.h>
@@ -46,7 +46,7 @@ class CGrpcAsyncService final
         using requestFunc_t =
             std::function<void(::grpc::ServerContext*, Request_t*, ::grpc::ServerAsyncResponseWriter<Reply_t>*, ::grpc::CompletionQueue*, ::grpc::ServerCompletionQueue*, void*)>;
 
-        /// odc::CGrpcService method which processes the request
+        /// odc::GrpcController method which processes the request
         using processFunc_t = std::function<::grpc::Status(::grpc::ServerContext*, const Request_t*, Reply_t*)>;
 
       public:
@@ -122,7 +122,7 @@ class CGrpcAsyncService final
                    std::bind(_processFunc, m_service, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
     }
 
-    std::shared_ptr<odc::grpc::CGrpcService> m_service; ///< Core gRPC service
+    std::shared_ptr<odc::grpc::GrpcController> m_service; ///< Core gRPC service
 };
 
 } // namespace odc::grpc
