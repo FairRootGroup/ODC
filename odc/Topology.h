@@ -30,6 +30,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -322,6 +323,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
 
         list.reserve(boost::size(tasks));
+
+        // std::cout << "Num of tasks: " << boost::size(tasks) << std::endl;
 
         for (const auto& task : tasks) {
             // LOG(debug) << "Found task with id: " << task.first << ", "
