@@ -40,6 +40,11 @@ add_library(${target} STATIC
   "Stats.h"
   "TimeMeasure.h"
   "Topology.h"
+  "TopologyDefs.h"
+  "TopologyOpChangeState.h"
+  "TopologyOpGetProperties.h"
+  "TopologyOpSetProperties.h"
+  "TopologyOpWaitForState.h"
   "Traits.h"
 )
 target_link_libraries(${target} PUBLIC
