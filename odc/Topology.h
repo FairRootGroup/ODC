@@ -193,7 +193,9 @@ inline AggregatedState AggregateState(const TopologyState& topologyState)
 {
     DeviceState first = topologyState.begin()->state;
 
-    if (std::all_of(topologyState.cbegin(), topologyState.cend(), [&](TopologyState::value_type i) { return i.state == first; })) {
+    if (std::all_of(topologyState.cbegin(), topologyState.cend(), [&](TopologyState::value_type i) {
+        return i.state == first;
+    })) {
         return static_cast<AggregatedState>(first);
     }
 
@@ -244,8 +246,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param blockUntilConnected if true, ctor will wait for all tasks to confirm subscriptions
     BasicTopology(dds::topology_api::CTopology topo, std::shared_ptr<dds::tools_api::CSession> session, bool blockUntilConnected = false)
         : BasicTopology<Executor, Allocator>(boost::asio::system_executor(), std::move(topo), std::move(session), blockUntilConnected)
-    {
-    }
+    {}
 
     /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
     /// @param ex I/O executor to be associated
@@ -325,12 +326,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         list.reserve(boost::size(tasks));
 
         // std::cout << "Num of tasks: " << boost::size(tasks) << std::endl;
-
         for (const auto& task : tasks) {
-            // LOG(debug) << "Found task with id: " << task.first << ", "
+            // std::cout << "Found task with id: " << task.first << ", "
             //            << "Path: " << task.second.m_taskPath << ", "
             //            << "Collection id: " << task.second.m_taskCollectionId << ", "
-            //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
+            //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex << std::endl;
             list.emplace_back(task.first, task.second.m_taskCollectionId);
         }
 
@@ -533,6 +533,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             }
         } catch (const std::exception& e) {
             OLOG(error) << "Exception in HandleCmd(cmd::StateChange const&): " << e.what();
+            OLOG(error) << "Possibly no task with id '" << taskId << "'?";
         }
     }
 
@@ -1413,11 +1414,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     auto makeTopologyState() -> void
     {
-        fStateData.reserve(GetTasks().size());
+        const auto tasks = GetTasks();
+        fStateData.reserve(tasks.size());
 
         int index = 0;
 
-        for (const auto& task : GetTasks()) {
+        for (const auto& task : tasks) {
             fStateData.push_back(DeviceStatus{ false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId(), -1, -1 });
             fStateIndex.emplace(task.GetId(), index);
             index++;

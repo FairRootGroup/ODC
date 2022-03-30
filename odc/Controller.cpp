@@ -362,7 +362,7 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
                 aggrState = AggregateState(fmqTopoState);
             } catch (exception& e) {
                 auto failedCollections = stateSummaryOnFailure(common, fmqTopoState, expState, info);
-                success = false; // attemptRecovery(failedCollections, info, common);
+                success = attemptRecovery(failedCollections, info, common);
                 if (!success) {
                     fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Aggregate topology state failed: ", e.what()));
                 }
@@ -372,7 +372,7 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
             }
         } else {
             auto failedCollections = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
-            success = false; // attemptRecovery(failedCollections, info, common);
+            success = attemptRecovery(failedCollections, info, common);
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -386,7 +386,7 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
         }
     } catch (exception& e) {
         auto failedCollections = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
-        success = false; // attemptRecovery(failedCollections, info, common);
+        success = attemptRecovery(failedCollections, info, common);
         if (!success) {
             fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
         }
@@ -760,66 +760,66 @@ bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections,
 
         // create new DDS topology with updated n = remaining collections
 
-        OLOG(info, common) << "Updating current topology file (" << sessionInfo.mTopoFilePath << ") to reflect the reduced number of groups";
+        // OLOG(info, common) << "Updating current topology file (" << sessionInfo.mTopoFilePath << ") to reflect the reduced number of groups";
 
-        CTopoCreator creator;
-        creator.getMainGroup()->initFromXML(sessionInfo.mTopoFilePath);
-        auto groups = creator.getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
-        for (const auto& group : groups) {
-            CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
-            try {
-                uint64_t failedCount = failedCollectionsCount.at(g->getName());
-                uint64_t n = sessionInfo.mNmin.at(g->getName()).n;
-                uint64_t remainingCount = n - failedCount;
-                g->setN(remainingCount);
-            } catch (out_of_range&) {
-                continue;
-            }
-        }
+        // CTopoCreator creator;
+        // creator.getMainGroup()->initFromXML(sessionInfo.mTopoFilePath);
+        // auto groups = creator.getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
+        // for (const auto& group : groups) {
+        //     CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
+        //     try {
+        //         uint64_t failedCount = failedCollectionsCount.at(g->getName());
+        //         uint64_t n = sessionInfo.mNmin.at(g->getName()).n;
+        //         uint64_t remainingCount = n - failedCount;
+        //         g->setN(remainingCount);
+        //     } catch (out_of_range&) {
+        //         continue;
+        //     }
+        // }
 
-        string name("topo_" + sessionInfo.mPartitionID + "_reduced.xml");
-        const bfs::path tmpPath{ bfs::temp_directory_path() / bfs::unique_path() };
-        bfs::create_directories(tmpPath);
-        const bfs::path filepath{ tmpPath / name };
-        creator.save(filepath.string());
+        // string name("topo_" + sessionInfo.mPartitionID + "_reduced.xml");
+        // const bfs::path tmpPath{ bfs::temp_directory_path() / bfs::unique_path() };
+        // bfs::create_directories(tmpPath);
+        // const bfs::path filepath{ tmpPath / name };
+        // creator.save(filepath.string());
 
-        // re-add the nmin variables
-        CTopoVars vars;
-        vars.initFromXML(filepath.string());
-        for (const auto& [groupName, groupInfo] : sessionInfo.mNmin) {
-            string varName("odc_nmin_" + groupName);
-            vars.add(varName, std::to_string(groupInfo.nmin));
-        }
-        vars.saveToXML(filepath.string());
+        // // re-add the nmin variables
+        // CTopoVars vars;
+        // vars.initFromXML(filepath.string());
+        // for (const auto& [groupName, groupInfo] : sessionInfo.mNmin) {
+        //     string varName("odc_nmin_" + groupName);
+        //     vars.add(varName, std::to_string(groupInfo.nmin));
+        // }
+        // vars.saveToXML(filepath.string());
 
-        OLOG(info, common) << "Saved updated topology file as " << filepath.string();
+        // OLOG(info, common) << "Saved updated topology file as " << filepath.string();
 
-        sessionInfo.mTopoFilePath = filepath.string();
+        // sessionInfo.mTopoFilePath = filepath.string();
 
-        // issue DDS topology update
-        Error error;
-        if (!activateDDSTopology(common, error, sessionInfo.mTopoFilePath, STopologyRequest::request_t::EUpdateType::UPDATE)) {
-            OLOG(error, common) << "Failed to update running topology";
-            return false;
-        }
+        // // issue DDS topology update
+        // Error error;
+        // // if (!activateDDSTopology(common, error, sessionInfo.mTopoFilePath, STopologyRequest::request_t::EUpdateType::UPDATE)) {
+        // //     OLOG(error, common) << "Failed to update running topology";
+        // //     return false;
+        // // }
 
-        // update dds::topology_api::CTopology
-        if (!createDDSTopology(common, error, sessionInfo.mTopoFilePath)) {
-            OLOG(error, common) << "Failed to reinitialize dds::topology_api::CTopology";
-            return false;
-        }
+        // // update dds::topology_api::CTopology
+        // if (!createDDSTopology(common, error, sessionInfo.mTopoFilePath)) {
+        //     OLOG(error, common) << "Failed to reinitialize dds::topology_api::CTopology";
+        //     return false;
+        // }
 
-        // update odc::core::Topology
-        if (!createTopology(common, error, sessionInfo.mTopoFilePath)) {
-            OLOG(error, common) << "Failed recreate Topology";
-            return false;
-        }
+        // // update odc::core::Topology
+        // if (!createTopology(common, error, sessionInfo.mTopoFilePath)) {
+        //     OLOG(error, common) << "Failed recreate Topology";
+        //     return false;
+        // }
 
-        if (error.m_code) {
-            OLOG(error, common) << "Recovery failed";
-            fillError(common, error, ErrorCode::TopologyFailed, "Recovery of the remaining collections failed");
-            return false;
-        }
+        // if (error.m_code) {
+        //     OLOG(error, common) << "Recovery failed";
+        //     fillError(common, error, ErrorCode::TopologyFailed, "Recovery of the remaining collections failed");
+        //     return false;
+        // }
 
         return true;
     }
