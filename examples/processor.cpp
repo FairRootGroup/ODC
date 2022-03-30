@@ -38,7 +38,7 @@ struct Processor : fair::mq::Device
         }
     }
 
-    bool HandleData(FairMQMessagePtr& msg, int)
+    bool HandleData(fair::mq::MessagePtr& msg, int)
     {
         // LOG(info) << "Received data, processing...";
 
@@ -46,7 +46,7 @@ struct Processor : fair::mq::Device
         std::string* text = new std::string(static_cast<char*>(msg->GetData()), msg->GetSize());
         *text += " (modified by " + fId + ")";
 
-        FairMQMessagePtr msg2(NewMessage(const_cast<char*>(text->c_str()), text->length(), [](void* /*data*/, void* object) {
+        fair::mq::MessagePtr msg2(NewMessage(const_cast<char*>(text->c_str()), text->length(), [](void* /*data*/, void* object) {
             delete static_cast<std::string*>(object);
         }, text));
 

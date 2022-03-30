@@ -19,7 +19,7 @@ struct Sampler : fair::mq::Device
 
     bool ConditionalRun() override
     {
-        FairMQMessagePtr msg(NewSimpleMessage("Data"));
+        fair::mq::MessagePtr msg(NewSimpleMessage("Data"));
 
         // LOG(info) << "Sending \"Data\"";
 
