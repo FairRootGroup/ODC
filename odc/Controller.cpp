@@ -254,8 +254,8 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& info = getOrCreateSessionInfo(common);
-        info.mDDSTopo.reset();
         info.mTopology.reset();
+        info.mDDSTopo.reset();
         // We stop the session anyway if session ID is not nil.
         // Session can already be stopped by `dds-session stop` but session ID is not yet reset to nil.
         // If session is already stopped dds::tools_api::CSession::shutdown will reset pointers.
@@ -282,12 +282,12 @@ bool Controller::createDDSTopology(const CommonParams& common, Error& error, con
         auto& sInfo = getOrCreateSessionInfo(common);
 
         // extract the nmin variables and detect corresponding collections
-        sInfo.mNmin.clear();
+        sInfo.mNinfo.clear();
         CTopoVars vars;
         vars.initFromXML(topologyFile);
         for (const auto& [var, nmin] : vars.getMap()) {
             if (0 == var.compare(0, 9, "odc_nmin_")) {
-                sInfo.mNmin.emplace(var.substr(9), TopoGroupInfo{0, stoull(nmin)});
+                sInfo.mNinfo.emplace(var.substr(9), TopoGroupInfo{0, 0, stoull(nmin)});
             }
         }
 
@@ -297,15 +297,16 @@ bool Controller::createDDSTopology(const CommonParams& common, Error& error, con
         for (const auto& group : groups) {
             CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
             try {
-                sInfo.mNmin.at(g->getName()).n = g->getN();
+                sInfo.mNinfo.at(g->getName()).nOriginal = g->getN();
+                sInfo.mNinfo.at(g->getName()).nCurrent = g->getN();
             } catch (out_of_range&) {
                 continue;
             }
         }
 
         OLOG(info, common) << "Groups:";
-        for (const auto& [group, nmin] : sInfo.mNmin) {
-            OLOG(info, common) << "Group '" << group << "', n: " << nmin.n << ", nmin: " << nmin.nmin;
+        for (const auto& [group, nmin] : sInfo.mNinfo) {
+            OLOG(info, common) << "Group '" << group << "', n (original): " << nmin.nOriginal << ", n (current): " << nmin.nCurrent << ", n (minimum): " << nmin.nMin;
         }
 
         OLOG(info, common) << "DDS topology " << quoted(topologyFile) << " created successfully";
@@ -361,8 +362,8 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
             try {
                 aggrState = AggregateState(fmqTopoState);
             } catch (exception& e) {
-                auto failedCollections = stateSummaryOnFailure(common, fmqTopoState, expState, info);
-                success = attemptRecovery(failedCollections, info, common);
+                auto failed = stateSummaryOnFailure(common, fmqTopoState, expState, info);
+                success = attemptRecovery(failed, info, common);
                 if (!success) {
                     fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Aggregate topology state failed: ", e.what()));
                 }
@@ -371,8 +372,8 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
                 getDetailedState(info.mDDSTopo.get(), fmqTopoState, detailedState);
             }
         } else {
-            auto failedCollections = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
-            success = attemptRecovery(failedCollections, info, common);
+            auto failed = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
+            success = attemptRecovery(failed, info, common);
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -385,8 +386,8 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
             }
         }
     } catch (exception& e) {
-        auto failedCollections = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
-        success = attemptRecovery(failedCollections, info, common);
+        auto failed = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
+        success = attemptRecovery(failed, info, common);
         if (!success) {
             fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
         }
@@ -602,8 +603,10 @@ Error Controller::checkSessionIsRunning(const CommonParams& common, ErrorCode er
     return error;
 }
 
-vector<TopoCollectionInfo*> Controller::stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo)
+FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo)
 {
+    FailedTasksCollections failed;
+
     size_t numTasks = topoState.size();
     size_t numFailedTasks = 0;
     stringstream ss;
@@ -623,6 +626,7 @@ vector<TopoCollectionInfo*> Controller::stateSummaryOnFailure(const CommonParams
 
         try {
             TopoTaskInfo& taskInfo = sessionInfo.getFromTaskCache(status.taskId);
+            failed.tasks.push_back(&taskInfo);
             ss << ", " << taskInfo;
         } catch (const exception& e) {
             OLOG(error, common) << "State summary error: " << e.what();
@@ -633,8 +637,6 @@ vector<TopoCollectionInfo*> Controller::stateSummaryOnFailure(const CommonParams
         OLOG(error, common) << ss.str();
         ss.str(string());
     }
-
-    vector<TopoCollectionInfo*> failedCollections;
 
     auto collectionMap{ GroupByCollectionId(topoState) };
     size_t numCollections = collectionMap.size();
@@ -654,7 +656,7 @@ vector<TopoCollectionInfo*> Controller::stateSummaryOnFailure(const CommonParams
             ss << "\n" << right << setw(7) << numFailedCollections << " Collection: state: " << collectionState;
 
             TopoCollectionInfo& collectionInfo = sessionInfo.getFromCollectionCache(collectionId);
-            failedCollections.push_back(&collectionInfo);
+            failed.collections.push_back(&collectionInfo);
             ss << ", " << collectionInfo;
         } catch (const exception& e) {
             OLOG(error, common) << "State summary error: " << e.what();
@@ -672,22 +674,22 @@ vector<TopoCollectionInfo*> Controller::stateSummaryOnFailure(const CommonParams
        << "  [tasks] total: " << numTasks << ", successful: " << numSuccessfulTasks << ", failed: " << numFailedTasks << "\n"
        << "  [collections] total: " << numCollections << ", successful: " << numSuccessfulCollections << ", failed: " << numFailedCollections;
 
-    return failedCollections;
+    return failed;
 }
 
-bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections, SessionInfo& sessionInfo, const CommonParams& common)
+bool Controller::attemptRecovery(FailedTasksCollections& failed, SessionInfo& sessionInfo, const CommonParams& common)
 {
-    if (!failedCollections.empty() && !sessionInfo.mNmin.empty()) {
+    if (!failed.collections.empty() && !sessionInfo.mNinfo.empty()) {
         OLOG(info, common) << "Attemping recovery";
         // get failed collections and determine if recovery makes sense:
         //   - are failed collections inside of a group?
         //   - do all failed collections have nMin parameter defined?
         //   - is the nMin parameter satisfied?
         map<string, uint64_t> failedCollectionsCount;
-        for (const auto& c : failedCollections) {
-            OLOG(info, common) << "Checking collection '" << c->mPath << "' with agend id " << c->mAgentID;
+        for (const auto& c : failed.collections) {
+            // OLOG(info, common) << "Checking collection '" << c->mPath << "' with agend id " << c->mAgentID;
             string collectionParentName = sessionInfo.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getParent()->getName();
-            for (const auto& [groupName, groupInfo] : sessionInfo.mNmin) {
+            for (const auto& [groupName, groupInfo] : sessionInfo.mNinfo) {
                 if (collectionParentName != groupName) {
                     // stop recovery, conditions not satisifed
                     OLOG(error, common) << "Failed collection '" << c->mPath << "' is not in a group that has the nmin parameter specified";
@@ -699,21 +701,26 @@ bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections,
                     } else {
                         failedCollectionsCount[groupName]++;
                     }
-                    OLOG(info, common) << "Group '" << groupName << "', failed collection count " << failedCollectionsCount.at(groupName);
+                    // OLOG(info, common) << "Group '" << groupName << "', failed collection count " << failedCollectionsCount.at(groupName);
                 }
             }
         }
 
         // proceed only if remaining collections > nmin.
-        for (const auto& [groupName, groupInfo] : sessionInfo.mNmin) {
-            uint64_t failedCount = failedCollectionsCount.at(groupName);
-            uint64_t remainingCount = groupInfo.n - failedCount;
-            OLOG(info, common) << "Group '" << groupName << "' with n: " << groupInfo.n << " and nmin: " << groupInfo.nmin << ". Failed count: " << failedCount;
-            if (remainingCount < groupInfo.nmin) {
-                OLOG(error, common) << "Number of remaining collections in group '" << groupName << "' (" << remainingCount << ") is below nmin (" << groupInfo.nmin << ")";
+        for (auto& [gName, gInfo] : sessionInfo.mNinfo) {
+            uint64_t failedCount = failedCollectionsCount.at(gName);
+            uint64_t remainingCount = gInfo.nCurrent - failedCount;
+            OLOG(info, common) << "Group '" << gName << "' with n (original): " << gInfo.nOriginal << ", n (current): " << gInfo.nCurrent << ", nmin: " << gInfo.nMin << ". Failed count: " << failedCount;
+            if (remainingCount < gInfo.nMin) {
+                OLOG(error, common) << "Number of remaining collections in group '" << gName << "' (" << remainingCount << ") is below nmin (" << gInfo.nMin << ")";
                 return false;
+            } else {
+                gInfo.nCurrent = remainingCount;
             }
         }
+
+        // mark all tasks in the failed collections as failed and set them to be ignored for further actions
+        sessionInfo.mTopology->IgnoreFailedCollections(failed.collections);
 
         // destroy Topology
         // OLOG(info, common) << "Resetting Topology...";
@@ -727,10 +734,10 @@ bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections,
 
         try {
             size_t currentAgentsCount = getNumAgents(sessionInfo.mDDSSession, common);
-            size_t expectedAgentsCount = currentAgentsCount - failedCollections.size();
+            size_t expectedAgentsCount = currentAgentsCount - failed.collections.size();
             OLOG(info, common) << "Current number of agents: " << currentAgentsCount << ", expecting to reduce to " << expectedAgentsCount;
 
-            for (const auto& c : failedCollections) {
+            for (const auto& c : failed.collections) {
                 OLOG(info, common) << "Sending shutdown signal to agent " << c->mAgentID << ", responsible for " << c->mPath;
                 SAgentCommandRequest::request_t agentCmd;
                 agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
@@ -745,7 +752,7 @@ bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections,
             while (currentAgentsCount != expectedAgentsCount && attempts < 400) {
                 this_thread::sleep_for(chrono::milliseconds(50));
                 currentAgentsCount = getNumAgents(sessionInfo.mDDSSession, common);
-                OLOG(info, common) << "Current number of agents: " << currentAgentsCount;
+                // OLOG(info, common) << "Current number of agents: " << currentAgentsCount;
                 ++attempts;
             }
             if (expectedAgentsCount != currentAgentsCount) {
@@ -769,7 +776,7 @@ bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections,
         //     CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
         //     try {
         //         uint64_t failedCount = failedCollectionsCount.at(g->getName());
-        //         uint64_t n = sessionInfo.mNmin.at(g->getName()).n;
+        //         uint64_t n = sessionInfo.mNinfo.at(g->getName()).nCurrent;
         //         uint64_t remainingCount = n - failedCount;
         //         g->setN(remainingCount);
         //     } catch (out_of_range&) {
@@ -786,9 +793,9 @@ bool Controller::attemptRecovery(vector<TopoCollectionInfo*>& failedCollections,
         // // re-add the nmin variables
         // CTopoVars vars;
         // vars.initFromXML(filepath.string());
-        // for (const auto& [groupName, groupInfo] : sessionInfo.mNmin) {
+        // for (const auto& [groupName, groupInfo] : sessionInfo.mNinfo) {
         //     string varName("odc_nmin_" + groupName);
-        //     vars.add(varName, std::to_string(groupInfo.nmin));
+        //     vars.add(varName, std::to_string(groupInfo.nMin));
         // }
         // vars.saveToXML(filepath.string());
 

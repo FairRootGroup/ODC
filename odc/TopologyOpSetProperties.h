@@ -75,7 +75,7 @@ struct SetPropertiesOp
     SetPropertiesOp& operator=(SetPropertiesOp&&) = default;
     ~SetPropertiesOp() = default;
 
-    auto Update(const DDSTask::Id taskId, cc::Result result) -> void
+    void Update(const DDSTask::Id taskId, cc::Result result)
     {
         std::lock_guard<std::mutex> lk(fMtx);
         if (result == cc::Result::Ok) {
@@ -97,7 +97,7 @@ struct SetPropertiesOp
     std::mutex& fMtx;
 
     /// precondition: fMtx is locked.
-    auto TryCompletion() -> void
+    void TryCompletion()
     {
         if (!fOp.IsCompleted() && fCount == fTasks.size()) {
             fTimer.cancel();

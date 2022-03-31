@@ -39,7 +39,7 @@ class DDSCollection
 
     Id GetId() const { return fId; }
 
-    friend auto operator<<(std::ostream& os, const DDSCollection& collection) -> std::ostream& { return os << "DDSCollection id: " << collection.fId; }
+    friend std::ostream& operator<<(std::ostream& os, const DDSCollection& collection) { return os << "DDSCollection id: " << collection.fId; }
 
   private:
     Id fId;
@@ -56,13 +56,12 @@ class DDSTask
     explicit DDSTask(Id id, Id collectionId)
         : fId(id)
         , fCollectionId(collectionId)
-    {
-    }
+    {}
 
     Id GetId() const { return fId; }
     DDSCollection::Id GetCollectionId() const { return fCollectionId; }
 
-    friend auto operator<<(std::ostream& os, const DDSTask& task) -> std::ostream& { return os << "DDSTask id: " << task.fId << ", collection id: " << task.fCollectionId; }
+    friend std::ostream& operator<<(std::ostream& os, const DDSTask& task) { return os << "DDSTask id: " << task.fId << ", collection id: " << task.fCollectionId; }
 
   private:
     Id fId;
@@ -103,9 +102,9 @@ enum class AggregatedState : int
     Mixed
 };
 
-inline auto operator==(DeviceState lhs, AggregatedState rhs) -> bool { return static_cast<int>(lhs) == static_cast<int>(rhs); }
+inline bool operator==(DeviceState lhs, AggregatedState rhs) { return static_cast<int>(lhs) == static_cast<int>(rhs); }
 
-inline auto operator==(AggregatedState lhs, DeviceState rhs) -> bool { return static_cast<int>(lhs) == static_cast<int>(rhs); }
+inline bool operator==(AggregatedState lhs, DeviceState rhs) { return static_cast<int>(lhs) == static_cast<int>(rhs); }
 
 inline std::ostream& operator<<(std::ostream& os, const AggregatedState& state)
 {
@@ -136,6 +135,7 @@ inline AggregatedState GetAggregatedState(const std::string& state)
 
 struct DeviceStatus
 {
+    bool ignored;
     bool subscribedToStateChanges;
     DeviceState lastState;
     DeviceState state;
@@ -167,14 +167,22 @@ using TopologyTransition = fair::mq::Transition;
 
 inline AggregatedState AggregateState(const TopologyState& topoState)
 {
-    DeviceState first = topoState.begin()->state;
+    AggregatedState state = AggregatedState::Mixed;
+    // get the state of a first not-ignored device
+    for (const auto& device : topoState) {
+        if (!device.ignored) {
+            state = static_cast<AggregatedState>(device.state);
+            break;
+        }
+    }
 
-    bool homogeneous = std::all_of(topoState.cbegin(), topoState.cend(), [&](TopologyState::value_type i) {
-        return i.state == first;
+    bool homogeneous = std::all_of(topoState.cbegin(), topoState.cend(), [&](DeviceStatus ds) {
+        // if device is ignored, count it as homogeneous regardless of its actual state
+        return ds.ignored ? true : (ds.state == state);
     });
 
     if (homogeneous) {
-        return static_cast<AggregatedState>(first);
+        return static_cast<AggregatedState>(state);
     }
 
     return AggregatedState::Mixed;
@@ -205,6 +213,38 @@ inline TopologyStateByTask GroupByTaskId(const TopologyState& topoState)
 }
 
 using Duration = std::chrono::microseconds;
+
+struct TopoTaskInfo
+{
+    uint64_t mAgentID = 0; ///< Agent ID
+    uint64_t mSlotID = 0;  ///< Slot ID
+    uint64_t mTaskID = 0;  ///< Task ID, 0 if not assigned
+    std::string mPath;     ///< Path in the topology
+    std::string mHost;     ///< Hostname
+    std::string mWrkDir;   ///< Wrk directory
+
+    friend std::ostream& operator<<(std::ostream& os, const TopoTaskInfo& i)
+    {
+        return os << "agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", taskID=" << i.mTaskID
+                  << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
+    }
+};
+
+struct TopoCollectionInfo
+{
+    uint64_t mAgentID = 0; ///< Agent ID
+    uint64_t mSlotID = 0;  ///< Slot ID
+    uint64_t mCollectionID = 0;  ///< Task/Collection ID, 0 if not assigned
+    std::string mPath;     ///< Path in the topology
+    std::string mHost;     ///< Hostname
+    std::string mWrkDir;   ///< Wrk directory
+
+    friend std::ostream& operator<<(std::ostream& os, const TopoCollectionInfo& i)
+    {
+        return os << "agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", collectionID=" << i.mCollectionID
+                  << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
+    }
+};
 
 } // namespace odc::core
 

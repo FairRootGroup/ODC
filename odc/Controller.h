@@ -292,42 +292,17 @@ struct StatusParams
     friend std::ostream& operator<<(std::ostream& os, const StatusParams& p) { return os << "StatusParams: running=" << p.m_running; }
 };
 
-struct TopoTaskInfo
-{
-    uint64_t mAgentID = 0; ///< Agent ID
-    uint64_t mSlotID = 0;  ///< Slot ID
-    uint64_t mTaskID = 0;  ///< Task ID, 0 if not assigned
-    std::string mPath;     ///< Path in the topology
-    std::string mHost;     ///< Hostname
-    std::string mWrkDir;   ///< Wrk directory
-
-    friend std::ostream& operator<<(std::ostream& os, const TopoTaskInfo& i)
-    {
-        return os << "agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", taskID=" << i.mTaskID
-                  << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
-    }
-};
-
-struct TopoCollectionInfo
-{
-    uint64_t mAgentID = 0; ///< Agent ID
-    uint64_t mSlotID = 0;  ///< Slot ID
-    uint64_t mCollectionID = 0;  ///< Task/Collection ID, 0 if not assigned
-    std::string mPath;     ///< Path in the topology
-    std::string mHost;     ///< Hostname
-    std::string mWrkDir;   ///< Wrk directory
-
-    friend std::ostream& operator<<(std::ostream& os, const TopoCollectionInfo& i)
-    {
-        return os << "agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", collectionID=" << i.mCollectionID
-                  << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
-    }
-};
-
 struct TopoGroupInfo
 {
-    uint64_t n;
-    uint64_t nmin;
+    uint64_t nOriginal;
+    uint64_t nCurrent;
+    uint64_t nMin;
+};
+
+struct FailedTasksCollections
+{
+    std::vector<TopoTaskInfo*> tasks;
+    std::vector<TopoCollectionInfo*> collections;
 };
 
 class Controller
@@ -339,7 +314,7 @@ class Controller
         std::shared_ptr<dds::tools_api::CSession> mDDSSession = nullptr; ///< DDS session
         std::unique_ptr<Topology> mTopology = nullptr; ///< Topology
         std::string mPartitionID; ///< External partition ID of this DDS session
-        std::map<std::string, TopoGroupInfo> mNmin; ///< Holds information on minimum number of groups, by group name
+        std::map<std::string, TopoGroupInfo> mNinfo; ///< Holds information on minimum number of groups, by group name
         std::string mTopoFilePath;
 
         void addToTaskCache(TopoTaskInfo&& taskInfo)
@@ -500,8 +475,8 @@ class Controller
 
     Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
 
-    std::vector<TopoCollectionInfo*> stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo);
-    bool attemptRecovery(std::vector<TopoCollectionInfo*>& failedCollections, SessionInfo& sessionInfo, const CommonParams& common);
+    FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo);
+    bool attemptRecovery(FailedTasksCollections& failed, SessionInfo& sessionInfo, const CommonParams& common);
 
     bool subscribeToDDSSession(const CommonParams& common, Error& error);
 

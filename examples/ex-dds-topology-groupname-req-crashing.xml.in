@@ -17,7 +17,7 @@
     </decltask>
 
     <decltask name="Processor">
-        <exe>odc-ex-processor --color false --self-destruct true --collection-index %collectionIndex% --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P odc --severity trace</exe>
+        <exe>odc-ex-processor --color false --self-destruct true --task-index %taskIndex% --collection-index %collectionIndex% --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P odc --severity trace</exe>
         <env reachable="false">@CMAKE_INSTALL_PREFIX@/@PROJECT_INSTALL_BINDIR@/odc-ex-env.sh</env>
         <properties>
             <name access="read">fmqchan_data1</name>
@@ -48,6 +48,7 @@
             <name>onlineReq</name>
         </requirements>
        <tasks>
+           <name>Processor</name>
            <name>Processor</name>
        </tasks>
     </declcollection>

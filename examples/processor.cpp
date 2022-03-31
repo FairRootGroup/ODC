@@ -30,10 +30,11 @@ struct Processor : fair::mq::Device
         });
 
         selfDestruct = GetConfig()->GetProperty<bool>("self-destruct", false);
+        taskIndex = GetConfig()->GetProperty<int>("task-index", 0);
         collectionIndex = GetConfig()->GetProperty<int>("collection-index", 0);
-        LOG(warn) << "collectionIndex == " << collectionIndex << " and --self-destruct == " << selfDestruct;
-        if (selfDestruct && collectionIndex % 2 != 0) {
-            LOG(warn) << "<<< collectionIndex == " << collectionIndex << " and --self-destruct is true, aborting >>>";
+        LOG(warn) << "<<< taskIndex == " << taskIndex << ", collectionIndex == " << collectionIndex << " and --self-destruct==" << selfDestruct;
+        if (selfDestruct && collectionIndex % 2 != 0 && taskIndex % 2 != 0) {
+            LOG(warn) << "<<< taskIndex == " << taskIndex << ", collectionIndex == " << collectionIndex << " and --self-destruct is true, aborting >>>";
             std::abort();
         }
     }
@@ -59,12 +60,14 @@ struct Processor : fair::mq::Device
     }
 
     bool selfDestruct = false;
+    int taskIndex = 0;
     int collectionIndex = 0;
 };
 
 void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()("self-destruct", bpo::value<bool>()->default_value(false), "If true, abort() during Init()");
+    options.add_options()("task-index", bpo::value<int>()->default_value(0), "DDS task index");
     options.add_options()("collection-index", bpo::value<int>()->default_value(0), "DDS collection index");
 }
 

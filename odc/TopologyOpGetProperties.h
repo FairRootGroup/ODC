@@ -75,7 +75,7 @@ struct GetPropertiesOp
     GetPropertiesOp& operator=(GetPropertiesOp&&) = default;
     ~GetPropertiesOp() = default;
 
-    auto Update(const DDSTask::Id taskId, cc::Result result, DeviceProperties props) -> void
+    void Update(const DDSTask::Id taskId, cc::Result result, DeviceProperties props)
     {
         std::lock_guard<std::mutex> lk(fMtx);
         if (result == cc::Result::Ok) {
@@ -98,7 +98,7 @@ struct GetPropertiesOp
     std::mutex& fMtx;
 
     /// precondition: fMtx is locked.
-    auto TryCompletion() -> void
+    void TryCompletion()
     {
         if (!fOp.IsCompleted() && fCount == fTasks.size()) {
             fTimer.cancel();

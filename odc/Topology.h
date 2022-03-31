@@ -131,7 +131,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         fDDSOnTaskDoneRequest->unsubscribeResponseCallback();
     }
 
-    auto GetTasks(const std::string& path = "") const -> std::vector<DDSTask>
+    // precondition: fMtx is locked.
+    std::vector<DDSTask> GetTasks(const std::string& path = "", bool firstRun = false) const
     {
         std::vector<DDSTask> list;
 
@@ -145,16 +146,47 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
         list.reserve(boost::size(tasks));
 
-        // std::cout << "Num of tasks: " << boost::size(tasks) << std::endl;
+        // std::cout << "GetTasks(): Num of tasks: " << boost::size(tasks) << std::endl;
         for (const auto& task : tasks) {
-            // std::cout << "Found task with id: " << task.first << ", "
+            // std::cout << "GetTasks(): Found task with id: " << task.first << ", "
             //            << "Path: " << task.second.m_taskPath << ", "
             //            << "Collection id: " << task.second.m_taskCollectionId << ", "
             //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex << std::endl;
+            if (!firstRun) {
+                const DeviceStatus& ds = fStateData.at(fStateIndex.at(task.first));
+                if (ds.ignored) {
+                    OLOG(debug) << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping";
+                    continue;
+                }
+            }
             list.emplace_back(task.first, task.second.m_taskCollectionId);
         }
 
         return list;
+    }
+
+    void IgnoreFailedTask(uint64_t id)
+    {
+        std::lock_guard<std::mutex> lk(*fMtx);
+        DeviceStatus& task = fStateData.at(fStateIndex.at(id));
+        task.ignored = true;
+    }
+
+    void IgnoreFailedCollections(const std::vector<TopoCollectionInfo*>& collections)
+    {
+        std::lock_guard<std::mutex> lk(*fMtx);
+        for (auto& device : fStateData) {
+            for (const auto& collection : collections) {
+                if (device.collectionId == collection->mCollectionID) {
+                    std::cout << "Ignoring device " << device.taskId << " from collection " << collection->mCollectionID << std::endl;
+                    if (device.subscribedToStateChanges) {
+                        device.subscribedToStateChanges = false;
+                        --fNumStateChangePublishers;
+                    }
+                    device.ignored = true;
+                }
+            }
+        }
     }
 
     void SubscribeToStateChanges()
@@ -185,8 +217,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             task.state = DeviceState::Error;
 
             if (task.exitCode > 0) {
-                fFailedDevices.emplace(task.taskId, false); // store task as failed, but not ignored, unless explicitly set by the user
-
                 for (auto& op : fChangeStateOps) {
                     op.second.Update(task.taskId, DeviceState::Error);
                 }
@@ -278,7 +308,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         });
     }
 
-    auto HandleCmd(cc::StateChangeSubscription const& cmd) -> void
+    void HandleCmd(cc::StateChangeSubscription const& cmd)
     {
         if (cmd.GetResult() == cc::Result::Ok) {
             DDSTask::Id taskId(cmd.GetTaskId());
@@ -327,7 +357,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         }
     }
 
-    auto HandleCmd(cc::StateChange const& cmd, uint64_t ddsSenderChannelId) -> void
+    void HandleCmd(cc::StateChange const& cmd, uint64_t ddsSenderChannelId)
     {
         if (cmd.GetCurrentState() == DeviceState::Exiting) {
             fDDSCustomCmd.send(cc::Cmds(cc::make<cc::StateChangeExitingReceived>()).Serialize(), std::to_string(ddsSenderChannelId));
@@ -359,7 +389,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         }
     }
 
-    auto HandleCmd(cc::TransitionStatus const& cmd) -> void
+    void HandleCmd(cc::TransitionStatus const& cmd)
     {
         if (cmd.GetResult() != cc::Result::Ok) {
             DDSTask::Id taskId(cmd.GetTaskId());
@@ -377,7 +407,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         }
     }
 
-    auto HandleCmd(cc::Properties const& cmd) -> void
+    void HandleCmd(cc::Properties const& cmd)
     {
         std::unique_lock<std::mutex> lk(*fMtx);
         try {
@@ -390,7 +420,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         }
     }
 
-    auto HandleCmd(cc::PropertiesSet const& cmd) -> void
+    void HandleCmd(cc::PropertiesSet const& cmd)
     {
         std::unique_lock<std::mutex> lk(*fMtx);
         try {
@@ -560,7 +590,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param path Select a subset of FairMQ devices in this topology, empty selects all
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    auto ChangeState(const TopologyTransition transition, const std::string& path = "", Duration timeout = Duration(0)) -> std::pair<std::error_code, TopologyState>
+    std::pair<std::error_code, TopologyState> ChangeState(const TopologyTransition transition, const std::string& path = "", Duration timeout = Duration(0))
     {
         SharedSemaphore blocker;
         std::error_code ec;
@@ -578,19 +608,19 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param transition FairMQ device state machine transition
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    auto ChangeState(const TopologyTransition transition, Duration timeout) -> std::pair<std::error_code, TopologyState> { return ChangeState(transition, "", timeout); }
+    std::pair<std::error_code, TopologyState> ChangeState(const TopologyTransition transition, Duration timeout) { return ChangeState(transition, "", timeout); }
 
     /// @brief Returns the current state of the topology
     /// @return map of id : DeviceStatus
-    auto GetCurrentState() const -> TopologyState
+    TopologyState GetCurrentState() const
     {
         std::lock_guard<std::mutex> lk(*fMtx);
         return fStateData;
     }
 
-    auto AggregateState() const -> DeviceState { return AggregateState(GetCurrentState()); }
+    DeviceState AggregateState() const { return AggregateState(GetCurrentState()); }
 
-    auto StateEqualsTo(DeviceState state) const -> bool { return StateEqualsTo(GetCurrentState(), state); }
+    bool StateEqualsTo(DeviceState state) const { return StateEqualsTo(GetCurrentState(), state); }
 
     /// @brief Initiate waiting for selected FairMQ devices to reach given last & current state in this topology
     /// @param targetLastState the target last device state to wait for
@@ -665,7 +695,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param path Select a subset of FairMQ devices in this topology, empty selects all
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    auto WaitForState(const DeviceState targetLastState, const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0)) -> std::error_code
+    std::error_code WaitForState(const DeviceState targetLastState, const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0))
     {
         SharedSemaphore blocker;
         std::error_code ec;
@@ -682,7 +712,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param path Select a subset of FairMQ devices in this topology, empty selects all
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    auto WaitForState(const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0)) -> std::error_code
+    std::error_code WaitForState(const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0))
     {
         return WaitForState(DeviceState::Undefined, targetCurrentState, path, timeout);
     }
@@ -738,7 +768,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param path Select a subset of FairMQ devices in this topology, empty selects all
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    auto GetProperties(const std::string& query, const std::string& path = "", Duration timeout = Duration(0)) -> std::pair<std::error_code, GetPropertiesResult>
+    std::pair<std::error_code, GetPropertiesResult> GetProperties(const std::string& query, const std::string& path = "", Duration timeout = Duration(0))
     {
         SharedSemaphore blocker;
         std::error_code ec;
@@ -803,7 +833,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param path Select a subset of FairMQ devices in this topology, empty selects all
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    auto SetProperties(DeviceProperties const& properties, const std::string& path = "", Duration timeout = Duration(0)) -> std::pair<std::error_code, FailedDevices>
+    std::pair<std::error_code, FailedDevices> SetProperties(DeviceProperties const& properties, const std::string& path = "", Duration timeout = Duration(0))
     {
         SharedSemaphore blocker;
         std::error_code ec;
@@ -841,28 +871,25 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     std::unordered_map<uint64_t, SetPropertiesOp<Executor, Allocator>> fSetPropertiesOps;
     std::unordered_map<uint64_t, GetPropertiesOp<Executor, Allocator>> fGetPropertiesOps;
 
-    std::unordered_map<uint64_t, bool> fFailedDevices; // device id -> ignore
-
-    auto makeTopologyState() -> void
+    void makeTopologyState()
     {
-        const auto tasks = GetTasks();
+        const auto tasks = GetTasks("", true);
         fStateData.reserve(tasks.size());
 
         int index = 0;
 
         for (const auto& task : tasks) {
-            fStateData.push_back(DeviceStatus{ false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId(), -1, -1 });
+            fStateData.push_back(DeviceStatus{ false, false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId(), -1, -1 });
             fStateIndex.emplace(task.GetId(), index);
             index++;
         }
     }
 
     /// precodition: fMtx is locked.
-    auto GetCurrentStateUnsafe() const -> TopologyState { return fStateData; }
+    TopologyState GetCurrentStateUnsafe() const { return fStateData; }
 };
 
 using Topology = BasicTopology<DefaultExecutor, DefaultAllocator>;
-using Topo = Topology;
 
 } // namespace odc::core
 

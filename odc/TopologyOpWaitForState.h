@@ -74,7 +74,7 @@ struct WaitForStateOp
     ~WaitForStateOp() = default;
 
     /// precondition: fMtx is locked.
-    auto ResetCount(const TopologyStateIndex& stateIndex, const TopologyState& stateData) -> void
+    void ResetCount(const TopologyStateIndex& stateIndex, const TopologyState& stateData)
     {
         fCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
             if (ContainsTask(stateData.at(s.second).taskId)) {
@@ -87,7 +87,7 @@ struct WaitForStateOp
     }
 
     /// precondition: fMtx is locked.
-    auto Update(const DDSTask::Id taskId, const DeviceState lastState, const DeviceState currentState) -> void
+    void Update(const DDSTask::Id taskId, const DeviceState lastState, const DeviceState currentState)
     {
         if (!fOp.IsCompleted() && ContainsTask(taskId)) {
             if (currentState == fTargetCurrentState && (lastState == fTargetLastState || fTargetLastState == DeviceState::Undefined)) {
@@ -102,7 +102,7 @@ struct WaitForStateOp
     }
 
     /// precondition: fMtx is locked.
-    auto TryCompletion() -> void
+    void TryCompletion()
     {
         if (!fOp.IsCompleted() && fCount == fTasks.size()) {
             fTimer.cancel();
@@ -128,7 +128,7 @@ struct WaitForStateOp
     bool fErrored;
 
     /// precondition: fMtx is locked.
-    auto ContainsTask(DDSTask::Id id) -> bool
+    bool ContainsTask(DDSTask::Id id)
     {
         auto it = std::find_if(fTasks.begin(), fTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
         return it != fTasks.end();
