@@ -899,7 +899,7 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
         string err;
         int exitCode{ EXIT_SUCCESS };
         string cmd{ ssCmd.str() };
-        OLOG(info, common) << "Executing topology script " << quoted(cmd);
+        OLOG(info, common) << "Executing topology script: " << cmd;
         execute(cmd, requestTimeout(common), &out, &err, &exitCode);
 
         if (exitCode != EXIT_SUCCESS) {
