@@ -609,7 +609,6 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
 
     size_t numTasks = topoState.size();
     size_t numFailedTasks = 0;
-    stringstream ss;
     for (const auto& status : topoState) {
         // Print only failed devices
         if (status.state == expectedState) {
@@ -618,9 +617,10 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
 
         numFailedTasks++;
         if (numFailedTasks == 1) {
-            ss << "Following devices failed to transition to " << expectedState << " state:";
+            OLOG(error, common) << "Following devices failed to transition to " << expectedState << " state:";
         }
-        ss << "\n" << right << setw(7) << numFailedTasks << " Device: state: " << status.state << ", previous state: " << status.lastState
+        stringstream ss;
+        ss << "Device " << numFailedTasks << ": state: " << status.state << ", previous state: " << status.lastState
            << ", taskID: " << status.taskId << ", collectionID: " << status.collectionId << ", "
            << "subscribed: " << boolalpha << status.subscribedToStateChanges;
 
@@ -631,11 +631,7 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
         } catch (const exception& e) {
             OLOG(error, common) << "State summary error: " << e.what();
         }
-    }
-
-    if (numFailedTasks > 0) {
         OLOG(error, common) << ss.str();
-        ss.str(string());
     }
 
     auto collectionMap{ GroupByCollectionId(topoState) };
@@ -651,21 +647,18 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
 
             numFailedCollections++;
             if (numFailedCollections == 1) {
-                ss << "\n" << "Following collections failed to transition to " << expectedState << " state:";
+                OLOG(error, common) << "Following collections failed to transition to " << expectedState << " state:";
             }
-            ss << "\n" << right << setw(7) << numFailedCollections << " Collection: state: " << collectionState;
+            stringstream ss;
+            ss << "Collection " << numFailedCollections << ": state: " << collectionState;
 
             TopoCollectionInfo& collectionInfo = sessionInfo.getFromCollectionCache(collectionId);
             failed.collections.push_back(&collectionInfo);
             ss << ", " << collectionInfo;
+            OLOG(error, common) << ss.str();
         } catch (const exception& e) {
             OLOG(error, common) << "State summary error: " << e.what();
         }
-    }
-
-    if (numFailedCollections > 0) {
-        OLOG(error, common) << ss.str();
-        ss.str(string());
     }
 
     size_t numSuccessfulTasks = numTasks - numFailedTasks;
