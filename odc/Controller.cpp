@@ -899,8 +899,8 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
             throw runtime_error(toString("Topology generation script ", quoted(cmd), " failed with exit code: ", exitCode, "; stderr: ", quoted(err), "; stdout: ", quoted(out)));
         }
 
-        const string sout{ out.substr(0, min(out.length(), size_t(20))) };
-        OLOG(info, common) << "Topology script executed successfully: stdout (" << quoted(sout) << "...) stderr (" << quoted(err) << ")";
+        const string shortOut{ out.substr(0, min(out.length(), size_t(20))) };
+        OLOG(info, common) << "Topology script executed successfully: stdout (" << quoted(shortOut) << "...) stderr (" << quoted(err) << ")";
 
         content = out;
     }

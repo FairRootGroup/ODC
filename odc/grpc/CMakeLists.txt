@@ -33,3 +33,13 @@ target_link_libraries(${target} PUBLIC
   gRPC::grpc++
   ODC::odc
 )
+
+set(exe odc-grpc-server)
+add_executable(${exe} "Server.cpp")
+target_link_libraries(${exe} PRIVATE Boost::boost Boost::program_options ODC::grpc)
+install(TARGETS ${exe} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
+
+set(exe odc-grpc-client)
+add_executable(${exe} "Client.cpp")
+target_link_libraries(${exe} PRIVATE Boost::boost Boost::program_options ODC::grpc)
+install(TARGETS ${exe} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
