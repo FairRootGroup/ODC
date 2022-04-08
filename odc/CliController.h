@@ -9,7 +9,7 @@
 #ifndef ODC_CLI_CONTROLLER
 #define ODC_CLI_CONTROLLER
 
-#include <odc/CliServiceHelper.h>
+#include <odc/CliControllerHelper.h>
 #include <odc/Controller.h>
 #include <odc/DDSSubmit.h>
 
@@ -18,7 +18,7 @@
 
 namespace odc::cli
 {
-class Controller : public core::CliServiceHelper<Controller>
+class Controller : public core::CliControllerHelper<Controller>
 {
   public:
     Controller() {}

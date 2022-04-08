@@ -91,10 +91,10 @@ int main(int argc, char** argv)
         string sshopt;
 
         bpo::options_description opts("odc-rp-epn options");
-        CliHelper::addHelpOptions(opts);
-        CliHelper::addVersionOptions(opts);
+        opts.add_options()("help,h", "Print help");
+        opts.add_options()("version,v", "Print version");
         CliHelper::addLogOptions(opts, logConfig);
-        CliHelper::addPartitionOptions(opts, partitionID);
+        opts.add_options()("id", boost::program_options::value<std::string>(&partitionID)->default_value(""), "Partition ID");
         opts.add_options()("res", bpo::value<string>(&res)->default_value("{\"zone\":\"online\",\"n\":1}"), "Resource description in JSON format");
         opts.add_options()("host", bpo::value<string>(&host)->default_value("localhost:50001"), "EPN controller endpoint");
         opts.add_options()("release", bpo::bool_switch(&release)->default_value(false), "If set then release allocation");

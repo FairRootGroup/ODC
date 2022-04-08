@@ -40,14 +40,14 @@ int main(int argc, char** argv)
 
         // Generic options
         bpo::options_description options("odc-cli-server options");
-        CliHelper::addHelpOptions(options);
-        CliHelper::addVersionOptions(options);
-        CliHelper::addTimeoutOptions(options, timeout);
+        options.add_options()("help,h", "Print help");
+        options.add_options()("version,v", "Print version");
+        options.add_options()("timeout", boost::program_options::value<size_t>(&timeout)->default_value(30), "Timeout of requests in sec");
         CliHelper::addLogOptions(options, logConfig);
         CliHelper::addBatchOptions(options, batchOptions, batch);
-        CliHelper::addResourcePluginOptions(options, pluginMap);
-        CliHelper::addRequestTriggersOptions(options, triggerMap);
-        CliHelper::addRestoreOptions(options, restoreId);
+        options.add_options()("rp", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )");
+        options.add_options()("rt", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register request triggers ( name1:cmd1 name2:cmd2 )");
+        options.add_options()("restore", boost::program_options::value<std::string>(&restoreId)->default_value(""), "If set ODC will restore the sessions from file with specified ID");
 
         // Parsing command-line
         bpo::variables_map vm;

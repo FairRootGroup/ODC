@@ -9,8 +9,8 @@
 //
 // This file contains a number of helpers to calculate execution time of a function.
 //
-#ifndef __ODC__CCmdsFile__
-#define __ODC__CCmdsFile__
+#ifndef __ODC__CmdsFile__
+#define __ODC__CmdsFile__
 
 #include <fstream>
 #include <iomanip>
@@ -20,7 +20,7 @@
 
 namespace odc::core {
 
-class CCmdsFile
+class CmdsFile
 {
   public:
     static std::vector<std::string> getCmds(const std::string& _filepath)
@@ -46,4 +46,4 @@ class CCmdsFile
 
 } // namespace odc::core
 
-#endif /*__ODC__CCmdsFile__*/
+#endif /*__ODC__CmdsFile__*/

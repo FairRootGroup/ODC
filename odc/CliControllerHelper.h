@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef __ODC__CliServiceHelper__
-#define __ODC__CliServiceHelper__
+#ifndef ODC_CLICONTROLLERHELPER
+#define ODC_CLICONTROLLERHELPER
 
 // ODC
 #include <odc/CliHelper.h>
@@ -32,7 +32,7 @@ namespace bpo = boost::program_options;
 namespace odc::core {
 
 template<typename Owner>
-class CliServiceHelper
+class CliControllerHelper
 {
   public:
     /// \brief Run the service
@@ -45,7 +45,7 @@ class CliServiceHelper
         if (cmds.empty()) {
 #ifdef READLINE_AVAIL
             // Register command completion handler
-            rl_attempted_completion_function = &CliServiceHelper::commandCompleter;
+            rl_attempted_completion_function = &CliControllerHelper::commandCompleter;
 #endif
             while (true) {
                 std::string cmd;
@@ -111,7 +111,7 @@ class CliServiceHelper
 
         // Use command completion only for the first position
         if (start == 0) {
-            return rl_completion_matches(text, &CliServiceHelper::commandGenerator);
+            return rl_completion_matches(text, &CliControllerHelper::commandGenerator);
         }
         // Returning nullptr here will make readline use the default filename completer
         return nullptr;
@@ -151,7 +151,7 @@ class CliServiceHelper
         try {
             // Options description: generic + request specific
             bpo::options_description options("Request options");
-            CliHelper::addHelpOptions(options);
+            options.add_options()("help,h", "Print help");
 
             // Loop over input parameters and add program options
             std::apply([&options](auto&&... args2) { ((CliHelper::addOptions(options, args2)), ...); }, std::tie(params...));
@@ -282,4 +282,4 @@ class CliServiceHelper
 };
 } // namespace odc::core
 
-#endif /* defined(__ODC__CliServiceHelper__) */
+#endif /* defined(ODC_CLICONTROLLERHELPER) */

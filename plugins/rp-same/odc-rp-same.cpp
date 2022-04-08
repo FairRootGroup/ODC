@@ -13,11 +13,9 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 // ODC
-#include <odc/CliHelper.h>
 #include <odc/Version.h>
 
 using namespace std;
-using namespace odc::core;
 namespace bpo = boost::program_options;
 
 int main(int argc, char** argv)
@@ -27,9 +25,9 @@ int main(int argc, char** argv)
         std::string partitionID;
 
         bpo::options_description options("odc-rp-same options");
-        CliHelper::addHelpOptions(options);
-        CliHelper::addVersionOptions(options);
-        CliHelper::addPartitionOptions(options, partitionID);
+        options.add_options()("help,h", "Print help");
+        options.add_options()("version,v", "Print version");
+        options.add_options()("id", boost::program_options::value<std::string>(&partitionID)->default_value(""), "Partition ID");
         options.add_options()("res", bpo::value<string>(&res)->default_value(""), "Resource description");
 
         bpo::variables_map vm;
@@ -42,7 +40,7 @@ int main(int argc, char** argv)
         }
 
         if (vm.count("version")) {
-            OLOG(clean) << ODC_VERSION;
+            cout << ODC_VERSION << endl;
             return EXIT_SUCCESS;
         }
 

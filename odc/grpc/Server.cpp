@@ -28,6 +28,18 @@ using namespace std;
 using namespace odc::core;
 namespace bpo = boost::program_options;
 
+template<typename C>
+void runController(C& ctrl, size_t timeout, CPluginManager::PluginMap_t& plugins, CPluginManager::PluginMap_t& triggers, const std::string& restoreId, const std::string& host)
+{
+    ctrl.setTimeout(chrono::seconds(timeout));
+    ctrl.registerResourcePlugins(plugins);
+    ctrl.registerRequestTriggers(triggers);
+    if (!restoreId.empty()) {
+        ctrl.restore(restoreId);
+    }
+    ctrl.run(host);
+}
+
 int main(int argc, char** argv)
 {
     try {
@@ -35,20 +47,20 @@ int main(int argc, char** argv)
         size_t timeout;
         string host;
         CLogger::SConfig logConfig;
-        CPluginManager::PluginMap_t pluginMap;
-        CPluginManager::PluginMap_t triggerMap;
+        CPluginManager::PluginMap_t plugins;
+        CPluginManager::PluginMap_t triggers;
         string restoreId;
 
         bpo::options_description options("dds-control-server options");
-        CliHelper::addHelpOptions(options);
-        CliHelper::addVersionOptions(options);
-        CliHelper::addSyncOptions(options, sync);
-        CliHelper::addTimeoutOptions(options, timeout);
-        CliHelper::addHostOptions(options, host);
+        options.add_options()("help,h", "Print help");
+        options.add_options()("version,v", "Print version");
+        options.add_options()("sync", boost::program_options::bool_switch(&sync)->default_value(false), "Use sync implementation of the gRPC server");
+        options.add_options()("timeout", boost::program_options::value<size_t>(&timeout)->default_value(30), "Timeout of requests in sec");
+        options.add_options()("host", boost::program_options::value<std::string>(&host)->default_value("localhost:50051"), "Server address");
         CliHelper::addLogOptions(options, logConfig);
-        CliHelper::addResourcePluginOptions(options, pluginMap);
-        CliHelper::addRequestTriggersOptions(options, triggerMap);
-        CliHelper::addRestoreOptions(options, restoreId);
+        options.add_options()("rp", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )");
+        options.add_options()("rt", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register request triggers ( name1:cmd1 name2:cmd2 )");
+        options.add_options()("restore", boost::program_options::value<std::string>(&restoreId)->default_value(""), "If set ODC will restore the sessions from file with specified ID");
 
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
@@ -73,27 +85,15 @@ int main(int argc, char** argv)
 
         setupGrpcVerbosity(logConfig.m_severity);
 
-        CliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
-        CliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
+        CliHelper::parsePluginMapOptions(vm, plugins, "rp");
+        CliHelper::parsePluginMapOptions(vm, triggers, "rt");
 
         if (sync) {
             odc::grpc::SyncController ctrl;
-            ctrl.setTimeout(chrono::seconds(timeout));
-            ctrl.registerResourcePlugins(pluginMap);
-            ctrl.registerRequestTriggers(triggerMap);
-            if (!restoreId.empty()) {
-                ctrl.restore(restoreId);
-            }
-            ctrl.run(host);
+            runController(ctrl, timeout, plugins, triggers, restoreId, host);
         } else {
             odc::grpc::AsyncController ctrl;
-            ctrl.setTimeout(chrono::seconds(timeout));
-            ctrl.registerResourcePlugins(pluginMap);
-            ctrl.registerRequestTriggers(triggerMap);
-            if (!restoreId.empty()) {
-                ctrl.restore(restoreId);
-            }
-            ctrl.run(host);
+            runController(ctrl, timeout, plugins, triggers, restoreId, host);
         }
     } catch (exception& _e) {
         OLOG(clean) << _e.what();

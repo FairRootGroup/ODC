@@ -33,9 +33,9 @@ int main(int argc, char** argv)
 
         bpo::options_description options("grpc-client options");
         options.add_options()("severity", bpo::value<ESeverity>(&gRPCSeverity)->default_value(ESeverity::info), "gRPC verbosity (inf/dbg/err)");
-        CliHelper::addHelpOptions(options);
-        CliHelper::addVersionOptions(options);
-        CliHelper::addHostOptions(options, host);
+        options.add_options()("help,h", "Print help");
+        options.add_options()("version,v", "Print version");
+        options.add_options()("host", boost::program_options::value<std::string>(&host)->default_value("localhost:50051"), "Server address");
         CliHelper::addBatchOptions(options, batchOptions, batch);
 
         bpo::variables_map vm;

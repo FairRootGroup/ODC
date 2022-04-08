@@ -10,7 +10,7 @@
 #define ODC_GRPCCONTROLCLIENT
 
 // ODC
-#include <odc/CliServiceHelper.h>
+#include <odc/CliControllerHelper.h>
 // STD
 #include <iostream>
 #include <memory>
@@ -20,7 +20,7 @@
 #include <grpcpp/grpcpp.h>
 #include <odc/grpc/odc.grpc.pb.h>
 
-class GrpcControlClient : public odc::core::CliServiceHelper<GrpcControlClient>
+class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClient>
 {
   public:
     GrpcControlClient(std::shared_ptr<grpc::Channel> channel)
