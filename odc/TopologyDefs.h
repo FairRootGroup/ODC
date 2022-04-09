@@ -68,16 +68,18 @@ class DDSTask
     DDSCollection::Id fCollectionId;
 };
 
-static const std::map<DeviceTransition, DeviceState> gExpectedState = { { DeviceTransition::InitDevice, DeviceState::InitializingDevice },
-                                                                        { DeviceTransition::CompleteInit, DeviceState::Initialized },
-                                                                        { DeviceTransition::Bind, DeviceState::Bound },
-                                                                        { DeviceTransition::Connect, DeviceState::DeviceReady },
-                                                                        { DeviceTransition::InitTask, DeviceState::Ready },
-                                                                        { DeviceTransition::Run, DeviceState::Running },
-                                                                        { DeviceTransition::Stop, DeviceState::Ready },
-                                                                        { DeviceTransition::ResetTask, DeviceState::DeviceReady },
-                                                                        { DeviceTransition::ResetDevice, DeviceState::Idle },
-                                                                        { DeviceTransition::End, DeviceState::Exiting } };
+static const std::map<DeviceTransition, DeviceState> gExpectedState = {
+    { DeviceTransition::InitDevice,   DeviceState::InitializingDevice },
+    { DeviceTransition::CompleteInit, DeviceState::Initialized        },
+    { DeviceTransition::Bind,         DeviceState::Bound              },
+    { DeviceTransition::Connect,      DeviceState::DeviceReady        },
+    { DeviceTransition::InitTask,     DeviceState::Ready              },
+    { DeviceTransition::Run,          DeviceState::Running            },
+    { DeviceTransition::Stop,         DeviceState::Ready              },
+    { DeviceTransition::ResetTask,    DeviceState::DeviceReady        },
+    { DeviceTransition::ResetDevice,  DeviceState::Idle               },
+    { DeviceTransition::End,          DeviceState::Exiting            }
+};
 
 // mirrors DeviceState, but adds a "Mixed" state that represents a topology where devices are currently not in the
 // same state.

@@ -100,16 +100,21 @@ class Controller final
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
-        OLOG(info, commonParams) << "GetState request from " << client << ":\n" << req->DebugString();
+        OLOG(info, commonParams) << "GetState request from " << client << ": "
+                                 << "partitionId: " << req->partitionid()
+                                 << ", runnr: " << req->runnr()
+                                 << ", timeout: " << req->timeout()
+                                 << ", path: " << req->path()
+                                 << ", detailed: " << req->detailed();
         core::DeviceParams deviceParams{ req->path(), req->detailed() };
         core::RequestResult res{ mController.execGetState(commonParams, deviceParams) };
         setupStateReply(rep, res);
 
         if (rep->reply().status() == odc::ReplyStatus::ERROR) {
-            OLOG(error, commonParams) << "GetState response:"
-                                      << " ERROR"
-                                      << " (" << rep->reply().error().code() << "), sessionId: " << rep->reply().sessionid()
-                                      << ", partitionId: " << rep->reply().partitionid() << ", state: " << rep->reply().state()
+            OLOG(error, commonParams) << "GetState response: ERROR" << " (" << rep->reply().error().code() << ")"
+                                      << ", sessionId: " << rep->reply().sessionid()
+                                      << ", partitionId: " << rep->reply().partitionid()
+                                      << ", state: " << rep->reply().state()
                                       << ", msg: " << rep->reply().error().msg();
         } else if (rep->reply().status() == odc::ReplyStatus::SUCCESS) {
             std::stringstream ss;
@@ -240,7 +245,10 @@ class Controller final
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams commonParams(req->partitionid(), req->runnr(), req->timeout());
         std::lock_guard<std::mutex> lock(getMutex(commonParams.mPartitionID));
-        OLOG(info, commonParams) << "Shutdown request from " << client << ":\n" << req->DebugString();
+        OLOG(info, commonParams) << "Shutdown request from " << client << ": "
+                                 << "partitionId: " << req->partitionid()
+                                 << ", runnr: " << req->runnr()
+                                 << ", timeout: " << req->timeout();
         core::RequestResult res{ mController.execShutdown(commonParams) };
         setupGeneralReply(rep, res);
         logResponse("Shutdown response:\n", commonParams, rep);
@@ -251,10 +259,22 @@ class Controller final
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
-        OLOG(info) << "Status request from " << client << ":\n" << req->DebugString();
+        OLOG(info) << "Status request from " << client << ": " << req->DebugString();
         core::StatusRequestResult res{ mController.execStatus(core::StatusParams(req->running())) };
         setupStatusReply(rep, res);
-        logResponse("Status response:\n", core::CommonParams(), rep);
+
+        if (rep->status() == odc::ReplyStatus::SUCCESS) {
+            OLOG(info) << "Status: found " << rep->partitions().size() << " partitions" << (rep->partitions().size() > 0 ? ":" : "");
+            for (const auto& p : rep->partitions()) {
+                OLOG(info) << "  partitionId: " << p.partitionid()
+                           << ", DDS session status: " << odc::SessionStatus_Name(p.status())
+                           << ", DDS session ID: " << p.sessionid()
+                           << ", topology state: " << p.state();
+            }
+        } else {
+            OLOG(error) << "Status: " << rep->DebugString();
+        }
+
         return ::grpc::Status::OK;
     }
 

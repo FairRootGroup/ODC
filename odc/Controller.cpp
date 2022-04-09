@@ -663,9 +663,9 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
 
     size_t numSuccessfulTasks = numTasks - numFailedTasks;
     size_t numSuccessfulCollections = numCollections - numFailedCollections;
-    OLOG(error, common) << "\nSummary after transitioning to " << expectedState << " state:\n"
-       << "  [tasks] total: " << numTasks << ", successful: " << numSuccessfulTasks << ", failed: " << numFailedTasks << "\n"
-       << "  [collections] total: " << numCollections << ", successful: " << numSuccessfulCollections << ", failed: " << numFailedCollections;
+    OLOG(error, common) << "Summary after transitioning to " << expectedState << " state:"
+       << "\n  [tasks] total: " << numTasks << ", successful: " << numSuccessfulTasks << ", failed: " << numFailedTasks
+       << "\n  [collections] total: " << numCollections << ", successful: " << numSuccessfulCollections << ", failed: " << numFailedCollections;
 
     return failed;
 }
