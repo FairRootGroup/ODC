@@ -244,7 +244,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
         OLOG(error, common) << error;
     }
 
-    sessionInfo.debug();
+    // sessionInfo.debug();
 
     OLOG(info, common) << "Topology " << quoted(topologyFile) << ((success) ? " activated successfully" : " failed to activate");
     return success;
