@@ -28,13 +28,22 @@ set(test ${target}::batch_cmds_from_file)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_SOURCE_DIR}/batch_cmds.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "Sleeping 100 ms" ENVIRONMENT "${TEST_ENV}")
 
-# Test `--script` option of odc-cli-server
 set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
+
+# Test `--script` option of odc-cli-server
 configure_file(batch_cmds_with_script.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 set(target odc-cli-server)
 set(test ${target}::batch_cmds_from_file_with_script)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg)
+set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
+
+# Test nmin feature that reduces set of active devices when some fail, without reporting failure
+configure_file(batch_cmds_nmin.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_nmin.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_nmin.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+set(target odc-cli-server)
+set(test ${target}::batch_cmds_from_file_nmin)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_nmin.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
 #

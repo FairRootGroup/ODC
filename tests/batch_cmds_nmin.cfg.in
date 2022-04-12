@@ -1,0 +1,10 @@
+.init --id needuuid
+.submit --id needuuid -p odc-rp-same -r "<rms>localhost</rms><agents>1</agents><agentGroup>calib</agentGroup><slots>2</slots>"
+.submit --id needuuid -p odc-rp-same -r "<rms>localhost</rms><agents>1</agents><agentGroup>online</agentGroup><slots>2</slots>"
+.submit --id needuuid -p odc-rp-same -r "<rms>localhost</rms><agents>1</agents><agentGroup>online</agentGroup><slots>2</slots>"
+.submit --id needuuid -p odc-rp-same -r "<rms>localhost</rms><agents>1</agents><agentGroup>online</agentGroup><slots>2</slots>"
+.submit --id needuuid -p odc-rp-same -r "<rms>localhost</rms><agents>1</agents><agentGroup>online</agentGroup><slots>2</slots>"
+.activate --id needuuid --topo "@ODC_DATADIR@/ex-dds-topology-groupname-req-crashing.xml"
+.config  --id needuuid
+.down  --id needuuid
+.quit
