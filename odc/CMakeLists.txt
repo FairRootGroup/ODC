@@ -85,3 +85,8 @@ if(BUILD_CLI_SERVER)
   target_link_libraries(${exe} PRIVATE Boost::boost Boost::program_options ODC::odc)
   install(TARGETS ${exe} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 endif()
+
+set(exe odc-uuid-gen)
+add_executable(${exe} "UuidGenerator.cpp")
+target_link_libraries(${exe} PRIVATE Boost::boost Boost::program_options ODC::odc)
+install(TARGETS ${exe} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
