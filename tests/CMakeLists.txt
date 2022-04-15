@@ -15,41 +15,73 @@ list(APPEND TEST_ENV "PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}:$EN
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/tmp")
 list(APPEND TEST_ENV "TMPDIR=${CMAKE_BINARY_DIR}/tmp")
 
-# Test odc-cli-server with default set of options
 set(target odc-cli-server)
+# Test odc-cli-server with default set of options
 set(test ${target}::default)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
+set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
+string(RANDOM LENGTH 8 TEST_SESSION)
+
 # Test odc-cli-server by sending different commands without running session
-install(FILES batch_cmds.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
-set(target odc-cli-server)
+configure_file(cmds.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmds.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmds.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 set(test ${target}::batch_cmds_from_file)
-add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_SOURCE_DIR}/batch_cmds.cfg)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmds.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "Sleeping 100 ms" ENVIRONMENT "${TEST_ENV}")
 
-set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
+string(RANDOM LENGTH 8 TEST_SESSION)
 
-# Test `--script` option of odc-cli-server
-configure_file(batch_cmds_with_script.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
-set(target odc-cli-server)
+# Test --script option of odc-cli-server
+configure_file(cmds_with_script.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_with_script.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_with_script.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 set(test ${target}::batch_cmds_from_file_with_script)
-add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_with_script.cfg)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_with_script.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
-# Test nmin feature that reduces set of active devices when some fail, without reporting failure
-configure_file(batch_cmds_nmin.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_nmin.cfg @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_nmin.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
-set(target odc-cli-server)
-set(test ${target}::batch_cmds_from_file_nmin)
-add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/batch_cmds_nmin.cfg)
-set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
+# Test nmin feature that reduces set of active devices when some fail, without failing entire topology
+macro(add_nmin_test TITLE PASS FAIL)
+  set(TEST_SETUP test_${TITLE})
+  string(RANDOM LENGTH 8 TEST_SESSION)
+  configure_file(topos/${TITLE}.xml.in ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.xml @ONLY)
+  configure_file(nmin.cfg.in           ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.cfg @ONLY)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+  add_test(NAME ${TITLE} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.cfg)
+  set_tests_properties(${TITLE} PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "${PASS}" FAIL_REGULAR_EXPRESSION "${FAIL}" ENVIRONMENT "${TEST_ENV}")
+endmacro()
 
-#
+# nmin is 0 - group can have no collections left
+add_nmin_test(nmin_0 "" "Status code: ERROR")
+
+# nmin: a collection outside of group should fail
+add_nmin_test(nmin_col_outside_group "Status code: ERROR" "")
+
+# nmin equals n - failure of one collection should lead a failure of entire topology
+add_nmin_test(nmin_eq_n "Status code: ERROR" "")
+
+# nmin greater n - invalid combination, any failure leads to complete topology failure
+add_nmin_test(nmin_gt_n "Status code: ERROR" "")
+
+# nmin is less than n - recovery should be possible if conditions satisfied
+add_nmin_test(nmin_lt_n "" "Status code: ERROR")
+
+# TODO: fix this case
+# multiple collections per group are currently not allowed (might change in the future) - failure results in complete topology failure
+# add_nmin_test(nmin_multiple_cols_per_group "Status code: ERROR" "")
+
+# when nmin is not defined, failure of one task leads to entire topology failure
+add_nmin_test(nmin_not_defined "Status code: ERROR" "")
+
+# currently failure of tasks outside of collection lead to entire topology fail
+add_nmin_test(nmin_tasks_outside_col "Status code: ERROR" "")
+
+# currently failure of tasks outside of group leads to entire topology fail
+add_nmin_test(nmin_tasks_outside_group "Status code: ERROR" "")
+
 # Boost.UTF tests
-#
-install(FILES odc-tests-topo.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
+install(FILES topos/odc-tests-topo.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
 odc_add_boost_tests(SUITE odc
   TESTS
   async_op/cancel

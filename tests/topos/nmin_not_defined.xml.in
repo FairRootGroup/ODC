@@ -1,6 +1,7 @@
 <topology name="Example">
 
-    <var name="odc_nmin_ProcessorGroup" value="2" />
+    <declrequirement name="onlineReq" type="groupname" value="online"/>
+    <declrequirement name="calibReq" type="groupname" value="calib"/>
 
     <property name="fmqchan_data1" />
     <property name="fmqchan_data2" />
@@ -14,7 +15,7 @@
     </decltask>
 
     <decltask name="Processor">
-        <exe>odc-ex-processor --color false --self-destruct true --collection-index %collectionIndex% --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P odc --severity trace</exe>
+        <exe>odc-ex-processor --color false --self-destruct-collection-index 0 --task-index %taskIndex% --collection-index %collectionIndex% --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P odc --severity trace</exe>
         <env reachable="false">@CMAKE_INSTALL_PREFIX@/@PROJECT_INSTALL_BINDIR@/odc-ex-env.sh</env>
         <properties>
             <name access="read">fmqchan_data1</name>
@@ -31,6 +32,9 @@
     </decltask>
 
     <declcollection name="SamplersSinks">
+        <requirements>
+            <name>calibReq</name>
+        </requirements>
        <tasks>
            <name>Sampler</name>
            <name>Sink</name>
@@ -38,14 +42,18 @@
     </declcollection>
 
     <declcollection name="Processors">
+        <requirements>
+            <name>onlineReq</name>
+        </requirements>
        <tasks>
+           <name>Processor</name>
            <name>Processor</name>
        </tasks>
     </declcollection>
 
     <main name="main">
         <collection>SamplersSinks</collection>
-        <group name="ProcessorGroup" n="@ODC_VAR_EXAMPLE_N@">
+        <group name="ProcessorGroup" n="4">
             <collection>Processors</collection>
         </group>
     </main>

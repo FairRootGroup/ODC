@@ -17,7 +17,7 @@
     </decltask>
 
     <decltask name="Processor">
-        <exe>odc-ex-processor --color false --self-destruct-collection-index 0,2 --self-destruct-task-index 0 --task-index %taskIndex% --collection-index %collectionIndex% --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P odc --severity trace</exe>
+        <exe>odc-ex-processor --color false --self-destruct-paths main/Processors1_0/Processor_0 --channel-config name=data1,type=pull,method=connect name=data2,type=push,method=connect -P odc --severity trace</exe>
         <env reachable="false">@CMAKE_INSTALL_PREFIX@/@PROJECT_INSTALL_BINDIR@/odc-ex-env.sh</env>
         <properties>
             <name access="read">fmqchan_data1</name>
@@ -43,20 +43,29 @@
        </tasks>
     </declcollection>
 
-    <declcollection name="Processors">
+    <declcollection name="Processors1">
         <requirements>
             <name>onlineReq</name>
         </requirements>
        <tasks>
            <name>Processor</name>
+       </tasks>
+    </declcollection>
+
+    <declcollection name="Processors2">
+        <requirements>
+            <name>onlineReq</name>
+        </requirements>
+       <tasks>
            <name>Processor</name>
        </tasks>
     </declcollection>
 
     <main name="main">
         <collection>SamplersSinks</collection>
-        <group name="ProcessorGroup" n="@ODC_VAR_EXAMPLE_N@">
-            <collection>Processors</collection>
+        <collection>Processors1</collection>
+        <group name="ProcessorGroup" n="4">
+            <collection>Processors2</collection>
         </group>
     </main>
 

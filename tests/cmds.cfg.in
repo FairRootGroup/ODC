@@ -1,0 +1,16 @@
+.submit --id @TEST_SESSION@
+.activate --id @TEST_SESSION@
+.prop --id @TEST_SESSION@
+.upscale --id @TEST_SESSION@
+.downscale --id @TEST_SESSION@
+.state --id @TEST_SESSION@
+.config --id @TEST_SESSION@
+.start --id @TEST_SESSION@
+.stop --id @TEST_SESSION@
+.reset --id @TEST_SESSION@
+.term --id @TEST_SESSION@
+.down --id @TEST_SESSION@
+.status --id @TEST_SESSION@
+.init --id @TEST_SESSION@
+.down --id @TEST_SESSION@
+.sleep --ms 100
