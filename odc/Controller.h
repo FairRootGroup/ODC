@@ -450,9 +450,9 @@ class Controller
     RequestResult createRequestResult(const CommonParams& common, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
     bool createDDSSession(const CommonParams& common, Error& error);
     bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
-    bool submitDDSAgents(const CommonParams& common, Error& error, const CDDSSubmit::SParams& params);
+    bool submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, const CDDSSubmit::SParams& params);
     bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
-    bool waitForNumActiveAgents(const CommonParams& common, Error& error, size_t numAgents);
+    bool waitForNumActiveAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, size_t numAgents);
     bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
     bool shutdownDDSSession(const CommonParams& common, Error& error);
     bool resetTopology(const CommonParams& common);

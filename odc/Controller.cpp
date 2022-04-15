@@ -105,7 +105,7 @@ bool Controller::attachToDDSSession(const CommonParams& common, Error& error, co
     return true;
 }
 
-bool Controller::submitDDSAgents(const CommonParams& common, Error& error, const CDDSSubmit::SParams& params)
+bool Controller::submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, const CDDSSubmit::SParams& params)
 {
     bool success(true);
 
@@ -115,7 +115,7 @@ bool Controller::submitDDSAgents(const CommonParams& common, Error& error, const
     requestInfo.m_slots = params.m_numSlots;
     requestInfo.m_config = params.m_configFile;
     requestInfo.m_groupName = params.m_agentGroup;
-    OLOG(info) << "dds::tools_api::SSubmitRequest: " << requestInfo;
+    OLOG(info, common) << "dds::tools_api::SSubmitRequest: " << requestInfo;
 
     condition_variable cv;
 
@@ -135,8 +135,7 @@ bool Controller::submitDDSAgents(const CommonParams& common, Error& error, const
         cv.notify_all();
     });
 
-    auto& info = getOrCreateSessionInfo(common);
-    info.mDDSSession->sendRequest<dds::tools_api::SSubmitRequest>(requestPtr);
+    sessionInfo.mDDSSession->sendRequest<dds::tools_api::SSubmitRequest>(requestPtr);
 
     mutex mtx;
     unique_lock<mutex> lock(mtx);
@@ -169,11 +168,10 @@ bool Controller::requestCommanderInfo(const CommonParams& common, Error& error, 
     }
 }
 
-bool Controller::waitForNumActiveAgents(const CommonParams& common, Error& error, size_t numAgents)
+bool Controller::waitForNumActiveAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, size_t numAgents)
 {
     try {
-        auto& info = getOrCreateSessionInfo(common);
-        info.mDDSSession->waitForNumAgents<dds::tools_api::CSession::EAgentState::active>(numAgents, requestTimeout(common));
+        sessionInfo.mDDSSession->waitForNumAgents<dds::tools_api::CSession::EAgentState::active>(numAgents, requestTimeout(common));
     } catch (exception& e) {
         fillError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS agents: ", e.what()));
         return false;
@@ -207,7 +205,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
     requestPtr->setProgressCallback([&common](const dds::tools_api::SProgressResponseData& progress) {
         uint32_t completed{ progress.m_completed + progress.m_errors };
         if (completed == progress.m_total) {
-            OLOG(info, common) << "Activated tasks (" << progress.m_completed << "), errors (" << progress.m_errors << "), total (" << progress.m_total << ")";
+            OLOG(debug, common) << "Activated tasks (" << progress.m_completed << "), errors (" << progress.m_errors << "), total (" << progress.m_total << ")";
         }
     });
 
@@ -998,7 +996,11 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 {
     STimeMeasure<chrono::milliseconds> measure;
 
-    Error error{ checkSessionIsRunning(common, ErrorCode::DDSSubmitAgentsFailed) };
+    Error error;
+    auto& sessionInfo = getOrCreateSessionInfo(common);
+    if (!sessionInfo.mDDSSession->IsRunning()) {
+        fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
+    }
 
     // Get DDS submit parameters from ODC resource plugin
     vector<CDDSSubmit::SParams> ddsParams;
@@ -1010,26 +1012,44 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
         }
     }
 
-    OLOG(info) << "Preparing to submit " << ddsParams.size() << " configurations";
-
     if (!error.m_code) {
+        OLOG(info, common) << "Preparing to submit " << ddsParams.size() << " configurations";
+
         size_t totalRequiredSlots = 0;
         for (const auto& param : ddsParams) {
-            // OLOG(info) << "Submitting " << param;
-            // Submit DDS agents
-            if (submitDDSAgents(common, error, param)) {
+            // OLOG(info, common) << "Submitting " << param;
+            if (submitDDSAgents(sessionInfo, common, error, param)) {
                 totalRequiredSlots += param.m_numRequiredSlots;
-                OLOG(info) << "Done waiting for slots.";
             } else {
-                OLOG(error) << "Submission failed";
+                OLOG(error, common) << "Submission failed";
                 break;
             }
         }
         if (!error.m_code) {
-            OLOG(info) << "Waiting for " << totalRequiredSlots << " slots...";
-            waitForNumActiveAgents(common, error, totalRequiredSlots);
+            OLOG(info, common) << "Waiting for " << totalRequiredSlots << " slots...";
+            waitForNumActiveAgents(sessionInfo, common, error, totalRequiredSlots);
+            OLOG(info, common) << "Done waiting for " << totalRequiredSlots << " slots.";
         }
     }
+
+    if (error.m_code && sessionInfo.mDDSSession->IsRunning()) {
+        using namespace dds::tools_api;
+        SAgentInfoRequest::request_t agentInfoRequest;
+        SAgentInfoRequest::responseVector_t agentInfo;
+        sessionInfo.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
+        OLOG(info, common) << "Launched DDS agents:";
+        for (const auto& ai: agentInfo) {
+            OLOG(info, common) << "Agent ID: " << ai.m_agentID
+                               // << ", pid: " << ai.m_agentPid
+                               << ", host: " << ai.m_host
+                               << ", path: " << ai.m_DDSPath
+                               << ", group: " << ai.m_groupName
+                               // << ", index: " << ai.m_index
+                               // << ", username: " << ai.m_username
+                               << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
+        }
+    }
+
     execRequestTrigger("Submit", common);
     return createRequestResult(common, error, "Submit done", measure.duration(), AggregatedState::Undefined);
 }
