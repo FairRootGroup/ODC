@@ -584,10 +584,10 @@ Controller::SessionInfo& Controller::getOrCreateSessionInfo(const CommonParams& 
         newSessionInfo->mDDSSession = make_unique<dds::tools_api::CSession>();
         newSessionInfo->mPartitionID = common.mPartitionID;
         auto ret = mSessions.emplace(common.mPartitionID, move(newSessionInfo));
-        OLOG(debug, common) << "Created session info for partition ID " << quoted(common.mPartitionID);
+        // OLOG(debug, common) << "Created session info for partition ID " << quoted(common.mPartitionID);
         return *(ret.first->second);
     }
-    OLOG(debug, common) << "Found session info for partition ID " << quoted(common.mPartitionID);
+    // OLOG(debug, common) << "Found session info for partition ID " << quoted(common.mPartitionID);
     return *(it->second);
 }
 
