@@ -104,7 +104,7 @@ int main(int argc, char** argv)
 {
     try {
         string resources;
-        CLogger::SConfig logConfig;
+        Logger::Config logConfig;
         string partitionID;
         std::vector<std::string> zonesStr;
 
@@ -115,9 +115,9 @@ int main(int argc, char** argv)
             ("help,h", "Help message")
             ("version,v", "Print version")
             ("res", bpo::value<string>(&resources)->default_value("{\"zone\":\"online\",\"n\":1}"), "Resource description in JSON format")
-            ("logdir", bpo::value<string>(&logConfig.m_logDir)->default_value(defaultLogDir), "Log files directory")
-            ("severity", bpo::value<ESeverity>(&logConfig.m_severity)->default_value(ESeverity::info), "Log severity level")
-            ("infologger", bpo::bool_switch(&logConfig.m_infologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
+            ("logdir", bpo::value<string>(&logConfig.mLogDir)->default_value(defaultLogDir), "Log files directory")
+            ("severity", bpo::value<ESeverity>(&logConfig.mSeverity)->default_value(ESeverity::info), "Log severity level")
+            ("infologger", bpo::bool_switch(&logConfig.mInfologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
             ("id", bpo::value<string>(&partitionID)->default_value(""), "ECS partition ID")
             ("zones", bpo::value<std::vector<std::string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath> format");
 
@@ -126,7 +126,7 @@ int main(int argc, char** argv)
         bpo::notify(vm);
 
         try {
-            CLogger::instance().init(logConfig);
+            Logger::instance().init(logConfig);
         } catch (exception& _e) {
             cerr << "Can't initialize log: " << _e.what() << endl;
             return EXIT_FAILURE;

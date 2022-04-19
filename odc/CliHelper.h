@@ -11,8 +11,8 @@
 
 #include <odc/BuildConstants.h>
 #include <odc/CmdsFile.h>
-#include <odc/Controller.h>
 #include <odc/Logger.h>
+#include <odc/Params.h>
 #include <odc/PluginManager.h>
 
 #include <boost/algorithm/string.hpp>
@@ -69,17 +69,17 @@ class CliHelper
 
     // Generic options
 
-    static void addLogOptions(boost::program_options::options_description& options, CLogger::SConfig& config)
+    static void addLogOptions(boost::program_options::options_description& options, Logger::Config& config)
     {
         using namespace boost::program_options;
         std::string defaultLogDir{ smart_path(std::string("$HOME/.ODC/log")) };
         options.add_options()
-            ("logdir", value<std::string>(&config.m_logDir)->default_value(defaultLogDir), "Log files directory")
-            ("severity", value<ESeverity>(&config.m_severity)->default_value(ESeverity::info), "Log severity level")
-            ("infologger", bool_switch(&config.m_infologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
-            ("infologger-system", value<std::string>(&config.m_infologgerSystem)->default_value("ODC"), "Fills the InfoLogger 'System' field")
-            ("infologger-facility", value<std::string>(&config.m_infologgerFacility)->default_value("ODC"), "Fills the InfoLogger 'Facility' field")
-            ("infologger-role", value<std::string>(&config.m_infologgerRole)->default_value("production"), "Fills the InfoLogger 'Role' field");
+            ("logdir", value<std::string>(&config.mLogDir)->default_value(defaultLogDir), "Log files directory")
+            ("severity", value<ESeverity>(&config.mSeverity)->default_value(ESeverity::info), "Log severity level")
+            ("infologger", bool_switch(&config.mInfologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
+            ("infologger-system", value<std::string>(&config.mInfologgerSystem)->default_value("ODC"), "Fills the InfoLogger 'System' field")
+            ("infologger-facility", value<std::string>(&config.mInfologgerFacility)->default_value("ODC"), "Fills the InfoLogger 'Facility' field")
+            ("infologger-role", value<std::string>(&config.mInfologgerRole)->default_value("production"), "Fills the InfoLogger 'Role' field");
     }
 
     static void addOptions(boost::program_options::options_description& options, BatchOptions& batchOptions)
@@ -112,7 +112,7 @@ class CliHelper
             ("cmds", boost::program_options::value<std::vector<std::string>>(&batchOptions.mCmds)->multitoken()->default_value(cmds, cmdsStr),
                 "Array of command to be executed in batch mode");
 
-        const std::string defaultConfig{ kODCDataDir + "/cmds.cfg" };
+        const std::string defaultConfig{ kODCDataDir + "/ex-cmds.cfg" };
         options.add_options()
             ("cf", boost::program_options::value<std::string>(&batchOptions.mCmdsFilepath)->default_value(defaultConfig),
                 "Config file containing an array of command to be executed in batch mode");
@@ -171,15 +171,15 @@ class CliHelper
         using namespace boost::program_options;
         std::string defaultTopo("<rms>localhost</rms><agents>1</agents><slots>36</slots><requiredSlots>36</requiredSlots>");
         options.add_options()
-            ("plugin,p", value<std::string>(&params.m_plugin)->default_value("odc-rp-same"), "ODC resource plugin name.")
-            ("resources,r", value<std::string>(&params.m_resources)->default_value(defaultTopo), "A resource description for a corresponding ODC resource plugin.");
+            ("plugin,p", value<std::string>(&params.mPlugin)->default_value("odc-rp-same"), "ODC resource plugin name.")
+            ("resources,r", value<std::string>(&params.mResources)->default_value(defaultTopo), "A resource description for a corresponding ODC resource plugin.");
     }
 
     static void addOptions(boost::program_options::options_description& options, DeviceParams& params)
     {
         options.add_options()
-            ("path", boost::program_options::value<std::string>(&params.m_path)->default_value(""), "Topology path of devices")
-            ("detailed", boost::program_options::bool_switch(&params.m_detailed)->default_value(false), "Detailed reply of devices");
+            ("path", boost::program_options::value<std::string>(&params.mPath)->default_value(""), "Topology path of devices")
+            ("detailed", boost::program_options::bool_switch(&params.mDetailed)->default_value(false), "Detailed reply of devices");
     }
 
     static void addOptions(boost::program_options::options_description& options, SetPropertiesParams& params)
@@ -192,12 +192,12 @@ class CliHelper
         options.add_options()
             ("prop", value<std::vector<std::string>>()->multitoken()->default_value(defaults, defaultsStr),
                 "Key-value pairs for a set properties request ( key1:value1 key2:value2 )")
-            ("path", value<std::string>(&params.m_path)->default_value(""), "Path for a set property request");
+            ("path", value<std::string>(&params.mPath)->default_value(""), "Path for a set property request");
     }
 
     static void addOptions(boost::program_options::options_description& options, StatusParams& params)
     {
-        options.add_options()("running", boost::program_options::bool_switch(&params.m_running)->default_value(false), "Select only running sessions");
+        options.add_options()("running", boost::program_options::bool_switch(&params.mRunning)->default_value(false), "Select only running sessions");
     }
 
     // Options parsing
@@ -238,9 +238,9 @@ class CliHelper
                     throw std::runtime_error("Wrong property format for string '" + v + "'. Use 'key:value'.");
                 }
             }
-            params.m_properties = props;
+            params.mProperties = props;
         } else {
-            params.m_properties = { { "key1", "value1" }, { "key2", "value2" } };
+            params.mProperties = { { "key1", "value1" }, { "key2", "value2" } };
         }
     }
 

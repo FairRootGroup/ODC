@@ -31,7 +31,7 @@ int main(int argc, char** argv)
 {
     try {
         size_t timeout;
-        CLogger::SConfig logConfig;
+        Logger::Config logConfig;
         CliHelper::BatchOptions batchOptions;
         bool batch;
         CPluginManager::PluginMap_t pluginMap;
@@ -55,7 +55,7 @@ int main(int argc, char** argv)
         bpo::notify(vm);
 
         try {
-            CLogger::instance().init(logConfig);
+            Logger::instance().init(logConfig);
         } catch (exception& _e) {
             cerr << "Can't initialize log: " << _e.what() << endl;
             return EXIT_FAILURE;

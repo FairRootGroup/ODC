@@ -120,7 +120,7 @@ odc-grpc-client --batch --cmds ".init --id a1b2" ".init --id c3d4" ".down --id a
 ```bash
 odc-grpc-client --batch --cf /path/to/my/file.cfg
 ```
-Each line in a configuration file represents a single command. An example can be found [here](examples/cmds.cfg.in).
+Each line in a configuration file represents a single command. An example can be found [here](examples/ex-cmds.cfg.in).
 
 `.batch` command is also available in interactive mode allowing to execute a common set of command pipelines with less typing. The command also accepts either `--cmds` or `--cf` options.
 

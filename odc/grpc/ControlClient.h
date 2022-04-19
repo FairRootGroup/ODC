@@ -42,8 +42,8 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
     {
         odc::SubmitRequest request;
         updateCommonParams(common, &request);
-        request.set_plugin(submitParams.m_plugin);
-        request.set_resources(submitParams.m_resources);
+        request.set_plugin(submitParams.mPlugin);
+        request.set_resources(submitParams.mResources);
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Submit(&context, request, &reply);
@@ -70,8 +70,8 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
     {
         odc::RunRequest request;
         updateCommonParams(common, &request);
-        request.set_plugin(submitParams.m_plugin);
-        request.set_resources(submitParams.m_resources);
+        request.set_plugin(submitParams.mPlugin);
+        request.set_resources(submitParams.mResources);
         request.set_topology(activateParams.mDDSTopologyFile);
         request.set_content(activateParams.mDDSTopologyContent);
         request.set_script(activateParams.mDDSTopologyScript);
@@ -88,8 +88,8 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
     {
         odc::StateRequest request;
         updateCommonParams(common, &request);
-        request.set_path(deviceParams.m_path);
-        request.set_detailed(deviceParams.m_detailed);
+        request.set_path(deviceParams.mPath);
+        request.set_detailed(deviceParams.mDetailed);
         odc::StateReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->GetState(&context, request, &reply);
@@ -100,8 +100,8 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
     {
         odc::SetPropertiesRequest request;
         updateCommonParams(common, &request);
-        request.set_path(setPropsParams.m_path);
-        for (const auto& v : setPropsParams.m_properties) {
+        request.set_path(setPropsParams.mPath);
+        for (const auto& v : setPropsParams.mProperties) {
             auto prop = request.add_properties();
             prop->set_key(v.first);
             prop->set_value(v.second);
@@ -150,7 +150,7 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
     std::string requestStatus(const odc::core::StatusParams& statusParams)
     {
         odc::StatusRequest request;
-        request.set_running(statusParams.m_running);
+        request.set_running(statusParams.mRunning);
         odc::StatusReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Status(&context, request, &reply);
@@ -175,8 +175,8 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
         // Protobuf message takes the ownership and deletes the object
         odc::StateRequest* stateChange = new odc::StateRequest();
         updateCommonParams(common, stateChange);
-        stateChange->set_path(deviceParams.m_path);
-        stateChange->set_detailed(deviceParams.m_detailed);
+        stateChange->set_path(deviceParams.mPath);
+        stateChange->set_detailed(deviceParams.mDetailed);
 
         Request request;
         request.set_allocated_request(stateChange);

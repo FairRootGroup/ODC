@@ -32,13 +32,13 @@ class CDDSSubmit : public CPluginManager
         SParams() {}
 
         /// \brief Constructor with arguments
-        SParams(const std::string& _rmsPlugin, const std::string& _configFile, const std::string& _agentGroup, size_t _numAgents, size_t _numSlots, size_t _numRequiredSlots)
-            : m_rmsPlugin(_rmsPlugin)
-            , m_configFile(_configFile)
-            , m_agentGroup(_agentGroup)
-            , m_numAgents(_numAgents)
-            , m_numSlots(_numSlots)
-            , m_numRequiredSlots(_numRequiredSlots)
+        SParams(const std::string& rmsPlugin, const std::string& configFile, const std::string& agentGroup, size_t numAgents, size_t numSlots, size_t numRequiredSlots)
+            : mRMSPlugin(rmsPlugin)
+            , mConfigFile(configFile)
+            , mAgentGroup(agentGroup)
+            , mNumAgents(numAgents)
+            , mNumSlots(numSlots)
+            , mNumRequiredSlots(numRequiredSlots)
         {}
 
         /// \brief Initialization of structure from an XML file
@@ -51,42 +51,42 @@ class CDDSSubmit : public CPluginManager
         //     initFromPT(pt);
         // }
         /// \brief Initialization of structure from property tree
-        void initFromPT(const boost::property_tree::ptree& _pt)
+        void initFromPT(const boost::property_tree::ptree& pt)
         {
             // TODO: FIXME: <configContent> is not yet defined
             // To support it we need to create a temporary file with configuration content and use it as config file.
 
             // Only valid tags are allowed.
             std::set<std::string> validTags{ "rms", "configFile", "agents", "slots", "requiredSlots", "agentGroup" };
-            for (const auto& v : _pt) {
+            for (const auto& v : pt) {
                 if (validTags.count(v.first.data()) == 0) {
                     throw std::runtime_error(toString("Failed to init from property tree. Unknown key ", std::quoted(v.first.data())));
                 }
             }
-            m_rmsPlugin = _pt.get<std::string>("rms", "");
-            m_configFile = _pt.get<std::string>("configFile", "");
-            m_numAgents = _pt.get<size_t>("agents", 0);
-            m_numSlots = _pt.get<size_t>("slots", 0);
-            m_numRequiredSlots = _pt.get<size_t>("requiredSlots", 0);
-            m_agentGroup = _pt.get<std::string>("agentGroup", "");
+            mRMSPlugin = pt.get<std::string>("rms", "");
+            mConfigFile = pt.get<std::string>("configFile", "");
+            mNumAgents = pt.get<size_t>("agents", 0);
+            mNumSlots = pt.get<size_t>("slots", 0);
+            mNumRequiredSlots = pt.get<size_t>("requiredSlots", 0);
+            mAgentGroup = pt.get<std::string>("agentGroup", "");
         }
 
-        std::string m_rmsPlugin;        ///< RMS plugin of DDS
-        std::string m_configFile;       ///< Path to the configuration file of the RMS plugin
-        std::string m_agentGroup;        ///< Agent group name
-        size_t m_numAgents{ 0 };        ///< Number of DDS agents
-        size_t m_numSlots{ 0 };         ///< Number of slots per DDS agent
-        size_t m_numRequiredSlots{ 0 }; ///< Wait for the required number of slots become active
+        std::string mRMSPlugin;        ///< RMS plugin of DDS
+        std::string mConfigFile;       ///< Path to the configuration file of the RMS plugin
+        std::string mAgentGroup;        ///< Agent group name
+        size_t mNumAgents{ 0 };        ///< Number of DDS agents
+        size_t mNumSlots{ 0 };         ///< Number of slots per DDS agent
+        size_t mNumRequiredSlots{ 0 }; ///< Wait for the required number of slots become active
 
         // \brief ostream operator.
-        friend std::ostream& operator<<(std::ostream& _os, const SParams& _params)
+        friend std::ostream& operator<<(std::ostream& os, const SParams& params)
         {
-            return _os << "CDDSSubmit::SParams: rmsPlugin=" << std::quoted(_params.m_rmsPlugin)
-                       << "; numAgents=" << _params.m_numAgents
-                       << "; agentGroup=" << _params.m_agentGroup
-                       << "; numSlots=" << _params.m_numSlots
-                       << "; configFile=" << std::quoted(_params.m_configFile)
-                       << "; numRequiredSlots=" << _params.m_numRequiredSlots;
+            return os << "CDDSSubmit::SParams: rmsPlugin=" << std::quoted(params.mRMSPlugin)
+                       << "; numAgents=" << params.mNumAgents
+                       << "; agentGroup=" << params.mAgentGroup
+                       << "; numSlots=" << params.mNumSlots
+                       << "; configFile=" << std::quoted(params.mConfigFile)
+                       << "; numRequiredSlots=" << params.mNumRequiredSlots;
         }
     };
 
@@ -95,10 +95,10 @@ class CDDSSubmit : public CPluginManager
         registerDefaultPlugin("odc-rp-same");
     }
 
-    std::vector<SParams> makeParams(const std::string& _plugin, const std::string& _resources, const std::string& _partitionID, uint64_t _runNr)
+    std::vector<SParams> makeParams(const std::string& plugin, const std::string& resources, const std::string& partitionID, uint64_t runNr)
     {
         std::vector<SParams> params;
-        std::stringstream ss{ execPlugin(_plugin, _resources, _partitionID, _runNr) };
+        std::stringstream ss{ execPlugin(plugin, resources, partitionID, runNr) };
         boost::property_tree::ptree pt;
         boost::property_tree::read_xml(ss, pt, boost::property_tree::xml_parser::no_comments);
         // check if parameters are children of <submit> tag(s), or flat
@@ -121,14 +121,14 @@ class CDDSSubmit : public CPluginManager
     }
 
   private:
-    void registerDefaultPlugin(const std::string& _name)
+    void registerDefaultPlugin(const std::string& name)
     {
         try {
             boost::filesystem::path pluginPath{ kODCBinDir };
-            pluginPath /= _name;
-            registerPlugin(_name, pluginPath.string());
+            pluginPath /= name;
+            registerPlugin(name, pluginPath.string());
         } catch (const std::exception& _e) {
-            OLOG(error) << "Unable to register default resource plugin " << std::quoted(_name) << ": " << _e.what();
+            OLOG(error) << "Unable to register default resource plugin " << std::quoted(name) << ": " << _e.what();
         }
     }
 };

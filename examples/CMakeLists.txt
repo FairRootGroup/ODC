@@ -55,8 +55,8 @@ configure_file(ex-env.sh.in ${CMAKE_CURRENT_BINARY_DIR}/odc-ex-env.sh)
 
 # Configure and install commands configuration example
 set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmds.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/cmds.cfg @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmds.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ex-cmds.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/ex-cmds.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ex-cmds.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 
 add_executable(odc-ex-sampler sampler.cpp)
 target_link_libraries(odc-ex-sampler PRIVATE FairMQ::FairMQ)

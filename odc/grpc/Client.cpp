@@ -6,13 +6,12 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-// ODC
 #include <odc/BuildConstants.h>
 #include <odc/CliHelper.h>
 #include <odc/MiscUtils.h>
 #include <odc/Version.h>
 #include <odc/grpc/ControlClient.h>
-// BOOST
+
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>

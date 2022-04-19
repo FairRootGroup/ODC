@@ -6,7 +6,7 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-// ODC
+
 #include <odc/BuildConstants.h>
 #include <odc/CliHelper.h>
 #include <odc/Logger.h>
@@ -14,15 +14,15 @@
 #include <odc/Version.h>
 #include <odc/grpc/AsyncController.h>
 #include <odc/grpc/SyncController.h>
-// STD
-#include <cstdlib>
-#include <iostream>
-// BOOST
+
+#include <dds/Tools.h>
+
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-// DDS
-#include <dds/Tools.h>
+
+#include <cstdlib>
+#include <iostream>
 
 using namespace std;
 using namespace odc::core;
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
         bool sync;
         size_t timeout;
         string host;
-        CLogger::SConfig logConfig;
+        Logger::Config logConfig;
         CPluginManager::PluginMap_t plugins;
         CPluginManager::PluginMap_t triggers;
         string restoreId;
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
         bpo::notify(vm);
 
         try {
-            CLogger::instance().init(logConfig);
+            Logger::instance().init(logConfig);
         } catch (exception& _e) {
             cerr << "Can't initialize log: " << _e.what() << endl;
             return EXIT_FAILURE;
@@ -83,7 +83,7 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        setupGrpcVerbosity(logConfig.m_severity);
+        setupGrpcVerbosity(logConfig.mSeverity);
 
         CliHelper::parsePluginMapOptions(vm, plugins, "rp");
         CliHelper::parsePluginMapOptions(vm, triggers, "rt");

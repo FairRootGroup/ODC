@@ -61,12 +61,12 @@ class Controller : public core::CliControllerHelper<Controller>
     {
         std::stringstream ss;
 
-        if (result.m_statusCode == core::StatusCode::ok) {
-            ss << "  Status code: SUCCESS\n  Message: " << result.m_msg << std::endl;
+        if (result.mStatusCode == core::StatusCode::ok) {
+            ss << "  Status code: SUCCESS\n  Message: " << result.mMsg << std::endl;
         } else {
-            ss << "  Status code: ERROR\n  Error code: " << result.m_error.m_code.value()
-               << "\n  Error message: " << result.m_error.m_code.message() << " ("
-               << result.m_error.m_details << ")" << std::endl;
+            ss << "  Status code: ERROR\n  Error code: " << result.mError.mCode.value()
+               << "\n  Error message: " << result.mError.mCode.message() << " ("
+               << result.mError.mDetails << ")" << std::endl;
         }
 
         ss << "  Aggregated state: " << result.mAggregatedState << std::endl;
@@ -77,12 +77,12 @@ class Controller : public core::CliControllerHelper<Controller>
         if (result.mFullState != nullptr) {
             ss << std::endl << "  Devices: " << std::endl;
             for (const auto& state : *(result.mFullState)) {
-                ss << "    { id: " << state.m_status.taskId << "; path: " << state.m_path << "; state: " << state.m_status.state << " }" << std::endl;
+                ss << "    { id: " << state.mStatus.taskId << "; path: " << state.mPath << "; state: " << state.mStatus.state << " }" << std::endl;
             }
             ss << std::endl;
         }
 
-        ss << "  Execution time: " << result.m_execTime << " msec" << std::endl;
+        ss << "  Execution time: " << result.mExecTime << " msec" << std::endl;
 
         return ss.str();
     }
@@ -90,19 +90,19 @@ class Controller : public core::CliControllerHelper<Controller>
     std::string statusReply(const core::StatusRequestResult& result)
     {
         std::stringstream ss;
-        if (result.m_statusCode == core::StatusCode::ok) {
-            ss << "  Status code: SUCCESS\n  Message: " << result.m_msg << std::endl;
+        if (result.mStatusCode == core::StatusCode::ok) {
+            ss << "  Status code: SUCCESS\n  Message: " << result.mMsg << std::endl;
         } else {
-            ss << "  Status code: ERROR\n  Error code: " << result.m_error.m_code.value() << "\n  Error message: " << result.m_error.m_code.message() << " ("
-               << result.m_error.m_details << ")" << std::endl;
+            ss << "  Status code: ERROR\n  Error code: " << result.mError.mCode.value() << "\n  Error message: " << result.mError.mCode.message() << " ("
+               << result.mError.mDetails << ")" << std::endl;
         }
         ss << "  Partitions: " << std::endl;
-        for (const auto& p : result.m_partitions) {
+        for (const auto& p : result.mPartitions) {
             ss << "    { partition ID: " << p.mPartitionID << "; session ID: " << p.mDDSSessionID
                << "; status: " << ((p.mDDSSessionStatus == core::DDSSessionStatus::running) ? "RUNNING" : "STOPPED")
                << "; state: " << core::GetAggregatedStateName(p.mAggregatedState) << " }" << std::endl;
         }
-        ss << "  Execution time: " << result.m_execTime << " msec" << std::endl;
+        ss << "  Execution time: " << result.mExecTime << " msec" << std::endl;
         return ss.str();
     }
 

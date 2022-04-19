@@ -13,6 +13,7 @@
 #include <odc/cc/CustomCommands.h>
 
 #include <algorithm>
+#include <chrono>
 #include <map>
 #include <ostream>
 #include <string>
@@ -227,8 +228,12 @@ struct TopoTaskInfo
 
     friend std::ostream& operator<<(std::ostream& os, const TopoTaskInfo& i)
     {
-        return os << "agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", taskID=" << i.mTaskID
-                  << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
+        return os << "agentID: " << i.mAgentID
+                  << ", slotID: " << i.mSlotID
+                  << ", taskID: " << i.mTaskID
+                  << ", path: " << i.mPath
+                  << ", host: " << i.mHost
+                  << ", wrkDir: " << i.mWrkDir;
     }
 };
 
@@ -243,8 +248,12 @@ struct TopoCollectionInfo
 
     friend std::ostream& operator<<(std::ostream& os, const TopoCollectionInfo& i)
     {
-        return os << "agentID=" << i.mAgentID << ", slotID=" << i.mSlotID << ", collectionID=" << i.mCollectionID
-                  << ", path=" << quoted(i.mPath) << ", host=" << i.mHost << ", wrkDir=" << quoted(i.mWrkDir);
+        return os << "agentID: " << i.mAgentID
+                  << ", slotID: " << i.mSlotID
+                  << ", collectionID: " << i.mCollectionID
+                  << ", path: " << i.mPath
+                  << ", host: " << i.mHost
+                  << ", wrkDir: " << i.mWrkDir;
     }
 };
 

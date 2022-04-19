@@ -40,90 +40,91 @@
 // OLOG(info) << "My message";
 // OLOG(info, "TYrfjf", 54321) << "My message";
 // clang-format off
-#define OLOG_SEVERITY(severity)                               BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), "", odc::core::ESeverity::severity)
-#define OLOG_SEVERITY_COMMON(severity, common)                BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), odc::core::toString(common.mPartitionID, ":", common.mRunNr), odc::core::ESeverity::severity)
-#define OLOG_SEVERITY_PARTITION_RUN(severity, partition, run) BOOST_LOG_CHANNEL_SEV(odc::core::CLogger::instance().logger(), odc::core::toString(partition, ":", run), odc::core::ESeverity::severity)
+#define OLOG_SEVERITY(severity)                               BOOST_LOG_CHANNEL_SEV(odc::core::Logger::instance().logger(), "", odc::core::ESeverity::severity)
+#define OLOG_SEVERITY_COMMON(severity, common)                BOOST_LOG_CHANNEL_SEV(odc::core::Logger::instance().logger(), odc::core::toString(common.mPartitionID, ":", common.mRunNr), odc::core::ESeverity::severity)
+#define OLOG_SEVERITY_PARTITION_RUN(severity, partition, run) BOOST_LOG_CHANNEL_SEV(odc::core::Logger::instance().logger(), odc::core::toString(partition, ":", run), odc::core::ESeverity::severity)
 #define OLOG_GET_MACRO(arg1, arg2, arg3, NAME, ...) NAME
 #define OLOG(...) OLOG_GET_MACRO(__VA_ARGS__, OLOG_SEVERITY_PARTITION_RUN, OLOG_SEVERITY_COMMON, OLOG_SEVERITY, UNUSED)(__VA_ARGS__)
 // clang-format on
 
 namespace odc::core {
-class CLogger
+class Logger
 {
   public:
-    struct SConfig
+    struct Config
     {
-        SConfig(ESeverity _severity = ESeverity::info, const std::string& _logDir = "", bool _infologger = false)
-            : m_severity(_severity)
-            , m_logDir(_logDir)
-            , m_infologger(_infologger)
+        Config(ESeverity severity = ESeverity::info, const std::string& logDir = "", bool infologger = false)
+            : mSeverity(severity)
+            , mLogDir(logDir)
+            , mInfologger(infologger)
         {}
 
-        ESeverity m_severity{ ESeverity::info };
-        std::string m_logDir;
-        bool m_infologger{ false };
-        std::string m_infologgerSystem;
-        std::string m_infologgerFacility;
-        std::string m_infologgerRole;
+        ESeverity mSeverity{ ESeverity::info };
+        std::string mLogDir;
+        bool mInfologger{ false };
+        std::string mInfologgerSystem;
+        std::string mInfologgerFacility;
+        std::string mInfologgerRole;
     };
 
   public:
     using logger_t = boost::log::sources::severity_channel_logger_mt<ESeverity>;
 
     /// \brief Return singleton instance
-    static CLogger& instance()
+    static Logger& instance()
     {
-        static CLogger instance;
+        static Logger instance;
         return instance;
     }
 
-    logger_t& logger() { return m_logger; }
+    logger_t& logger() { return mLogger; }
 
     /// \brief Initialization of log. Has to be called in main.
-    void init(const SConfig& _config = SConfig())
+    void init(const Config& cfg = Config())
     {
         static bool started = false;
-        if (started)
+        if (started) {
             return;
+        }
         started = true;
 
         // Logging to a file
-        createFileSink(_config);
+        createFileSink(cfg);
         // Logging to console
-        createConsoleSink(_config);
+        createConsoleSink(cfg);
         // Optional InfoLogger sink
-        CInfoLogger::instance().setContext(_config.m_infologgerFacility, _config.m_infologgerSystem, _config.m_infologgerRole);
-        CInfoLogger::instance().registerSink(_config.m_severity, _config.m_infologger);
+        CInfoLogger::instance().setContext(cfg.mInfologgerFacility, cfg.mInfologgerSystem, cfg.mInfologgerRole);
+        CInfoLogger::instance().registerSink(cfg.mSeverity, cfg.mInfologger);
 
         boost::log::add_common_attributes();
         boost::log::core::get()->add_global_attribute("Process", boost::log::attributes::current_process_name());
 
-        OLOG(info) << "Log engine is initialized with severety \"" << _config.m_severity << "\"";
+        OLOG(info) << "Log engine is initialized with severety \"" << cfg.mSeverity << "\"";
     }
 
   private:
-    void createConsoleSink(const SConfig& /*_config*/) const
+    void createConsoleSink(const Config& /*cfg*/) const
     {
         using namespace boost::log;
-        using ostreamSink_t = boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>>;
-        ostreamSink_t stdoutSink = add_console_log(std::cout, keywords::format = "%Process%: %Message%");
-        ostreamSink_t stdoutCleanSink = add_console_log(std::cout, keywords::format = "%Message%");
-        ostreamSink_t stderrSink = add_console_log(std::cerr, keywords::format = "%Process%: error: %Message%");
+        using OstreamSink = boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>>;
+        OstreamSink stdoutSink = add_console_log(std::cout, keywords::format = "%Process%: %Message%");
+        OstreamSink stdoutCleanSink = add_console_log(std::cout, keywords::format = "%Message%");
+        OstreamSink stderrSink = add_console_log(std::cerr, keywords::format = "%Process%: error: %Message%");
         stdoutSink->set_filter(logger::severity == ESeverity::stdout);
         stdoutCleanSink->set_filter(logger::severity == ESeverity::clean);
         stderrSink->set_filter(logger::severity == ESeverity::stderr);
     }
 
-    void createFileSink(const SConfig& _config) const
+    void createFileSink(const Config& cfg) const
     {
         // Log directory is empty, don't create file sink
-        if (_config.m_logDir.empty())
+        if (cfg.mLogDir.empty())
             return;
 
         using namespace boost::log;
         using fileSink_t = boost::shared_ptr<boost::log::sinks::synchronous_sink<boost::log::sinks::text_file_backend>>;
 
-        std::string logDir{ smart_path(_config.m_logDir) };
+        std::string logDir{ smart_path(cfg.mLogDir) };
         if (!boost::filesystem::exists(boost::filesystem::path(logDir)) && !boost::filesystem::create_directories(boost::filesystem::path(logDir))) {
             throw std::runtime_error(toString("Can't initialize file sink of logger: failed to create directory ", std::quoted(logDir)));
         }
@@ -151,11 +152,11 @@ class CLogger
                                            keywords::auto_flush = true);
 
         fileSink->set_formatter(formatter);
-        fileSink->set_filter(logger::severity >= _config.m_severity);
+        fileSink->set_filter(logger::severity >= cfg.mSeverity);
     }
 
   private:
-    logger_t m_logger; ///> Main logger object
+    logger_t mLogger; ///> Main logger object
 };
 } // namespace odc::core
 

@@ -83,7 +83,7 @@ int main(int argc, char** argv)
         string res;
         string host;
         bool release;
-        CLogger::SConfig logConfig;
+        Logger::Config logConfig;
         std::string partitionID;
         string bash;
         size_t numSlots{ 1 };
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
         bpo::notify(vm);
 
         try {
-            CLogger::instance().init(logConfig);
+            Logger::instance().init(logConfig);
         } catch (exception& _e) {
             cerr << "Can't initialize log: " << _e.what() << endl;
             return EXIT_FAILURE;

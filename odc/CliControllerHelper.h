@@ -9,23 +9,23 @@
 #ifndef ODC_CLICONTROLLERHELPER
 #define ODC_CLICONTROLLERHELPER
 
-// ODC
 #include <odc/CliHelper.h>
-#include <odc/Controller.h>
+#include <odc/Params.h>
 #include <odc/Logger.h>
-// STD
-#include <iostream>
-#include <tuple>
-// BOOST
+
 #include <boost/algorithm/string.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-// READLINE
+
 #ifdef READLINE_AVAIL
 #include <readline/history.h>
 #include <readline/readline.h>
 #endif
+
+#include <iostream>
+#include <thread>
+#include <tuple>
 
 namespace bpo = boost::program_options;
 

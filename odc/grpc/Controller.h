@@ -282,16 +282,16 @@ class Controller final
     odc::Error* newError(const core::BaseRequestResult& res)
     {
         odc::Error* error{ new odc::Error() };
-        error->set_code(res.m_error.m_code.value());
-        error->set_msg(res.m_error.m_code.message() + " (" + res.m_error.m_details + ")");
+        error->set_code(res.mError.mCode.value());
+        error->set_msg(res.mError.mCode.message() + " (" + res.mError.mDetails + ")");
         return error;
     }
 
     void setupGeneralReply(odc::GeneralReply* rep, const core::RequestResult& res)
     {
-        if (res.m_statusCode == core::StatusCode::ok) {
+        if (res.mStatusCode == core::StatusCode::ok) {
             rep->set_status(odc::ReplyStatus::SUCCESS);
-            rep->set_msg(res.m_msg);
+            rep->set_msg(res.mMsg);
         } else {
             rep->set_status(odc::ReplyStatus::ERROR);
             rep->set_allocated_error(newError(res));
@@ -299,7 +299,7 @@ class Controller final
         rep->set_partitionid(res.mPartitionID);
         rep->set_runnr(res.mRunNr);
         rep->set_sessionid(res.mDDSSessionID);
-        rep->set_exectime(res.m_execTime);
+        rep->set_exectime(res.mExecTime);
         rep->set_state(GetAggregatedStateName(res.mAggregatedState));
     }
 
@@ -313,24 +313,24 @@ class Controller final
         if (res.mFullState != nullptr) {
             for (const auto& state : *(res.mFullState)) {
                 auto device{ rep->add_devices() };
-                device->set_path(state.m_path);
-                device->set_id(state.m_status.taskId);
-                device->set_state(fair::mq::GetStateName(state.m_status.state));
+                device->set_path(state.mPath);
+                device->set_id(state.mStatus.taskId);
+                device->set_state(fair::mq::GetStateName(state.mStatus.state));
             }
         }
     }
 
     void setupStatusReply(odc::StatusReply* rep, const core::StatusRequestResult& res)
     {
-        if (res.m_statusCode == core::StatusCode::ok) {
+        if (res.mStatusCode == core::StatusCode::ok) {
             rep->set_status(odc::ReplyStatus::SUCCESS);
-            rep->set_msg(res.m_msg);
+            rep->set_msg(res.mMsg);
         } else {
             rep->set_status(odc::ReplyStatus::ERROR);
             rep->set_allocated_error(newError(res));
         }
-        rep->set_exectime(res.m_execTime);
-        for (const auto& p : res.m_partitions) {
+        rep->set_exectime(res.mExecTime);
+        for (const auto& p : res.mPartitions) {
             auto partition{ rep->add_partitions() };
             partition->set_partitionid(p.mPartitionID);
             partition->set_sessionid(p.mDDSSessionID);
