@@ -52,7 +52,6 @@ int main(int argc, char** argv)
         }
 
         CliHelper::batchCmds(vm, batch, batchOptions);
-        setupGrpcVerbosity(gRPCSeverity);
 
         GrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
         control.run(batchOptions.mOutputCmds);

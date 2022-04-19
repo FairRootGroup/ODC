@@ -83,8 +83,6 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        setupGrpcVerbosity(logConfig.mSeverity);
-
         CliHelper::parsePluginMapOptions(vm, plugins, "rp");
         CliHelper::parsePluginMapOptions(vm, triggers, "rt");
 

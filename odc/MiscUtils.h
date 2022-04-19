@@ -32,34 +32,6 @@
 namespace odc::core
 {
 
-inline void setupGrpcVerbosity(ESeverity _severity)
-{
-    // From gRPC docs: https://grpc.github.io/grpc/cpp/md_doc_environment_variables.html
-    // GRPC_VERBOSITY Default gRPC logging verbosity - one of:
-    // DEBUG - log all gRPC messages
-    // INFO - log INFO and ERROR message
-    // ERROR - log only errors (default)
-    // NONE - won't log any
-    std::string grpc;
-    switch (_severity) {
-        case ESeverity::debug:
-            grpc = "DEBUG";
-            break;
-        case ESeverity::info:
-            grpc = "INFO";
-            break;
-        case ESeverity::error:
-            grpc = "ERROR";
-            break;
-        default:
-            break;
-    }
-    if (grpc.length() > 0 && ::setenv("GRPC_VERBOSITY", grpc.c_str(), 1) == 0) {
-        // OLOG(info) << "Set GRPC_VERBOSITY to " << grpc;
-        std::cout << "Set GRPC_VERBOSITY to " << grpc << std::endl;
-    }
-}
-
 /// @brief concatenates a variable number of args with the << operator via a stringstream
 /// @param t objects to be concatenated
 /// @return concatenated string
