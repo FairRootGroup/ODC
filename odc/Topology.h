@@ -375,7 +375,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 task.subscribedToStateChanges = false;
                 --fNumStateChangePublishers;
             }
-            // FAIR_LOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << state;
+            // OLOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << task.state;
 
             for (auto& op : fChangeStateOps) {
                 op.second.Update(taskId, cmd.GetCurrentState());
@@ -847,8 +847,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         return { ec, failed };
     }
 
-    Duration GetHeartbeatInterval() const { return fHeartbeatInterval; }
-    void SetHeartbeatInterval(Duration duration) { fHeartbeatInterval = duration; }
+    std::chrono::milliseconds GetHeartbeatInterval() const { return fHeartbeatInterval; }
+    void SetHeartbeatInterval(std::chrono::milliseconds duration) { fHeartbeatInterval = duration; }
 
   private:
     std::shared_ptr<dds::tools_api::CSession> fDDSSession;
@@ -864,7 +864,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     std::unique_ptr<std::condition_variable> fStateChangeSubscriptionsCV;
     unsigned int fNumStateChangePublishers;
     boost::asio::steady_timer fHeartbeatsTimer;
-    Duration fHeartbeatInterval;
+    std::chrono::milliseconds fHeartbeatInterval;
 
     std::unordered_map<uint64_t, ChangeStateOp<Executor, Allocator>> fChangeStateOps;
     std::unordered_map<uint64_t, WaitForStateOp<Executor, Allocator>> fWaitForStateOps;
