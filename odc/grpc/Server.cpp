@@ -29,7 +29,7 @@ using namespace odc::core;
 namespace bpo = boost::program_options;
 
 template<typename C>
-void runController(C& ctrl, size_t timeout, CPluginManager::PluginMap_t& plugins, CPluginManager::PluginMap_t& triggers, const std::string& restoreId, const std::string& host)
+void runController(C& ctrl, size_t timeout, PluginManager::PluginMap_t& plugins, PluginManager::PluginMap_t& triggers, const std::string& restoreId, const std::string& host)
 {
     ctrl.setTimeout(chrono::seconds(timeout));
     ctrl.registerResourcePlugins(plugins);
@@ -47,8 +47,8 @@ int main(int argc, char** argv)
         size_t timeout;
         string host;
         Logger::Config logConfig;
-        CPluginManager::PluginMap_t plugins;
-        CPluginManager::PluginMap_t triggers;
+        PluginManager::PluginMap_t plugins;
+        PluginManager::PluginMap_t triggers;
         string restoreId;
 
         bpo::options_description options("dds-control-server options");

@@ -24,7 +24,7 @@
 
 namespace odc::core {
 
-class CPluginManager
+class PluginManager
 {
   public:
     // Plugin map <plugin name, cmd>

@@ -202,7 +202,7 @@ class CliHelper
 
     // Options parsing
 
-    static void parsePluginMapOptions(const boost::program_options::variables_map& vm, CPluginManager::PluginMap_t& pluginMap, const std::string& option)
+    static void parsePluginMapOptions(const boost::program_options::variables_map& vm, PluginManager::PluginMap_t& pluginMap, const std::string& option)
     {
         if (vm.count(option)) {
             const auto& kvp(vm[option].as<std::vector<std::string>>());

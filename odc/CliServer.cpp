@@ -34,8 +34,8 @@ int main(int argc, char** argv)
         Logger::Config logConfig;
         CliHelper::BatchOptions batchOptions;
         bool batch;
-        CPluginManager::PluginMap_t pluginMap;
-        CPluginManager::PluginMap_t triggerMap;
+        PluginManager::PluginMap_t pluginMap;
+        PluginManager::PluginMap_t triggerMap;
         string restoreId;
 
         // Generic options

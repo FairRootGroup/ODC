@@ -61,8 +61,8 @@ class AsyncController final
         }
     }
     void setTimeout(const std::chrono::seconds& timeout) { mCtrl.setTimeout(timeout); }
-    void registerResourcePlugins(const odc::core::CPluginManager::PluginMap_t& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
-    void registerRequestTriggers(const odc::core::CPluginManager::PluginMap_t& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
+    void registerResourcePlugins(const odc::core::PluginManager::PluginMap_t& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
+    void registerRequestTriggers(const odc::core::PluginManager::PluginMap_t& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId) { mCtrl.restore(restoreId); }
 
   private:

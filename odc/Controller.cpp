@@ -13,7 +13,7 @@
 #include <odc/Process.h>
 #include <odc/Restore.h>
 #include <odc/Stats.h>
-#include <odc/TimeMeasure.h>
+#include <odc/Timer.h>
 #include <odc/Topology.h>
 
 #include <dds/dds.h>
@@ -31,6 +31,298 @@ using namespace odc;
 using namespace odc::core;
 using namespace std;
 namespace bfs = boost::filesystem;
+
+RequestResult Controller::execInitialize(const CommonParams& common, const InitializeParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+
+    Error error;
+    if (params.mDDSSessionID.empty()) {
+        // Create new DDS session
+        // Shutdown DDS session if it is running already
+        shutdownDDSSession(common, error)
+            && createDDSSession(common, error)
+            && subscribeToDDSSession(common, error);
+    } else {
+        // Attach to an existing DDS session
+        // Shutdown DDS session if it is running already
+        bool success = shutdownDDSSession(common, error)
+            && attachToDDSSession(common, error, params.mDDSSessionID)
+            && subscribeToDDSSession(common, error);
+
+        // Request current active topology, if any
+        // If topology is active, create DDS and FairMQ topology
+        if (success) {
+            dds::tools_api::SCommanderInfoRequest::response_t commanderInfo;
+            requestCommanderInfo(common, error, commanderInfo)
+                && !commanderInfo.m_activeTopologyPath.empty()
+                && createDDSTopology(common, error, commanderInfo.m_activeTopologyPath)
+                && createTopology(common, error, commanderInfo.m_activeTopologyPath);
+        }
+    }
+    execRequestTrigger("Initialize", common);
+    updateRestore();
+    return createRequestResult(common, error, "Initialize done", timer.duration(), AggregatedState::Undefined);
+}
+
+RequestResult Controller::execSubmit(const CommonParams& common, const SubmitParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+
+    Error error;
+    auto& sessionInfo = getOrCreateSessionInfo(common);
+    if (!sessionInfo.mDDSSession->IsRunning()) {
+        fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
+    }
+
+    // Get DDS submit parameters from ODC resource plugin
+    vector<DDSSubmit::Params> ddsParams;
+    if (!error.mCode) {
+        try {
+            ddsParams = mSubmit.makeParams(params.mPlugin, params.mResources, common.mPartitionID, common.mRunNr);
+        } catch (exception& _e) {
+            fillError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", _e.what()));
+        }
+    }
+
+    if (!error.mCode) {
+        OLOG(info, common) << "Preparing to submit " << ddsParams.size() << " configurations";
+
+        size_t totalRequiredSlots = 0;
+        for (const auto& param : ddsParams) {
+            // OLOG(info, common) << "Submitting " << param;
+            if (submitDDSAgents(sessionInfo, common, error, param)) {
+                totalRequiredSlots += param.mNumRequiredSlots;
+            } else {
+                OLOG(error, common) << "Submission failed";
+                break;
+            }
+        }
+        if (!error.mCode) {
+            OLOG(info, common) << "Waiting for " << totalRequiredSlots << " slots...";
+            waitForNumActiveAgents(sessionInfo, common, error, totalRequiredSlots);
+            OLOG(info, common) << "Done waiting for " << totalRequiredSlots << " slots.";
+        }
+    }
+
+    if (error.mCode && sessionInfo.mDDSSession->IsRunning()) {
+        using namespace dds::tools_api;
+        SAgentInfoRequest::request_t agentInfoRequest;
+        SAgentInfoRequest::responseVector_t agentInfo;
+        sessionInfo.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
+        OLOG(info, common) << "Launched DDS agents:";
+        for (const auto& ai: agentInfo) {
+            OLOG(info, common) << "Agent ID: " << ai.m_agentID
+                               // << ", pid: " << ai.m_agentPid
+                               << ", host: " << ai.m_host
+                               << ", path: " << ai.m_DDSPath
+                               << ", group: " << ai.m_groupName
+                               // << ", index: " << ai.m_index
+                               // << ", username: " << ai.m_username
+                               << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
+        }
+    }
+
+    execRequestTrigger("Submit", common);
+    return createRequestResult(common, error, "Submit done", timer.duration(), AggregatedState::Undefined);
+}
+
+RequestResult Controller::execActivate(const CommonParams& common, const ActivateParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+    auto& sessionInfo = getOrCreateSessionInfo(common);
+    // Activate DDS topology
+    // Create Topology
+    Error error{ checkSessionIsRunning(common, ErrorCode::DDSActivateTopologyFailed) };
+    if (!error.mCode) {
+        try {
+            sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
+        } catch (exception& _e) {
+            fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
+        }
+        if (!error.mCode) {
+            activateDDSTopology(common, error, sessionInfo.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
+                && createDDSTopology(common, error, sessionInfo.mTopoFilePath)
+                && createTopology(common, error, sessionInfo.mTopoFilePath);
+        }
+    }
+    AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
+    execRequestTrigger("Activate", common);
+    return createRequestResult(common, error, "Activate done", timer.duration(), state);
+}
+
+RequestResult Controller::execRun(const CommonParams& common, const InitializeParams& initializeParams, const SubmitParams& submitParams, const ActivateParams& activateParams)
+{
+    Timer<chrono::milliseconds> timer;
+    // Run request doesn't support attachment to a DDS session.
+    // Execute consecuently Initialize, Submit and Activate.
+
+    Error error;
+    if (!initializeParams.mDDSSessionID.empty()) {
+        error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Attachment to a DDS session not supported");
+    } else {
+        error = execInitialize(common, initializeParams).mError;
+        if (!error.mCode) {
+            error = execSubmit(common, submitParams).mError;
+            if (!error.mCode) {
+                error = execActivate(common, activateParams).mError;
+            }
+        }
+    }
+    AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
+    execRequestTrigger("Run", common);
+    return createRequestResult(common, error, "Run done", timer.duration(), state);
+}
+
+RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+    auto& sessionInfo = getOrCreateSessionInfo(common);
+    AggregatedState state{ AggregatedState::Undefined };
+    // Reset devices' state
+    // Update DDS topology
+    // Create Topology
+    // Configure devices' state
+    Error error;
+
+    try {
+        sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
+    } catch (exception& _e) {
+        fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
+    }
+
+    if (!error.mCode) {
+        changeStateReset(common, error, "", state) &&
+        resetTopology(common) &&
+        activateDDSTopology(common, error, sessionInfo.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::UPDATE) &&
+        createDDSTopology(common, error, sessionInfo.mTopoFilePath) &&
+        createTopology(common, error, sessionInfo.mTopoFilePath) &&
+        changeStateConfigure(common, error, "", state);
+    }
+    execRequestTrigger("Update", common);
+    return createRequestResult(common, error, "Update done", timer.duration(), state);
+}
+
+RequestResult Controller::execShutdown(const CommonParams& common)
+{
+    Timer<chrono::milliseconds> timer;
+    Error error;
+    shutdownDDSSession(common, error);
+    execRequestTrigger("Shutdown", common);
+    return createRequestResult(common, error, "Shutdown done", timer.duration(), AggregatedState::Undefined);
+}
+
+RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+    Error error;
+    setProperties(common, error, params);
+    execRequestTrigger("SetProperties", common);
+    return createRequestResult(common, error, "SetProperties done", timer.duration(), AggregatedState::Undefined);
+}
+
+RequestResult Controller::execGetState(const CommonParams& common, const DeviceParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+    AggregatedState state{ AggregatedState::Undefined };
+    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
+    Error error;
+    getState(common, error, params.mPath, state, detailedState.get());
+    execRequestTrigger("GetState", common);
+    return createRequestResult(common, error, "GetState done", timer.duration(), state, move(detailedState));
+}
+
+RequestResult Controller::execConfigure(const CommonParams& common, const DeviceParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+    AggregatedState state{ AggregatedState::Undefined };
+    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
+    Error error;
+    changeStateConfigure(common, error, params.mPath, state, detailedState.get());
+    execRequestTrigger("Configure", common);
+    return createRequestResult(common, error, "Configure done", timer.duration(), state, move(detailedState));
+}
+
+RequestResult Controller::execStart(const CommonParams& common, const DeviceParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+    AggregatedState state{ AggregatedState::Undefined };
+    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
+    Error error;
+    changeState(common, error, TopologyTransition::Run, params.mPath, state, detailedState.get());
+    execRequestTrigger("Start", common);
+    return createRequestResult(common, error, "Start done", timer.duration(), state, move(detailedState));
+}
+
+RequestResult Controller::execStop(const CommonParams& common, const DeviceParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+    AggregatedState state{ AggregatedState::Undefined };
+    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
+    Error error;
+    changeState(common, error, TopologyTransition::Stop, params.mPath, state, detailedState.get());
+    execRequestTrigger("Stop", common);
+    return createRequestResult(common, error, "Stop done", timer.duration(), state, move(detailedState));
+}
+
+RequestResult Controller::execReset(const CommonParams& common, const DeviceParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+    AggregatedState state{ AggregatedState::Undefined };
+    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
+    Error error;
+    changeStateReset(common, error, params.mPath, state, detailedState.get());
+    execRequestTrigger("Reset", common);
+    return createRequestResult(common, error, "Reset done", timer.duration(), state, move(detailedState));
+}
+
+RequestResult Controller::execTerminate(const CommonParams& common, const DeviceParams& params)
+{
+    Timer<chrono::milliseconds> timer;
+    AggregatedState state{ AggregatedState::Undefined };
+    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
+    Error error;
+    changeState(common, error, TopologyTransition::End, params.mPath, state, detailedState.get());
+    execRequestTrigger("Terminate", common);
+    return createRequestResult(common, error, "Terminate done", timer.duration(), state, move(detailedState));
+}
+
+StatusRequestResult Controller::execStatus(const StatusParams& params)
+{
+    lock_guard<mutex> lock(mSessionsMtx);
+    Timer<chrono::milliseconds> timer;
+    StatusRequestResult result;
+    for (const auto& v : mSessions) {
+        const auto& info{ v.second };
+        PartitionStatus status;
+        status.mPartitionID = info->mPartitionID;
+        try {
+            status.mDDSSessionID = to_string(info->mDDSSession->getSessionID());
+            status.mDDSSessionStatus = (info->mDDSSession->IsRunning()) ? DDSSessionStatus::running : DDSSessionStatus::stopped;
+        } catch (exception& _e) {
+            OLOG(warning, status.mPartitionID, 0) << "Failed to get session ID or session status: " << _e.what();
+        }
+
+        // Filter running sessions if needed
+        if ((params.mRunning && status.mDDSSessionStatus == DDSSessionStatus::running) || (!params.mRunning)) {
+            try {
+                status.mAggregatedState = (info->mTopology != nullptr && info->mDDSTopo != nullptr)
+                ?
+                aggregateStateForPath(info->mDDSTopo.get(), info->mTopology->GetCurrentState(), "")
+                :
+                AggregatedState::Undefined;
+            } catch (exception& _e) {
+                OLOG(warning, status.mPartitionID, 0) << "Failed to get an aggregated state: " << _e.what();
+            }
+            result.mPartitions.push_back(status);
+        }
+    }
+    result.mStatusCode = StatusCode::ok;
+    result.mMsg = "Status done";
+    result.mExecTime = timer.duration();
+    execRequestTrigger("Status", CommonParams());
+    return result;
+}
 
 void Controller::execRequestTrigger(const string& plugin, const CommonParams& common)
 {
@@ -99,7 +391,7 @@ bool Controller::attachToDDSSession(const CommonParams& common, Error& error, co
     try {
         auto& info = getOrCreateSessionInfo(common);
         info.mDDSSession->attach(sessionID);
-        OLOG(info, common) << "Attach to a DDS session with session ID: " << sessionID;
+        OLOG(info, common) << "Attached to DDS session: " << sessionID;
     } catch (exception& e) {
         fillError(common, error, ErrorCode::DDSAttachToSessionFailed, toString("Failed to attach to a DDS session: ", e.what()));
         return false;
@@ -107,7 +399,7 @@ bool Controller::attachToDDSSession(const CommonParams& common, Error& error, co
     return true;
 }
 
-bool Controller::submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, const CDDSSubmit::SParams& params)
+bool Controller::submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, const DDSSubmit::Params& params)
 {
     bool success(true);
 
@@ -262,14 +554,14 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         if (info.mDDSSession->getSessionID() != boost::uuids::nil_uuid()) {
             info.mDDSSession->shutdown();
             if (info.mDDSSession->getSessionID() == boost::uuids::nil_uuid()) {
-                OLOG(info, common) << "DDS session shutted down";
+                OLOG(info, common) << "DDS session has been shut down";
             } else {
                 fillError(common, error, ErrorCode::DDSShutdownSessionFailed, "Failed to shut down DDS session");
                 return false;
             }
         }
-    } catch (exception& _e) {
-        fillError(common, error, ErrorCode::DDSShutdownSessionFailed, toString("Shutdown failed: ", _e.what()));
+    } catch (exception& e) {
+        fillError(common, error, ErrorCode::DDSShutdownSessionFailed, toString("Shutdown failed: ", e.what()));
         return false;
     }
     return true;
@@ -925,14 +1217,14 @@ chrono::seconds Controller::requestTimeout(const CommonParams& common) const
     return timeout;
 }
 
-void Controller::registerResourcePlugins(const CDDSSubmit::PluginMap_t& pluginMap)
+void Controller::registerResourcePlugins(const DDSSubmit::PluginMap_t& pluginMap)
 {
     for (const auto& v : pluginMap) {
         mSubmit.registerPlugin(v.first, v.second);
     }
 }
 
-void Controller::registerRequestTriggers(const CPluginManager::PluginMap_t& triggerMap)
+void Controller::registerRequestTriggers(const PluginManager::PluginMap_t& triggerMap)
 {
     const set<string> avail{ "Initialize", "Submit", "Activate", "Run", "Update", "Configure", "SetProperties", "GetState", "Start", "Stop", "Reset", "Terminate", "Shutdown", "Status" };
     for (const auto& v : triggerMap) {
@@ -959,296 +1251,4 @@ void Controller::restore(const string& id)
             OLOG(info, v.mPartitionID, 0) << "Successfully attached to the session (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
         }
     }
-}
-
-RequestResult Controller::execInitialize(const CommonParams& common, const InitializeParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-
-    Error error;
-    if (params.mDDSSessionID.empty()) {
-        // Create new DDS session
-        // Shutdown DDS session if it is running already
-        shutdownDDSSession(common, error)
-            && createDDSSession(common, error)
-            && subscribeToDDSSession(common, error);
-    } else {
-        // Attach to an existing DDS session
-        // Shutdown DDS session if it is running already
-        bool success = shutdownDDSSession(common, error)
-            && attachToDDSSession(common, error, params.mDDSSessionID)
-            && subscribeToDDSSession(common, error);
-
-        // Request current active topology, if any
-        // If topology is active, create DDS and FairMQ topology
-        if (success) {
-            dds::tools_api::SCommanderInfoRequest::response_t commanderInfo;
-            requestCommanderInfo(common, error, commanderInfo)
-                && !commanderInfo.m_activeTopologyPath.empty()
-                && createDDSTopology(common, error, commanderInfo.m_activeTopologyPath)
-                && createTopology(common, error, commanderInfo.m_activeTopologyPath);
-        }
-    }
-    execRequestTrigger("Initialize", common);
-    updateRestore();
-    return createRequestResult(common, error, "Initialize done", measure.duration(), AggregatedState::Undefined);
-}
-
-RequestResult Controller::execSubmit(const CommonParams& common, const SubmitParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-
-    Error error;
-    auto& sessionInfo = getOrCreateSessionInfo(common);
-    if (!sessionInfo.mDDSSession->IsRunning()) {
-        fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
-    }
-
-    // Get DDS submit parameters from ODC resource plugin
-    vector<CDDSSubmit::SParams> ddsParams;
-    if (!error.mCode) {
-        try {
-            ddsParams = mSubmit.makeParams(params.mPlugin, params.mResources, common.mPartitionID, common.mRunNr);
-        } catch (exception& _e) {
-            fillError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", _e.what()));
-        }
-    }
-
-    if (!error.mCode) {
-        OLOG(info, common) << "Preparing to submit " << ddsParams.size() << " configurations";
-
-        size_t totalRequiredSlots = 0;
-        for (const auto& param : ddsParams) {
-            // OLOG(info, common) << "Submitting " << param;
-            if (submitDDSAgents(sessionInfo, common, error, param)) {
-                totalRequiredSlots += param.mNumRequiredSlots;
-            } else {
-                OLOG(error, common) << "Submission failed";
-                break;
-            }
-        }
-        if (!error.mCode) {
-            OLOG(info, common) << "Waiting for " << totalRequiredSlots << " slots...";
-            waitForNumActiveAgents(sessionInfo, common, error, totalRequiredSlots);
-            OLOG(info, common) << "Done waiting for " << totalRequiredSlots << " slots.";
-        }
-    }
-
-    if (error.mCode && sessionInfo.mDDSSession->IsRunning()) {
-        using namespace dds::tools_api;
-        SAgentInfoRequest::request_t agentInfoRequest;
-        SAgentInfoRequest::responseVector_t agentInfo;
-        sessionInfo.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
-        OLOG(info, common) << "Launched DDS agents:";
-        for (const auto& ai: agentInfo) {
-            OLOG(info, common) << "Agent ID: " << ai.m_agentID
-                               // << ", pid: " << ai.m_agentPid
-                               << ", host: " << ai.m_host
-                               << ", path: " << ai.m_DDSPath
-                               << ", group: " << ai.m_groupName
-                               // << ", index: " << ai.m_index
-                               // << ", username: " << ai.m_username
-                               << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
-        }
-    }
-
-    execRequestTrigger("Submit", common);
-    return createRequestResult(common, error, "Submit done", measure.duration(), AggregatedState::Undefined);
-}
-
-RequestResult Controller::execActivate(const CommonParams& common, const ActivateParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    auto& sessionInfo = getOrCreateSessionInfo(common);
-    // Activate DDS topology
-    // Create Topology
-    Error error{ checkSessionIsRunning(common, ErrorCode::DDSActivateTopologyFailed) };
-    if (!error.mCode) {
-        try {
-            sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
-        } catch (exception& _e) {
-            fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
-        }
-        if (!error.mCode) {
-            activateDDSTopology(common, error, sessionInfo.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
-                && createDDSTopology(common, error, sessionInfo.mTopoFilePath)
-                && createTopology(common, error, sessionInfo.mTopoFilePath);
-        }
-    }
-    AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
-    execRequestTrigger("Activate", common);
-    return createRequestResult(common, error, "Activate done", measure.duration(), state);
-}
-
-RequestResult Controller::execRun(const CommonParams& common, const InitializeParams& initializeParams, const SubmitParams& submitParams, const ActivateParams& activateParams)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    // Run request doesn't support attachment to a DDS session.
-    // Execute consecuently Initialize, Submit and Activate.
-
-    Error error;
-    if (!initializeParams.mDDSSessionID.empty()) {
-        error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Attachment to a DDS session not supported");
-    } else {
-        error = execInitialize(common, initializeParams).mError;
-        if (!error.mCode) {
-            error = execSubmit(common, submitParams).mError;
-            if (!error.mCode) {
-                error = execActivate(common, activateParams).mError;
-            }
-        }
-    }
-    AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
-    execRequestTrigger("Run", common);
-    return createRequestResult(common, error, "Run done", measure.duration(), state);
-}
-
-RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    auto& sessionInfo = getOrCreateSessionInfo(common);
-    AggregatedState state{ AggregatedState::Undefined };
-    // Reset devices' state
-    // Update DDS topology
-    // Create Topology
-    // Configure devices' state
-    Error error;
-
-    try {
-        sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
-    } catch (exception& _e) {
-        fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
-    }
-
-    if (!error.mCode) {
-        changeStateReset(common, error, "", state) &&
-        resetTopology(common) &&
-        activateDDSTopology(common, error, sessionInfo.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::UPDATE) &&
-        createDDSTopology(common, error, sessionInfo.mTopoFilePath) &&
-        createTopology(common, error, sessionInfo.mTopoFilePath) &&
-        changeStateConfigure(common, error, "", state);
-    }
-    execRequestTrigger("Update", common);
-    return createRequestResult(common, error, "Update done", measure.duration(), state);
-}
-
-RequestResult Controller::execShutdown(const CommonParams& common)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    Error error;
-    shutdownDDSSession(common, error);
-    execRequestTrigger("Shutdown", common);
-    return createRequestResult(common, error, "Shutdown done", measure.duration(), AggregatedState::Undefined);
-}
-
-RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    Error error;
-    setProperties(common, error, params);
-    execRequestTrigger("SetProperties", common);
-    return createRequestResult(common, error, "SetProperties done", measure.duration(), AggregatedState::Undefined);
-}
-
-RequestResult Controller::execGetState(const CommonParams& common, const DeviceParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    AggregatedState state{ AggregatedState::Undefined };
-    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
-    getState(common, error, params.mPath, state, detailedState.get());
-    execRequestTrigger("GetState", common);
-    return createRequestResult(common, error, "GetState done", measure.duration(), state, move(detailedState));
-}
-
-RequestResult Controller::execConfigure(const CommonParams& common, const DeviceParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    AggregatedState state{ AggregatedState::Undefined };
-    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
-    changeStateConfigure(common, error, params.mPath, state, detailedState.get());
-    execRequestTrigger("Configure", common);
-    return createRequestResult(common, error, "Configure done", measure.duration(), state, move(detailedState));
-}
-
-RequestResult Controller::execStart(const CommonParams& common, const DeviceParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    AggregatedState state{ AggregatedState::Undefined };
-    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
-    changeState(common, error, TopologyTransition::Run, params.mPath, state, detailedState.get());
-    execRequestTrigger("Start", common);
-    return createRequestResult(common, error, "Start done", measure.duration(), state, move(detailedState));
-}
-
-RequestResult Controller::execStop(const CommonParams& common, const DeviceParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    AggregatedState state{ AggregatedState::Undefined };
-    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
-    changeState(common, error, TopologyTransition::Stop, params.mPath, state, detailedState.get());
-    execRequestTrigger("Stop", common);
-    return createRequestResult(common, error, "Stop done", measure.duration(), state, move(detailedState));
-}
-
-RequestResult Controller::execReset(const CommonParams& common, const DeviceParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    AggregatedState state{ AggregatedState::Undefined };
-    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
-    changeStateReset(common, error, params.mPath, state, detailedState.get());
-    execRequestTrigger("Reset", common);
-    return createRequestResult(common, error, "Reset done", measure.duration(), state, move(detailedState));
-}
-
-RequestResult Controller::execTerminate(const CommonParams& common, const DeviceParams& params)
-{
-    STimeMeasure<chrono::milliseconds> measure;
-    AggregatedState state{ AggregatedState::Undefined };
-    unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
-    changeState(common, error, TopologyTransition::End, params.mPath, state, detailedState.get());
-    execRequestTrigger("Terminate", common);
-    return createRequestResult(common, error, "Terminate done", measure.duration(), state, move(detailedState));
-}
-
-StatusRequestResult Controller::execStatus(const StatusParams& params)
-{
-    lock_guard<mutex> lock(mSessionsMtx);
-    STimeMeasure<chrono::milliseconds> measure;
-    StatusRequestResult result;
-    for (const auto& v : mSessions) {
-        const auto& info{ v.second };
-        PartitionStatus status;
-        status.mPartitionID = info->mPartitionID;
-        try {
-            status.mDDSSessionID = to_string(info->mDDSSession->getSessionID());
-            status.mDDSSessionStatus = (info->mDDSSession->IsRunning()) ? DDSSessionStatus::running : DDSSessionStatus::stopped;
-        } catch (exception& _e) {
-            OLOG(warning, status.mPartitionID, 0) << "Failed to get session ID or session status: " << _e.what();
-        }
-
-        // Filter running sessions if needed
-        if ((params.mRunning && status.mDDSSessionStatus == DDSSessionStatus::running) || (!params.mRunning)) {
-            try {
-                status.mAggregatedState = (info->mTopology != nullptr && info->mDDSTopo != nullptr)
-                ?
-                aggregateStateForPath(info->mDDSTopo.get(), info->mTopology->GetCurrentState(), "")
-                :
-                AggregatedState::Undefined;
-            } catch (exception& _e) {
-                OLOG(warning, status.mPartitionID, 0) << "Failed to get an aggregated state: " << _e.what();
-            }
-            result.mPartitions.push_back(status);
-        }
-    }
-    result.mStatusCode = StatusCode::ok;
-    result.mMsg = "Status done";
-    result.mExecTime = measure.duration();
-    execRequestTrigger("Status", CommonParams());
-    return result;
 }

@@ -23,16 +23,16 @@
 
 namespace odc::core {
 
-class CDDSSubmit : public CPluginManager
+class DDSSubmit : public PluginManager
 {
   public:
     /// \brief DDS submit parameters
-    struct SParams
+    struct Params
     {
-        SParams() {}
+        Params() {}
 
         /// \brief Constructor with arguments
-        SParams(const std::string& rmsPlugin, const std::string& configFile, const std::string& agentGroup, size_t numAgents, size_t numSlots, size_t numRequiredSlots)
+        Params(const std::string& rmsPlugin, const std::string& configFile, const std::string& agentGroup, size_t numAgents, size_t numSlots, size_t numRequiredSlots)
             : mRMSPlugin(rmsPlugin)
             , mConfigFile(configFile)
             , mAgentGroup(agentGroup)
@@ -79,25 +79,25 @@ class CDDSSubmit : public CPluginManager
         size_t mNumRequiredSlots{ 0 }; ///< Wait for the required number of slots become active
 
         // \brief ostream operator.
-        friend std::ostream& operator<<(std::ostream& os, const SParams& params)
+        friend std::ostream& operator<<(std::ostream& os, const Params& params)
         {
-            return os << "CDDSSubmit::SParams: rmsPlugin=" << std::quoted(params.mRMSPlugin)
-                       << "; numAgents=" << params.mNumAgents
-                       << "; agentGroup=" << params.mAgentGroup
-                       << "; numSlots=" << params.mNumSlots
-                       << "; configFile=" << std::quoted(params.mConfigFile)
-                       << "; numRequiredSlots=" << params.mNumRequiredSlots;
+            return os << "odc::core::DDSSubmit::Params: rmsPlugin: " << std::quoted(params.mRMSPlugin)
+                      << ", numAgents: " << params.mNumAgents
+                      << ", agentGroup: " << params.mAgentGroup
+                      << ", numSlots: " << params.mNumSlots
+                      << ", configFile: " << std::quoted(params.mConfigFile)
+                      << ", numRequiredSlots: " << params.mNumRequiredSlots;
         }
     };
 
-    CDDSSubmit()
+    DDSSubmit()
     {
         registerDefaultPlugin("odc-rp-same");
     }
 
-    std::vector<SParams> makeParams(const std::string& plugin, const std::string& resources, const std::string& partitionID, uint64_t runNr)
+    std::vector<Params> makeParams(const std::string& plugin, const std::string& resources, const std::string& partitionID, uint64_t runNr)
     {
-        std::vector<SParams> params;
+        std::vector<Params> params;
         std::stringstream ss{ execPlugin(plugin, resources, partitionID, runNr) };
         boost::property_tree::ptree pt;
         boost::property_tree::read_xml(ss, pt, boost::property_tree::xml_parser::no_comments);

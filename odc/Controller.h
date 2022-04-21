@@ -117,11 +117,11 @@ class Controller
 
     /// \brief Register resource plugins
     /// \param [in] pluginMap Map of plugin name to path
-    void registerResourcePlugins(const CPluginManager::PluginMap_t& pluginMap);
+    void registerResourcePlugins(const PluginManager::PluginMap_t& pluginMap);
 
     /// \brief Register request triggers
     /// \param [in] triggerMap Map of plugin name to path
-    void registerRequestTriggers(const CPluginManager::PluginMap_t& triggerMap);
+    void registerRequestTriggers(const PluginManager::PluginMap_t& triggerMap);
 
     /// \brief Restore sessions for the specified ID
     ///  The function has to be called before the service start accepting request.
@@ -137,7 +137,7 @@ class Controller
     /// \brief Activate topology
     RequestResult execActivate(const CommonParams& common, const ActivateParams& params);
     /// \brief Run request combines Initialize, Submit and Activate
-    RequestResult execRun(const CommonParams& common, const InitializeParams& _initializeParams, const SubmitParams& _submitParams, const ActivateParams& _activateParams);
+    RequestResult execRun(const CommonParams& common, const InitializeParams& initializeParams, const SubmitParams& submitParams, const ActivateParams& activateParams);
     /// \brief Update topology. Can be called multiple times in order to update topology.
     RequestResult execUpdate(const CommonParams& common, const UpdateParams& params);
     /// \brief Shutdown DDS session
@@ -170,8 +170,8 @@ class Controller
     std::map<std::string, std::unique_ptr<SessionInfo>> mSessions; ///< Map of partition ID to session info
     std::mutex mSessionsMtx; ///< Mutex of sessions map
     std::chrono::seconds mTimeout{ 30 }; ///< Request timeout in sec
-    CDDSSubmit mSubmit;                  ///< ODC to DDS submit resource converter
-    CPluginManager mTriggers;            ///< Request triggers
+    DDSSubmit mSubmit;                  ///< ODC to DDS submit resource converter
+    PluginManager mTriggers;            ///< Request triggers
     std::string mRestoreId;              ///< Restore ID
 
     void execRequestTrigger(const std::string& plugin, const CommonParams& common);
@@ -180,7 +180,7 @@ class Controller
     RequestResult createRequestResult(const CommonParams& common, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
     bool createDDSSession(const CommonParams& common, Error& error);
     bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
-    bool submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, const CDDSSubmit::SParams& params);
+    bool submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, const DDSSubmit::Params& params);
     bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
     bool waitForNumActiveAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, size_t numAgents);
     bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
