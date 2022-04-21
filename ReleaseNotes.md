@@ -1,5 +1,17 @@
 # ODC Release Notes
 
+## 0.67 (2022-04-21)
+
+- Require DDS 3.7.10.
+- Always log a list of DDS agent details on submit.
+- Increase controller heartbeat interval from 0.6 seconds to 10 minutes.
+- Do not change gRPC verbosity depending on configured severity, or in any other way.
+- Reduce log verbosity of the Status command.
+- Log failed tasks/collections line by line.
+- Honor nMin parameter during device state transitions.
+- odc-grpc-client: log only to stdout, not to the file.
+- Use timeout value of the corresponding request.
+
 ## 0.66 (2022-03-18)
 
 - Require DDS 3.7.5
