@@ -105,22 +105,20 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
         }
     }
 
-    if (error.mCode && sessionInfo.mDDSSession->IsRunning()) {
-        using namespace dds::tools_api;
-        SAgentInfoRequest::request_t agentInfoRequest;
-        SAgentInfoRequest::responseVector_t agentInfo;
-        sessionInfo.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
-        OLOG(info, common) << "Launched DDS agents:";
-        for (const auto& ai: agentInfo) {
-            OLOG(info, common) << "Agent ID: " << ai.m_agentID
-                               // << ", pid: " << ai.m_agentPid
-                               << ", host: " << ai.m_host
-                               << ", path: " << ai.m_DDSPath
-                               << ", group: " << ai.m_groupName
-                               // << ", index: " << ai.m_index
-                               // << ", username: " << ai.m_username
-                               << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
-        }
+    using namespace dds::tools_api;
+    SAgentInfoRequest::request_t agentInfoRequest;
+    SAgentInfoRequest::responseVector_t agentInfo;
+    sessionInfo.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
+    OLOG(info, common) << "Launched DDS agents:";
+    for (const auto& ai: agentInfo) {
+        OLOG(info, common) << "Agent ID: " << ai.m_agentID
+                            // << ", pid: " << ai.m_agentPid
+                            << ", host: " << ai.m_host
+                            << ", path: " << ai.m_DDSPath
+                            << ", group: " << ai.m_groupName
+                            // << ", index: " << ai.m_index
+                            // << ", username: " << ai.m_username
+                            << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
     }
 
     execRequestTrigger("Submit", common);
