@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## 0.68 (2022-04-22)
+
+- Fix compilation error when readline is not available.
+
 ## 0.67 (2022-04-21)
 
 - Require DDS 3.7.10.
