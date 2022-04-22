@@ -264,10 +264,10 @@ class Controller final
         setupStatusReply(rep, res);
 
         if (rep->status() == odc::ReplyStatus::SUCCESS) {
-            OLOG(info) << "Status: found " << rep->partitions().size() << " partitions" << (rep->partitions().size() > 0 ? ":" : "");
+            OLOG(info) << "Status: found " << rep->partitions().size() << " partition(s)" << (rep->partitions().size() > 0 ? ":" : "");
             for (const auto& p : rep->partitions()) {
                 OLOG(info) << "  partitionId: " << p.partitionid()
-                           << ", DDS session status: " << odc::SessionStatus_Name(p.status())
+                           << ", DDS session: " << odc::SessionStatus_Name(p.status())
                            << ", DDS session ID: " << p.sessionid()
                            << ", topology state: " << p.state();
             }
