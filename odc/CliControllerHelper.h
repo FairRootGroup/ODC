@@ -63,7 +63,7 @@ class CliControllerHelper
                     add_history(cmd.c_str());
                 }
 #else
-                std::cout << "Please enter command: " << std::cout;
+                std::cout << "Please enter command: " << std::endl;
                 getline(std::cin, cmd);
 #endif
 
