@@ -27,7 +27,7 @@ From: fedora:34
                    wget
     dnf -y clean all
 
-    git clone -b 3.7.1 https://github.com/FairRootGroup/DDS
+    git clone -b 3.7.10 https://github.com/FairRootGroup/DDS
     cmake -GNinja -S DDS -B DDS_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_dds-tutorials=OFF
     cmake --build DDS_build --target wn_bin
     cmake --build DDS_build --target install
