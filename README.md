@@ -12,7 +12,7 @@ The project containes a library and several executables:
 Communication between `odc-grpc-server` and `odc-grpc-client` is done via [gRPC](https://grpc.io/). The interface of the `odc-grpc-server` is described in the [odc.proto](grpc-proto/odc.proto) file.
 
 ## Command Mapping
-
+test
 | Command | ODC reaction |
 | ----------- | ------------ |
 | Initialize | Create a new DDS session or attach to an existing DDS session |
