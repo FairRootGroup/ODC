@@ -1,9 +1,9 @@
 Bootstrap: docker
-From: fedora:34
+From: fedora:36
 
 %post
     dnf -y update
-    dnf -y install https://alfa-ci.gsi.de/packages/rpm/fedora-34-x86_64/fairsoft-release-dev.rpm
+    dnf -y install https://alfa-ci.gsi.de/packages/rpm/fedora-36-x86_64/fairsoft-release-dev.rpm
     dnf -y install abseil-cpp-devel \
                    asio-devel \
                    boost-devel \
