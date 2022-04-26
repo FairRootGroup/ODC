@@ -5,8 +5,8 @@
 #              GNU Lesser General Public Licence (LGPL) version 3,             #
 #                  copied verbatim in the file "LICENSE"                       #
 ################################################################################
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-cmake_policy(VERSION 3.12...3.22)
+cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
+cmake_policy(VERSION 3.21...3.23)
 
 project(ODC LANGUAGES CXX)
 
@@ -66,8 +66,8 @@ find_package(FairCMakeModules 1.0.0 REQUIRED QUIET)
 include(FairFindPackage2) # for find_package2
 
 if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
-  find_package2(PRIVATE Protobuf REQUIRED)
-  find_package2(PRIVATE gRPC REQUIRED)
+  find_package2(PRIVATE Protobuf VERSION 3.15 REQUIRED)
+  find_package2(PRIVATE gRPC VERSION 1.1 REQUIRED)
 endif()
 find_package2(PRIVATE DDS VERSION 3.7.12 REQUIRED)
 find_package2(PRIVATE FairMQ VERSION 1.4.26 REQUIRED COMPONENTS fairmq)
