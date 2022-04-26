@@ -6,10 +6,13 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef __ODC__LOGGER__
-#define __ODC__LOGGER__
+#ifndef ODC_CORE_LOGGER
+#define ODC_CORE_LOGGER
 
-// BOOST
+#include <odc/InfoLogger.h>
+#include <odc/LoggerSeverity.h>
+#include <odc/MiscUtils.h>
+
 #ifndef BOOST_LOG_DYN_LINK
 #define BOOST_LOG_DYN_LINK
 #endif
@@ -27,13 +30,11 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/utility/setup/console.hpp>
 #include <boost/log/utility/setup/file.hpp>
-// STD
+
+#include <unistd.h> // getpid
+
 #include <fstream>
 #include <ostream>
-// ODC
-#include <odc/InfoLogger.h>
-#include <odc/LoggerSeverity.h>
-#include <odc/MiscUtils.h>
 
 // Main macro to be used for logging in ODC
 // Example:
@@ -132,11 +133,18 @@ class Logger
         boost::filesystem::path logFile{ logDir };
         logFile /= "odc_%Y-%m-%d.%N.log";
 
+        pid_t pid = getpid();
+
         // Default format for logger
-        formatter formatter = expressions::stream << std::left << expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f") << " " << std::setw(4)
-                                                  << expressions::attr<ESeverity>("Severity") << " " << std::setw(20) << expressions::attr<std::string>("Process") << " <"
-                                                  << expressions::attr<attributes::current_process_id::value_type>("ProcessID") << ":"
-                                                  << expressions::attr<attributes::current_thread_id::value_type>("ThreadID") << "> " << std::setw(20)
+        formatter formatter = expressions::stream << std::left << expressions::format_date_time<boost::posix_time::ptime>("TimeStamp", "%Y-%m-%d %H:%M:%S.%f")
+                                                  << " " << std::setw(4)
+                                                  << expressions::attr<ESeverity>("Severity")
+                                                  << " " << std::setw(20)
+                                                  << expressions::attr<std::string>("Process")
+                                                  << pid
+                                               // << ":"
+                                               // << expressions::attr<attributes::current_thread_id::value_type>("ThreadID") << "> " << std::setw(20)
+                                                  << " " << std::setw(20)
                                                   << expressions::attr<std::string>("Channel") << " " << expressions::smessage;
 
         fileSink_t fileSink = add_file_log(keywords::file_name = logFile,
@@ -160,4 +168,4 @@ class Logger
 };
 } // namespace odc::core
 
-#endif // __ODC__LOGGER__
+#endif // ODC_CORE_LOGGER

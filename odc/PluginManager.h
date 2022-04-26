@@ -56,7 +56,7 @@ class PluginManager
 
             std::string correctedCmd{ cmd };
             boost::algorithm::replace_first(correctedCmd, path, pluginPath.string());
-            OLOG(info) << "Register resource plugin " << std::quoted(plugin) << " as " << std::quoted(correctedCmd);
+            OLOG(info) << "Registered resource plugin " << std::quoted(correctedCmd) << " as " << std::quoted(plugin);
             mPlugins.insert(make_pair(plugin, correctedCmd));
         } catch (const std::exception& _e) {
             std::stringstream ss;

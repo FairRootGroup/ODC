@@ -109,7 +109,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
     SAgentInfoRequest::request_t agentInfoRequest;
     SAgentInfoRequest::responseVector_t agentInfo;
     sessionInfo.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
-    OLOG(info, common) << "Launched DDS agents:";
+    OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
     for (const auto& ai: agentInfo) {
         OLOG(info, common) << "Agent ID: " << ai.m_agentID
                             // << ", pid: " << ai.m_agentPid
@@ -437,7 +437,7 @@ bool Controller::submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& c
         success = false;
         fillError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
     } else {
-        OLOG(info, common) << "Agent submission done successfully";
+        // OLOG(info, common) << "Agent submission done successfully";
     }
     return success;
 }
@@ -546,6 +546,7 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         auto& info = getOrCreateSessionInfo(common);
         info.mTopology.reset();
         info.mDDSTopo.reset();
+        info.mNinfo.clear();
         // We stop the session anyway if session ID is not nil.
         // Session can already be stopped by `dds-session stop` but session ID is not yet reset to nil.
         // If session is already stopped dds::tools_api::CSession::shutdown will reset pointers.
@@ -905,19 +906,27 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
             continue;
         }
 
-        numFailedTasks++;
+        ++numFailedTasks;
         if (numFailedTasks == 1) {
             OLOG(error, common) << "Following devices failed to transition to " << expectedState << " state:";
         }
         stringstream ss;
-        ss << "Device " << numFailedTasks << ": state: " << status.state << ", previous state: " << status.lastState
-           << ", taskID: " << status.taskId << ", collectionID: " << status.collectionId << ", "
-           << "subscribed: " << boolalpha << status.subscribedToStateChanges;
+        ss << "[" << numFailedTasks << "]"
+           << " taskID: " << status.taskId
+           << ", state: " << status.state
+           << ", previous state: " << status.lastState
+           << ", collectionID: " << status.collectionId
+           << ", subscribed: " << boolalpha << status.subscribedToStateChanges
+           << ", ignored: " << boolalpha << status.ignored;
 
         try {
             TopoTaskInfo& taskInfo = sessionInfo.getFromTaskCache(status.taskId);
             failed.tasks.push_back(&taskInfo);
-            ss << ", " << taskInfo;
+            ss << ", agentID: " << taskInfo.mAgentID
+               << ", slotID: " << taskInfo.mSlotID
+               << ", path: " << taskInfo.mPath
+               << ", host: " << taskInfo.mHost
+               << ", wrkDir: " << taskInfo.mWrkDir;
         } catch (const exception& e) {
             OLOG(error, common) << "State summary error: " << e.what();
         }
@@ -935,12 +944,13 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
                 continue;
             }
 
-            numFailedCollections++;
+            ++numFailedCollections;
             if (numFailedCollections == 1) {
                 OLOG(error, common) << "Following collections failed to transition to " << expectedState << " state:";
             }
             stringstream ss;
-            ss << "Collection " << numFailedCollections << ": state: " << collectionState;
+            ss << "[" << numFailedCollections << "]"
+               << " state: " << collectionState;
 
             TopoCollectionInfo& collectionInfo = sessionInfo.getFromCollectionCache(collectionId);
             failed.collections.push_back(&collectionInfo);
@@ -963,7 +973,7 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
 bool Controller::attemptRecovery(FailedTasksCollections& failed, SessionInfo& sessionInfo, const CommonParams& common)
 {
     if (!failed.collections.empty() && !sessionInfo.mNinfo.empty()) {
-        OLOG(info, common) << "Attemping recovery";
+        OLOG(info, common) << "Checking if execution can continue according to the minimum number of nodes requirement...";
         // get failed collections and determine if recovery makes sense:
         //   - are failed collections inside of a group?
         //   - do all failed collections have nMin parameter defined?

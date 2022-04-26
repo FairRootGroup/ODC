@@ -39,20 +39,6 @@ struct Error
     friend std::ostream& operator<<(std::ostream& os, const Error& error) { return os << error.mCode << " (" << error.mDetails << ")"; }
 };
 
-struct DetailedTaskStatus
-{
-    DetailedTaskStatus() {}
-    DetailedTaskStatus(const DeviceStatus& status, const std::string& path)
-        : mStatus(status)
-        , mPath(path)
-    {}
-
-    DeviceStatus mStatus;
-    std::string mPath;
-};
-
-using DetailedState = std::vector<DetailedTaskStatus>;
-
 enum class DDSSessionStatus
 {
     unknown = 0,

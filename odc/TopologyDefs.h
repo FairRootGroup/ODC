@@ -148,6 +148,20 @@ struct DeviceStatus
     int signal;
 };
 
+struct DetailedTaskStatus
+{
+    DetailedTaskStatus() {}
+    DetailedTaskStatus(const DeviceStatus& status, const std::string& path)
+        : mStatus(status)
+        , mPath(path)
+    {}
+
+    DeviceStatus mStatus;
+    std::string mPath;
+};
+
+using DetailedState = std::vector<DetailedTaskStatus>;
+
 using DeviceProperty = std::pair<std::string, std::string>; /// pair := (key, value)
 using DeviceProperties = std::vector<DeviceProperty>;
 using FailedDevices = std::unordered_set<DDSTask::Id>;

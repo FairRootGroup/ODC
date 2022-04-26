@@ -168,8 +168,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     void IgnoreFailedTask(uint64_t id)
     {
         std::lock_guard<std::mutex> lk(*fMtx);
-        DeviceStatus& task = fStateData.at(fStateIndex.at(id));
-        task.ignored = true;
+        DeviceStatus& device = fStateData.at(fStateIndex.at(id));
+        if (device.subscribedToStateChanges) {
+            device.subscribedToStateChanges = false;
+            --fNumStateChangePublishers;
+        }
+        device.ignored = true;
     }
 
     void IgnoreFailedCollections(const std::vector<TopoCollectionInfo*>& collections)
@@ -178,7 +182,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         for (auto& device : fStateData) {
             for (const auto& collection : collections) {
                 if (device.collectionId == collection->mCollectionID) {
-                    std::cout << "Ignoring device " << device.taskId << " from collection " << collection->mCollectionID << std::endl;
+                    // std::cout << "Ignoring device " << device.taskId << " from collection " << collection->mCollectionID << std::endl;
                     if (device.subscribedToStateChanges) {
                         device.subscribedToStateChanges = false;
                         --fNumStateChangePublishers;
