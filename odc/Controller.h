@@ -27,6 +27,7 @@ struct TopoGroupInfo
     uint64_t nOriginal;
     uint64_t nCurrent;
     uint64_t nMin;
+    std::string agentGroup;
 };
 
 struct FailedTasksCollections
@@ -215,6 +216,7 @@ class Controller
     std::chrono::seconds requestTimeout(const CommonParams& common) const;
 
     uint64_t getNumAgents(std::shared_ptr<dds::tools_api::CSession> ddsSession, const CommonParams& common) const;
+    void extractNmin(const CommonParams& common, const std::string& topologyFile);
 };
 
 } // namespace odc::core

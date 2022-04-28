@@ -105,20 +105,33 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
         }
     }
 
-    using namespace dds::tools_api;
-    SAgentInfoRequest::request_t agentInfoRequest;
-    SAgentInfoRequest::responseVector_t agentInfo;
-    sessionInfo.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
-    OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
-    for (const auto& ai: agentInfo) {
-        OLOG(info, common) << "Agent ID: " << ai.m_agentID
-                            // << ", pid: " << ai.m_agentPid
-                            << ", host: " << ai.m_host
-                            << ", path: " << ai.m_DDSPath
-                            << ", group: " << ai.m_groupName
-                            // << ", index: " << ai.m_index
-                            // << ", username: " << ai.m_username
-                            << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
+    if (sessionInfo.mDDSSession->IsRunning()) {
+        std::map<std::string, uint32_t> agentCounts; // agent count sorted by their group name
+
+        using namespace dds::tools_api;
+        SAgentInfoRequest::request_t agentInfoRequest;
+        SAgentInfoRequest::responseVector_t agentInfo;
+        sessionInfo.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
+        OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
+        for (const auto& ai : agentInfo) {
+            agentCounts[ai.m_groupName]++;
+            OLOG(info, common) << "Agent ID: " << ai.m_agentID
+                                // << ", pid: " << ai.m_agentPid
+                                << ", host: " << ai.m_host
+                                << ", path: " << ai.m_DDSPath
+                                << ", group: " << ai.m_groupName
+                                // << ", index: " << ai.m_index
+                                // << ", username: " << ai.m_username
+                                << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
+        }
+        OLOG(info, common) << "Number of launched agents, sorted by group:";
+        for (const auto& [groupName, count] : agentCounts) {
+            OLOG(info, common) << groupName << ": " << count;
+        }
+
+        // check nMin if submit failed
+        
+        // update topology file
     }
 
     execRequestTrigger("Submit", common);
@@ -153,7 +166,6 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
 {
     Timer<chrono::milliseconds> timer;
     // Run request doesn't support attachment to a DDS session.
-    // Execute consecuently Initialize, Submit and Activate.
 
     Error error;
     if (!initializeParams.mDDSSessionID.empty()) {
@@ -161,6 +173,7 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
     } else {
         error = execInitialize(common, initializeParams).mError;
         if (!error.mCode) {
+
             error = execSubmit(common, submitParams).mError;
             if (!error.mCode) {
                 error = execActivate(common, activateParams).mError;
@@ -190,12 +203,12 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
     }
 
     if (!error.mCode) {
-        changeStateReset(common, error, "", state) &&
-        resetTopology(common) &&
-        activateDDSTopology(common, error, sessionInfo.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::UPDATE) &&
-        createDDSTopology(common, error, sessionInfo.mTopoFilePath) &&
-        createTopology(common, error, sessionInfo.mTopoFilePath) &&
-        changeStateConfigure(common, error, "", state);
+        changeStateReset(common, error, "", state)
+            && resetTopology(common)
+            && activateDDSTopology(common, error, sessionInfo.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::UPDATE)
+            && createDDSTopology(common, error, sessionInfo.mTopoFilePath)
+            && createTopology(common, error, sessionInfo.mTopoFilePath)
+            && changeStateConfigure(common, error, "", state);
     }
     execRequestTrigger("Update", common);
     return createRequestResult(common, error, "Update done", timer.duration(), state);
@@ -399,7 +412,7 @@ bool Controller::attachToDDSSession(const CommonParams& common, Error& error, co
 
 bool Controller::submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, const DDSSubmit::Params& params)
 {
-    bool success(true);
+    bool success = true;
 
     dds::tools_api::SSubmitRequest::request_t requestInfo;
     requestInfo.m_rms = params.mRMSPlugin;
@@ -407,7 +420,7 @@ bool Controller::submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& c
     requestInfo.m_slots = params.mNumSlots;
     requestInfo.m_config = params.mConfigFile;
     requestInfo.m_groupName = params.mAgentGroup;
-    OLOG(info, common) << "dds::tools_api::SSubmitRequest: " << requestInfo;
+    OLOG(info, common) << "Submitting: " << requestInfo;
 
     condition_variable cv;
 
@@ -418,7 +431,7 @@ bool Controller::submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& c
             success = false;
             fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit error: ", msg.m_msg));
         } else {
-            OLOG(info, common) << "Submit: " << msg.m_msg;
+            OLOG(info, common) << "...Submit: " << msg.m_msg;
         }
     });
 
@@ -566,40 +579,69 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
     return true;
 }
 
+void Controller::extractNmin(const CommonParams& common, const string& topologyFile)
+{
+    using namespace dds::topology_api;
+    auto& sInfo = getOrCreateSessionInfo(common);
+    // extract the nmin variables and detect corresponding collections
+    sInfo.mNinfo.clear();
+    CTopoVars vars;
+    vars.initFromXML(topologyFile);
+    for (const auto& [var, nmin] : vars.getMap()) {
+        if (0 == var.compare(0, 9, "odc_nmin_")) {
+            sInfo.mNinfo.emplace(var.substr(9), TopoGroupInfo{0, 0, stoull(nmin), ""});
+        }
+    }
+
+    CTopology ddsTopo(topologyFile);
+
+    std::map<std::string, std::string> reqs;
+
+    auto requirements = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::REQUIREMENT);
+    for (const auto& req : requirements) {
+        CTopoRequirement::Ptr_t r = dynamic_pointer_cast<CTopoRequirement>(req);
+        reqs.emplace(r->getName(), r->getValue());
+    }
+
+    auto groups = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
+    for (const auto& group : groups) {
+        CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
+        try {
+            sInfo.mNinfo.at(g->getName()).nOriginal = g->getN();
+            sInfo.mNinfo.at(g->getName()).nCurrent = g->getN();
+            auto collections = g->getElementsByType(CTopoBase::EType::COLLECTION);
+            if (collections.size() == 1) {
+                CTopoCollection::Ptr_t c = dynamic_pointer_cast<CTopoCollection>(collections.at(0));
+                auto topoReqs = c->getRequirements();
+                for (const auto& tr : topoReqs) {
+                    CTopoRequirement::Ptr_t r = dynamic_pointer_cast<CTopoRequirement>(tr);
+                    if (r->getRequirementType() == CTopoRequirement::EType::GroupName) {
+                        sInfo.mNinfo.at(g->getName()).agentGroup = r->getValue();
+                    }
+                }
+            }
+        } catch (out_of_range&) {
+            continue;
+        }
+    }
+
+    OLOG(info, common) << "Groups:";
+    for (const auto& [group, nmin] : sInfo.mNinfo) {
+        OLOG(info, common) << "Group " << group
+                           << ", n (original): " << nmin.nOriginal
+                           << ", n (current): " << nmin.nCurrent
+                           << ", n (minimum): " << nmin.nMin
+                           << ", agent group: " << nmin.agentGroup;
+    }
+}
+
 bool Controller::createDDSTopology(const CommonParams& common, Error& error, const string& topologyFile)
 {
     using namespace dds::topology_api;
     try {
         auto& sInfo = getOrCreateSessionInfo(common);
-
-        // extract the nmin variables and detect corresponding collections
-        sInfo.mNinfo.clear();
-        CTopoVars vars;
-        vars.initFromXML(topologyFile);
-        for (const auto& [var, nmin] : vars.getMap()) {
-            if (0 == var.compare(0, 9, "odc_nmin_")) {
-                sInfo.mNinfo.emplace(var.substr(9), TopoGroupInfo{0, 0, stoull(nmin)});
-            }
-        }
-
+        extractNmin(common, topologyFile);
         sInfo.mDDSTopo = make_unique<CTopology>(topologyFile);
-
-        auto groups = sInfo.mDDSTopo->getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
-        for (const auto& group : groups) {
-            CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
-            try {
-                sInfo.mNinfo.at(g->getName()).nOriginal = g->getN();
-                sInfo.mNinfo.at(g->getName()).nCurrent = g->getN();
-            } catch (out_of_range&) {
-                continue;
-            }
-        }
-
-        OLOG(info, common) << "Groups:";
-        for (const auto& [group, nmin] : sInfo.mNinfo) {
-            OLOG(info, common) << "Group '" << group << "', n (original): " << nmin.nOriginal << ", n (current): " << nmin.nCurrent << ", n (minimum): " << nmin.nMin;
-        }
-
         OLOG(info, common) << "DDS topology " << quoted(topologyFile) << " created successfully";
     } catch (exception& e) {
         fillError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed to initialize DDS topology: ", e.what()));
