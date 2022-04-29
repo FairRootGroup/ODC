@@ -421,6 +421,7 @@ bool Controller::submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& c
     bool success = true;
 
     dds::tools_api::SSubmitRequest::request_t requestInfo;
+    requestInfo.m_submissionTag = common.mPartitionID;
     requestInfo.m_rms = params.mRMSPlugin;
     requestInfo.m_instances = params.mNumAgents;
     requestInfo.m_slots = params.mNumSlots;
