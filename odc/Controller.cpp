@@ -89,10 +89,10 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
         OLOG(info, common) << "Preparing to submit " << ddsParams.size() << " configurations";
 
         size_t totalRequiredSlots = 0;
-        for (const auto& param : ddsParams) {
-            // OLOG(info, common) << "Submitting " << param;
-            if (submitDDSAgents(sessionInfo, common, error, param)) {
-                totalRequiredSlots += param.mNumRequiredSlots;
+        for (unsigned int i = 0; i < ddsParams.size(); ++i) {
+            OLOG(info, common) << "Submitting [" << i + 1 << "/" << ddsParams.size() << "]: " << ddsParams.at(i);
+            if (submitDDSAgents(sessionInfo, common, error, ddsParams.at(i))) {
+                totalRequiredSlots += ddsParams.at(i).mNumRequiredSlots;
             } else {
                 OLOG(error, common) << "Submission failed";
                 break;
@@ -147,9 +147,12 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     Error error{ checkSessionIsRunning(common, ErrorCode::DDSActivateTopologyFailed) };
     if (!error.mCode) {
         try {
-            sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
-        } catch (exception& _e) {
-            fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
+            if (sessionInfo.mTopoFilePath.empty()) {
+                sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
+                extractNmin(common, sessionInfo.mTopoFilePath);
+            }
+        } catch (exception& e) {
+            fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
         }
         if (!error.mCode) {
             activateDDSTopology(common, error, sessionInfo.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
@@ -166,6 +169,7 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
 {
     Timer<chrono::milliseconds> timer;
     // Run request doesn't support attachment to a DDS session.
+    auto& sessionInfo = getOrCreateSessionInfo(common);
 
     Error error;
     if (!initializeParams.mDDSSessionID.empty()) {
@@ -173,7 +177,8 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
     } else {
         error = execInitialize(common, initializeParams).mError;
         if (!error.mCode) {
-
+            sessionInfo.mTopoFilePath = topoFilepath(common, activateParams.mDDSTopologyFile, activateParams.mDDSTopologyContent, activateParams.mDDSTopologyScript);
+            extractNmin(common, sessionInfo.mTopoFilePath);
             error = execSubmit(common, submitParams).mError;
             if (!error.mCode) {
                 error = execActivate(common, activateParams).mError;
@@ -198,6 +203,7 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
 
     try {
         sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
+        extractNmin(common, sessionInfo.mTopoFilePath);
     } catch (exception& _e) {
         fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", _e.what()));
     }
@@ -640,7 +646,6 @@ bool Controller::createDDSTopology(const CommonParams& common, Error& error, con
     using namespace dds::topology_api;
     try {
         auto& sInfo = getOrCreateSessionInfo(common);
-        extractNmin(common, topologyFile);
         sInfo.mDDSTopo = make_unique<CTopology>(topologyFile);
         OLOG(info, common) << "DDS topology " << quoted(topologyFile) << " created successfully";
     } catch (exception& e) {
@@ -1193,10 +1198,14 @@ bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
             auto request{ dds::tools_api::SOnTaskDoneRequest::makeRequest(dds::tools_api::SOnTaskDoneRequest::request_t()) };
             request->setResponseCallback([common](const dds::tools_api::SOnTaskDoneResponseData& i) {
                 stringstream ss;
-                ss << "Task " << i.m_taskID << " with path '" << i.m_taskPath << "' exited with code " << i.m_exitCode << " and signal " << i.m_signal << " on host "
-                   << i.m_host << " in working directory '" << i.m_wrkDir << "'";
+                ss << "Task " << i.m_taskID
+                   << " with path '" << i.m_taskPath
+                   << "' exited with code " << i.m_exitCode
+                   << " and signal " << i.m_signal
+                   << " on host " << i.m_host
+                   << " in working directory '" << i.m_wrkDir << "'";
                 if (i.m_exitCode != 0 || i.m_signal != 0) {
-                    OLOG(fatal, common) << ss.str();
+                    OLOG(error, common) << ss.str();
                 } else {
                     OLOG(debug, common) << ss.str();
                 }
@@ -1232,7 +1241,7 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
         ssCmd << boost::process::search_path("bash").string() << " -c " << quoted(topologyScript);
         string out;
         string err;
-        int exitCode{ EXIT_SUCCESS };
+        int exitCode = EXIT_SUCCESS;
         string cmd{ ssCmd.str() };
         OLOG(info, common) << "Executing topology script: " << cmd;
         execute(cmd, requestTimeout(common), &out, &err, &exitCode);

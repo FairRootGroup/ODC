@@ -157,7 +157,7 @@ int main(int argc, char** argv)
                 ss << "<configFile>" << zone.slurmCfgPath << "</configFile>";
             }
             ss << "<agents>" << r.m_n << "</agents>" // number of agents (assuming it is equals to number of nodes)
-               << "<agentGroup>" << r.m_zone << "</agentGroup>" // number of agents (assuming it is equals to number of nodes)
+               << "<agentGroup>" << r.m_zone << "</agentGroup>" // agent group (zone)
                << "<slots>" << zone.numSlots << "</slots>" // number of slots per agent
                << "<requiredSlots>" << requiredSlots << "</requiredSlots>" // total number of required slots
                << "</submit>";
