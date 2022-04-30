@@ -32,11 +32,20 @@ class DDSSubmit : public PluginManager
         Params() {}
 
         /// \brief Constructor with arguments
-        Params(const std::string& rmsPlugin, const std::string& configFile, const std::string& agentGroup, size_t numAgents, size_t numSlots, size_t numRequiredSlots)
+        Params(const std::string& rmsPlugin,
+               const std::string& configFile,
+               const std::string& envFile,
+               const std::string& agentGroup,
+               size_t numAgents,
+               size_t minAgents,
+               size_t numSlots,
+               size_t numRequiredSlots)
             : mRMSPlugin(rmsPlugin)
             , mConfigFile(configFile)
+            , mEnvFile(envFile)
             , mAgentGroup(agentGroup)
             , mNumAgents(numAgents)
+            , mMinAgents(minAgents)
             , mNumSlots(numSlots)
             , mNumRequiredSlots(numRequiredSlots)
         {}
@@ -57,7 +66,7 @@ class DDSSubmit : public PluginManager
             // To support it we need to create a temporary file with configuration content and use it as config file.
 
             // Only valid tags are allowed.
-            std::set<std::string> validTags{ "rms", "configFile", "agents", "slots", "requiredSlots", "agentGroup" };
+            std::set<std::string> validTags{ "rms", "configFile", "envFile", "agents", "minAgents", "slots", "requiredSlots", "agentGroup" };
             for (const auto& v : pt) {
                 if (validTags.count(v.first.data()) == 0) {
                     throw std::runtime_error(toString("Failed to init from property tree. Unknown key ", std::quoted(v.first.data())));
@@ -65,24 +74,29 @@ class DDSSubmit : public PluginManager
             }
             mRMSPlugin = pt.get<std::string>("rms", "");
             mConfigFile = pt.get<std::string>("configFile", "");
+            mEnvFile = pt.get<std::string>("envFile", "");
             mNumAgents = pt.get<size_t>("agents", 0);
+            mMinAgents = pt.get<size_t>("minAgents", 0);
             mNumSlots = pt.get<size_t>("slots", 0);
             mNumRequiredSlots = pt.get<size_t>("requiredSlots", 0);
             mAgentGroup = pt.get<std::string>("agentGroup", "");
         }
 
-        std::string mRMSPlugin;        ///< RMS plugin of DDS
-        std::string mConfigFile;       ///< Path to the configuration file of the RMS plugin
-        std::string mAgentGroup;        ///< Agent group name
-        size_t mNumAgents{ 0 };        ///< Number of DDS agents
-        size_t mNumSlots{ 0 };         ///< Number of slots per DDS agent
-        size_t mNumRequiredSlots{ 0 }; ///< Wait for the required number of slots become active
+        std::string mRMSPlugin;       ///< RMS plugin of DDS
+        std::string mConfigFile;      ///< Path to the configuration file of the RMS plugin
+        std::string mEnvFile;         ///< Path to the configuration file of the RMS plugin
+        std::string mAgentGroup;      ///< Agent group name
+        size_t mNumAgents = 0;        ///< Number of DDS agents
+        size_t mMinAgents = 0;        ///< Minimum number of DDS agents
+        size_t mNumSlots = 0;         ///< Number of slots per DDS agent
+        size_t mNumRequiredSlots = 0; ///< Wait for the required number of slots become active
 
         // \brief ostream operator.
         friend std::ostream& operator<<(std::ostream& os, const Params& params)
         {
             return os << "odc::core::DDSSubmit::Params: rmsPlugin: " << std::quoted(params.mRMSPlugin)
                       << ", numAgents: " << params.mNumAgents
+                      << ", minAgents: " << params.mMinAgents
                       << ", agentGroup: " << params.mAgentGroup
                       << ", numSlots: " << params.mNumSlots
                       << ", configFile: " << std::quoted(params.mConfigFile)

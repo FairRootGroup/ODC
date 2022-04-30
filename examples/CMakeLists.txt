@@ -47,6 +47,7 @@ endmacro()
 
 odcConfigExampleTopo(4 ex-dds-topology-groupname-req-crashing.xml.in ex-dds-topology-groupname-req-crashing.xml)
 odcConfigExampleTopo(4 ex-dds-topology-groupname-req.xml.in ex-dds-topology-groupname-req.xml)
+odcConfigExampleTopo(2 ex-dds-topology-submit-failure-test.xml.in ex-dds-topology-submit-failure-test.xml)
 odcConfigExampleTopo(1 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite.xml)
 odcConfigExampleTopo(3 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite-up.xml)
 odcConfigExampleTopo(2 ex-dds-topology-infinite.xml.in ex-dds-topology-infinite-down.xml)

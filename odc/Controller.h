@@ -45,8 +45,8 @@ class Controller
         std::shared_ptr<dds::tools_api::CSession> mDDSSession = nullptr; ///< DDS session
         std::unique_ptr<Topology> mTopology = nullptr; ///< Topology
         std::string mPartitionID; ///< External partition ID of this DDS session
-        std::map<std::string, TopoGroupInfo> mNinfo; ///< Holds information on minimum number of groups, by group name
         std::string mTopoFilePath;
+        std::map<std::string, TopoGroupInfo> mNinfo; ///< Holds information on minimum number of groups, by group name
 
         void addToTaskCache(TopoTaskInfo&& taskInfo)
         {
@@ -207,7 +207,9 @@ class Controller
     Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
 
     FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo);
-    bool attemptRecovery(FailedTasksCollections& failed, SessionInfo& sessionInfo, const CommonParams& common);
+    bool attemptStateChangeRecovery(FailedTasksCollections& failed, SessionInfo& sessionInfo, const CommonParams& common);
+    void attemptSubmitRecovery(SessionInfo& sessionInfo, const std::vector<DDSSubmit::Params>& ddsParams, const std::map<std::string, uint32_t>& agentCounts, Error& error, const CommonParams& common);
+    void updateTopology(SessionInfo& sessionInfo, const std::map<std::string, uint32_t>& agentCounts, const CommonParams& common);
 
     bool subscribeToDDSSession(const CommonParams& common, Error& error);
 

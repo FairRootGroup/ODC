@@ -29,58 +29,61 @@ namespace bpt = boost::property_tree;
 using namespace odc;
 using namespace odc::core;
 
-struct SResource
+struct Resource
 {
-    SResource(const bpt::ptree& _pt)
+    Resource(const bpt::ptree& pt)
     {
         // Do some basic validation of the input tree.
         // Only valid tags are allowed.
-        set<string> validTags{ "zone", "n" };
-        for (const auto& v : _pt) {
+        set<string> validTags{ "zone", "n", "nmin" };
+        for (const auto& v : pt) {
             if (validTags.count(v.first.data()) == 0) {
                 stringstream ss;
                 ss << "Failed to init from property tree. Unknown key " << quoted(v.first.data());
                 throw runtime_error(ss.str());
             }
         }
-        m_zone = _pt.get<string>("zone", "online");
-        m_n = _pt.get<size_t>("n", 1);
+        mZone = pt.get<string>("zone", "online");
+        mN = pt.get<size_t>("n", 1);
+        mNmin = pt.get<size_t>("nmin", 0);
     }
 
-    string m_zone;
-    size_t m_n = 0;
+    string mZone;
+    size_t mN = 0;
+    size_t mNmin = 0;
 };
 
-struct SResources
+struct Resources
 {
-    SResources(const string& _res)
+    Resources(const string& res)
     {
         bpt::ptree pt;
         stringstream ss;
-        ss << _res;
+        ss << res;
         bpt::read_json(ss, pt);
 
         try {
             // Single resource
-            m_resources.push_back(SResource(pt));
+            mResources.push_back(Resource(pt));
         } catch (const exception& _e) {
             // Array of resources
             auto rpt{ pt.get_child_optional("") };
             if (rpt) {
                 for (const auto& v : rpt.get()) {
-                    m_resources.push_back(SResource(v.second));
+                    mResources.push_back(Resource(v.second));
                 }
             }
         }
     }
 
-    vector<SResource> m_resources;
+    vector<Resource> mResources;
 };
 
 struct ZoneConfig
 {
     size_t numSlots;
     std::string slurmCfgPath;
+    std::string envCfgPath;
 };
 
 std::map<std::string, ZoneConfig> getZoneConfig(const std::vector<std::string>& zonesStr)
@@ -90,11 +93,11 @@ std::map<std::string, ZoneConfig> getZoneConfig(const std::vector<std::string>& 
     for (const auto& z : zonesStr) {
         std::vector<std::string> zoneCfg;
         boost::algorithm::split(zoneCfg, z, boost::algorithm::is_any_of(":"));
-        if (zoneCfg.size() != 3) {
-            OLOG(error) << "Provided zones configuration has incorrect format";
-            throw std::runtime_error("Provided zones configuration has incorrect format");
+        if (zoneCfg.size() != 4) {
+            OLOG(error) << "Provided zones configuration has incorrect format. Expected <name>:<numSlots>:<slurmCfgPath>:<envCfgPath>.";
+            throw std::runtime_error("Provided zones configuration has incorrect format. Expected <name>:<numSlots>:<slurmCfgPath>:<envCfgPath>.");
         }
-        result.emplace(zoneCfg.at(0), ZoneConfig{ std::stoul(zoneCfg.at(1)), zoneCfg.at(2) });
+        result.emplace(zoneCfg.at(0), ZoneConfig{ std::stoul(zoneCfg.at(1)), zoneCfg.at(2), zoneCfg.at(3) });
     }
 
     return result;
@@ -119,7 +122,7 @@ int main(int argc, char** argv)
             ("severity", bpo::value<ESeverity>(&logConfig.mSeverity)->default_value(ESeverity::info), "Log severity level")
             ("infologger", bpo::bool_switch(&logConfig.mInfologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
             ("id", bpo::value<string>(&partitionID)->default_value(""), "ECS partition ID")
-            ("zones", bpo::value<std::vector<std::string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath> format");
+            ("zones", bpo::value<std::vector<std::string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath>:<envCfgPath> format");
 
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(opts).run(), vm);
@@ -144,20 +147,26 @@ int main(int argc, char** argv)
 
         OLOG(info, partitionID, 0) << "Starting epn slurm plugin";
 
-        SResources res(resources);
+        Resources res(resources);
         std::map<std::string, ZoneConfig> zones{getZoneConfig(zonesStr)};
 
-        for (const auto& r : res.m_resources) {
+        for (const auto& r : res.mResources) {
             stringstream ss;
-            const auto& zone = zones.at(r.m_zone);
-            int requiredSlots(r.m_n * zone.numSlots);
+            const auto& zone = zones.at(r.mZone);
+            int requiredSlots(r.mN * zone.numSlots);
             ss << "<submit>"
                << "<rms>slurm</rms>";
             if (!zone.slurmCfgPath.empty()) {
                 ss << "<configFile>" << zone.slurmCfgPath << "</configFile>";
             }
-            ss << "<agents>" << r.m_n << "</agents>" // number of agents (assuming it is equals to number of nodes)
-               << "<agentGroup>" << r.m_zone << "</agentGroup>" // agent group (zone)
+            if (!zone.envCfgPath.empty()) {
+                ss << "<envFile>" << zone.envCfgPath << "</envFile>";
+            }
+            if (r.mNmin != 0) {
+                ss << "<minAgents>" << r.mNmin << "</minAgents>";
+            }
+            ss << "<agents>" << r.mN << "</agents>" // number of agents (assuming it is equals to number of nodes)
+               << "<agentGroup>" << r.mZone << "</agentGroup>" // agent group (zone)
                << "<slots>" << zone.numSlots << "</slots>" // number of slots per agent
                << "<requiredSlots>" << requiredSlots << "</requiredSlots>" // total number of required slots
                << "</submit>";
@@ -167,8 +176,8 @@ int main(int argc, char** argv)
         }
 
         OLOG(info, partitionID, 0) << "Finishing epn slurm plugin";
-    } catch (exception& _e) {
-        cerr << _e.what();
+    } catch (exception& e) {
+        cerr << e.what();
         return EXIT_FAILURE;
     }
 
