@@ -1,5 +1,12 @@
 # ODC Release Notes
 
+## 0.69 (2022-05-01)
+
+- Require DDS 3.7.12
+- **Breaking change**: due to changes in DDS, slurm configuration has to be split in two files - Slurm config and environment config. Former is only for `#SBATCH` parameters, latter is for any kind of other environment setup or per-host calls. Example server cmd line: `odc-grpc-server--host "127.0.0.1:7777" --rp "slurm:/home/user/ODC/install/bin/odc-rp-epn-slurm --zones online:2:/home/user/slurm-online.cfg:/home/user/slurm-env.cfg calib:2:/home/user/slurm-calib.cfg:/home/user/slurm-env.cfg"`.
+- Partition ID is now passed via DDS as the Slurm `--job-name` parameter.
+- nMin parameter is honored during `.Submit` command.
+
 ## 0.68 (2022-04-22)
 
 - Fix compilation error when readline is not available.
