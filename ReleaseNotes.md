@@ -1,5 +1,12 @@
 # ODC Release Notes
 
+## 0.70 (2022-05-06)
+
+- Fix missing includes in the InfoLogger module
+- Require gRPC 1.1 (eaa122f)
+- Require Protobuf 3.15 (eaa122f)
+- Require CMake 3.21 (eaa122f) to fix https://github.com/alisw/alidist/pull/4164
+
 ## 0.69 (2022-05-01)
 
 - Require DDS 3.7.12
