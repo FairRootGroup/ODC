@@ -19,6 +19,8 @@
 #include <InfoLogger/InfoLoggerMacros.hxx>
 // BOOST
 #include <boost/log/sinks/basic_sink_backend.hpp>
+#include <boost/log/sinks/sync_frontend.hpp>
+#include <boost/make_shared.hpp>
 
 namespace odc::core {
 class CInfoLogger
