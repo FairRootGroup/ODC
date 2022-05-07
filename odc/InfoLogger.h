@@ -18,6 +18,8 @@
 #include <InfoLogger/InfoLogger.hxx>
 #include <InfoLogger/InfoLoggerMacros.hxx>
 // BOOST
+#include <boost/log/common.hpp>
+#include <boost/log/sinks.hpp>
 #include <boost/log/sinks/basic_sink_backend.hpp>
 #include <boost/log/sinks/sync_frontend.hpp>
 #include <boost/make_shared.hpp>
