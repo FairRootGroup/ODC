@@ -779,20 +779,7 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
         const auto [errorCode, fmqTopoState] = info.mTopology->ChangeState(transition, path, requestTimeout(common));
 
         success = !errorCode;
-        if (success) {
-            try {
-                aggrState = AggregateState(fmqTopoState);
-            } catch (exception& e) {
-                auto failed = stateSummaryOnFailure(common, fmqTopoState, expState, info);
-                success = attemptStateChangeRecovery(failed, info, common);
-                if (!success) {
-                    fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Aggregate topology state failed: ", e.what()));
-                }
-            }
-            if (detailedState != nullptr) {
-                getDetailedState(info.mDDSTopo.get(), fmqTopoState, detailedState);
-            }
-        } else {
+        if (!success) {
             auto failed = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
             success = attemptStateChangeRecovery(failed, info, common);
             if (!success) {
@@ -806,16 +793,18 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
                 }
             }
         }
-    } catch (exception& e) {
-        auto failed = stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
-        success = attemptStateChangeRecovery(failed, info, common);
-        if (!success) {
-            fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
-        }
-    }
 
-    if (success) {
-        OLOG(info, common) << "State changed to " << aggrState << " via " << transition << " transition";
+        if (detailedState != nullptr) {
+            getDetailedState(info.mDDSTopo.get(), fmqTopoState, detailedState);
+        }
+        aggrState = AggregateState(fmqTopoState);
+        if (success) {
+            OLOG(info, common) << "State changed to " << aggrState << " via " << transition << " transition";
+        }
+    } catch (exception& e) {
+        stateSummaryOnFailure(common, info.mTopology->GetCurrentState(), expState, info);
+        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
+        success = false;
     }
 
     const auto stats{ StateStats(info.mTopology->GetCurrentState()) };
@@ -836,7 +825,7 @@ bool Controller::changeStateConfigure(const CommonParams& common, Error& error, 
 
 bool Controller::changeStateReset(const CommonParams& common, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
 {
-    return changeState(common, error, TopologyTransition::ResetTask, path, aggrState, detailedState)
+    return changeState(common, error, TopologyTransition::ResetTask,   path, aggrState, detailedState)
         && changeState(common, error, TopologyTransition::ResetDevice, path, aggrState, detailedState);
 }
 
