@@ -133,7 +133,6 @@ class ODC : public fair::mq::Plugin
     ~ODC();
 
   private:
-    void WaitForExitingAck();
     void StartWorkerThread();
 
     void FillChannelContainers();
@@ -153,15 +152,11 @@ class ODC : public fair::mq::Plugin
     std::unordered_map<std::string, int> fI;
     std::unordered_map<std::string, IofN> fIofN;
 
-    std::thread fControllerThread;
     DeviceState fCurrentState, fLastState;
 
     std::atomic<bool> fDeviceTerminationRequested;
 
     std::unordered_map<uint64_t, std::pair<std::chrono::steady_clock::time_point, int64_t>> fStateChangeSubscribers;
-    uint64_t fLastExternalController;
-    bool fExitingAckedByLastExternalController;
-    std::condition_variable fExitingAcked;
     std::mutex fStateChangeSubscriberMutex;
 
     bool fUpdatesAllowed;

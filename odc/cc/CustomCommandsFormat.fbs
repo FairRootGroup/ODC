@@ -50,7 +50,6 @@ enum FBCmd:byte {
     dump_config,                   // args: { }
     subscribe_to_state_change,     // args: { interval }
     unsubscribe_from_state_change, // args: { }
-    state_change_exiting_received, // args: { }
     get_properties,                // args: { request_id, property_query }
     set_properties,                // args: { request_id, properties }
     subscription_heartbeat,        // args: { interval }

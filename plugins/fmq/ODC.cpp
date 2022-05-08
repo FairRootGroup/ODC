@@ -41,8 +41,6 @@ ODC::ODC(const string& name, const Plugin::Version version, const string& mainta
     , fCurrentState(DeviceState::Idle)
     , fLastState(DeviceState::Idle)
     , fDeviceTerminationRequested(false)
-    , fLastExternalController(0)
-    , fExitingAckedByLastExternalController(false)
     , fUpdatesAllowed(false)
     , fWorkGuard(fWorkerQueue.get_executor())
 {
@@ -100,9 +98,6 @@ ODC::ODC(const string& name, const Plugin::Version version, const string& mainta
                     EmptyChannelContainers();
                 } break;
                 case DeviceState::Exiting: {
-                    if (!fControllerThread.joinable()) {
-                        fControllerThread = thread(&ODC::WaitForExitingAck, this);
-                    }
                     fWorkGuard.reset();
                     fDeviceTerminationRequested = true;
                     UnsubscribeFromDeviceStateChange();
@@ -126,9 +121,12 @@ ODC::ODC(const string& name, const Plugin::Version version, const string& mainta
                     LOG(warn) << "Controller '" << it->first << "' did not send heartbeats since over 3 intervals (" << 3 * it->second.second << " ms), removing it.";
                     fStateChangeSubscribers.erase(it++);
                 } else {
-                    LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << it->first;
-                    Cmds cmds(make<StateChange>(id, fDDSTaskId, fLastState, fCurrentState));
-                    fDDS.Send(cmds.Serialize(), to_string(it->first));
+                    // Do not publish Exiting state - controller should subsceibe for onTaskDone events.
+                    if (fCurrentState != DeviceState::Exiting) {
+                        LOG(debug) << "Publishing state-change: " << fLastState << "->" << fCurrentState << " to " << it->first;
+                        Cmds cmds(make<StateChange>(id, fDDSTaskId, fLastState, fCurrentState));
+                        fDDS.Send(cmds.Serialize(), to_string(it->first));
+                    }
                     ++it;
                 }
             }
@@ -153,13 +151,6 @@ void ODC::EmptyChannelContainers()
 void ODC::StartWorkerThread()
 {
     fWorkerThread = thread([this]() { fWorkerQueue.run(); });
-}
-
-void ODC::WaitForExitingAck()
-{
-    unique_lock<mutex> lock(fStateChangeSubscriberMutex);
-    auto timeout = GetProperty<unsigned int>("wait-for-exiting-ack-timeout");
-    fExitingAcked.wait_for(lock, chrono::milliseconds(timeout), [this]() { return fExitingAckedByLastExternalController || fStateChangeSubscribers.empty(); });
 }
 
 void ODC::FillChannelContainers()
@@ -355,10 +346,6 @@ void ODC::HandleCmd(const string& id, odc::cc::Cmd& cmd, const string& cond, uin
                 Cmds outCmds(make<TransitionStatus>(id, fDDSTaskId, Result::Failure, transition, GetCurrentDeviceState()));
                 fDDS.Send(outCmds.Serialize(), to_string(senderId));
             }
-            {
-                lock_guard<mutex> lock{ fStateChangeSubscriberMutex };
-                fLastExternalController = senderId;
-            }
         } break;
         case Type::dump_config: {
             stringstream ss;
@@ -367,15 +354,6 @@ void ODC::HandleCmd(const string& id, odc::cc::Cmd& cmd, const string& cond, uin
             }
             Cmds outCmds(make<Config>(id, ss.str()));
             fDDS.Send(outCmds.Serialize(), to_string(senderId));
-        } break;
-        case Type::state_change_exiting_received: {
-            {
-                lock_guard<mutex> lock{ fStateChangeSubscriberMutex };
-                if (fLastExternalController == senderId) {
-                    fExitingAckedByLastExternalController = true;
-                }
-            }
-            fExitingAcked.notify_one();
         } break;
         case Type::subscribe_to_state_change: {
             auto _cmd = static_cast<cc::SubscribeToStateChange&>(cmd);
@@ -451,10 +429,6 @@ ODC::~ODC()
 {
     UnsubscribeFromDeviceStateChange();
     ReleaseDeviceControl();
-
-    if (fControllerThread.joinable()) {
-        fControllerThread.join();
-    }
 
     fWorkGuard.reset();
     if (fWorkerThread.joinable()) {

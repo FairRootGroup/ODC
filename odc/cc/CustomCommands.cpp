@@ -25,12 +25,11 @@ namespace odc::cc
 
     array<string, 2> resultNames = { { "Ok", "Failure" } };
 
-    array<string, 16> typeNames = { { "CheckState",
+    array<string, 15> typeNames = { { "CheckState",
                                       "ChangeState",
                                       "DumpConfig",
                                       "SubscribeToStateChange",
                                       "UnsubscribeFromStateChange",
-                                      "StateChangeExitingReceived",
                                       "GetProperties",
                                       "SetProperties",
                                       "SubscriptionHeartbeat",
@@ -103,12 +102,11 @@ namespace odc::cc
                                                              FBTransition_End,
                                                              FBTransition_ErrorFound } };
 
-    array<FBCmd, 16> typeToFBCmd = { { FBCmd::FBCmd_check_state,
+    array<FBCmd, 15> typeToFBCmd = { { FBCmd::FBCmd_check_state,
                                        FBCmd::FBCmd_change_state,
                                        FBCmd::FBCmd_dump_config,
                                        FBCmd::FBCmd_subscribe_to_state_change,
                                        FBCmd::FBCmd_unsubscribe_from_state_change,
-                                       FBCmd::FBCmd_state_change_exiting_received,
                                        FBCmd::FBCmd_get_properties,
                                        FBCmd::FBCmd_set_properties,
                                        FBCmd::FBCmd_subscription_heartbeat,
@@ -120,12 +118,11 @@ namespace odc::cc
                                        FBCmd::FBCmd_properties,
                                        FBCmd::FBCmd_properties_set } };
 
-    array<Type, 16> fbCmdToType = { { Type::check_state,
+    array<Type, 15> fbCmdToType = { { Type::check_state,
                                       Type::change_state,
                                       Type::dump_config,
                                       Type::subscribe_to_state_change,
                                       Type::unsubscribe_from_state_change,
-                                      Type::state_change_exiting_received,
                                       Type::get_properties,
                                       Type::set_properties,
                                       Type::subscription_heartbeat,
@@ -214,11 +211,6 @@ namespace odc::cc
                 }
                 break;
                 case Type::unsubscribe_from_state_change:
-                {
-                    cmdBuilder = make_unique<FBCommandBuilder>(fbb);
-                }
-                break;
-                case Type::state_change_exiting_received:
                 {
                     cmdBuilder = make_unique<FBCommandBuilder>(fbb);
                 }
@@ -419,9 +411,6 @@ namespace odc::cc
                     break;
                 case FBCmd_unsubscribe_from_state_change:
                     fCmds.emplace_back(make<UnsubscribeFromStateChange>());
-                    break;
-                case FBCmd_state_change_exiting_received:
-                    fCmds.emplace_back(make<StateChangeExitingReceived>());
                     break;
                 case FBCmd_get_properties:
                     fCmds.emplace_back(make<GetProperties>(cmdPtr.request_id(), cmdPtr.property_query()->str()));

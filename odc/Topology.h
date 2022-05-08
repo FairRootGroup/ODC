@@ -220,15 +220,13 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             task.lastState = task.state;
             task.state = DeviceState::Error;
 
-            if (task.exitCode > 0) {
-                for (auto& op : fChangeStateOps) {
-                    op.second.Update(task.taskId, DeviceState::Error);
-                }
-                for (auto& op : fWaitForStateOps) {
-                    op.second.Update(task.taskId, DeviceState::Error, DeviceState::Error);
-                }
-                // TODO: include set/get property ops
+            for (auto& op : fChangeStateOps) {
+                op.second.Update(task.taskId, (task.exitCode > 0 ? DeviceState::Error : DeviceState::Exiting));
             }
+            for (auto& op : fWaitForStateOps) {
+                op.second.Update(task.taskId, (task.exitCode > 0 ? DeviceState::Error : DeviceState::Exiting), (task.exitCode > 0 ? DeviceState::Error : DeviceState::Exiting));
+            }
+            // TODO: include set/get property ops
         });
         fDDSSession->sendRequest<SOnTaskDoneRequest>(fDDSOnTaskDoneRequest);
     }
@@ -292,7 +290,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                         HandleCmd(static_cast<cc::StateChangeUnsubscription&>(*cmd));
                         break;
                     case cc::Type::state_change:
-                        HandleCmd(static_cast<cc::StateChange&>(*cmd), ddsSenderChannelId);
+                        HandleCmd(static_cast<cc::StateChange&>(*cmd));
                         break;
                     case cc::Type::transition_status:
                         HandleCmd(static_cast<cc::TransitionStatus&>(*cmd));
@@ -361,12 +359,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         }
     }
 
-    void HandleCmd(cc::StateChange const& cmd, uint64_t ddsSenderChannelId)
+    void HandleCmd(cc::StateChange const& cmd)
     {
-        if (cmd.GetCurrentState() == DeviceState::Exiting) {
-            fDDSCustomCmd.send(cc::Cmds(cc::make<cc::StateChangeExitingReceived>()).Serialize(), std::to_string(ddsSenderChannelId));
-        }
-
         DDSTask::Id taskId(cmd.GetTaskId());
 
         try {
@@ -374,11 +368,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
             task.lastState = cmd.GetLastState();
             task.state = cmd.GetCurrentState();
-            // if the task is exiting, it will not respond to unsubscription request anymore, set it to false now.
-            if (task.state == DeviceState::Exiting) {
-                task.subscribedToStateChanges = false;
-                --fNumStateChangePublishers;
-            }
             // OLOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << task.state;
 
             for (auto& op : fChangeStateOps) {

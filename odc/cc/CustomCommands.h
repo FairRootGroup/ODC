@@ -40,7 +40,6 @@ namespace odc::cc
         dump_config,                   // args: { }
         subscribe_to_state_change,     // args: { }
         unsubscribe_from_state_change, // args: { }
-        state_change_exiting_received, // args: { }
         get_properties,                // args: { request_id, property_query }
         set_properties,                // args: { request_id, properties }
         subscription_heartbeat,        // args: { interval }
@@ -133,14 +132,6 @@ namespace odc::cc
     {
         explicit UnsubscribeFromStateChange()
             : Cmd(Type::unsubscribe_from_state_change)
-        {
-        }
-    };
-
-    struct StateChangeExitingReceived : Cmd
-    {
-        explicit StateChangeExitingReceived()
-            : Cmd(Type::state_change_exiting_received)
         {
         }
     };

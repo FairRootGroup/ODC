@@ -30,7 +30,6 @@ BOOST_AUTO_TEST_CASE(construction)
     Cmds dumpConfigCmds(make<DumpConfig>());
     Cmds subscribeToStateChangeCmds(make<SubscribeToStateChange>(60000));
     Cmds unsubscribeFromStateChangeCmds(make<UnsubscribeFromStateChange>());
-    Cmds stateChangeExitingReceivedCmds(make<StateChangeExitingReceived>());
     Cmds getPropertiesCmds(make<GetProperties>(66, "k[12]"));
     Cmds setPropertiesCmds(make<SetProperties>(42, props));
     Cmds subscriptionHeartbeatCmds(make<SubscriptionHeartbeat>(60000));
@@ -53,8 +52,6 @@ BOOST_AUTO_TEST_CASE(construction)
     BOOST_TEST(static_cast<SubscribeToStateChange&>(subscribeToStateChangeCmds.At(0)).GetInterval() == 60000);
 
     BOOST_TEST(unsubscribeFromStateChangeCmds.At(0).GetType() == Type::unsubscribe_from_state_change);
-
-    BOOST_TEST(stateChangeExitingReceivedCmds.At(0).GetType() == Type::state_change_exiting_received);
 
     BOOST_TEST(getPropertiesCmds.At(0).GetType() == Type::get_properties);
     BOOST_TEST(static_cast<GetProperties&>(getPropertiesCmds.At(0)).GetRequestId() == 66);
@@ -117,7 +114,6 @@ void fillCommands(Cmds& cmds)
     cmds.Add<DumpConfig>();
     cmds.Add<SubscribeToStateChange>(60000);
     cmds.Add<UnsubscribeFromStateChange>();
-    cmds.Add<StateChangeExitingReceived>();
     cmds.Add<GetProperties>(66, "k[12]");
     cmds.Add<SetProperties>(42, props);
     cmds.Add<SubscriptionHeartbeat>(60000);
@@ -132,7 +128,7 @@ void fillCommands(Cmds& cmds)
 
 void checkCommands(Cmds& cmds)
 {
-    BOOST_TEST(cmds.Size() == 16);
+    BOOST_TEST(cmds.Size() == 15);
 
     int count = 0;
     auto const props(std::vector<std::pair<std::string, std::string>>({ { "k1", "v1" }, { "k2", "v2" } }));
@@ -154,9 +150,6 @@ void checkCommands(Cmds& cmds)
                 BOOST_TEST(static_cast<SubscribeToStateChange&>(*cmd).GetInterval() == 60000);
                 break;
             case Type::unsubscribe_from_state_change:
-                ++count;
-                break;
-            case Type::state_change_exiting_received:
                 ++count;
                 break;
             case Type::get_properties:
@@ -226,7 +219,7 @@ void checkCommands(Cmds& cmds)
         }
     }
 
-    BOOST_TEST(count == 16);
+    BOOST_TEST(count == 15);
 }
 
 BOOST_AUTO_TEST_CASE(serialization_binary)
