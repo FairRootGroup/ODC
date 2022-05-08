@@ -25,7 +25,7 @@ namespace odc::cc
 
     array<string, 2> resultNames = { { "Ok", "Failure" } };
 
-    array<string, 17> typeNames = { { "CheckState",
+    array<string, 16> typeNames = { { "CheckState",
                                       "ChangeState",
                                       "DumpConfig",
                                       "SubscribeToStateChange",
@@ -35,7 +35,6 @@ namespace odc::cc
                                       "SetProperties",
                                       "SubscriptionHeartbeat",
 
-                                      "CurrentState",
                                       "TransitionStatus",
                                       "Config",
                                       "StateChangeSubscription",
@@ -104,7 +103,7 @@ namespace odc::cc
                                                              FBTransition_End,
                                                              FBTransition_ErrorFound } };
 
-    array<FBCmd, 17> typeToFBCmd = { { FBCmd::FBCmd_check_state,
+    array<FBCmd, 16> typeToFBCmd = { { FBCmd::FBCmd_check_state,
                                        FBCmd::FBCmd_change_state,
                                        FBCmd::FBCmd_dump_config,
                                        FBCmd::FBCmd_subscribe_to_state_change,
@@ -113,7 +112,6 @@ namespace odc::cc
                                        FBCmd::FBCmd_get_properties,
                                        FBCmd::FBCmd_set_properties,
                                        FBCmd::FBCmd_subscription_heartbeat,
-                                       FBCmd::FBCmd_current_state,
                                        FBCmd::FBCmd_transition_status,
                                        FBCmd::FBCmd_config,
                                        FBCmd::FBCmd_state_change_subscription,
@@ -122,7 +120,7 @@ namespace odc::cc
                                        FBCmd::FBCmd_properties,
                                        FBCmd::FBCmd_properties_set } };
 
-    array<Type, 17> fbCmdToType = { { Type::check_state,
+    array<Type, 16> fbCmdToType = { { Type::check_state,
                                       Type::change_state,
                                       Type::dump_config,
                                       Type::subscribe_to_state_change,
@@ -131,7 +129,6 @@ namespace odc::cc
                                       Type::get_properties,
                                       Type::set_properties,
                                       Type::subscription_heartbeat,
-                                      Type::current_state,
                                       Type::transition_status,
                                       Type::config,
                                       Type::state_change_subscription,
@@ -256,15 +253,6 @@ namespace odc::cc
                     auto _cmd = static_cast<SubscriptionHeartbeat&>(*cmd);
                     cmdBuilder = make_unique<FBCommandBuilder>(fbb);
                     cmdBuilder->add_interval(_cmd.GetInterval());
-                }
-                break;
-                case Type::current_state:
-                {
-                    auto _cmd = static_cast<CurrentState&>(*cmd);
-                    auto deviceId = fbb.CreateString(_cmd.GetDeviceId());
-                    cmdBuilder = make_unique<FBCommandBuilder>(fbb);
-                    cmdBuilder->add_device_id(deviceId);
-                    cmdBuilder->add_current_state(GetFBState(_cmd.GetCurrentState()));
                 }
                 break;
                 case Type::transition_status:
@@ -451,10 +439,6 @@ namespace odc::cc
                 break;
                 case FBCmd_subscription_heartbeat:
                     fCmds.emplace_back(make<SubscriptionHeartbeat>(cmdPtr.interval()));
-                    break;
-                case FBCmd_current_state:
-                    fCmds.emplace_back(
-                        make<CurrentState>(cmdPtr.device_id()->str(), GetMQState(cmdPtr.current_state())));
                     break;
                 case FBCmd_transition_status:
                     fCmds.emplace_back(make<TransitionStatus>(cmdPtr.device_id()->str(),

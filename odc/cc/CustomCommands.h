@@ -45,7 +45,6 @@ namespace odc::cc
         set_properties,                // args: { request_id, properties }
         subscription_heartbeat,        // args: { interval }
 
-        current_state,               // args: { device_id, current_state }
         transition_status,           // args: { device_id, task_id, Result, transition, current_state }
         config,                      // args: { device_id, config_string }
         state_change_subscription,   // args: { device_id, task_id, Result }
@@ -227,37 +226,6 @@ namespace odc::cc
 
       private:
         int64_t fInterval;
-    };
-
-    struct CurrentState : Cmd
-    {
-        explicit CurrentState(std::string id, fair::mq::State currentState)
-            : Cmd(Type::current_state)
-            , fDeviceId(std::move(id))
-            , fCurrentState(currentState)
-        {
-        }
-
-        std::string GetDeviceId() const
-        {
-            return fDeviceId;
-        }
-        void SetDeviceId(const std::string& deviceId)
-        {
-            fDeviceId = deviceId;
-        }
-        fair::mq::State GetCurrentState() const
-        {
-            return fCurrentState;
-        }
-        void SetCurrentState(fair::mq::State state)
-        {
-            fCurrentState = state;
-        }
-
-      private:
-        std::string fDeviceId;
-        fair::mq::State fCurrentState;
     };
 
     struct TransitionStatus : Cmd

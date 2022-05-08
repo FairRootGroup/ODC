@@ -342,7 +342,8 @@ void ODC::HandleCmd(const string& id, odc::cc::Cmd& cmd, const string& cond, uin
     // LOG(info) << "Received command type: '" << cmd.GetType() << "' from " << senderId;
     switch (cmd.GetType()) {
         case Type::check_state: {
-            fDDS.Send(Cmds(make<CurrentState>(id, GetCurrentDeviceState())).Serialize(), to_string(senderId));
+            Cmds cmds(make<StateChange>(id, fDDSTaskId, fLastState, fCurrentState));
+            fDDS.Send(cmds.Serialize(), to_string(senderId));
         } break;
         case Type::change_state: {
             Transition transition = static_cast<ChangeState&>(cmd).GetTransition();

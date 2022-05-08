@@ -55,7 +55,6 @@ enum FBCmd:byte {
     set_properties,                // args: { request_id, properties }
     subscription_heartbeat,        // args: { interval }
 
-    current_state,                 // args: { device_id, current_state }
     transition_status,             // args: { device_id, task_id, Result, transition, current_state }
     config,                        // args: { device_id, config_string }
     state_change_subscription,     // args: { device_id, task_id, Result }

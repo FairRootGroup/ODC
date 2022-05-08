@@ -34,7 +34,6 @@ BOOST_AUTO_TEST_CASE(construction)
     Cmds getPropertiesCmds(make<GetProperties>(66, "k[12]"));
     Cmds setPropertiesCmds(make<SetProperties>(42, props));
     Cmds subscriptionHeartbeatCmds(make<SubscriptionHeartbeat>(60000));
-    Cmds currentStateCmds(make<CurrentState>("somedeviceid", State::Running));
     Cmds transitionStatusCmds(make<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop, State::Running));
     Cmds configCmds(make<Config>("somedeviceid", "someconfig"));
     Cmds stateChangeSubscriptionCmds(make<StateChangeSubscription>("somedeviceid", 123456, Result::Ok));
@@ -67,10 +66,6 @@ BOOST_AUTO_TEST_CASE(construction)
 
     BOOST_TEST(subscriptionHeartbeatCmds.At(0).GetType() == Type::subscription_heartbeat);
     BOOST_TEST(static_cast<SubscriptionHeartbeat&>(subscriptionHeartbeatCmds.At(0)).GetInterval() == 60000);
-
-    BOOST_TEST(currentStateCmds.At(0).GetType() == Type::current_state);
-    BOOST_TEST(static_cast<CurrentState&>(currentStateCmds.At(0)).GetDeviceId() == "somedeviceid");
-    BOOST_TEST(static_cast<CurrentState&>(currentStateCmds.At(0)).GetCurrentState() == State::Running);
 
     BOOST_TEST(transitionStatusCmds.At(0).GetType() == Type::transition_status);
     BOOST_TEST(static_cast<TransitionStatus&>(transitionStatusCmds.At(0)).GetDeviceId() == "somedeviceid");
@@ -126,7 +121,6 @@ void fillCommands(Cmds& cmds)
     cmds.Add<GetProperties>(66, "k[12]");
     cmds.Add<SetProperties>(42, props);
     cmds.Add<SubscriptionHeartbeat>(60000);
-    cmds.Add<CurrentState>("somedeviceid", State::Running);
     cmds.Add<TransitionStatus>("somedeviceid", 123456, Result::Ok, Transition::Stop, State::Running);
     cmds.Add<Config>("somedeviceid", "someconfig");
     cmds.Add<StateChangeSubscription>("somedeviceid", 123456, Result::Ok);
@@ -138,7 +132,7 @@ void fillCommands(Cmds& cmds)
 
 void checkCommands(Cmds& cmds)
 {
-    BOOST_TEST(cmds.Size() == 17);
+    BOOST_TEST(cmds.Size() == 16);
 
     int count = 0;
     auto const props(std::vector<std::pair<std::string, std::string>>({ { "k1", "v1" }, { "k2", "v2" } }));
@@ -178,11 +172,6 @@ void checkCommands(Cmds& cmds)
             case Type::subscription_heartbeat:
                 ++count;
                 BOOST_TEST(static_cast<SubscriptionHeartbeat&>(*cmd).GetInterval() == 60000);
-                break;
-            case Type::current_state:
-                ++count;
-                BOOST_TEST(static_cast<CurrentState&>(*cmd).GetDeviceId() == "somedeviceid");
-                BOOST_TEST(static_cast<CurrentState&>(*cmd).GetCurrentState() == State::Running);
                 break;
             case Type::transition_status:
                 ++count;
@@ -237,7 +226,7 @@ void checkCommands(Cmds& cmds)
         }
     }
 
-    BOOST_TEST(count == 17);
+    BOOST_TEST(count == 16);
 }
 
 BOOST_AUTO_TEST_CASE(serialization_binary)
