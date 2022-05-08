@@ -96,7 +96,7 @@ class CliHelper
         for (const auto& cmd : defaultCmds) {
             // Give some time for processing before going to stop
             if (boost::starts_with(cmd, ".stop")) {
-                cmds.push_back(".sleep --ms 5000");
+                cmds.push_back(".sleep --ms 1000");
             }
             if (boost::starts_with(cmd, ".status")) {
                 cmds.push_back(cmd);
