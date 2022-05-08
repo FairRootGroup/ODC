@@ -77,9 +77,14 @@ struct WaitForStateOp
     void ResetCount(const TopologyStateIndex& stateIndex, const TopologyState& stateData)
     {
         fCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
-            if (ContainsTask(stateData.at(s.second).taskId)) {
-                return stateData.at(s.second).state == fTargetCurrentState
-                       && (stateData.at(s.second).lastState == fTargetLastState || fTargetLastState == DeviceState::Undefined);
+            const auto& task = stateData.at(s.second);
+            if (ContainsTask(task.taskId)) {
+                // Do not wait for an errored device that is not yet ignored
+                if (task.state == DeviceState::Error) {
+                    fErrored = true;
+                    return true;
+                }
+                return task.state == fTargetCurrentState && (task.lastState == fTargetLastState || fTargetLastState == DeviceState::Undefined);
             } else {
                 return false;
             }
