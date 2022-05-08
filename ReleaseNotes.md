@@ -1,5 +1,19 @@
 # ODC Release Notes
 
+## 0.71.0 (**not yet released**)
+
+- Add 'ignored' task status to log & grpc reply.
+- Fail earlier for devices that fail between state transitions.
+- Fix tasks incorrectly being labeled as failed during nMin handling.
+- Reduce log verbosity during activation.
+- (impl) cmds: Disable successfull TransitionStatus (unused).
+- (impl) cmds: Remove StateChangeExitingReceived command - use OnTaskDone instead.
+- (impl) cmds: Replace CurrentState with StateChange.
+
+## 0.70.1 (2022-05-07)
+
+- Fix more missing includes in InfoLogger module
+
 ## 0.70 (2022-05-06)
 
 - Fix missing includes in the InfoLogger module
