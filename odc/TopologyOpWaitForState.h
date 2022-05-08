@@ -92,10 +92,14 @@ struct WaitForStateOp
         if (!fOp.IsCompleted() && ContainsTask(taskId)) {
             if (currentState == fTargetCurrentState && (lastState == fTargetLastState || fTargetLastState == DeviceState::Undefined)) {
                 ++fCount;
-            }
-            if (currentState == DeviceState::Error) {
-                fErrored = true;
-                ++fCount;
+            } else if (currentState == DeviceState::Error) {
+                if (failed.count(taskId) == 0) {
+                    fErrored = true;
+                    ++fCount;
+                    failed.emplace(taskId);
+                } else {
+                    OLOG(debug) << "Task " << taskId << " is already in the set of failed devices. Called twice from StateChange & onTaskDone?";
+                }
             }
             TryCompletion();
         }
@@ -122,6 +126,7 @@ struct WaitForStateOp
     boost::asio::steady_timer fTimer;
     unsigned int fCount;
     std::vector<DDSTask> fTasks;
+    FailedDevices failed;
     DeviceState fTargetLastState;
     DeviceState fTargetCurrentState;
     std::mutex& fMtx;

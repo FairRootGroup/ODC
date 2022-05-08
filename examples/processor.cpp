@@ -45,25 +45,25 @@ struct Processor : fair::mq::Device
             auto colMatch = std::find(begin(selfDestructCollectionIdx), end(selfDestructCollectionIdx), collectionIndex);
             if (taskMatch != std::end(selfDestructTaskIdx) && colMatch != std::end(selfDestructCollectionIdx)) {
                 LOG(info) << "<<< taskIndex == " << taskIndex << ", collectionIndex == " << collectionIndex << ", aborting >>>";
-                std::abort();
+                ChangeState(fair::mq::Transition::ErrorFound);
             }
         } else if (!selfDestructTaskIdx.empty()) {
             auto taskMatch = std::find(begin(selfDestructTaskIdx), end(selfDestructTaskIdx), taskIndex);
             if (taskMatch != std::end(selfDestructTaskIdx)) {
                 LOG(info) << "<<< taskIndex == " << taskIndex << ", aborting >>>";
-                std::abort();
+                ChangeState(fair::mq::Transition::ErrorFound);
             }
         } else if (!selfDestructCollectionIdx.empty()) {
             auto colMatch = std::find(begin(selfDestructCollectionIdx), end(selfDestructCollectionIdx), collectionIndex);
             if (colMatch != std::end(selfDestructCollectionIdx)) {
                 LOG(info) << "<<< collectionIndex == " << collectionIndex << ", aborting >>>";
-                std::abort();
+                ChangeState(fair::mq::Transition::ErrorFound);
             }
         } else if (!selfDestructPaths.empty()) {
             auto pathMatch = std::find(begin(selfDestructPaths), end(selfDestructPaths), ddsTaskPath);
             if (pathMatch != std::end(selfDestructPaths)) {
                 LOG(info) << "<<< task path == " << ddsTaskPath << ", aborting >>>";
-                std::abort();
+                ChangeState(fair::mq::Transition::ErrorFound);
             } else {
                 LOG(info) << "no match: " << ddsTaskPath << " is not in selfDestructPaths";
             }

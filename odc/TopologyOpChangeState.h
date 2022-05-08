@@ -91,10 +91,14 @@ struct ChangeStateOp
         if (!fOp.IsCompleted() && ContainsTask(taskId)) {
             if (currentState == fTargetState) {
                 ++fCount;
-            }
-            if (currentState == DeviceState::Error) {
-                fErrored = true;
-                ++fCount;
+            } else if (currentState == DeviceState::Error) {
+                if (failed.count(taskId) == 0) {
+                    fErrored = true;
+                    ++fCount;
+                    failed.emplace(taskId);
+                } else {
+                    OLOG(debug) << "Task " << taskId << " is already in the set of failed devices";
+                }
             }
             TryCompletion();
         }
@@ -137,6 +141,7 @@ struct ChangeStateOp
     boost::asio::steady_timer fTimer;
     unsigned int fCount;
     std::vector<DDSTask> fTasks;
+    FailedDevices failed;
     DeviceState fTargetState;
     std::mutex& fMtx;
     bool fErrored;
