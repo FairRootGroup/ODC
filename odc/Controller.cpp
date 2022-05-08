@@ -589,21 +589,21 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
     requestPtr->setMessageCallback([&success, &error, &common, this](const dds::tools_api::SMessageResponseData& msg) {
         if (msg.m_severity == dds::intercom_api::EMsgSeverity::error) {
             success = false;
-            fillError(common, error, ErrorCode::DDSActivateTopologyFailed, toString("Activate error: ", msg.m_msg));
+            fillError(common, error, ErrorCode::DDSActivateTopologyFailed, toString("DDS Activate error: ", msg.m_msg));
         } else {
-            OLOG(debug, common) << "Activate: " << msg.m_msg;
+            // OLOG(debug, common) << "DDS Activate Message: " << msg.m_msg;
         }
     });
 
     requestPtr->setProgressCallback([&common](const dds::tools_api::SProgressResponseData& progress) {
         uint32_t completed{ progress.m_completed + progress.m_errors };
         if (completed == progress.m_total) {
-            OLOG(debug, common) << "Activated tasks (" << progress.m_completed << "), errors (" << progress.m_errors << "), total (" << progress.m_total << ")";
+            OLOG(debug, common) << "DDS Activated tasks (" << progress.m_completed << "), errors (" << progress.m_errors << "), total (" << progress.m_total << ")";
         }
     });
 
     requestPtr->setResponseCallback([&common, &sessionInfo](const dds::tools_api::STopologyResponseData& res) {
-        OLOG(debug, common) << "Activate: " << res;
+        OLOG(debug, common) << "DDS Activate Response: " << res;
 
         // We are not interested in stopped tasks
         if (res.m_activated) {
