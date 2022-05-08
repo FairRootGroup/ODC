@@ -123,7 +123,7 @@ class Controller final
             if (req->detailed()) {
                 ss << ", Devices:\n";
                 for (const auto& d : rep->devices()) {
-                    ss << "id: " << d.id() << ", state: " << d.state() << ", path: " << d.path() << "\n";
+                    ss << "id: " << d.id() << ", state: " << d.state() << ", path: " << d.path() << ", ignored: " << d.ignored() << "\n";
                 }
             }
             OLOG(info, commonParams) << ss.str();
@@ -313,9 +313,10 @@ class Controller final
         if (res.mFullState != nullptr) {
             for (const auto& state : *(res.mFullState)) {
                 auto device{ rep->add_devices() };
-                device->set_path(state.mPath);
                 device->set_id(state.mStatus.taskId);
                 device->set_state(fair::mq::GetStateName(state.mStatus.state));
+                device->set_path(state.mPath);
+                device->set_ignored(state.mStatus.ignored);
             }
         }
     }

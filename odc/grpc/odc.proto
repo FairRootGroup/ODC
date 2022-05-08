@@ -80,6 +80,7 @@ message Device {
     uint64 id = 1; // Runtime task ID (same as in DDS)
     string state = 2; // FairMQ device state as string
     string path = 3; // Runtime task path (same as in DDS)
+    bool ignored = 4; // Device was stopped and set to be ignored
 }
 
 // Device change/get state request

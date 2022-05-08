@@ -77,7 +77,7 @@ class Controller : public core::CliControllerHelper<Controller>
         if (result.mFullState != nullptr) {
             ss << std::endl << "  Devices: " << std::endl;
             for (const auto& state : *(result.mFullState)) {
-                ss << "    { id: " << state.mStatus.taskId << "; path: " << state.mPath << "; state: " << state.mStatus.state << " }" << std::endl;
+                ss << "    { id: " << state.mStatus.taskId << ", path: " << state.mPath << ", state: " << state.mStatus.state << ", ignored: " <<  state.mStatus.ignored << " }" << std::endl;
             }
             ss << std::endl;
         }
