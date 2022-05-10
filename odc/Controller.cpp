@@ -607,16 +607,16 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
 
         // We are not interested in stopped tasks
         if (res.m_activated) {
-            TopoTaskInfo task{res.m_agentID, res.m_slotID, res.m_taskID, res.m_path, res.m_host, res.m_wrkDir};
-            sessionInfo.addToTaskCache(move(task));
+            TaskDetails task{res.m_agentID, res.m_slotID, res.m_taskID, res.m_path, res.m_host, res.m_wrkDir};
+            sessionInfo.addTaskDetails(move(task));
 
             if (res.m_collectionID > 0) {
-                TopoCollectionInfo collection{res.m_agentID, res.m_slotID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir};
+                CollectionDetails collection{res.m_agentID, res.m_slotID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir};
                 auto pos = collection.mPath.rfind('/');
                 if (pos != string::npos) {
                     collection.mPath.erase(pos);
                 }
-                sessionInfo.addToCollectionCache(move(collection));
+                sessionInfo.addCollectionDetails(move(collection));
             }
         }
     });
@@ -887,7 +887,7 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
             ss << "List of failed devices for SetProperties request (" << failedDevices.size() << "):" << endl;
             for (auto taskId : failedDevices) {
                 try {
-                    TopoTaskInfo& taskInfo = info.getFromTaskCache(taskId);
+                    TaskDetails& taskInfo = info.getTaskDetails(taskId);
                     ss << right << setw(7) << count << "   Task: " << taskInfo << endl;
                 } catch (const exception& e) {
                     OLOG(error, common) << "Set properties error: " << e.what();
@@ -1039,13 +1039,13 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
            << ", ignored: " << boolalpha << status.ignored;
 
         try {
-            TopoTaskInfo& taskInfo = sessionInfo.getFromTaskCache(status.taskId);
-            failed.tasks.push_back(&taskInfo);
-            ss << ", agentID: " << taskInfo.mAgentID
-               << ", slotID: " << taskInfo.mSlotID
-               << ", path: " << taskInfo.mPath
-               << ", host: " << taskInfo.mHost
-               << ", wrkDir: " << taskInfo.mWrkDir;
+            TaskDetails& taskDetails = sessionInfo.getTaskDetails(status.taskId);
+            failed.tasks.push_back(&taskDetails);
+            ss << ", agentID: " << taskDetails.mAgentID
+               << ", slotID: " << taskDetails.mSlotID
+               << ", path: " << taskDetails.mPath
+               << ", host: " << taskDetails.mHost
+               << ", wrkDir: " << taskDetails.mWrkDir;
         } catch (const exception& e) {
             OLOG(error, common) << "State summary error: " << e.what();
         }
@@ -1068,12 +1068,11 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
                 OLOG(error, common) << "Following collections failed to transition to " << expectedState << " state:";
             }
             stringstream ss;
-            ss << "[" << numFailedCollections << "]"
-               << " state: " << collectionState;
+            ss << "[" << numFailedCollections << "] state: " << collectionState;
 
-            TopoCollectionInfo& collectionInfo = sessionInfo.getFromCollectionCache(collectionId);
-            failed.collections.push_back(&collectionInfo);
-            ss << ", " << collectionInfo;
+            CollectionDetails& collectionDetails = sessionInfo.getCollectionDetails(collectionId);
+            failed.collections.push_back(&collectionDetails);
+            ss << ", " << collectionDetails;
             OLOG(error, common) << ss.str();
         } catch (const exception& e) {
             OLOG(error, common) << "State summary error: " << e.what();
