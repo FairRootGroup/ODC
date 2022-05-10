@@ -231,7 +231,7 @@ inline TopologyStateByTask GroupByTaskId(const TopologyState& topoState)
 
 using Duration = std::chrono::microseconds;
 
-struct TopoTaskInfo
+struct TaskDetails
 {
     uint64_t mAgentID = 0; ///< Agent ID
     uint64_t mSlotID = 0;  ///< Slot ID
@@ -240,18 +240,18 @@ struct TopoTaskInfo
     std::string mHost;     ///< Hostname
     std::string mWrkDir;   ///< Wrk directory
 
-    friend std::ostream& operator<<(std::ostream& os, const TopoTaskInfo& i)
+    friend std::ostream& operator<<(std::ostream& os, const TaskDetails& td)
     {
-        return os << "agentID: " << i.mAgentID
-                  << ", slotID: " << i.mSlotID
-                  << ", taskID: " << i.mTaskID
-                  << ", path: " << i.mPath
-                  << ", host: " << i.mHost
-                  << ", wrkDir: " << i.mWrkDir;
+        return os << "agentID: " << td.mAgentID
+                  << ", slotID: " << td.mSlotID
+                  << ", taskID: " << td.mTaskID
+                  << ", path: " << td.mPath
+                  << ", host: " << td.mHost
+                  << ", wrkDir: " << td.mWrkDir;
     }
 };
 
-struct TopoCollectionInfo
+struct CollectionDetails
 {
     uint64_t mAgentID = 0; ///< Agent ID
     uint64_t mSlotID = 0;  ///< Slot ID
@@ -260,14 +260,14 @@ struct TopoCollectionInfo
     std::string mHost;     ///< Hostname
     std::string mWrkDir;   ///< Wrk directory
 
-    friend std::ostream& operator<<(std::ostream& os, const TopoCollectionInfo& i)
+    friend std::ostream& operator<<(std::ostream& os, const CollectionDetails& cd)
     {
-        return os << "agentID: " << i.mAgentID
-                  << ", slotID: " << i.mSlotID
-                  << ", collectionID: " << i.mCollectionID
-                  << ", path: " << i.mPath
-                  << ", host: " << i.mHost
-                  << ", wrkDir: " << i.mWrkDir;
+        return os << "agentID: " << cd.mAgentID
+                  << ", slotID: " << cd.mSlotID
+                  << ", collectionID: " << cd.mCollectionID
+                  << ", path: " << cd.mPath
+                  << ", host: " << cd.mHost
+                  << ", wrkDir: " << cd.mWrkDir;
     }
 };
 

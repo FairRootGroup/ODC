@@ -176,7 +176,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         device.ignored = true;
     }
 
-    void IgnoreFailedCollections(const std::vector<TopoCollectionInfo*>& collections)
+    void IgnoreFailedCollections(const std::vector<CollectionDetails*>& collections)
     {
         std::lock_guard<std::mutex> lk(*fMtx);
         for (auto& device : fStateData) {

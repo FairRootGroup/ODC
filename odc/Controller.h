@@ -32,8 +32,8 @@ struct TopoGroupInfo
 
 struct FailedTasksCollections
 {
-    std::vector<TopoTaskInfo*> tasks;
-    std::vector<TopoCollectionInfo*> collections;
+    std::vector<TaskDetails*> tasks;
+    std::vector<CollectionDetails*> collections;
 };
 
 class Controller
@@ -48,33 +48,33 @@ class Controller
         std::string mTopoFilePath;
         std::map<std::string, TopoGroupInfo> mNinfo; ///< Holds information on minimum number of groups, by group name
 
-        void addToTaskCache(TopoTaskInfo&& taskInfo)
+        void addTaskDetails(TaskDetails&& taskDetails)
         {
-            std::lock_guard<std::mutex> lock(mTaskCacheMutex);
-            mTaskCache.emplace(taskInfo.mTaskID, taskInfo);
+            std::lock_guard<std::mutex> lock(mTaskDetailsMtx);
+            mTaskDetails.emplace(taskDetails.mTaskID, taskDetails);
         }
 
-        void addToCollectionCache(TopoCollectionInfo&& collectionInfo)
+        void addCollectionDetails(CollectionDetails&& collectionDetails)
         {
-            std::lock_guard<std::mutex> lock(mCollectionCacheMutex);
-            mCollectionCache.emplace(collectionInfo.mCollectionID, collectionInfo);
+            std::lock_guard<std::mutex> lock(mCollectionDetailsMtx);
+            mCollectionDetails.emplace(collectionDetails.mCollectionID, collectionDetails);
         }
 
-        TopoTaskInfo& getFromTaskCache(uint64_t taskID)
+        TaskDetails& getTaskDetails(uint64_t taskID)
         {
-            std::lock_guard<std::mutex> lock(mTaskCacheMutex);
-            auto it = mTaskCache.find(taskID);
-            if (it == mTaskCache.end()) {
+            std::lock_guard<std::mutex> lock(mTaskDetailsMtx);
+            auto it = mTaskDetails.find(taskID);
+            if (it == mTaskDetails.end()) {
                 throw std::runtime_error(toString("Failed to get additional task info for ID (", taskID, ")"));
             }
             return it->second;
         }
 
-        TopoCollectionInfo& getFromCollectionCache(uint64_t collectionID)
+        CollectionDetails& getCollectionDetails(uint64_t collectionID)
         {
-            std::lock_guard<std::mutex> lock(mCollectionCacheMutex);
-            auto it = mCollectionCache.find(collectionID);
-            if (it == mCollectionCache.end()) {
+            std::lock_guard<std::mutex> lock(mCollectionDetailsMtx);
+            auto it = mCollectionDetails.find(collectionID);
+            if (it == mCollectionDetails.end()) {
                 throw std::runtime_error(toString("Failed to get additional collection info for ID (", collectionID, ")"));
             }
             return it->second;
@@ -84,25 +84,25 @@ class Controller
         {
             {
                 OLOG(info) << "tasks:";
-                std::lock_guard<std::mutex> lock(mTaskCacheMutex);
-                for (const auto& t : mTaskCache) {
+                std::lock_guard<std::mutex> lock(mTaskDetailsMtx);
+                for (const auto& t : mTaskDetails) {
                     OLOG(info) << t.second;
                 }
             }
             {
                 OLOG(info) << "collections:";
-                std::lock_guard<std::mutex> lock(mCollectionCacheMutex);
-                for (const auto& c : mCollectionCache) {
+                std::lock_guard<std::mutex> lock(mCollectionDetailsMtx);
+                for (const auto& c : mCollectionDetails) {
                     OLOG(info) << c.second;
                 }
             }
         }
 
       private:
-        std::mutex mTaskCacheMutex; ///< Mutex for the tasks container
-        std::mutex mCollectionCacheMutex; ///< Mutex for the collections container
-        std::unordered_map<uint64_t, TopoTaskInfo> mTaskCache; ///< Additional information about task
-        std::unordered_map<uint64_t, TopoCollectionInfo> mCollectionCache; ///< Additional information about collection
+        std::mutex mTaskDetailsMtx; ///< Mutex for the tasks container
+        std::mutex mCollectionDetailsMtx; ///< Mutex for the collections container
+        std::unordered_map<uint64_t, TaskDetails> mTaskDetails; ///< Additional information about task
+        std::unordered_map<uint64_t, CollectionDetails> mCollectionDetails; ///< Additional information about collection
     };
 
     Controller() {}
