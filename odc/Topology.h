@@ -218,13 +218,17 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             task.exitCode = info.m_exitCode;
             task.signal = info.m_signal;
             task.lastState = task.state;
-            task.state = DeviceState::Error;
+            if (task.exitCode > 0) {
+                task.state = DeviceState::Error;
+            } else {
+                task.state = DeviceState::Exiting;
+            }
 
             for (auto& op : fChangeStateOps) {
-                op.second.Update(task.taskId, (task.exitCode > 0 ? DeviceState::Error : DeviceState::Exiting));
+                op.second.Update(task.taskId, task.state);
             }
             for (auto& op : fWaitForStateOps) {
-                op.second.Update(task.taskId, (task.exitCode > 0 ? DeviceState::Error : DeviceState::Exiting), (task.exitCode > 0 ? DeviceState::Error : DeviceState::Exiting));
+                op.second.Update(task.taskId, task.lastState, task.state);
             }
             // TODO: include set/get property ops
         });
