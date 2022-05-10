@@ -9,13 +9,17 @@
 #ifndef __ODC__odc_core_lib_fixtures
 #define __ODC__odc_core_lib_fixtures
 
+#include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/Semaphore.h>
 
-#include <boost/asio/io_context.hpp>
-#include <boost/test/unit_test_log.hpp>
 #include <dds/Tools.h>
 #include <dds/Topology.h>
+
+#include <boost/asio/io_context.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/test/unit_test_log.hpp>
+
 #include <memory>
 #include <string>
 #include <thread>
@@ -27,14 +31,27 @@ struct AsyncOpFixture
 
 struct TopologyFixture
 {
-    TopologyFixture(std::string topo_xml_path)
+    TopologyFixture(std::string topoXMLPath)
         : mDDSSession(std::make_shared<dds::tools_api::CSession>())
-        , mDDSTopo(std::move(topo_xml_path))
+        , mDDSTopo(std::move(topoXMLPath))
     {
         using namespace dds::tools_api;
         using namespace odc::core;
 
         mDDSSession->create();
+
+        Logger::Config logConfig;
+        logConfig.mSeverity = ESeverity::debug;
+        std::stringstream ss;
+        ss << mDDSSession->getSessionID();
+        const boost::filesystem::path p{ boost::filesystem::temp_directory_path() / ss.str() };
+        logConfig.mLogDir = p.string();
+
+        try {
+            Logger::instance().init(logConfig);
+        } catch (std::exception& e) {
+            std::cerr << "Can't initialize log: " << e.what() << std::endl;
+        }
 
         SSubmitRequestData submitInfo;
         submitInfo.m_rms = "localhost";
@@ -44,16 +61,14 @@ struct TopologyFixture
 
         SharedSemaphore blocker;
         auto submitRequest = SSubmitRequest::makeRequest(submitInfo);
-        submitRequest->setMessageCallback([](const SMessageResponseData& message)
-                                          { BOOST_TEST_MESSAGE(message.m_msg); });
+        submitRequest->setMessageCallback([](const SMessageResponseData& message) { BOOST_TEST_MESSAGE(message.m_msg); });
         submitRequest->setDoneCallback([blocker]() mutable { blocker.Signal(); });
         mDDSSession->sendRequest<SSubmitRequest>(submitRequest);
         blocker.Wait();
 
         std::size_t idleSlotsCount(0);
         int interval(8);
-        while (idleSlotsCount < mSlots)
-        {
+        while (idleSlotsCount < mSlots) {
             std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             interval = std::min(256, interval * 2);
             SAgentCountRequest::response_t res;
@@ -66,16 +81,14 @@ struct TopologyFixture
         topologyInfo.m_topologyFile = mDDSTopo.getFilepath();
 
         auto topologyRequest = STopologyRequest::makeRequest(topologyInfo);
-        topologyRequest->setMessageCallback([](const SMessageResponseData& message)
-                                            { BOOST_TEST_MESSAGE(message.m_msg); });
+        topologyRequest->setMessageCallback([](const SMessageResponseData& message) { BOOST_TEST_MESSAGE(message.m_msg); });
         topologyRequest->setDoneCallback([blocker]() mutable { blocker.Signal(); });
         mDDSSession->sendRequest<STopologyRequest>(topologyRequest);
         blocker.Wait();
 
         std::size_t execSlotsCount(0);
         interval = 8;
-        while (execSlotsCount < mSlots)
-        {
+        while (execSlotsCount < mSlots) {
             std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             interval = std::min(256, interval * 2);
             SAgentCountRequest::response_t res;
@@ -86,8 +99,7 @@ struct TopologyFixture
 
     ~TopologyFixture()
     {
-        if (mDDSSession->IsRunning())
-        {
+        if (mDDSSession->IsRunning()) {
             mDDSSession->shutdown();
         }
     }
