@@ -224,7 +224,7 @@ class CliHelper
     static void parseOptions(const boost::program_options::variables_map& /*vm*/, RequestParams_t&&... /*params*/)
     {} // Default implementation does nothing
 
-    static void parseOptions(const boost::program_options::variables_map& vm, std::string& /* partitionID */, SetPropertiesParams& params)
+    static void parseOptions(const boost::program_options::variables_map& vm, SetPropertiesParams& params)
     {
         if (vm.count("prop")) {
             const auto& kvp(vm["prop"].as<std::vector<std::string>>());

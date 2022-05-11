@@ -161,7 +161,7 @@ class CliControllerHelper
             bpo::store(bpo::command_line_parser(args).options(options).run(), vm);
             bpo::notify(vm);
 
-            CliHelper::parseOptions(vm, params...);
+            std::apply([&options, &vm](auto&&... args2) { ((CliHelper::parseOptions(vm, args2)), ...); }, std::tie(params...));
 
             if (vm.count("help")) {
                 std::cout << options << std::endl;
