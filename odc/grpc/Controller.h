@@ -119,11 +119,12 @@ class Controller final
         } else if (rep->reply().status() == odc::ReplyStatus::SUCCESS) {
             std::stringstream ss;
             ss << "GetState response: "
-               << "state: " << rep->reply().state() << ", sessionId: " << rep->reply().sessionid() << ", partitionId: " << rep->reply().partitionid();
+               << "topology state: " << rep->reply().state() << ", sessionId: " << rep->reply().sessionid() << ", partitionId: " << rep->reply().partitionid();
             if (req->detailed()) {
-                ss << ", Devices:\n";
+                ss << ", Devices:";
+                OLOG(info, commonParams) << ss.str();
                 for (const auto& d : rep->devices()) {
-                    ss << "id: " << d.id() << ", state: " << d.state() << ", path: " << d.path() << ", ignored: " << d.ignored() << "\n";
+                    OLOG(info, commonParams) << "id: " << d.id() << ", state: " << d.state() << ", path: " << d.path() << ", ignored: " << d.ignored();
                 }
             }
             OLOG(info, commonParams) << ss.str();
