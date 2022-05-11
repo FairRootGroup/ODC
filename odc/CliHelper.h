@@ -244,7 +244,7 @@ class CliHelper
         }
     }
 
-    static void parseOptions(const boost::program_options::variables_map& vm, CliHelper::BatchOptions& params) { CliHelper::batchCmds(vm, true, params); }
+    static void parseOptions(const boost::program_options::variables_map& vm, BatchOptions& params) { batchCmds(vm, true, params); }
 };
 
 } // namespace odc::core

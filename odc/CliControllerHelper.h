@@ -83,7 +83,7 @@ class CliControllerHelper
 #ifdef READLINE_AVAIL
     static char* commandGenerator(const char* text, int index)
     {
-        static const std::vector<std::string> commands{
+        static const std::vector<std::string> commands {
             ".quit",   ".init",  ".submit", ".activate", ".run",  ".prop", ".upscale", ".downscale", ".state",
             ".config", ".start", ".stop",   ".reset",    ".term", ".down", ".status",  ".batch",     ".sleep", ".help"
         };
@@ -145,23 +145,21 @@ class CliControllerHelper
         }
     }
 
-    template<typename... RequestParams_t>
-    bool parseCommand(const std::vector<std::string>& args, RequestParams_t&&... params)
+    template<typename... RequestParams>
+    bool parseCommand(const std::vector<std::string>& args, RequestParams&&... params)
     {
         try {
-            // Options description: generic + request specific
             bpo::options_description options("Request options");
             options.add_options()("help,h", "Print help");
 
             // Loop over input parameters and add program options
-            std::apply([&options](auto&&... args2) { ((CliHelper::addOptions(options, args2)), ...); }, std::tie(params...));
+            std::apply([&options](auto&&... par) { ((CliHelper::addOptions(options, par)), ...); }, std::tie(params...));
 
-            // Parsing command-line
             bpo::variables_map vm;
             bpo::store(bpo::command_line_parser(args).options(options).run(), vm);
             bpo::notify(vm);
 
-            std::apply([&options, &vm](auto&&... args2) { ((CliHelper::parseOptions(vm, args2)), ...); }, std::tie(params...));
+            std::apply([&vm](auto&&... par) { ((CliHelper::parseOptions(vm, par)), ...); }, std::tie(params...));
 
             if (vm.count("help")) {
                 std::cout << options << std::endl;
@@ -175,24 +173,18 @@ class CliControllerHelper
     }
 
     template<typename T>
-    void print(const T& _value)
-    {
-        std::cout << _value << std::endl;
-    }
+    void print(const T& value) { std::cout << value << std::endl; }
 
-    template<typename... RequestParams_t, typename StubFunc_t>
-    std::string request(const std::string& msg, const std::vector<std::string>& args, StubFunc_t stubFunc)
+    template<typename... RequestParams, typename Func>
+    std::string request(const std::string& msg, const std::vector<std::string>& args, Func func, RequestParams&&... params)
     {
         std::string result;
-        std::tuple<RequestParams_t...> tuple;
-        std::apply([&result, &msg, &args, &stubFunc, this](auto&&... params) {
-            if (parseCommand(args, params...)) {
-                std::cout << msg << std::endl;
-                std::apply([this](auto&&... args2) { ((this->print(args2)), ...); }, std::tie(params...));
-                Owner* p = reinterpret_cast<Owner*>(this);
-                result = (p->*stubFunc)(params...);
-            }
-        }, tuple);
+        if (parseCommand(args, params...)) {
+            std::cout << "Sending " << msg << " request..." << std::endl;
+            std::apply([this](auto&&... par) { ((this->print(par)), ...); }, std::tie(params...));
+            Owner* p = reinterpret_cast<Owner*>(this);
+            result = (p->*func)(params...);
+        }
         return result;
     }
 
@@ -202,40 +194,40 @@ class CliControllerHelper
             exit(EXIT_SUCCESS);
         }
 
-        std::string replyString;
+        std::string reply;
         std::vector<std::string> args{ bpo::split_unix(command) };
         std::string cmd{ args.empty() ? "" : args.front() };
 
         if (cmd == ".init") {
-            replyString = request<CommonParams, InitializeParams>("Sending Initialize request...", args, &Owner::requestInitialize);
+            reply = request("Initialize",    args, &Owner::requestInitialize,    CommonParams(), InitializeParams());
         } else if (cmd == ".submit") {
-            replyString = request<CommonParams, SubmitParams>("Sending Submit request...", args, &Owner::requestSubmit);
+            reply = request("Submit",        args, &Owner::requestSubmit,        CommonParams(), SubmitParams());
         } else if (cmd == ".activate") {
-            replyString = request<CommonParams, ActivateParams>("Sending Activate request...", args, &Owner::requestActivate);
+            reply = request("Activate",      args, &Owner::requestActivate,      CommonParams(), ActivateParams());
         } else if (cmd == ".run") {
-            replyString = request<CommonParams, InitializeParams, SubmitParams, ActivateParams>("Sending Run request...", args, &Owner::requestRun);
+            reply = request("Run",           args, &Owner::requestRun,           CommonParams(), InitializeParams(), SubmitParams(), ActivateParams());
         } else if (cmd == ".upscale") {
-            replyString = request<CommonParams, UpdateParams>("Sending Upscale request...", args, &Owner::requestUpscale);
+            reply = request("Upscale",       args, &Owner::requestUpscale,       CommonParams(), UpdateParams());
         } else if (cmd == ".downscale") {
-            replyString = request<CommonParams, UpdateParams>("Sending Downscale request...", args, &Owner::requestDownscale);
+            reply = request("Downscale",     args, &Owner::requestDownscale,     CommonParams(), UpdateParams());
         } else if (cmd == ".config") {
-            replyString = request<CommonParams, DeviceParams>("Sending Configure request...", args, &Owner::requestConfigure);
+            reply = request("Configure",     args, &Owner::requestConfigure,     CommonParams(), DeviceParams());
         } else if (cmd == ".state") {
-            replyString = request<CommonParams, DeviceParams>("Sending GetState request...", args, &Owner::requestGetState);
+            reply = request("GetState",      args, &Owner::requestGetState,      CommonParams(), DeviceParams());
         } else if (cmd == ".prop") {
-            replyString = request<CommonParams, SetPropertiesParams>("Sending SetProperties request...", args, &Owner::requestSetProperties);
+            reply = request("SetProperties", args, &Owner::requestSetProperties, CommonParams(), SetPropertiesParams());
         } else if (cmd == ".start") {
-            replyString = request<CommonParams, DeviceParams>("Sending Start request...", args, &Owner::requestStart);
+            reply = request("Start",         args, &Owner::requestStart,         CommonParams(), DeviceParams());
         } else if (cmd == ".stop") {
-            replyString = request<CommonParams, DeviceParams>("Sending Stop request...", args, &Owner::requestStop);
+            reply = request("Stop",          args, &Owner::requestStop,          CommonParams(), DeviceParams());
         } else if (cmd == ".reset") {
-            replyString = request<CommonParams, DeviceParams>("Sending Reset request...", args, &Owner::requestReset);
+            reply = request("Reset",         args, &Owner::requestReset,         CommonParams(), DeviceParams());
         } else if (cmd == ".term") {
-            replyString = request<CommonParams, DeviceParams>("Sending Terminate request...", args, &Owner::requestTerminate);
+            reply = request("Terminate",     args, &Owner::requestTerminate,     CommonParams(), DeviceParams());
         } else if (cmd == ".down") {
-            replyString = request<CommonParams>("Sending Shutdown request...", args, &Owner::requestShutdown);
+            reply = request("Shutdown",      args, &Owner::requestShutdown,      CommonParams());
         } else if (cmd == ".status") {
-            replyString = request<StatusParams>("Sending Status request...", args, &Owner::requestStatus);
+            reply = request("Status",        args, &Owner::requestStatus,        StatusParams());
         } else if (cmd == ".batch") {
             execBatch(args);
         } else if (cmd == ".sleep") {
@@ -248,8 +240,8 @@ class CliControllerHelper
             }
         }
 
-        if (!replyString.empty()) {
-            std::cout << "Reply: (\n" << replyString << ")" << std::endl;
+        if (!reply.empty()) {
+            std::cout << "Reply: (\n" << reply << ")" << std::endl;
         }
     }
 

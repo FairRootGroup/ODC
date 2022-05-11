@@ -23,7 +23,7 @@ struct Processor : fair::mq::Device
     void Init() override
     {
         GetConfig()->SetProperty<std::string>("crash", "no");
-        GetConfig()->SubscribeAsString("device", [](auto key, auto value) {
+        GetConfig()->SubscribeAsString("ledevice", [](auto key, auto value) {
             if (key == "crash" && value == "yes") {
                 LOG(warn) << "<<< CRASH >>>";
                 std::abort();
