@@ -303,6 +303,7 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     Timer<chrono::milliseconds> timer;
     Error error;
     shutdownDDSSession(common, error);
+    removeSession(common);
     execRequestTrigger("Shutdown", common);
     return createRequestResult(common, error, "Shutdown done", timer.duration(), AggregatedState::Undefined);
 }
@@ -472,7 +473,7 @@ bool Controller::createDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& session = getOrCreateSession(common);
-        boost::uuids::uuid sessionID{ session.mDDSSession->create() };
+        boost::uuids::uuid sessionID = session.mDDSSession->create();
         OLOG(info, common) << "DDS session created with session ID: " << to_string(sessionID);
     } catch (exception& e) {
         fillError(common, error, ErrorCode::DDSCreateSessionFailed, toString("Failed to create a DDS session: ", e.what()));
@@ -981,11 +982,22 @@ Controller::Session& Controller::getOrCreateSession(const CommonParams& common)
         newSession->mDDSSession = make_unique<dds::tools_api::CSession>();
         newSession->mPartitionID = common.mPartitionID;
         auto ret = mSessions.emplace(common.mPartitionID, move(newSession));
-        // OLOG(debug, common) << "Created session info for partition ID " << quoted(common.mPartitionID);
+        // OLOG(debug, common) << "Created session for partition ID " << quoted(common.mPartitionID);
         return *(ret.first->second);
     }
-    // OLOG(debug, common) << "Found session info for partition ID " << quoted(common.mPartitionID);
+    // OLOG(debug, common) << "Found session for partition ID " << quoted(common.mPartitionID);
     return *(it->second);
+}
+
+void Controller::removeSession(const CommonParams& common)
+{
+    lock_guard<mutex> lock(mSessionsMtx);
+    auto numRemoved = mSessions.erase(common.mPartitionID);
+    if (numRemoved == 1) {
+        OLOG(debug, common) << "Removed session for partition ID " << quoted(common.mPartitionID);
+    } else {
+        OLOG(debug, common) << "Found session for partition ID " << quoted(common.mPartitionID);
+    }
 }
 
 Error Controller::checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode)

@@ -223,6 +223,7 @@ class Controller
     AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, const std::string& path);
 
     Session& getOrCreateSession(const CommonParams& common);
+    void removeSession(const CommonParams& common);
 
     Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
 
