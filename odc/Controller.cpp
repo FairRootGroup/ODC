@@ -46,8 +46,7 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
     } else {
         // Attach to an existing DDS session
         // Shutdown DDS session if it is running already
-        bool success = shutdownDDSSession(common, error)
-            && attachToDDSSession(common, error, params.mDDSSessionID)
+        bool success = attachToDDSSession(common, error, params.mDDSSessionID)
             && subscribeToDDSSession(common, error);
 
         // Request current active topology, if any
