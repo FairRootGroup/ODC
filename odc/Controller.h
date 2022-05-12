@@ -80,6 +80,27 @@ class Controller
             return it->second;
         }
 
+        void fillDetailedState(const TopologyState& topoState, DetailedState* detailedState)
+        {
+            if (detailedState == nullptr) {
+                return;
+            }
+
+            detailedState->clear();
+            detailedState->reserve(topoState.size());
+
+            std::lock_guard<std::mutex> lock(mTaskDetailsMtx);
+
+            for (const auto& state : topoState) {
+                auto it = mTaskDetails.find(state.taskId);
+                if (it != mTaskDetails.end()) {
+                    detailedState->emplace_back(DetailedTaskStatus(state, it->second.mPath, it->second.mHost));
+                } else {
+                    detailedState->emplace_back(DetailedTaskStatus(state, "unknown", "unknown"));
+                }
+            }
+        }
+
         void debug()
         {
             {
@@ -200,7 +221,6 @@ class Controller
     void fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
 
     AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, const std::string& path);
-    void getDetailedState(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, DetailedState* detailedState);
 
     Session& getOrCreateSession(const CommonParams& common);
 

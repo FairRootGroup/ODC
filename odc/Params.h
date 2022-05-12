@@ -94,7 +94,7 @@ struct RequestResult : public BaseRequestResult
         , mRunNr(runNr)
         , mDDSSessionID(sessionID)
         , mAggregatedState(aggregatedState)
-        , mFullState(std::move(detailedState))
+        , mDetailedState(std::move(detailedState))
     {}
 
     std::string mPartitionID;                                      ///< Partition ID
@@ -103,7 +103,7 @@ struct RequestResult : public BaseRequestResult
     AggregatedState mAggregatedState = AggregatedState::Undefined; ///< Aggregated state of the affected divices
 
     // Optional parameters
-    std::unique_ptr<DetailedState> mFullState = nullptr;
+    std::unique_ptr<DetailedState> mDetailedState = nullptr;
 };
 
 struct StatusRequestResult : public BaseRequestResult

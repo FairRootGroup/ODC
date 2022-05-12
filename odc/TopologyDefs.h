@@ -151,13 +151,15 @@ struct DeviceStatus
 struct DetailedTaskStatus
 {
     DetailedTaskStatus() {}
-    DetailedTaskStatus(const DeviceStatus& status, const std::string& path)
+    DetailedTaskStatus(const DeviceStatus& status, const std::string& path, const std::string& host)
         : mStatus(status)
         , mPath(path)
+        , mHost(host)
     {}
 
     DeviceStatus mStatus;
     std::string mPath;
+    std::string mHost;
 };
 
 using DetailedState = std::vector<DetailedTaskStatus>;

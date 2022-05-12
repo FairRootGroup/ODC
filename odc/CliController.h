@@ -74,10 +74,15 @@ class Controller : public core::CliControllerHelper<Controller>
         ss << "  Run Nr: " << result.mRunNr << std::endl;
         ss << "  Session ID: " << result.mDDSSessionID << std::endl;
 
-        if (result.mFullState != nullptr) {
+        if (result.mDetailedState != nullptr) {
             ss << std::endl << "  Devices: " << std::endl;
-            for (const auto& state : *(result.mFullState)) {
-                ss << "    { id: " << state.mStatus.taskId << ", path: " << state.mPath << ", state: " << state.mStatus.state << ", ignored: " <<  state.mStatus.ignored << " }" << std::endl;
+            for (const auto& state : *(result.mDetailedState)) {
+                ss << "    { id: " << state.mStatus.taskId
+                       << ", path: " << state.mPath
+                       << ", state: " << state.mStatus.state
+                       << ", ignored: " <<  state.mStatus.ignored
+                       << ", host: " <<  state.mHost
+                       << " }" << std::endl;
             }
             ss << std::endl;
         }

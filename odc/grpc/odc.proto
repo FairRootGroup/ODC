@@ -81,6 +81,7 @@ message Device {
     string state = 2; // FairMQ device state as string
     string path = 3; // Runtime task path (same as in DDS)
     bool ignored = 4; // Device was stopped and set to be ignored
+    string host = 5; // Host where the task runs
 }
 
 // Device change/get state request
@@ -135,7 +136,7 @@ message SubmitRequest {
     uint64 runnr = 4; // Run number from ECS
     uint32 timeout = 5; // Request timeout in sec. If not set or 0 than default is used.
     string plugin = 2; // Name of the resource plugin registered in odc-server
-    string resources = 3; // Resource description 
+    string resources = 3; // Resource description
 }
 
 // Activate request
@@ -159,7 +160,7 @@ message RunRequest {
     string content = 5; // Content of the XML DDS topology
     string script = 6; // Shell commands to be executed by ODC in order to generate content of the XML DDS topology
     string plugin = 3; // Name of the resource plugin registered in odc-server
-    string resources = 4; // Resource description 
+    string resources = 4; // Resource description
 }
 
 // Update request

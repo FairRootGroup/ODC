@@ -793,9 +793,8 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
             }
         }
 
-        if (detailedState != nullptr) {
-            getDetailedState(session.mDDSTopo.get(), fmqTopoState, detailedState);
-        }
+        session.fillDetailedState(fmqTopoState, detailedState);
+
         aggrState = AggregateState(fmqTopoState);
         if (success) {
             OLOG(info, common) << "State changed to " << aggrState << " via " << transition << " transition";
@@ -846,8 +845,7 @@ bool Controller::getState(const CommonParams& common, Error& error, const string
         success = false;
         fillError(common, error, ErrorCode::FairMQGetStateFailed, toString("Get state failed: ", e.what()));
     }
-    if (detailedState != nullptr)
-        getDetailedState(session.mDDSTopo.get(), state, detailedState);
+    session.fillDetailedState(state, detailedState);
 
     const auto stats{ StateStats(state) };
     OLOG(info, common) << stats.tasksString();
@@ -952,18 +950,6 @@ AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopo
         }
 
         return AggregatedState::Mixed;
-    }
-}
-
-void Controller::getDetailedState(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, DetailedState* detailedState)
-{
-    if (detailedState == nullptr || ddsTopo == nullptr)
-        return;
-
-    detailedState->reserve(topoState.size());
-    for (const auto& state : topoState) {
-        const auto& task = ddsTopo->getRuntimeTaskById(state.taskId);
-        detailedState->push_back(DetailedTaskStatus(state, task.m_taskPath));
     }
 }
 

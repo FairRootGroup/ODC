@@ -124,7 +124,7 @@ class Controller final
                 ss << ", Devices:";
                 OLOG(info, commonParams) << ss.str();
                 for (const auto& d : rep->devices()) {
-                    OLOG(info, commonParams) << "id: " << d.id() << ", state: " << d.state() << ", path: " << d.path() << ", ignored: " << d.ignored();
+                    OLOG(info, commonParams) << "id: " << d.id() << ", state: " << d.state() << ", path: " << d.path() << ", ignored: " << d.ignored() << ", host: " << d.host();
                 }
             }
             OLOG(info, commonParams) << ss.str();
@@ -311,13 +311,14 @@ class Controller final
         setupGeneralReply(generalResponse, res);
         rep->set_allocated_reply(generalResponse);
 
-        if (res.mFullState != nullptr) {
-            for (const auto& state : *(res.mFullState)) {
+        if (res.mDetailedState != nullptr) {
+            for (const auto& state : *(res.mDetailedState)) {
                 auto device{ rep->add_devices() };
                 device->set_id(state.mStatus.taskId);
                 device->set_state(fair::mq::GetStateName(state.mStatus.state));
                 device->set_path(state.mPath);
                 device->set_ignored(state.mStatus.ignored);
+                device->set_host(state.mHost);
             }
         }
     }
