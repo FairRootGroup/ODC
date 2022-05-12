@@ -99,23 +99,22 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
         OLOG(info, common) << "GetState request from " << client << ": "
                                  << "partitionId: " << req->partitionid()
-                                 << ", runnr: " << req->runnr()
-                                 << ", timeout: " << req->timeout()
-                                 << ", path: " << req->path()
-                                 << ", detailed: " << req->detailed();
+                                 << ", runnr: "     << req->runnr()
+                                 << ", timeout: "   << req->timeout()
+                                 << ", path: "      << req->path()
+                                 << ", detailed: "  << req->detailed();
         core::DeviceParams deviceParams{ req->path(), req->detailed() };
         core::RequestResult res{ mController.execGetState(common, deviceParams) };
         setupStateReply(rep, res);
 
         if (rep->reply().status() == odc::ReplyStatus::ERROR) {
             OLOG(error, common) << "GetState response: ERROR" << " (" << rep->reply().error().code() << ")"
-                                      << ", sessionId: " << rep->reply().sessionid()
+                                      << ", sessionId: "   << rep->reply().sessionid()
                                       << ", partitionId: " << rep->reply().partitionid()
-                                      << ", state: " << rep->reply().state()
-                                      << ", msg: " << rep->reply().error().msg();
+                                      << ", state: "       << rep->reply().state()
+                                      << ", msg: "         << rep->reply().error().msg();
         } else if (rep->reply().status() == odc::ReplyStatus::SUCCESS) {
             std::stringstream ss;
             ss << "GetState response: "
