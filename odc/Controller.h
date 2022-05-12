@@ -39,7 +39,7 @@ struct FailedTasksCollections
 class Controller
 {
   public:
-    struct SessionInfo
+    struct Session
     {
         std::unique_ptr<dds::topology_api::CTopology> mDDSTopo = nullptr; ///< DDS topology
         std::shared_ptr<dds::tools_api::CSession> mDDSSession = nullptr; ///< DDS session
@@ -168,7 +168,7 @@ class Controller
     StatusRequestResult execStatus(const StatusParams& params);
 
   private:
-    std::map<std::string, std::unique_ptr<SessionInfo>> mSessions; ///< Map of partition ID to session info
+    std::map<std::string, std::unique_ptr<Session>> mSessions; ///< Map of partition ID to session info
     std::mutex mSessionsMtx; ///< Mutex of sessions map
     std::chrono::seconds mTimeout{ 30 }; ///< Request timeout in sec
     DDSSubmit mSubmit;                  ///< ODC to DDS submit resource converter
@@ -181,9 +181,9 @@ class Controller
     RequestResult createRequestResult(const CommonParams& common, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
     bool createDDSSession(const CommonParams& common, Error& error);
     bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
-    bool submitDDSAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, const DDSSubmit::Params& params);
+    bool submitDDSAgents(Session& session, const CommonParams& common, Error& error, const DDSSubmit::Params& params);
     bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
-    bool waitForNumActiveAgents(SessionInfo& sessionInfo, const CommonParams& common, Error& error, size_t numAgents);
+    bool waitForNumActiveAgents(Session& session, const CommonParams& common, Error& error, size_t numAgents);
     bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
     bool shutdownDDSSession(const CommonParams& common, Error& error);
     bool resetTopology(const CommonParams& common);
@@ -202,14 +202,14 @@ class Controller
     AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, const std::string& path);
     void getDetailedState(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, DetailedState* detailedState);
 
-    SessionInfo& getOrCreateSessionInfo(const CommonParams& common);
+    Session& getOrCreateSession(const CommonParams& common);
 
     Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
 
-    FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, SessionInfo& sessionInfo);
-    bool attemptStateChangeRecovery(FailedTasksCollections& failed, SessionInfo& sessionInfo, const CommonParams& common);
-    void attemptSubmitRecovery(SessionInfo& sessionInfo, const std::vector<DDSSubmit::Params>& ddsParams, const std::map<std::string, uint32_t>& agentCounts, Error& error, const CommonParams& common);
-    void updateTopology(SessionInfo& sessionInfo, const std::map<std::string, uint32_t>& agentCounts, const CommonParams& common);
+    FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, Session& session);
+    bool attemptStateChangeRecovery(FailedTasksCollections& failed, Session& session, const CommonParams& common);
+    void attemptSubmitRecovery(Session& session, const std::vector<DDSSubmit::Params>& ddsParams, const std::map<std::string, uint32_t>& agentCounts, Error& error, const CommonParams& common);
+    void updateTopology(Session& session, const std::map<std::string, uint32_t>& agentCounts, const CommonParams& common);
 
     bool subscribeToDDSSession(const CommonParams& common, Error& error);
 
