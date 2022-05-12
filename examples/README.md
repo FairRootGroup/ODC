@@ -102,8 +102,8 @@ odc-grpc-client --host "HOST:PORT"
 Use the following sequence of commands:
 ```
 .init
-.submit -p odc-rp-same -r "<rms>ssh</rms><configFile>hosts.cfg</configFile><requiredSlots>36</requiredSlots>"
-.activate --topo ex-dd-topology.xml 
+.submit -p odc-rp-same -r "<rms>ssh</rms><configFile>hosts.cfg</configFile>"
+.activate --topo ex-dd-topology.xml
 .config
 .start
 .stop
@@ -112,7 +112,7 @@ Use the following sequence of commands:
 .down
 .quit
 ```
-We use `hosts.cfg` file from previous example and built-in `odc-rp-same` resource plugin. 
+We use `hosts.cfg` file from previous example and built-in `odc-rp-same` resource plugin.
 
 ## Run on GSI Virgo cluster
 
@@ -143,7 +143,7 @@ Start ODC gRPC server:
 ```bash
 odc-grpc-server --host "*:PORT"
 ```
-The number of agents (3) and slots (12) is required to test default topoloies of ODC. These numbers has to be adjusted if you want to test your own topology. 
+The number of agents (3) and slots (12) is required to test default topoloies of ODC. These numbers has to be adjusted if you want to test your own topology.
 
 Start ODC gRPC client:
 ```bash
@@ -153,13 +153,13 @@ odc-grpc-client --host "{ODC_SERVER_HOSTNAME}:PORT"
 
 Submit request looks like:
 ```
-.submit -p odc-rp-same -r "<rms>slurm</rms><configFile>PATH_TO_CFG/slurm.cfg</configFile><agents>3</agents><slots>12</slots><requiredSlots>36</requiredSlots>"
+.submit -p odc-rp-same -r "<rms>slurm</rms><configFile>PATH_TO_CFG/slurm.cfg</configFile><agents>3</agents><slots>12</slots>"
 ```
 
 ## Standard sequence of requests
 ```
 .init
-.submit -p odc-rp-same -r "<rms>ssh</rms><configFile>hosts.cfg</configFile><requiredSlots>36</requiredSlots>"
+.submit -p odc-rp-same -r "<rms>ssh</rms><configFile>hosts.cfg</configFile>"
 .activate --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml
 .config
 .start
@@ -180,6 +180,6 @@ The default sequence of request can also be executed in batch mode using `--batc
 
 ## Create a DDS topology
 
-[The DDS topology example](odc-topo.cpp) shows how to create a topology XML file using [DDS topology APIs](https://github.com/FairRootGroup/DDS/tree/master/dds-topology-lib/src). In the example we combine two topologies [1](ex-dpl-topology.xml) and [2](ex-dd-topology.xml) into a single XML file. The first topology is an example of the DPL export to DDS. The second one is an example of TfBuilder task declaration. 
+[The DDS topology example](odc-topo.cpp) shows how to create a topology XML file using [DDS topology APIs](https://github.com/FairRootGroup/DDS/tree/master/dds-topology-lib/src). In the example we combine two topologies [1](ex-dpl-topology.xml) and [2](ex-dd-topology.xml) into a single XML file. The first topology is an example of the DPL export to DDS. The second one is an example of TfBuilder task declaration.
 
 We create a "EPNGroup" group and add it into the main group of the topology. Set required number of  collections. Read DPL collection from XML file and add it to "EPNGroup" group. Add TfBuilder task, which is read from XML file, to "EPNGroup". Save the topology to a file.

@@ -87,7 +87,6 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
     if (!error.mCode) {
         OLOG(info, common) << "Preparing to submit " << ddsParams.size() << " configurations";
 
-        size_t totalRequiredSlots = 0;
         for (unsigned int i = 0; i < ddsParams.size(); ++i) {
             auto it = find_if(session.mNinfo.cbegin(), session.mNinfo.cend(), [&](const auto& tgi) {
                 return tgi.second.agentGroup == ddsParams.at(i).mAgentGroup;
@@ -98,29 +97,27 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
             OLOG(info, common) << "Submitting [" << i + 1 << "/" << ddsParams.size() << "]: " << ddsParams.at(i);
 
             if (submitDDSAgents(session, common, error, ddsParams.at(i))) {
-                totalRequiredSlots += ddsParams.at(i).mNumRequiredSlots;
+                session.mTotalSlots += ddsParams.at(i).mNumAgents * ddsParams.at(i).mNumSlots;
             } else {
                 OLOG(error, common) << "Submission failed";
                 break;
             }
         }
         if (!error.mCode) {
-            OLOG(info, common) << "Waiting for " << totalRequiredSlots << " slots...";
-            waitForNumActiveAgents(session, common, error, totalRequiredSlots);
-            OLOG(info, common) << "Done waiting for " << totalRequiredSlots << " slots.";
+            OLOG(info, common) << "Waiting for " << session.mTotalSlots << " slots...";
+            if (waitForNumActiveAgents(session, common, error, session.mTotalSlots)) {
+                OLOG(info, common) << "Done waiting for " << session.mTotalSlots << " slots.";
+            }
         }
     }
 
     if (session.mDDSSession->IsRunning()) {
         map<string, uint32_t> agentCounts; // agent count sorted by their group name
-
-        using namespace dds::tools_api;
-        SAgentInfoRequest::request_t agentInfoRequest;
-        SAgentInfoRequest::responseVector_t agentInfo;
-        session.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
+        auto agentInfo = getAgentInfo(session, common);
         OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
         for (const auto& ai : agentInfo) {
             agentCounts[ai.m_groupName]++;
+            session.mAgentSlots[ai.m_agentID] = ai.m_nSlots;
             OLOG(info, common) << "Agent ID: " << ai.m_agentID
                                // << ", pid: " << ai.m_agentPid
                                << ", host: " << ai.m_host
@@ -175,6 +172,7 @@ void Controller::attemptSubmitRecovery(Session& session,
         }
     }
     if (!error.mCode) {
+        session.mTotalSlots = getNumSlots(session, common);
         updateTopology(session, agentCounts, common);
     }
 }
@@ -498,8 +496,9 @@ bool Controller::attachToDDSSession(const CommonParams& common, Error& error, co
 bool Controller::submitDDSAgents(Session& session, const CommonParams& common, Error& error, const DDSSubmit::Params& params)
 {
     bool success = true;
+    using namespace dds::tools_api;
 
-    dds::tools_api::SSubmitRequest::request_t requestInfo;
+    SSubmitRequest::request_t requestInfo;
     requestInfo.m_submissionTag = common.mPartitionID;
     requestInfo.m_rms = params.mRMSPlugin;
     requestInfo.m_instances = params.mNumAgents;
@@ -512,9 +511,9 @@ bool Controller::submitDDSAgents(Session& session, const CommonParams& common, E
 
     condition_variable cv;
 
-    dds::tools_api::SSubmitRequest::ptr_t requestPtr = dds::tools_api::SSubmitRequest::makeRequest(requestInfo);
+    SSubmitRequest::ptr_t requestPtr = SSubmitRequest::makeRequest(requestInfo);
 
-    requestPtr->setMessageCallback([&success, &error, &common, this](const dds::tools_api::SMessageResponseData& msg) {
+    requestPtr->setMessageCallback([&success, &error, &common, this](const SMessageResponseData& msg) {
         if (msg.m_severity == dds::intercom_api::EMsgSeverity::error) {
             success = false;
             fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit error: ", msg.m_msg));
@@ -528,7 +527,7 @@ bool Controller::submitDDSAgents(Session& session, const CommonParams& common, E
         cv.notify_all();
     });
 
-    session.mDDSSession->sendRequest<dds::tools_api::SSubmitRequest>(requestPtr);
+    session.mDDSSession->sendRequest<SSubmitRequest>(requestPtr);
 
     mutex mtx;
     unique_lock<mutex> lock(mtx);
@@ -545,13 +544,14 @@ bool Controller::submitDDSAgents(Session& session, const CommonParams& common, E
 
 bool Controller::requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo)
 {
+    using namespace dds::tools_api;
     try {
         stringstream ss;
         auto& session = getOrCreateSession(common);
-        session.mDDSSession->syncSendRequest<dds::tools_api::SCommanderInfoRequest>(dds::tools_api::SCommanderInfoRequest::request_t(),
-                                                                               commanderInfo,
-                                                                               requestTimeout(common),
-                                                                               &ss);
+        session.mDDSSession->syncSendRequest<SCommanderInfoRequest>(SCommanderInfoRequest::request_t(),
+                                                                    commanderInfo,
+                                                                    requestTimeout(common),
+                                                                    &ss);
         OLOG(info, common) << ss.str();
         OLOG(debug, common) << "Commander info: " << commanderInfo;
         return true;
@@ -1138,12 +1138,18 @@ bool Controller::attemptStateChangeRecovery(FailedTasksCollections& failed, Sess
         // shutdown agents responsible for failed collections (https://github.com/FairRootGroup/DDS/blob/master/dds-tools-lib/tests/TestSession.cpp#L632)
 
         using namespace dds::tools_api;
-        using namespace dds::topology_api;
+        // using namespace dds::topology_api;
 
         try {
-            size_t currentAgentsCount = getNumAgents(session.mDDSSession, common);
-            size_t expectedAgentsCount = currentAgentsCount - failed.collections.size();
-            OLOG(info, common) << "Current number of agents: " << currentAgentsCount << ", expecting to reduce to " << expectedAgentsCount;
+            size_t currentSlotsCount = session.mTotalSlots;
+
+            size_t numSlotsToRemove = 0;
+            for (const auto& c : failed.collections) {
+                numSlotsToRemove += session.mAgentSlots.at(c->mAgentID);
+            }
+
+            size_t expectedNumSlots = session.mTotalSlots - numSlotsToRemove;
+            OLOG(info, common) << "Current number of slots: " << session.mTotalSlots << ", expecting to reduce to " << expectedNumSlots;
 
             for (const auto& c : failed.collections) {
                 OLOG(info, common) << "Sending shutdown signal to agent " << c->mAgentID << ", responsible for " << c->mPath;
@@ -1154,22 +1160,23 @@ bool Controller::attemptStateChangeRecovery(FailedTasksCollections& failed, Sess
             }
 
             // TODO: notification on agent shutdown in development in DDS
-            OLOG(info, common) << "Current number of agents: " << getNumAgents(session.mDDSSession, common);
-            currentAgentsCount = getNumAgents(session.mDDSSession, common);
+            OLOG(info, common) << "Current number of slots: " << getNumSlots(session, common);
+            currentSlotsCount = getNumSlots(session, common);
             size_t attempts = 0;
-            while (currentAgentsCount != expectedAgentsCount && attempts < 400) {
+            while (currentSlotsCount != expectedNumSlots && attempts < 400) {
                 this_thread::sleep_for(chrono::milliseconds(50));
-                currentAgentsCount = getNumAgents(session.mDDSSession, common);
-                // OLOG(info, common) << "Current number of agents: " << currentAgentsCount;
+                currentSlotsCount = getNumSlots(session, common);
+                // OLOG(info, common) << "Current number of slots: " << currentSlotsCount;
                 ++attempts;
             }
-            if (expectedAgentsCount != currentAgentsCount) {
-                OLOG(info, common) << "Could not reduce the number of agents to " << expectedAgentsCount << ", current count is: " << currentAgentsCount;
+            if (currentSlotsCount != expectedNumSlots) {
+                OLOG(warning, common) << "Could not reduce the number of slots to " << expectedNumSlots << ", current count is: " << currentSlotsCount;
             } else {
-                OLOG(info, common) << "Successfully reduced number of agents to " << currentAgentsCount;
+                OLOG(info, common) << "Successfully reduced number of slots to " << currentSlotsCount;
             }
+            session.mTotalSlots = currentSlotsCount;
         } catch (exception& e) {
-            OLOG(error, common) << "Failed updating nubmer of agents: " << e.what();
+            OLOG(error, common) << "Failed updating nubmer of slots: " << e.what();
             return false;
         }
 
@@ -1242,19 +1249,22 @@ bool Controller::attemptStateChangeRecovery(FailedTasksCollections& failed, Sess
     return false;
 }
 
-uint64_t Controller::getNumAgents(shared_ptr<dds::tools_api::CSession> ddsSession, const CommonParams& common) const
+
+dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(Session& session, const CommonParams& common) const
 {
     using namespace dds::tools_api;
-    // SAgentCountRequest::response_t agentCountInfo;
-    // ddsSession->syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), agentCountInfo, requestTimeout(common));
-    // agentCountInfo.
-    // return agentInfo.size();
-
     SAgentInfoRequest::request_t agentInfoRequest;
     SAgentInfoRequest::responseVector_t agentInfo;
-    ddsSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
+    session.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
+    return agentInfo;
+}
 
-    return agentInfo.size();
+uint32_t Controller::getNumSlots(Session& session, const CommonParams& common) const
+{
+    using namespace dds::tools_api;
+    SAgentCountRequest::response_t agentCountInfo;
+    session.mDDSSession->syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), agentCountInfo, requestTimeout(common));
+    return agentCountInfo.m_activeSlotsCount;
 }
 
 bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)

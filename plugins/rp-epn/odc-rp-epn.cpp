@@ -155,8 +155,7 @@ int main(int argc, char** argv)
             OLOG(info, partitionID, 0) << "epnc: SSH config file created at path " << filepath << endl;
 
             stringstream ss;
-            int requiredSlots(records.size() * numSlots);
-            ss << "<rms>ssh</rms><configFile>" << filepath.string() << "</configFile><requiredSlots>" << requiredSlots << "</requiredSlots>";
+            ss << "<rms>ssh</rms><configFile>" << filepath.string() << "</configFile>";
 
             OLOG(info, partitionID, 0) << ss.str();
             OLOG(clean, partitionID, 0) << ss.str();

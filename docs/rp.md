@@ -17,11 +17,8 @@ ODC uses XML with the following top level tags:
 |`<configFile>`|Path to the configuration file|
 |`<agents>`|Number of agents|
 |`<slots>`|Number of slots per agent|
-|`<requiredSlots>`|Required number of total active slots|
- 
-Each tag (except `<requiredSlots>`) corresponds to the command line option used by [`dds-submit`](http://dds.gsi.de/doc/nightly/dds-submit.html). Not all tags are required. A set of required tags depends on the used [DDS RMS plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html).
 
-[`SubmitRequest`](grpc-proto/odc.proto) (as well as [`dds-submit`](http://dds.gsi.de/doc/nightly/dds-submit.html)) is async meaning that it doesn't wait for DDS agents to appear online. In order to make it sync one can optionally define the number of required active slots using `<requiredSlots>` tag.
+Each tag corresponds to the command line option used by [`dds-submit`](http://dds.gsi.de/doc/nightly/dds-submit.html). Not all tags are required. A set of required tags depends on the used [DDS RMS plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html).
 
 ### Built-in plugins
 

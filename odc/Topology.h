@@ -155,7 +155,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             if (!firstRun) {
                 const DeviceStatus& ds = fStateData.at(fStateIndex.at(task.first));
                 if (ds.ignored) {
-                    OLOG(debug) << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping";
+                    // OLOG(debug) << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping";
                     continue;
                 }
             }

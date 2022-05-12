@@ -153,7 +153,6 @@ int main(int argc, char** argv)
         for (const auto& r : res.mResources) {
             stringstream ss;
             const auto& zone = zones.at(r.mZone);
-            int requiredSlots(r.mN * zone.numSlots);
             ss << "<submit>"
                << "<rms>slurm</rms>";
             if (!zone.slurmCfgPath.empty()) {
@@ -168,7 +167,6 @@ int main(int argc, char** argv)
             ss << "<agents>" << r.mN << "</agents>" // number of agents (assuming it is equals to number of nodes)
                << "<agentGroup>" << r.mZone << "</agentGroup>" // agent group (zone)
                << "<slots>" << zone.numSlots << "</slots>" // number of slots per agent
-               << "<requiredSlots>" << requiredSlots << "</requiredSlots>" // total number of required slots
                << "</submit>";
 
             OLOG(info, partitionID, 0) << ss.str();

@@ -41,13 +41,6 @@ class Controller
   public:
     struct Session
     {
-        std::unique_ptr<dds::topology_api::CTopology> mDDSTopo = nullptr; ///< DDS topology
-        std::shared_ptr<dds::tools_api::CSession> mDDSSession = nullptr; ///< DDS session
-        std::unique_ptr<Topology> mTopology = nullptr; ///< Topology
-        std::string mPartitionID; ///< External partition ID of this DDS session
-        std::string mTopoFilePath;
-        std::map<std::string, TopoGroupInfo> mNinfo; ///< Holds information on minimum number of groups, by group name
-
         void addTaskDetails(TaskDetails&& taskDetails)
         {
             std::lock_guard<std::mutex> lock(mTaskDetailsMtx);
@@ -118,6 +111,16 @@ class Controller
                 }
             }
         }
+
+
+        std::unique_ptr<dds::topology_api::CTopology> mDDSTopo = nullptr; ///< DDS topology
+        std::shared_ptr<dds::tools_api::CSession> mDDSSession = nullptr; ///< DDS session
+        std::unique_ptr<Topology> mTopology = nullptr; ///< Topology
+        std::string mPartitionID; ///< External partition ID of this DDS session
+        std::string mTopoFilePath;
+        std::map<std::string, TopoGroupInfo> mNinfo; ///< Holds information on minimum number of groups, by group name
+        size_t mTotalSlots = 0; ///< total number of DDS slots
+        std::unordered_map<uint64_t, uint32_t> mAgentSlots;
 
       private:
         std::mutex mTaskDetailsMtx; ///< Mutex for the tasks container
@@ -238,7 +241,8 @@ class Controller
 
     std::chrono::seconds requestTimeout(const CommonParams& common) const;
 
-    uint64_t getNumAgents(std::shared_ptr<dds::tools_api::CSession> ddsSession, const CommonParams& common) const;
+    uint32_t getNumSlots(Session& session, const CommonParams& common) const;
+    dds::tools_api::SAgentInfoRequest::responseVector_t getAgentInfo(Session& session, const CommonParams& common) const;
     void extractNmin(const CommonParams& common, const std::string& topologyFile);
 };
 
