@@ -6,9 +6,16 @@
 - Fail earlier for devices that fail between state transitions.
 - Fix tasks incorrectly being labeled as failed during nMin handling.
 - Reduce log verbosity during activation.
+- Split longer log entries into multiple.
+- Add host/node info to `GetState --detailed` gRPC response and log.
+- Allow grpc::GetState to be processed asynchronously.
+- Remove `<requiredSlots>` from resource definitions. All slots are now required.
 - (impl) cmds: Disable successfull TransitionStatus (unused).
 - (impl) cmds: Remove StateChangeExitingReceived command - use OnTaskDone instead.
 - (impl) cmds: Replace CurrentState with StateChange.
+- Fix several failing tests.
+- Fix broken SetProperties parsing in Cli controllers.
+- Cleanup session data on Shutdown command.
 
 ## 0.70.1 (2022-05-07)
 
