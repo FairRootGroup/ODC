@@ -863,7 +863,7 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
         return false;
     }
 
-    bool success(true);
+    bool success = true;
 
     try {
         auto [errorCode, failedDevices] = session.mTopology->SetProperties(params.mProperties, params.mPath, requestTimeout(common));
@@ -880,19 +880,17 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
                     fillError(common, error, ErrorCode::FairMQSetPropertiesFailed, toString("Set property error message: ", errorCode.message()));
                     break;
             }
-            stringstream ss;
             size_t count = 0;
-            ss << "List of failed devices for SetProperties request (" << failedDevices.size() << "):" << endl;
+            OLOG(error, common) << "List of failed devices for SetProperties request (" << failedDevices.size() << "):";
             for (auto taskId : failedDevices) {
                 try {
                     TaskDetails& taskInfo = session.getTaskDetails(taskId);
-                    ss << right << setw(7) << count << "   Task: " << taskInfo << endl;
+                    OLOG(error, common) << right << setw(7) << count << "   Task: " << taskInfo;
                 } catch (const exception& e) {
                     OLOG(error, common) << "Set properties error: " << e.what();
                 }
-                count++;
+                ++count;
             }
-            OLOG(error, common) << ss.str();
         }
     } catch (exception& e) {
         success = false;
@@ -1027,7 +1025,7 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
             OLOG(error, common) << "Following devices failed to transition to " << expectedState << " state:";
         }
         stringstream ss;
-        ss << "[" << numFailedTasks << "]"
+        ss << "  [" << numFailedTasks << "]"
            << " taskID: " << status.taskId
            << ", state: " << status.state
            << ", previous state: " << status.lastState
@@ -1039,10 +1037,10 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
             TaskDetails& taskDetails = session.getTaskDetails(status.taskId);
             failed.tasks.push_back(&taskDetails);
             ss << ", agentID: " << taskDetails.mAgentID
-               << ", slotID: " << taskDetails.mSlotID
-               << ", path: " << taskDetails.mPath
-               << ", host: " << taskDetails.mHost
-               << ", wrkDir: " << taskDetails.mWrkDir;
+               << ", slotID: "  << taskDetails.mSlotID
+               << ", path: "    << taskDetails.mPath
+               << ", host: "    << taskDetails.mHost
+               << ", wrkDir: "  << taskDetails.mWrkDir;
         } catch (const exception& e) {
             OLOG(error, common) << "State summary error: " << e.what();
         }
@@ -1078,9 +1076,9 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
 
     size_t numSuccessfulTasks = numTasks - numFailedTasks;
     size_t numSuccessfulCollections = numCollections - numFailedCollections;
-    OLOG(error, common) << "Summary after transitioning to " << expectedState << " state:"
-       << "\n  [tasks] total: " << numTasks << ", successful: " << numSuccessfulTasks << ", failed: " << numFailedTasks
-       << "\n  [collections] total: " << numCollections << ", successful: " << numSuccessfulCollections << ", failed: " << numFailedCollections;
+    OLOG(error, common) << "Summary after transitioning to " << expectedState << " state:";
+    OLOG(error, common) << "  [tasks] total: " << numTasks << ", successful: " << numSuccessfulTasks << ", failed: " << numFailedTasks;
+    OLOG(error, common) << "  [collections] total: " << numCollections << ", successful: " << numSuccessfulCollections << ", failed: " << numFailedCollections;
 
     return failed;
 }

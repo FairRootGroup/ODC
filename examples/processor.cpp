@@ -27,6 +27,8 @@ struct Processor : fair::mq::Device
             if (key == "crash" && value == "yes") {
                 LOG(warn) << "<<< CRASH >>>";
                 std::abort();
+            } else {
+                LOG(info) << "property update: key: " << key << ", value: " << value;
             }
         });
 

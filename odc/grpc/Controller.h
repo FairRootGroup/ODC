@@ -41,12 +41,17 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Initialize request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Initialize", client, common, req);
+        OLOG(info, common) << "Initialize request session ID: "   << req->sessionid();
+
         core::InitializeParams initializeParams{ req->sessionid() };
         core::RequestResult res{ mController.execInitialize(common, initializeParams) };
+
         setupGeneralReply(rep, res);
-        logResponse("Initialize response:\n", common, rep);
+        logGeneralReply("Initialize", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -55,12 +60,17 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Submit request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Submit", client, common, req);
+        OLOG(info, common) << "Submit request plugin: "   << req->plugin() << ", resources: "   << req->resources();
+
         core::SubmitParams submitParams{ req->plugin(), req->resources() };
         core::RequestResult res{ mController.execSubmit(common, submitParams) };
+
         setupGeneralReply(rep, res);
-        logResponse("Submit response:\n", common, rep);
+        logGeneralReply("Submit", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -69,12 +79,19 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Activate request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Activate", client, common, req);
+        OLOG(info, common) << "Activate request topology: " << req->topology();
+        OLOG(info, common) << "Activate request content: "  << req->content();
+        OLOG(info, common) << "Activate request script: "   << req->script();
+
         core::ActivateParams activateParams{ req->topology(), req->content(), req->script() };
         core::RequestResult res{ mController.execActivate(common, activateParams) };
+
         setupGeneralReply(rep, res);
-        logResponse("Activate response:\n", common, rep);
+        logGeneralReply("Activate", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -83,14 +100,22 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Run request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Run", client, common, req);
+        OLOG(info, common) << "Run request plugin: "   << req->plugin() << ", resources: "   << req->resources();
+        OLOG(info, common) << "Run request topology: " << req->topology();
+        OLOG(info, common) << "Run request content: "  << req->content();
+        OLOG(info, common) << "Run request script: "   << req->script();
+
         core::InitializeParams initializeParams{ "" };
         core::SubmitParams submitParams{ req->plugin(), req->resources() };
         core::ActivateParams activateParams{ req->topology(), req->content(), req->script() };
         core::RequestResult res{ mController.execRun(common, initializeParams, submitParams, activateParams) };
+
         setupGeneralReply(rep, res);
-        logResponse("Run response:\n", common, rep);
+        logGeneralReply("Run", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -99,38 +124,15 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
-        OLOG(info, common) << "GetState request from " << client << ": "
-                                 << "partitionId: " << req->partitionid()
-                                 << ", runnr: "     << req->runnr()
-                                 << ", timeout: "   << req->timeout()
-                                 << ", path: "      << req->path()
-                                 << ", detailed: "  << req->detailed();
+
+        logCommonRequest("GetState", client, common, req);
+        OLOG(info, common) << "GetState request detailed: " << req->detailed() << ", path: "   << req->path();
+
         core::DeviceParams deviceParams{ req->path(), req->detailed() };
         core::RequestResult res{ mController.execGetState(common, deviceParams) };
+
         setupStateReply(rep, res);
-
-        if (rep->reply().status() == odc::ReplyStatus::ERROR) {
-            OLOG(error, common) << "GetState response: ERROR" << " (" << rep->reply().error().code() << ")"
-                                      << ", sessionId: "   << rep->reply().sessionid()
-                                      << ", partitionId: " << rep->reply().partitionid()
-                                      << ", state: "       << rep->reply().state()
-                                      << ", msg: "         << rep->reply().error().msg();
-        } else if (rep->reply().status() == odc::ReplyStatus::SUCCESS) {
-            std::stringstream ss;
-            ss << "GetState response: "
-               << "topology state: " << rep->reply().state() << ", sessionId: " << rep->reply().sessionid() << ", partitionId: " << rep->reply().partitionid();
-            if (req->detailed()) {
-                ss << ", Devices:";
-                OLOG(info, common) << ss.str();
-                for (const auto& d : rep->devices()) {
-                    OLOG(info, common) << "id: " << d.id() << ", state: " << d.state() << ", path: " << d.path() << ", ignored: " << d.ignored() << ", host: " << d.host();
-                }
-            }
-            OLOG(info, common) << ss.str();
-        } else {
-            OLOG(info, common) << "GetState response: " << rep->DebugString();
-        }
-
+        logStateReply("GetState", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -139,19 +141,26 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "SetProperties request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("SetProperties", client, common, req);
+        OLOG(info, common) << "SetProperties request path: " << req->path();
+
         // Convert from protobuf to ODC format
+        OLOG(info, common) << "SetProperties request properties: ";
         core::SetPropertiesParams::Properties_t props;
         for (int i = 0; i < req->properties_size(); i++) {
             auto prop{ req->properties(i) };
+            OLOG(info, common) << "  key: " << prop.key() << ", value: " << prop.value();
             props.push_back(core::SetPropertiesParams::Property_t(prop.key(), prop.value()));
         }
 
         core::SetPropertiesParams setPropertiesParams{ props, req->path() };
         core::RequestResult res{ mController.execSetProperties(common, setPropertiesParams) };
+
         setupGeneralReply(rep, res);
-        logResponse("SetProperties response:\n", common, rep);
+        logGeneralReply("SetProperties", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -160,12 +169,19 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Update request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Update", client, common, req);
+        OLOG(info, common) << "Update request topology: " << req->topology();
+        OLOG(info, common) << "Update request content: "  << req->content();
+        OLOG(info, common) << "Update request script: "   << req->script();
+
         core::UpdateParams updateParams{ req->topology(), req->content(), req->script() };
         core::RequestResult res{ mController.execUpdate(common, updateParams) };
+
         setupGeneralReply(rep, res);
-        logResponse("Update response:\n", common, rep);
+        logGeneralReply("Update", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -174,12 +190,16 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Configure request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Configure", client, common, &(req->request()));
+
         core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execConfigure(common, deviceParams) };
+
         setupStateReply(rep, res);
-        logResponse("Configure response:\n", common, rep);
+        logStateReply("Configure", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -188,12 +208,16 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Start request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Start", client, common, &(req->request()));
+
         core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execStart(common, deviceParams) };
+
         setupStateReply(rep, res);
-        logResponse("Start response:\n", common, rep);
+        logStateReply("Start", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -202,12 +226,16 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Stop request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Stop", client, common, &(req->request()));
+
         core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execStop(common, deviceParams) };
+
         setupStateReply(rep, res);
-        logResponse("Stop response:\n", common, rep);
+        logStateReply("Stop", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -216,12 +244,16 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Reset request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Reset", client, common, &(req->request()));
+
         core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execReset(common, deviceParams) };
+
         setupStateReply(rep, res);
-        logResponse("Reset response:\n", common, rep);
+        logStateReply("Reset", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -230,12 +262,16 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Terminate request from " << client << ":\n" << req->DebugString();
+
+        logCommonRequest("Terminate", client, common, &(req->request()));
+
         core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         core::RequestResult res{ mController.execTerminate(common, deviceParams) };
+
         setupStateReply(rep, res);
-        logResponse("Terminate response:\n", common, rep);
+        logStateReply("Terminate", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -244,14 +280,15 @@ class Controller final
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
+
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-        OLOG(info, common) << "Shutdown request from " << client << ": "
-                                 << "partitionId: " << req->partitionid()
-                                 << ", runnr: " << req->runnr()
-                                 << ", timeout: " << req->timeout();
+
+        logCommonRequest("Shutdown", client, common, req);
+
         core::RequestResult res{ mController.execShutdown(common) };
+
         setupGeneralReply(rep, res);
-        logResponse("Shutdown response:\n", common, rep);
+        logGeneralReply("Shutdown", common, *rep);
         return ::grpc::Status::OK;
     }
 
@@ -259,7 +296,9 @@ class Controller final
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
-        OLOG(info) << "Status request from " << client << ": " << req->DebugString();
+
+        OLOG(info) << "Status request from " << client << ": runnning: " << req->running();
+
         core::StatusRequestResult res{ mController.execStatus(core::StatusParams(req->running())) };
         setupStatusReply(rep, res);
 
@@ -348,22 +387,48 @@ class Controller final
         return (it == mMutexMap.end()) ? mMutexMap[partitionID] : it->second;
     }
 
-    template<typename Response_t>
-    void logResponse(const std::string& msg, const core::CommonParams& common, const Response_t* res)
+    template<typename Request>
+    void logCommonRequest(const std::string& msg, const std::string& client, const core::CommonParams& common, const Request* req)
     {
-        if (res->status() == odc::ReplyStatus::ERROR) {
-            OLOG(error, common) << msg << res->DebugString();
+        OLOG(info, common) << msg << " request from " << client << ": "
+            << "partitionId: " << req->partitionid()
+            << ", runnr: "     << req->runnr()
+            << ", timeout: "   << req->timeout();
+    }
+
+    void logGeneralReply(const std::string& label, const core::CommonParams& common, const GeneralReply& rep)
+    {
+        std::stringstream ss;
+        ss << label << " reply: "
+           << ", partitionId: " << rep.partitionid()
+           << ", runnr: "       << rep.runnr()
+           << ", sessionid: "   << rep.sessionid()
+           << ", state: "       << rep.state()
+           << ", msg: "         << rep.msg()
+           << ", exectime: "    << rep.exectime() << "ms";
+
+        if (rep.status() == odc::ReplyStatus::ERROR) {
+            ss << ", ERROR: " << rep.error().msg() << " (" << rep.error().code() << ") ";
+            OLOG(error, common) << ss.str();
+        } else if (rep.status() == odc::ReplyStatus::SUCCESS) {
+            OLOG(info, common) << ss.str();
         } else {
-            OLOG(info, common) << msg << res->DebugString();
+            OLOG(error, common) << label << " reply: " << rep.DebugString();
         }
     }
 
-    void logResponse(const std::string& msg, const core::CommonParams& common, const odc::StateReply* rep)
+    void logStateReply(const std::string& label, const core::CommonParams& common, const StateReply& rep)
     {
-        if (rep->reply().status() == odc::ReplyStatus::ERROR) {
-            OLOG(error, common) << msg << rep->DebugString();
-        } else {
-            OLOG(info, common) << msg << rep->DebugString();
+        logGeneralReply(label, common, rep.reply());
+        if (!rep.devices().empty()) {
+            OLOG(info, common) << "Detailed list of devices:";
+            for (const auto& d : rep.devices()) {
+                OLOG(info, common) << "id: "        << d.id()
+                                   << ", state: "   << d.state()
+                                   << ", path: "    << d.path()
+                                   << ", ignored: " << d.ignored()
+                                   << ", host: "    << d.host();
+            }
         }
     }
 
