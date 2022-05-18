@@ -105,7 +105,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
         }
         if (!error.mCode) {
             OLOG(info, common) << "Waiting for " << session.mTotalSlots << " slots...";
-            if (waitForNumActiveAgents(session, common, error, session.mTotalSlots)) {
+            if (waitForNumActiveSlots(session, common, error, session.mTotalSlots)) {
                 OLOG(info, common) << "Done waiting for " << session.mTotalSlots << " slots.";
             }
         }
@@ -561,12 +561,12 @@ bool Controller::requestCommanderInfo(const CommonParams& common, Error& error, 
     }
 }
 
-bool Controller::waitForNumActiveAgents(Session& session, const CommonParams& common, Error& error, size_t numAgents)
+bool Controller::waitForNumActiveSlots(Session& session, const CommonParams& common, Error& error, size_t numSlots)
 {
     try {
-        session.mDDSSession->waitForNumAgents<dds::tools_api::CSession::EAgentState::active>(numAgents, requestTimeout(common));
+        session.mDDSSession->waitForNumAgents<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common));
     } catch (exception& e) {
-        fillError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS agents: ", e.what()));
+        fillError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS slots: ", e.what()));
         return false;
     }
     return true;

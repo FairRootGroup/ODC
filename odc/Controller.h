@@ -207,7 +207,7 @@ class Controller
     bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
     bool submitDDSAgents(Session& session, const CommonParams& common, Error& error, const DDSSubmit::Params& params);
     bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
-    bool waitForNumActiveAgents(Session& session, const CommonParams& common, Error& error, size_t numAgents);
+    bool waitForNumActiveSlots(Session& session, const CommonParams& common, Error& error, size_t numSlots);
     bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
     bool shutdownDDSSession(const CommonParams& common, Error& error);
     bool resetTopology(const CommonParams& common);
