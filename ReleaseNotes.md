@@ -16,6 +16,8 @@
 - Fix several failing tests.
 - Fix broken SetProperties parsing in Cli controllers.
 - Cleanup session data on Shutdown command.
+- execute(): fix race that can lead to incomplete output.
+- execute(): fill stdout/stderr also on timeout.
 
 ## 0.70.1 (2022-05-07)
 
