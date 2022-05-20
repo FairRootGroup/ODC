@@ -6,21 +6,21 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-// STD
-#include <iostream>
-#include <map>
-#include <string>
-#include <vector>
-// BOOST
+
+#include <odc/Logger.h>
+#include <odc/Version.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/property_tree/json_parser.hpp>
-// ODC
-#include <odc/Logger.h>
-#include <odc/Version.h>
+
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace std;
 namespace bpo = boost::program_options;
@@ -170,7 +170,7 @@ int main(int argc, char** argv)
                << "</submit>";
 
             OLOG(info, partitionID, 0) << ss.str();
-            OLOG(clean, partitionID, 0) << ss.str();
+            std::cout << ss.str() << std::endl;
         }
 
         OLOG(info, partitionID, 0) << "Finishing epn slurm plugin";
