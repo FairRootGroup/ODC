@@ -221,7 +221,9 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     if (!error.mCode) {
         try {
             if (session.mTopoFilePath.empty()) {
-                session.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
+                session.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile,
+                                                             params.mDDSTopologyContent,
+                                                             params.mDDSTopologyScript);
                 extractNmin(common, session.mTopoFilePath);
             }
         } catch (exception& e) {
@@ -251,11 +253,19 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
     } else {
         error = execInitialize(common, initializeParams).mError;
         if (!error.mCode) {
-            session.mTopoFilePath = topoFilepath(common, activateParams.mDDSTopologyFile, activateParams.mDDSTopologyContent, activateParams.mDDSTopologyScript);
-            extractNmin(common, session.mTopoFilePath);
-            error = execSubmit(common, submitParams).mError;
+            try {
+                session.mTopoFilePath = topoFilepath(common, activateParams.mDDSTopologyFile,
+                                                             activateParams.mDDSTopologyContent,
+                                                             activateParams.mDDSTopologyScript);
+                extractNmin(common, session.mTopoFilePath);
+            } catch (exception& e) {
+                fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+            }
             if (!error.mCode) {
-                error = execActivate(common, activateParams).mError;
+                error = execSubmit(common, submitParams).mError;
+                if (!error.mCode) {
+                    error = execActivate(common, activateParams).mError;
+                }
             }
         }
     }
