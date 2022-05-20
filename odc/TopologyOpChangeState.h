@@ -103,7 +103,7 @@ struct ChangeStateOp
                     ++fCount;
                     failed.emplace(taskId);
                 } else {
-                    OLOG(debug) << "Task " << taskId << " is already in the set of failed devices";
+                    // OLOG(debug) << "Task " << taskId << " is already in the set of failed devices";
                 }
             }
             TryCompletion();

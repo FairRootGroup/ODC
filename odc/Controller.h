@@ -245,6 +245,8 @@ class Controller
     uint32_t getNumSlots(Session& session, const CommonParams& common) const;
     dds::tools_api::SAgentInfoRequest::responseVector_t getAgentInfo(Session& session, const CommonParams& common) const;
     void extractNmin(const CommonParams& common, const std::string& topologyFile);
+
+    void printStateStats(const CommonParams& common, const TopologyState& topoState);
 };
 
 } // namespace odc::core

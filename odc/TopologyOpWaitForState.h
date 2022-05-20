@@ -103,7 +103,7 @@ struct WaitForStateOp
                     ++fCount;
                     failed.emplace(taskId);
                 } else {
-                    OLOG(debug) << "Task " << taskId << " is already in the set of failed devices. Called twice from StateChange & onTaskDone?";
+                    // OLOG(debug) << "Task " << taskId << " is already in the set of failed devices. Called twice from StateChange & onTaskDone?";
                 }
             }
             TryCompletion();

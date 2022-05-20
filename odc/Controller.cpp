@@ -12,7 +12,6 @@
 #include <odc/Logger.h>
 #include <odc/Process.h>
 #include <odc/Restore.h>
-#include <odc/Stats.h>
 #include <odc/Timer.h>
 #include <odc/Topology.h>
 
@@ -776,13 +775,13 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
     bool success = true;
 
     try {
-        auto [errorCode, fmqTopoState] = session.mTopology->ChangeState(transition, path, requestTimeout(common));
+        auto [errorCode, topoState] = session.mTopology->ChangeState(transition, path, requestTimeout(common));
 
         success = !errorCode;
         if (!success) {
             auto failed = stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
             success = attemptStateChangeRecovery(failed, session, common);
-            fmqTopoState = session.mTopology->GetCurrentState();
+            topoState = session.mTopology->GetCurrentState();
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -795,21 +794,20 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
             }
         }
 
-        session.fillDetailedState(fmqTopoState, detailedState);
+        session.fillDetailedState(topoState, detailedState);
 
-        aggrState = AggregateState(fmqTopoState);
+        aggrState = AggregateState(topoState);
         if (success) {
             OLOG(info, common) << "State changed to " << aggrState << " via " << transition << " transition";
         }
+
+        printStateStats(common, topoState);
+
     } catch (exception& e) {
         stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
         fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
         success = false;
     }
-
-    const auto stats{ StateStats(session.mTopology->GetCurrentState()) };
-    OLOG(info, common) << stats.tasksString();
-    OLOG(info, common) << stats.collectionsString();
 
     return success;
 }
@@ -881,20 +879,18 @@ bool Controller::getState(const CommonParams& common, Error& error, const string
         return false;
     }
 
-    bool success(true);
-    auto const state(session.mTopology->GetCurrentState());
+    bool success = true;
+    auto const topoState = session.mTopology->GetCurrentState();
 
     try {
-        aggrState = aggregateStateForPath(session.mDDSTopo.get(), state, path);
+        aggrState = aggregateStateForPath(session.mDDSTopo.get(), topoState, path);
     } catch (exception& e) {
         success = false;
         fillError(common, error, ErrorCode::FairMQGetStateFailed, toString("Get state failed: ", e.what()));
     }
-    session.fillDetailedState(state, detailedState);
+    session.fillDetailedState(topoState, detailedState);
 
-    const auto stats{ StateStats(state) };
-    OLOG(info, common) << stats.tasksString();
-    OLOG(info, common) << stats.collectionsString();
+    printStateStats(common, topoState);
 
     return success;
 }
@@ -1107,7 +1103,7 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
                 OLOG(error, common) << "Following collections failed to transition to " << expectedState << " state:";
             }
             stringstream ss;
-            ss << "[" << numFailedCollections << "] state: " << collectionState;
+            ss << "  [" << numFailedCollections << "] state: " << collectionState;
 
             CollectionDetails& collectionDetails = session.getCollectionDetails(collectionId);
             failed.collections.push_back(&collectionDetails);
@@ -1362,4 +1358,41 @@ void Controller::restore(const string& id)
             OLOG(info, v.mPartitionID, 0) << "Successfully attached to the session (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
         }
     }
+}
+
+
+void Controller::printStateStats(const CommonParams& common, const TopologyState& topoState)
+{
+    std::map<DeviceState, uint64_t> taskStateCounts;
+    std::map<AggregatedState, uint64_t> collectionStateCounts;
+
+    for (const auto& ds : topoState) {
+        if (taskStateCounts.find(ds.state) == taskStateCounts.end()) {
+            taskStateCounts[ds.state] = 0;
+        }
+        taskStateCounts[ds.state]++;
+    }
+
+    auto collectionMap{ GroupByCollectionId(topoState) };
+    for (const auto& [collectionId, states] : collectionMap) {
+        AggregatedState collectionState = AggregateState(states);
+        if (collectionStateCounts.find(collectionState) == collectionStateCounts.end()) {
+            collectionStateCounts[collectionState] = 0;
+        }
+        collectionStateCounts[collectionState]++;
+    }
+
+    stringstream ss;
+    ss << "Task states:";
+    for (const auto& [state, count] : taskStateCounts) {
+        ss << " " << fair::mq::GetStateName(state) << " (" << count << "/" << topoState.size() << ")";
+    }
+    OLOG(info, common) << ss.str();
+    ss.str("");
+    ss.clear();
+    ss << "Collection states:";
+    for (const auto& [state, count] : collectionStateCounts) {
+        ss << " " << GetAggregatedStateName(state) << " (" << count << "/" << collectionMap.size() << ")";
+    }
+    OLOG(info, common) << ss.str();
 }
