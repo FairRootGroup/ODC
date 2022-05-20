@@ -50,7 +50,8 @@ enum class ErrorCode
     FairMQCreateTopologyFailed = 300,
     FairMQChangeStateFailed,
     FairMQGetStateFailed,
-    FairMQSetPropertiesFailed
+    FairMQSetPropertiesFailed,
+    FairMQWaitForStateFailed
 };
 
 struct ErrorCategory : std::error_category

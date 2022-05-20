@@ -351,7 +351,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     task.subscribedToStateChanges = false;
                     --fNumStateChangePublishers;
                 } else {
-                    OLOG(warning) << "Task '" << task.taskId << "' sent unsubscription confirmation more than once";
+                    // OLOG(debug) << "Task '" << task.taskId << "' sent unsubscription confirmation more than once";
                 }
                 lk.unlock();
                 fStateChangeSubscriptionsCV->notify_one();

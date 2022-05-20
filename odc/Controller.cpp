@@ -218,8 +218,6 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
 {
     Timer<chrono::milliseconds> timer;
     auto& session = getOrCreateSession(common);
-    // Activate DDS topology
-    // Create Topology
     Error error{ checkSessionIsRunning(common, ErrorCode::DDSActivateTopologyFailed) };
     if (!error.mCode) {
         try {
@@ -233,7 +231,8 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
         if (!error.mCode) {
             activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
                 && createDDSTopology(common, error, session.mTopoFilePath)
-                && createTopology(common, error, session.mTopoFilePath);
+                && createTopology(common, error, session.mTopoFilePath)
+                && waitForState(common, error, DeviceState::Idle, "");
         }
     }
     AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
@@ -290,6 +289,7 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
             && activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::UPDATE)
             && createDDSTopology(common, error, session.mTopoFilePath)
             && createTopology(common, error, session.mTopoFilePath)
+            && waitForState(common, error, DeviceState::Idle, "")
             && changeStateConfigure(common, error, "", state);
     }
     execRequestTrigger("Update", common);
@@ -810,6 +810,49 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
     const auto stats{ StateStats(session.mTopology->GetCurrentState()) };
     OLOG(info, common) << stats.tasksString();
     OLOG(info, common) << stats.collectionsString();
+
+    return success;
+}
+
+bool Controller::waitForState(const CommonParams& common, Error& error, DeviceState expState, const string& path)
+{
+    auto& session = getOrCreateSession(common);
+    if (session.mTopology == nullptr) {
+        fillError(common, error, ErrorCode::FairMQWaitForStateFailed, "FairMQ topology is not initialized");
+        return false;
+    }
+
+    OLOG(info, common) << "Waiting for the topology to reach " << expState << " state.";
+
+    bool success = false;
+
+    try {
+        error_code errorCode = session.mTopology->WaitForState(expState, path, requestTimeout(common));
+
+        success = !errorCode;
+        if (!success) {
+            auto failed = stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
+            success = attemptStateChangeRecovery(failed, session, common);
+            if (!success) {
+                switch (static_cast<ErrorCode>(errorCode.value())) {
+                    case ErrorCode::OperationTimeout:
+                        fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", expState, " state"));
+                        break;
+                    default:
+                        fillError(common, error, ErrorCode::FairMQWaitForStateFailed, toString("Failed waiting for ", expState, " state: ", errorCode.message()));
+                        break;
+                }
+            }
+        }
+
+        if (success) {
+            OLOG(info, common) << "Topology state is now " << expState;
+        }
+    } catch (exception& e) {
+        stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
+        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Wait for state failed: ", e.what()));
+        success = false;
+    }
 
     return success;
 }

@@ -217,6 +217,7 @@ class Controller
     bool changeState(const CommonParams& common, Error& error, TopologyTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool changeStateConfigure(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool changeStateReset(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool waitForState(const CommonParams& common, Error& error, DeviceState expState, const std::string& path);
 
     bool getState(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
 
