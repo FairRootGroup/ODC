@@ -26,12 +26,10 @@ int main(int argc, char** argv)
 {
     try {
         string host;
-        ESeverity gRPCSeverity = ESeverity::info;
         CliHelper::BatchOptions batchOptions;
         bool batch;
 
         bpo::options_description options("grpc-client options");
-        options.add_options()("severity", bpo::value<ESeverity>(&gRPCSeverity)->default_value(ESeverity::info), "gRPC verbosity (inf/dbg/err)");
         options.add_options()("help,h", "Print help");
         options.add_options()("version,v", "Print version");
         options.add_options()("host", boost::program_options::value<std::string>(&host)->default_value("localhost:50051"), "Server address");

@@ -6,11 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-//
-// This file contains a number of helpers to calculate execution time of a function.
-//
-#ifndef ODC_TIMER
-#define ODC_TIMER
+#ifndef ODC_CORE_TIMER
+#define ODC_CORE_TIMER
 
 #include <chrono>
 
@@ -22,7 +19,7 @@ struct Timer
 {
     Timer()
         : mStart(std::chrono::system_clock::now())
-    {};
+    {}
 
     typename TimeT::rep duration() const { return std::chrono::duration_cast<TimeT>(std::chrono::system_clock::now() - mStart).count(); }
 
@@ -31,4 +28,4 @@ struct Timer
 };
 
 } // namespace odc::core
-#endif /*ODC_TIMER*/
+#endif /*ODC_CORE_TIMER*/

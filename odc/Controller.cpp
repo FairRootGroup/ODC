@@ -33,7 +33,7 @@ namespace bfs = boost::filesystem;
 
 RequestResult Controller::execInitialize(const CommonParams& common, const InitializeParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
 
     Error error;
     if (params.mDDSSessionID.empty()) {
@@ -65,7 +65,7 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
 
 RequestResult Controller::execSubmit(const CommonParams& common, const SubmitParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
 
     Error error;
     auto& session = getOrCreateSession(common);
@@ -215,7 +215,7 @@ void Controller::updateTopology(Session& session, const map<string, uint32_t>& a
 
 RequestResult Controller::execActivate(const CommonParams& common, const ActivateParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     auto& session = getOrCreateSession(common);
     Error error{ checkSessionIsRunning(common, ErrorCode::DDSActivateTopologyFailed) };
     if (!error.mCode) {
@@ -241,7 +241,7 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
 
 RequestResult Controller::execRun(const CommonParams& common, const InitializeParams& initializeParams, const SubmitParams& submitParams, const ActivateParams& activateParams)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     // Run request doesn't support attachment to a DDS session.
     auto& session = getOrCreateSession(common);
 
@@ -266,7 +266,7 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
 
 RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     auto& session = getOrCreateSession(common);
     AggregatedState state{ AggregatedState::Undefined };
     // Reset devices' state
@@ -297,7 +297,7 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
 
 RequestResult Controller::execShutdown(const CommonParams& common)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     Error error;
     shutdownDDSSession(common, error);
     removeSession(common);
@@ -307,7 +307,7 @@ RequestResult Controller::execShutdown(const CommonParams& common)
 
 RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     Error error;
     setProperties(common, error, params);
     execRequestTrigger("SetProperties", common);
@@ -316,7 +316,7 @@ RequestResult Controller::execSetProperties(const CommonParams& common, const Se
 
 RequestResult Controller::execGetState(const CommonParams& common, const DeviceParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     Error error;
@@ -327,7 +327,7 @@ RequestResult Controller::execGetState(const CommonParams& common, const DeviceP
 
 RequestResult Controller::execConfigure(const CommonParams& common, const DeviceParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     Error error;
@@ -338,7 +338,7 @@ RequestResult Controller::execConfigure(const CommonParams& common, const Device
 
 RequestResult Controller::execStart(const CommonParams& common, const DeviceParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     Error error;
@@ -349,7 +349,7 @@ RequestResult Controller::execStart(const CommonParams& common, const DevicePara
 
 RequestResult Controller::execStop(const CommonParams& common, const DeviceParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     Error error;
@@ -360,7 +360,7 @@ RequestResult Controller::execStop(const CommonParams& common, const DeviceParam
 
 RequestResult Controller::execReset(const CommonParams& common, const DeviceParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     Error error;
@@ -371,7 +371,7 @@ RequestResult Controller::execReset(const CommonParams& common, const DevicePara
 
 RequestResult Controller::execTerminate(const CommonParams& common, const DeviceParams& params)
 {
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     Error error;
@@ -383,7 +383,7 @@ RequestResult Controller::execTerminate(const CommonParams& common, const Device
 StatusRequestResult Controller::execStatus(const StatusParams& params)
 {
     lock_guard<mutex> lock(mSessionsMtx);
-    Timer<chrono::milliseconds> timer;
+    Timer timer;
     StatusRequestResult result;
     for (const auto& v : mSessions) {
         const auto& info{ v.second };

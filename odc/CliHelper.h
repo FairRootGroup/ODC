@@ -220,8 +220,8 @@ class CliHelper
         }
     }
 
-    template<typename... RequestParams_t>
-    static void parseOptions(const boost::program_options::variables_map& /*vm*/, RequestParams_t&&... /*params*/)
+    template<typename... RequestParams>
+    static void parseOptions(const boost::program_options::variables_map& /*vm*/, RequestParams&&... /*params*/)
     {} // Default implementation does nothing
 
     static void parseOptions(const boost::program_options::variables_map& vm, SetPropertiesParams& params)
