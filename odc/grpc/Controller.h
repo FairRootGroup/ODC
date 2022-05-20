@@ -388,9 +388,9 @@ class Controller final
     }
 
     template<typename Request>
-    void logCommonRequest(const std::string& msg, const std::string& client, const core::CommonParams& common, const Request* req)
+    void logCommonRequest(const std::string& label, const std::string& client, const core::CommonParams& common, const Request* req)
     {
-        OLOG(info, common) << msg << " request from " << client << ": "
+        OLOG(info, common) << label << " request from " << client << ": "
             << "partitionId: " << req->partitionid()
             << ", runnr: "     << req->runnr()
             << ", timeout: "   << req->timeout();
@@ -400,12 +400,12 @@ class Controller final
     {
         std::stringstream ss;
         ss << label << " reply: "
-           << ", partitionId: " << rep.partitionid()
-           << ", runnr: "       << rep.runnr()
-           << ", sessionid: "   << rep.sessionid()
-           << ", state: "       << rep.state()
-           << ", msg: "         << rep.msg()
-           << ", exectime: "    << rep.exectime() << "ms";
+           << "partitionId: " << rep.partitionid()
+           << ", runnr: "     << rep.runnr()
+           << ", sessionid: " << rep.sessionid()
+           << ", state: "     << rep.state()
+           << ", msg: "       << rep.msg()
+           << ", exectime: "  << rep.exectime() << "ms";
 
         if (rep.status() == odc::ReplyStatus::ERROR) {
             ss << ", ERROR: " << rep.error().msg() << " (" << rep.error().code() << ") ";

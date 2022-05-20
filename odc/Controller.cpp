@@ -716,7 +716,7 @@ void Controller::extractNmin(const CommonParams& common, const string& topologyF
 
     OLOG(info, common) << "Groups:";
     for (const auto& [group, nmin] : session.mNinfo) {
-        OLOG(info, common) << "Group " << group
+        OLOG(info, common) << "  name: " << group
                            << ", n (original): " << nmin.nOriginal
                            << ", n (current): " << nmin.nCurrent
                            << ", n (minimum): " << nmin.nMin
@@ -776,12 +776,13 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
     bool success = true;
 
     try {
-        const auto [errorCode, fmqTopoState] = session.mTopology->ChangeState(transition, path, requestTimeout(common));
+        auto [errorCode, fmqTopoState] = session.mTopology->ChangeState(transition, path, requestTimeout(common));
 
         success = !errorCode;
         if (!success) {
             auto failed = stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
             success = attemptStateChangeRecovery(failed, session, common);
+            fmqTopoState = session.mTopology->GetCurrentState();
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -1128,11 +1129,6 @@ bool Controller::attemptStateChangeRecovery(FailedTasksCollections& failed, Sess
         // mark all tasks in the failed collections as failed and set them to be ignored for further actions
         session.mTopology->IgnoreFailedCollections(failed.collections);
 
-        // destroy Topology
-        // OLOG(info, common) << "Resetting Topology...";
-        // session.mTopology.reset();
-        // OLOG(info, common) << "Done!";
-
         // shutdown agents responsible for failed collections (https://github.com/FairRootGroup/DDS/blob/master/dds-tools-lib/tests/TestSession.cpp#L632)
 
         using namespace dds::tools_api;
@@ -1177,69 +1173,6 @@ bool Controller::attemptStateChangeRecovery(FailedTasksCollections& failed, Sess
             OLOG(error, common) << "Failed updating nubmer of slots: " << e.what();
             return false;
         }
-
-        // create new DDS topology with updated n = remaining collections
-
-        // OLOG(info, common) << "Updating current topology file (" << session.mTopoFilePath << ") to reflect the reduced number of groups";
-
-        // CTopoCreator creator;
-        // creator.getMainGroup()->initFromXML(session.mTopoFilePath);
-        // auto groups = creator.getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
-        // for (const auto& group : groups) {
-        //     CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
-        //     try {
-        //         uint64_t failedCount = failedCollectionsCount.at(g->getName());
-        //         uint64_t n = session.mNinfo.at(g->getName()).nCurrent;
-        //         uint64_t remainingCount = n - failedCount;
-        //         g->setN(remainingCount);
-        //     } catch (out_of_range&) {
-        //         continue;
-        //     }
-        // }
-
-        // string name("topo_" + session.mPartitionID + "_reduced.xml");
-        // const bfs::path tmpPath{ bfs::temp_directory_path() / bfs::unique_path() };
-        // bfs::create_directories(tmpPath);
-        // const bfs::path filepath{ tmpPath / name };
-        // creator.save(filepath.string());
-
-        // // re-add the nmin variables
-        // CTopoVars vars;
-        // vars.initFromXML(filepath.string());
-        // for (const auto& [groupName, groupInfo] : session.mNinfo) {
-        //     string varName("odc_nmin_" + groupName);
-        //     vars.add(varName, std::to_string(groupInfo.nMin));
-        // }
-        // vars.saveToXML(filepath.string());
-
-        // OLOG(info, common) << "Saved updated topology file as " << filepath.string();
-
-        // session.mTopoFilePath = filepath.string();
-
-        // // issue DDS topology update
-        // Error error;
-        // // if (!activateDDSTopology(common, error, session.mTopoFilePath, STopologyRequest::request_t::EUpdateType::UPDATE)) {
-        // //     OLOG(error, common) << "Failed to update running topology";
-        // //     return false;
-        // // }
-
-        // // update dds::topology_api::CTopology
-        // if (!createDDSTopology(common, error, session.mTopoFilePath)) {
-        //     OLOG(error, common) << "Failed to reinitialize dds::topology_api::CTopology";
-        //     return false;
-        // }
-
-        // // update odc::core::Topology
-        // if (!createTopology(common, error, session.mTopoFilePath)) {
-        //     OLOG(error, common) << "Failed recreate Topology";
-        //     return false;
-        // }
-
-        // if (error.mCode) {
-        //     OLOG(error, common) << "Recovery failed";
-        //     fillError(common, error, ErrorCode::TopologyFailed, "Recovery of the remaining collections failed");
-        //     return false;
-        // }
 
         return true;
     }
