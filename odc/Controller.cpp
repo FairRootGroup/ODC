@@ -227,7 +227,9 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     if (!error.mCode) {
         try {
             if (sessionInfo.mTopoFilePath.empty()) {
-                sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
+                sessionInfo.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile,
+                                                                 params.mDDSTopologyContent,
+                                                                 params.mDDSTopologyScript);
                 extractNmin(common, sessionInfo.mTopoFilePath);
             }
         } catch (exception& e) {
@@ -256,11 +258,19 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
     } else {
         error = execInitialize(common, initializeParams).mError;
         if (!error.mCode) {
-            sessionInfo.mTopoFilePath = topoFilepath(common, activateParams.mDDSTopologyFile, activateParams.mDDSTopologyContent, activateParams.mDDSTopologyScript);
-            extractNmin(common, sessionInfo.mTopoFilePath);
-            error = execSubmit(common, submitParams).mError;
+            try {
+                sessionInfo.mTopoFilePath = topoFilepath(common, activateParams.mDDSTopologyFile,
+                                                                 activateParams.mDDSTopologyContent,
+                                                                 activateParams.mDDSTopologyScript);
+                extractNmin(common, sessionInfo.mTopoFilePath);
+            } catch (exception& e) {
+                fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+            }
             if (!error.mCode) {
-                error = execActivate(common, activateParams).mError;
+                error = execSubmit(common, submitParams).mError;
+                if (!error.mCode) {
+                    error = execActivate(common, activateParams).mError;
+                }
             }
         }
     }
