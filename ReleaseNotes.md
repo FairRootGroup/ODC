@@ -1,10 +1,11 @@
 # ODC Release Notes
 
-## 0.71.0 (**not yet released**)
+## 0.71.0 (2022-05-20)
 
-- Add 'ignored' task status to log & grpc reply.
 - Fail earlier for devices that fail between state transitions.
 - Fix tasks incorrectly being labeled as failed during nMin handling.
+- Honor nMin during activation.
+- Add 'ignored' task status to log & grpc reply.
 - Reduce log verbosity during activation.
 - Split longer log entries into multiple.
 - Add host/node info to `GetState --detailed` gRPC response and log.
