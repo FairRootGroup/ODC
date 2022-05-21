@@ -18,6 +18,8 @@
 #include <grpcpp/grpcpp.h>
 #include <odc/grpc/odc.grpc.pb.h>
 
+#include <boost/algorithm/string/split.hpp>
+
 #include <cassert>
 #include <numeric>
 #include <sstream>
@@ -83,9 +85,19 @@ class Controller final
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         logCommonRequest("Activate", client, common, req);
-        OLOG(info, common) << "Activate request topology: " << req->topology();
-        OLOG(info, common) << "Activate request content: "  << req->content();
-        OLOG(info, common) << "Activate request script: "   << req->script();
+        OLOG(info, common) << "Activate request topology file: " << req->topology();
+        OLOG(info, common) << "Activate request topology content: "  << req->content();
+        if (req->script().empty()) {
+            OLOG(info, common) << "Run request topology script: " << req->script();
+        } else {
+            OLOG(info, common) << "Run request topology script (split by ' '):";
+            std::vector<std::string> parts;
+            boost::split(parts, req->script(), boost::is_any_of(" "));
+            for (const auto& part : parts) {
+                OLOG(info, common) << part;
+            }
+            OLOG(info, common) << "Run request END OF TOPOLOGY SCRIPT";
+        }
 
         core::ActivateParams activateParams{ req->topology(), req->content(), req->script() };
         core::RequestResult res{ mController.execActivate(common, activateParams) };
@@ -105,9 +117,19 @@ class Controller final
 
         logCommonRequest("Run", client, common, req);
         OLOG(info, common) << "Run request plugin: "   << req->plugin() << ", resources: "   << req->resources();
-        OLOG(info, common) << "Run request topology: " << req->topology();
-        OLOG(info, common) << "Run request content: "  << req->content();
-        OLOG(info, common) << "Run request script: "   << req->script();
+        OLOG(info, common) << "Run request topology file: " << req->topology();
+        OLOG(info, common) << "Run request topology content: "  << req->content();
+        if (req->script().empty()) {
+            OLOG(info, common) << "Run request topology script: " << req->script();
+        } else {
+            OLOG(info, common) << "Run request topology script (split by ' '):";
+            std::vector<std::string> parts;
+            boost::split(parts, req->script(), boost::is_any_of(" "));
+            for (const auto& part : parts) {
+                OLOG(info, common) << part;
+            }
+            OLOG(info, common) << "Run request END OF TOPOLOGY SCRIPT";
+        }
 
         core::InitializeParams initializeParams{ "" };
         core::SubmitParams submitParams{ req->plugin(), req->resources() };

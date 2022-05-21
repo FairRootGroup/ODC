@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## 0.72.0 (not yet released)
+
+- Split the log output of the topology generation script provided via gRPC request on new lines.
+
 ## 0.71.0 (2022-05-20)
 
 - Fail earlier for devices that fail between state transitions.
