@@ -62,6 +62,8 @@ set(CMAKE_CXX_FLAGS_DEBUG          "-Og -g ${_warnings}")
 set(CMAKE_CXX_FLAGS_RELEASE        "-O2 -DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g ${_warnings} -DNDEBUG")
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+
 find_package(FairCMakeModules 1.0.0 REQUIRED QUIET)
 include(FairFindPackage2) # for find_package2
 
