@@ -616,7 +616,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
 
         // We are not interested in stopped tasks
         if (res.m_activated) {
-            TaskDetails task{res.m_agentID, res.m_slotID, res.m_taskID, res.m_path, res.m_host, res.m_wrkDir};
+            TaskDetails task{res.m_agentID, res.m_slotID, res.m_taskID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir};
             session.addTaskDetails(move(task));
 
             if (res.m_collectionID > 0) {
@@ -775,7 +775,7 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopologyT
         return false;
     }
 
-    auto it{ gExpectedState.find(transition) };
+    auto it = gExpectedState.find(transition);
     DeviceState expState{ it != gExpectedState.end() ? it->second : DeviceState::Undefined };
     if (expState == DeviceState::Undefined) {
         fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Unexpected FairMQ transition ", transition));

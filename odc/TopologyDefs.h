@@ -235,18 +235,20 @@ using Duration = std::chrono::microseconds;
 
 struct TaskDetails
 {
-    uint64_t mAgentID = 0; ///< Agent ID
-    uint64_t mSlotID = 0;  ///< Slot ID
-    uint64_t mTaskID = 0;  ///< Task ID, 0 if not assigned
-    std::string mPath;     ///< Path in the topology
-    std::string mHost;     ///< Hostname
-    std::string mWrkDir;   ///< Wrk directory
+    uint64_t mAgentID = 0;       ///< Agent ID
+    uint64_t mSlotID = 0;        ///< Slot ID
+    uint64_t mTaskID = 0;        ///< Task ID
+    uint64_t mCollectionID = 0;  ///< Collection ID, 0 if not assigned
+    std::string mPath;           ///< Path in the topology
+    std::string mHost;           ///< Hostname
+    std::string mWrkDir;         ///< Wrk directory
 
     friend std::ostream& operator<<(std::ostream& os, const TaskDetails& td)
     {
         return os << "agentID: " << td.mAgentID
                   << ", slotID: " << td.mSlotID
                   << ", taskID: " << td.mTaskID
+                  << ", collectionID: " << td.mCollectionID
                   << ", path: " << td.mPath
                   << ", host: " << td.mHost
                   << ", wrkDir: " << td.mWrkDir;
@@ -255,12 +257,12 @@ struct TaskDetails
 
 struct CollectionDetails
 {
-    uint64_t mAgentID = 0; ///< Agent ID
-    uint64_t mSlotID = 0;  ///< Slot ID
-    uint64_t mCollectionID = 0;  ///< Task/Collection ID, 0 if not assigned
-    std::string mPath;     ///< Path in the topology
-    std::string mHost;     ///< Hostname
-    std::string mWrkDir;   ///< Wrk directory
+    uint64_t mAgentID = 0;       ///< Agent ID
+    uint64_t mSlotID = 0;        ///< Slot ID
+    uint64_t mCollectionID = 0;  ///< Collection ID
+    std::string mPath;           ///< Path in the topology
+    std::string mHost;           ///< Hostname
+    std::string mWrkDir;         ///< Wrk directory
 
     friend std::ostream& operator<<(std::ostream& os, const CollectionDetails& cd)
     {
@@ -271,6 +273,20 @@ struct CollectionDetails
                   << ", host: " << cd.mHost
                   << ", wrkDir: " << cd.mWrkDir;
     }
+};
+
+struct TopoGroupInfo
+{
+    uint64_t nOriginal;
+    uint64_t nCurrent;
+    uint64_t nMin;
+    std::string agentGroup;
+};
+
+struct FailedTasksCollections
+{
+    std::vector<TaskDetails*> tasks;
+    std::vector<CollectionDetails*> collections;
 };
 
 } // namespace odc::core

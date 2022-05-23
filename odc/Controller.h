@@ -22,20 +22,6 @@
 namespace odc::core
 {
 
-struct TopoGroupInfo
-{
-    uint64_t nOriginal;
-    uint64_t nCurrent;
-    uint64_t nMin;
-    std::string agentGroup;
-};
-
-struct FailedTasksCollections
-{
-    std::vector<TaskDetails*> tasks;
-    std::vector<CollectionDetails*> collections;
-};
-
 class Controller
 {
   public:
