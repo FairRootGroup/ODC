@@ -28,16 +28,16 @@
 namespace odc::core
 {
 
-using ChangeStateCompletionSignature = void(std::error_code, TopologyState);
+using ChangeStateCompletionSignature = void(std::error_code, TopoState);
 
 template<typename Executor, typename Allocator>
 struct ChangeStateOp
 {
     template<typename Handler>
     ChangeStateOp(uint64_t id,
-                  const TopologyTransition transition,
+                  const TopoTransition transition,
                   std::vector<DDSTask> tasks,
-                  TopologyState& stateData,
+                  TopoState& stateData,
                   Duration timeout,
                   std::mutex& mutex,
                   Executor const& ex,
@@ -74,7 +74,7 @@ struct ChangeStateOp
     ~ChangeStateOp() = default;
 
     /// precondition: fMtx is locked.
-    void ResetCount(const TopologyStateIndex& stateIndex, const TopologyState& stateData)
+    void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
     {
         fCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
             const auto& task = stateData.at(s.second);
@@ -143,7 +143,7 @@ struct ChangeStateOp
   private:
     const uint64_t fId;
     AsioAsyncOp<Executor, Allocator, ChangeStateCompletionSignature> fOp;
-    TopologyState& fStateData;
+    TopoState& fStateData;
     boost::asio::steady_timer fTimer;
     unsigned int fCount;
     std::vector<DDSTask> fTasks;

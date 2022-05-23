@@ -178,13 +178,13 @@ struct GetPropertiesResult
     FailedDevices failed;
 };
 
-using TopologyState = std::vector<DeviceStatus>;
-using TopologyStateIndex = std::unordered_map<DDSTask::Id, int>; //  task id -> index in the data vector
-using TopologyStateByTask = std::unordered_map<DDSTask::Id, DeviceStatus>;
-using TopologyStateByCollection = std::unordered_map<DDSCollection::Id, std::vector<DeviceStatus>>;
-using TopologyTransition = fair::mq::Transition;
+using TopoState = std::vector<DeviceStatus>;
+using TopoStateIndex = std::unordered_map<DDSTask::Id, int>; //  task id -> index in the data vector
+using TopoStateByTask = std::unordered_map<DDSTask::Id, DeviceStatus>;
+using TopoStateByCollection = std::unordered_map<DDSCollection::Id, std::vector<DeviceStatus>>;
+using TopoTransition = fair::mq::Transition;
 
-inline AggregatedState AggregateState(const TopologyState& topoState)
+inline AggregatedState AggregateState(const TopoState& topoState)
 {
     AggregatedState state = AggregatedState::Mixed;
     // get the state of a first not-ignored device
@@ -207,11 +207,11 @@ inline AggregatedState AggregateState(const TopologyState& topoState)
     return AggregatedState::Mixed;
 }
 
-inline bool StateEqualsTo(const TopologyState& topologyState, DeviceState state) { return AggregateState(topologyState) == static_cast<AggregatedState>(state); }
+inline bool StateEqualsTo(const TopoState& topoState, DeviceState state) { return AggregateState(topoState) == static_cast<AggregatedState>(state); }
 
-inline TopologyStateByCollection GroupByCollectionId(const TopologyState& topoState)
+inline TopoStateByCollection GroupByCollectionId(const TopoState& topoState)
 {
-    TopologyStateByCollection state;
+    TopoStateByCollection state;
     for (const auto& ds : topoState) {
         if (ds.collectionId != 0) {
             state[ds.collectionId].push_back(ds);
@@ -221,9 +221,9 @@ inline TopologyStateByCollection GroupByCollectionId(const TopologyState& topoSt
     return state;
 }
 
-inline TopologyStateByTask GroupByTaskId(const TopologyState& topoState)
+inline TopoStateByTask GroupByTaskId(const TopoState& topoState)
 {
-    TopologyStateByTask state;
+    TopoStateByTask state;
     for (const auto& ds : topoState) {
         state[ds.taskId] = ds;
     }

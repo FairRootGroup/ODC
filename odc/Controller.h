@@ -59,7 +59,7 @@ class Controller
             return it->second;
         }
 
-        void fillDetailedState(const TopologyState& topoState, DetailedState* detailedState)
+        void fillDetailedState(const TopoState& topoState, DetailedState* detailedState)
         {
             if (detailedState == nullptr) {
                 return;
@@ -200,7 +200,7 @@ class Controller
     bool createTopology(const CommonParams& common, Error& error, const std::string& topologyFile);
     bool createDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile);
     bool setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params);
-    bool changeState(const CommonParams& common, Error& error, TopologyTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool changeState(const CommonParams& common, Error& error, TopoTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool changeStateConfigure(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool changeStateReset(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool waitForState(const CommonParams& common, Error& error, DeviceState expState, const std::string& path);
@@ -210,14 +210,14 @@ class Controller
     void fillError(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
 
-    AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, const std::string& path);
+    AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopoState& topoState, const std::string& path);
 
     Session& getOrCreateSession(const CommonParams& common);
     void removeSession(const CommonParams& common);
 
     Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
 
-    FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, Session& session);
+    FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, const TopoState& topoState, DeviceState expectedState, Session& session);
     bool attemptStateChangeRecovery(FailedTasksCollections& failed, Session& session, const CommonParams& common);
     void attemptSubmitRecovery(Session& session, const std::vector<DDSSubmit::Params>& ddsParams, const std::map<std::string, uint32_t>& agentCounts, Error& error, const CommonParams& common);
     void updateTopology(Session& session, const std::map<std::string, uint32_t>& agentCounts, const CommonParams& common);
@@ -232,7 +232,7 @@ class Controller
     dds::tools_api::SAgentInfoRequest::responseVector_t getAgentInfo(Session& session, const CommonParams& common) const;
     void extractNmin(const CommonParams& common, const std::string& topologyFile);
 
-    void printStateStats(const CommonParams& common, const TopologyState& topoState);
+    void printStateStats(const CommonParams& common, const TopoState& topoState);
 };
 
 } // namespace odc::core

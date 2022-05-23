@@ -74,7 +74,7 @@ struct WaitForStateOp
     ~WaitForStateOp() = default;
 
     /// precondition: fMtx is locked.
-    void ResetCount(const TopologyStateIndex& stateIndex, const TopologyState& stateData)
+    void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
     {
         fCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
             const auto& task = stateData.at(s.second);

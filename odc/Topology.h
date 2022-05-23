@@ -442,9 +442,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// With lambda:
     /// @code
     /// topo.AsyncChangeState(
-    ///     odc::core::TopologyTransition::InitDevice,
+    ///     odc::core::TopoTransition::InitDevice,
     ///     std::chrono::milliseconds(500),
-    ///     [](std::error_code ec, odc::core::TopologyState state) {
+    ///     [](std::error_code ec, odc::core::TopoState state) {
     ///         if (!ec) {
     ///             // success
     ///          } else if (ec.category().name() == "fairmq") {
@@ -463,11 +463,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @endcode
     /// With future:
     /// @code
-    /// auto fut = topo.AsyncChangeState(odc::core::TopologyTransition::InitDevice,
+    /// auto fut = topo.AsyncChangeState(odc::core::TopoTransition::InitDevice,
     ///                                  std::chrono::milliseconds(500),
     ///                                  boost::asio::use_future);
     /// try {
-    ///     odc::core::TopologyState state = fut.get();
+    ///     odc::core::TopoState state = fut.get();
     ///     // success
     /// } catch (const std::system_error& ex) {
     ///     auto ec(ex.code());
@@ -487,8 +487,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// With coroutine (C++20, see https://en.cppreference.com/w/cpp/language/coroutines):
     /// @code
     /// try {
-    ///     odc::core::TopologyState state = co_await
-    ///         topo.AsyncChangeState(odc::core::TopologyTransition::InitDevice,
+    ///     odc::core::TopoState state = co_await
+    ///         topo.AsyncChangeState(odc::core::TopoTransition::InitDevice,
     ///                               std::chrono::milliseconds(500),
     ///                               boost::asio::use_awaitable);
     ///     // success
@@ -508,7 +508,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// }
     /// @endcode
     template<typename CompletionToken>
-    auto AsyncChangeState(const TopologyTransition transition, const std::string& path, Duration timeout, CompletionToken&& token)
+    auto AsyncChangeState(const TopoTransition transition, const std::string& path, Duration timeout, CompletionToken&& token)
     {
         return boost::asio::async_initiate<CompletionToken, ChangeStateCompletionSignature>(
             [&](auto handler) {
@@ -553,7 +553,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @tparam CompletionToken Asio completion token type
     /// @throws std::system_error
     template<typename CompletionToken>
-    auto AsyncChangeState(const TopologyTransition transition, CompletionToken&& token)
+    auto AsyncChangeState(const TopoTransition transition, CompletionToken&& token)
     {
         return AsyncChangeState(transition, "", Duration(0), std::move(token));
     }
@@ -565,7 +565,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @tparam CompletionToken Asio completion token type
     /// @throws std::system_error
     template<typename CompletionToken>
-    auto AsyncChangeState(const TopologyTransition transition, Duration timeout, CompletionToken&& token)
+    auto AsyncChangeState(const TopoTransition transition, Duration timeout, CompletionToken&& token)
     {
         return AsyncChangeState(transition, "", timeout, std::move(token));
     }
@@ -577,7 +577,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @tparam CompletionToken Asio completion token type
     /// @throws std::system_error
     template<typename CompletionToken>
-    auto AsyncChangeState(const TopologyTransition transition, const std::string& path, CompletionToken&& token)
+    auto AsyncChangeState(const TopoTransition transition, const std::string& path, CompletionToken&& token)
     {
         return AsyncChangeState(transition, path, Duration(0), std::move(token));
     }
@@ -587,12 +587,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param path Select a subset of FairMQ devices in this topology, empty selects all
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    std::pair<std::error_code, TopologyState> ChangeState(const TopologyTransition transition, const std::string& path = "", Duration timeout = Duration(0))
+    std::pair<std::error_code, TopoState> ChangeState(const TopoTransition transition, const std::string& path = "", Duration timeout = Duration(0))
     {
         SharedSemaphore blocker;
         std::error_code ec;
-        TopologyState state;
-        AsyncChangeState(transition, path, timeout, [&, blocker](std::error_code _ec, TopologyState _state) mutable {
+        TopoState state;
+        AsyncChangeState(transition, path, timeout, [&, blocker](std::error_code _ec, TopoState _state) mutable {
             ec = _ec;
             state = _state;
             blocker.Signal();
@@ -605,11 +605,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param transition FairMQ device state machine transition
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    std::pair<std::error_code, TopologyState> ChangeState(const TopologyTransition transition, Duration timeout) { return ChangeState(transition, "", timeout); }
+    std::pair<std::error_code, TopoState> ChangeState(const TopoTransition transition, Duration timeout) { return ChangeState(transition, "", timeout); }
 
     /// @brief Returns the current state of the topology
     /// @return map of id : DeviceStatus
-    TopologyState GetCurrentState() const
+    TopoState GetCurrentState() const
     {
         std::lock_guard<std::mutex> lk(*fMtx);
         return fStateData;
@@ -853,8 +853,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
     dds::topology_api::CTopology fDDSTopo;
     dds::tools_api::SOnTaskDoneRequest::ptr_t fDDSOnTaskDoneRequest;
-    TopologyState fStateData;
-    TopologyStateIndex fStateIndex;
+    TopoState fStateData;
+    TopoStateIndex fStateIndex;
 
     mutable std::unique_ptr<std::mutex> fMtx;
 
@@ -883,7 +883,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
     /// precodition: fMtx is locked.
-    TopologyState GetCurrentStateUnsafe() const { return fStateData; }
+    TopoState GetCurrentStateUnsafe() const { return fStateData; }
 };
 
 using Topology = BasicTopology<DefaultExecutor, DefaultAllocator>;

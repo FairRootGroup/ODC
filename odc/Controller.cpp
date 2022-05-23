@@ -352,7 +352,7 @@ RequestResult Controller::execStart(const CommonParams& common, const DevicePara
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     Error error;
-    changeState(common, error, TopologyTransition::Run, params.mPath, state, detailedState.get());
+    changeState(common, error, TopoTransition::Run, params.mPath, state, detailedState.get());
     execRequestTrigger("Start", common);
     return createRequestResult(common, error, "Start done", timer.duration(), state, move(detailedState));
 }
@@ -363,7 +363,7 @@ RequestResult Controller::execStop(const CommonParams& common, const DeviceParam
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     Error error;
-    changeState(common, error, TopologyTransition::Stop, params.mPath, state, detailedState.get());
+    changeState(common, error, TopoTransition::Stop, params.mPath, state, detailedState.get());
     execRequestTrigger("Stop", common);
     return createRequestResult(common, error, "Stop done", timer.duration(), state, move(detailedState));
 }
@@ -385,7 +385,7 @@ RequestResult Controller::execTerminate(const CommonParams& common, const Device
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     Error error;
-    changeState(common, error, TopologyTransition::End, params.mPath, state, detailedState.get());
+    changeState(common, error, TopoTransition::End, params.mPath, state, detailedState.get());
     execRequestTrigger("Terminate", common);
     return createRequestResult(common, error, "Terminate done", timer.duration(), state, move(detailedState));
 }
@@ -767,7 +767,7 @@ bool Controller::createTopology(const CommonParams& common, Error& error, const 
     return session.mTopology != nullptr;
 }
 
-bool Controller::changeState(const CommonParams& common, Error& error, TopologyTransition transition, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
+bool Controller::changeState(const CommonParams& common, Error& error, TopoTransition transition, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
 {
     auto& session = getOrCreateSession(common);
     if (session.mTopology == nullptr) {
@@ -867,17 +867,17 @@ bool Controller::waitForState(const CommonParams& common, Error& error, DeviceSt
 
 bool Controller::changeStateConfigure(const CommonParams& common, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
 {
-    return changeState(common, error, TopologyTransition::InitDevice,   path, aggrState, detailedState)
-        && changeState(common, error, TopologyTransition::CompleteInit, path, aggrState, detailedState)
-        && changeState(common, error, TopologyTransition::Bind,         path, aggrState, detailedState)
-        && changeState(common, error, TopologyTransition::Connect,      path, aggrState, detailedState)
-        && changeState(common, error, TopologyTransition::InitTask,     path, aggrState, detailedState);
+    return changeState(common, error, TopoTransition::InitDevice,   path, aggrState, detailedState)
+        && changeState(common, error, TopoTransition::CompleteInit, path, aggrState, detailedState)
+        && changeState(common, error, TopoTransition::Bind,         path, aggrState, detailedState)
+        && changeState(common, error, TopoTransition::Connect,      path, aggrState, detailedState)
+        && changeState(common, error, TopoTransition::InitTask,     path, aggrState, detailedState);
 }
 
 bool Controller::changeStateReset(const CommonParams& common, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
 {
-    return changeState(common, error, TopologyTransition::ResetTask,   path, aggrState, detailedState)
-        && changeState(common, error, TopologyTransition::ResetDevice, path, aggrState, detailedState);
+    return changeState(common, error, TopoTransition::ResetTask,   path, aggrState, detailedState)
+        && changeState(common, error, TopoTransition::ResetDevice, path, aggrState, detailedState);
 }
 
 bool Controller::getState(const CommonParams& common, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
@@ -950,7 +950,7 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
     return success;
 }
 
-AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopologyState& topoState, const string& path)
+AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopoState& topoState, const string& path)
 {
     if (path.empty())
         return AggregateState(topoState);
@@ -964,7 +964,7 @@ AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopo
 
         // Throws if task not found for path
         const auto& task{ ddsTopo->getRuntimeTask(path) };
-        auto it{ find_if(topoState.cbegin(), topoState.cend(), [&](const TopologyState::value_type& v) { return v.taskId == task.m_taskId; }) };
+        auto it{ find_if(topoState.cbegin(), topoState.cend(), [&](const TopoState::value_type& v) { return v.taskId == task.m_taskId; }) };
         if (it != topoState.cend())
             return static_cast<AggregatedState>(it->state);
 
@@ -983,7 +983,7 @@ AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopo
             throw runtime_error("No tasks found matching the path " + path);
 
         // Find a state of a first task
-        auto firstIt{ find_if(topoState.cbegin(), topoState.cend(), [&](const TopologyState::value_type& v) {
+        auto firstIt{ find_if(topoState.cbegin(), topoState.cend(), [&](const TopoState::value_type& v) {
             return v.taskId == *(taskIds.begin());
         }) };
         if (firstIt == topoState.cend()) {
@@ -992,7 +992,7 @@ AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopo
 
         // Check that all selected devices have the same state
         AggregatedState first{ static_cast<AggregatedState>(firstIt->state) };
-        if (all_of(topoState.cbegin(), topoState.cend(), [&](const TopologyState::value_type& v) {
+        if (all_of(topoState.cbegin(), topoState.cend(), [&](const TopoState::value_type& v) {
                 return (taskIds.count(v.taskId) > 0) ? v.state == first : true;
             })) {
             return first;
@@ -1058,7 +1058,7 @@ Error Controller::checkSessionIsRunning(const CommonParams& common, ErrorCode er
     return error;
 }
 
-FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& common, const TopologyState& topoState, DeviceState expectedState, Session& session)
+FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& common, const TopoState& topoState, DeviceState expectedState, Session& session)
 {
     FailedTasksCollections failed;
 
@@ -1371,7 +1371,7 @@ void Controller::restore(const string& id)
 }
 
 
-void Controller::printStateStats(const CommonParams& common, const TopologyState& topoState)
+void Controller::printStateStats(const CommonParams& common, const TopoState& topoState)
 {
     std::map<DeviceState, uint64_t> taskStateCounts;
     std::map<AggregatedState, uint64_t> collectionStateCounts;
