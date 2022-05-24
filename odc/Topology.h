@@ -47,7 +47,7 @@ namespace odc::core
 {
 
 /**
- * @class BasicTopology Topology.h <fairmq/sdk/Topology.h>
+ * @class BasicTopology
  * @tparam Executor Associated I/O executor
  * @tparam Allocator Associated default allocator
  * @brief Represents a FairMQ topology
@@ -240,7 +240,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         using namespace std::chrono_literals;
         std::unique_lock<std::mutex> lk(*fMtx);
         auto publisherCountReached = [&]() { return fNumStateChangePublishers == number; };
-        auto count(0);
+        auto count = 0;
         constexpr auto checkInterval(50ms);
         constexpr auto maxCount(30s / checkInterval);
         while (!publisherCountReached() && fDDSSession->IsRunning() && count < maxCount) {
@@ -268,10 +268,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         // stop sending heartbeats
         fHeartbeatsTimer.cancel();
-
         // unsubscribe from state changes
         fDDSCustomCmd.send(cc::Cmds(cc::make<cc::UnsubscribeFromStateChange>()).Serialize(), "");
-
         // wait for all tasks to confirm unsubscription
         WaitForPublisherCount(0);
     }
@@ -437,82 +435,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param token Asio completion token
     /// @tparam CompletionToken Asio completion token type
     /// @throws std::system_error
-    ///
-    /// @par Usage examples
-    /// With lambda:
-    /// @code
-    /// topo.AsyncChangeState(
-    ///     odc::core::TopoTransition::InitDevice,
-    ///     std::chrono::milliseconds(500),
-    ///     [](std::error_code ec, odc::core::TopoState state) {
-    ///         if (!ec) {
-    ///             // success
-    ///          } else if (ec.category().name() == "fairmq") {
-    ///             switch (static_cast<odc::ErrorCode>(ec.value())) {
-    ///               case odc::core::ErrorCode::OperationTimeout:
-    ///                 // async operation timed out
-    ///               case odc::core::ErrorCode::OperationCanceled:
-    ///                 // async operation canceled
-    ///               case odc::core::ErrorCode::DeviceChangeStateFailed:
-    ///                 // failed to change state of a fairmq device
-    ///               default:
-    ///             }
-    ///         }
-    ///     }
-    /// );
-    /// @endcode
-    /// With future:
-    /// @code
-    /// auto fut = topo.AsyncChangeState(odc::core::TopoTransition::InitDevice,
-    ///                                  std::chrono::milliseconds(500),
-    ///                                  boost::asio::use_future);
-    /// try {
-    ///     odc::core::TopoState state = fut.get();
-    ///     // success
-    /// } catch (const std::system_error& ex) {
-    ///     auto ec(ex.code());
-    ///     if (ec.category().name() == "odc") {
-    ///         switch (static_cast<odc::core::ErrorCode>(ec.value())) {
-    ///           case odc::core::ErrorCode::OperationTimeout:
-    ///             // async operation timed out
-    ///           case odc::core::ErrorCode::OperationCanceled:
-    ///             // async operation canceled
-    ///           case odc::core::ErrorCode::DeviceChangeStateFailed:
-    ///             // failed to change state of a fairmq device
-    ///           default:
-    ///         }
-    ///     }
-    /// }
-    /// @endcode
-    /// With coroutine (C++20, see https://en.cppreference.com/w/cpp/language/coroutines):
-    /// @code
-    /// try {
-    ///     odc::core::TopoState state = co_await
-    ///         topo.AsyncChangeState(odc::core::TopoTransition::InitDevice,
-    ///                               std::chrono::milliseconds(500),
-    ///                               boost::asio::use_awaitable);
-    ///     // success
-    /// } catch (const std::system_error& ex) {
-    ///     auto ec(ex.code());
-    ///     if (ec.category().name() == "odc") {
-    ///         switch (static_cast<odc::core::ErrorCode>(ec.value())) {
-    ///           case odc::core::ErrorCode::OperationTimeout:
-    ///             // async operation timed out
-    ///           case odc::core::ErrorCode::OperationCanceled:
-    ///             // async operation canceled
-    ///           case odc::core::ErrorCode::DeviceChangeStateFailed:
-    ///             // failed to change state of a fairmq device
-    ///           default:
-    ///         }
-    ///     }
-    /// }
-    /// @endcode
     template<typename CompletionToken>
     auto AsyncChangeState(const TopoTransition transition, const std::string& path, Duration timeout, CompletionToken&& token)
     {
         return boost::asio::async_initiate<CompletionToken, ChangeStateCompletionSignature>(
             [&](auto handler) {
-                const uint64_t id(uuidHash());
+                const uint64_t id = uuidHash();
 
                 std::lock_guard<std::mutex> lk(*fMtx);
 
@@ -534,14 +462,14 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                                                        *fMtx,
                                                                        AsioBase<Executor, Allocator>::GetExecutor(),
                                                                        AsioBase<Executor, Allocator>::GetAllocator(),
-                                                                       std::move(handler)));
+                                                                       std::move(handler))
+                );
 
                 cc::Cmds cmds(cc::make<cc::ChangeState>(transition));
                 fDDSCustomCmd.send(cmds.Serialize(), path);
 
                 p.first->second.ResetCount(fStateIndex, fStateData);
-                // TODO: make sure following operation properly queues the completion and not doing it directly out
-                // of initiation call.
+                // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
                 p.first->second.TryCompletion();
             },
             token);
@@ -632,7 +560,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         return boost::asio::async_initiate<CompletionToken, WaitForStateCompletionSignature>(
             [&](auto handler) {
-                const uint64_t id(uuidHash());
+                const uint64_t id = uuidHash();
 
                 std::lock_guard<std::mutex> lk(*fMtx);
 
@@ -654,10 +582,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                                                         *fMtx,
                                                                         AsioBase<Executor, Allocator>::GetExecutor(),
                                                                         AsioBase<Executor, Allocator>::GetAllocator(),
-                                                                        std::move(handler)));
+                                                                        std::move(handler))
+                );
+
                 p.first->second.ResetCount(fStateIndex, fStateData);
-                // TODO: make sure following operation properly queues the completion and not doing it directly out
-                // of initiation call.
+                // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
                 p.first->second.TryCompletion();
             },
             token);
@@ -726,7 +655,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         return boost::asio::async_initiate<CompletionToken, GetPropertiesCompletionSignature>(
             [&](auto handler) {
-                const uint64_t id(uuidHash());
+                const uint64_t id = uuidHash();
 
                 std::lock_guard<std::mutex> lk(*fMtx);
 
@@ -738,10 +667,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 }
 
-                fGetPropertiesOps.emplace(
-                    std::piecewise_construct,
-                    std::forward_as_tuple(id),
-                    std::forward_as_tuple(id, GetTasks(path), timeout, *fMtx, AsioBase<Executor, Allocator>::GetExecutor(), AsioBase<Executor, Allocator>::GetAllocator(), std::move(handler)));
+                fGetPropertiesOps.emplace(std::piecewise_construct,
+                                          std::forward_as_tuple(id),
+                                          std::forward_as_tuple(id,
+                                          GetTasks(path),
+                                          timeout,
+                                          *fMtx,
+                                          AsioBase<Executor, Allocator>::GetExecutor(),
+                                          AsioBase<Executor, Allocator>::GetAllocator(),
+                                          std::move(handler))
+                );
 
                 cc::Cmds const cmds(cc::make<cc::GetProperties>(id, query));
                 fDDSCustomCmd.send(cmds.Serialize(), path);
@@ -791,7 +726,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         return boost::asio::async_initiate<CompletionToken, SetPropertiesCompletionSignature>(
             [&](auto handler) {
-                const uint64_t id(uuidHash());
+                const uint64_t id = uuidHash();
 
                 std::lock_guard<std::mutex> lk(*fMtx);
 
@@ -803,10 +738,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 }
 
-                fSetPropertiesOps.emplace(
-                    std::piecewise_construct,
-                    std::forward_as_tuple(id),
-                    std::forward_as_tuple(id, GetTasks(path), timeout, *fMtx, AsioBase<Executor, Allocator>::GetExecutor(), AsioBase<Executor, Allocator>::GetAllocator(), std::move(handler)));
+                fSetPropertiesOps.emplace(std::piecewise_construct,
+                                          std::forward_as_tuple(id),
+                                          std::forward_as_tuple(id,
+                                                                GetTasks(path),
+                                                                timeout,
+                                                                *fMtx,
+                                                                AsioBase<Executor, Allocator>::GetExecutor(),
+                                                                AsioBase<Executor, Allocator>::GetAllocator(),
+                                                                std::move(handler))
+                );
 
                 cc::Cmds const cmds(cc::make<cc::SetProperties>(id, props));
                 fDDSCustomCmd.send(cmds.Serialize(), path);
