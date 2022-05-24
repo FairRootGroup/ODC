@@ -173,6 +173,14 @@ void Controller::attemptSubmitRecovery(Session& session,
     if (!error.mCode) {
         session.mTotalSlots = getNumSlots(session, common);
         updateTopology(session, agentCounts, common);
+        for (auto& tgi : session.mNinfo) {
+            auto it = find_if(agentCounts.cbegin(), agentCounts.cend(), [&](const auto& ac) {
+                return ac.first == tgi.second.agentGroup;
+            });
+            if (it != agentCounts.cend()) {
+                tgi.second.nCurrent = it->second;
+            }
+        }
     }
 }
 
@@ -279,10 +287,6 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
     Timer timer;
     auto& session = getOrCreateSession(common);
     AggregatedState state{ AggregatedState::Undefined };
-    // Reset devices' state
-    // Update DDS topology
-    // Create Topology
-    // Configure devices' state
     Error error;
 
     try {
