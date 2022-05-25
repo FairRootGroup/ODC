@@ -218,7 +218,7 @@ class Controller
     Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
 
     FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, const TopoState& topoState, DeviceState expectedState, Session& session);
-    bool attemptStateChangeRecovery(FailedTasksCollections& failed, Session& session, const CommonParams& common);
+    bool attemptTopoRecovery(FailedTasksCollections& failed, Session& session, const CommonParams& common);
     void attemptSubmitRecovery(Session& session, const std::vector<DDSSubmit::Params>& ddsParams, const std::map<std::string, uint32_t>& agentCounts, Error& error, const CommonParams& common);
     void updateTopology(Session& session, const std::map<std::string, uint32_t>& agentCounts, const CommonParams& common);
 

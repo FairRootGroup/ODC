@@ -35,7 +35,7 @@ struct ChangeStateOp
 {
     template<typename Handler>
     ChangeStateOp(uint64_t id,
-                  const TopoTransition transition,
+                  TopoTransition transition,
                   std::vector<DDSTask> tasks,
                   TopoState& stateData,
                   Duration timeout,

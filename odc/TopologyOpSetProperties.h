@@ -60,12 +60,6 @@ struct SetPropertiesOp
         if (fTasks.empty()) {
             OLOG(warning) << "SetProperties initiated on an empty set of tasks, check the path argument.";
         }
-
-        fOutstandingDevices.reserve(fTasks.size());
-        for (const auto& task : fTasks) {
-            fOutstandingDevices.emplace(task.GetId());
-        }
-
         // OLOG(debug) << "SetProperties " << fId << " with expected count of " << fTasks.size() << " started.";
     }
     SetPropertiesOp() = delete;
@@ -75,6 +69,21 @@ struct SetPropertiesOp
     SetPropertiesOp& operator=(SetPropertiesOp&&) = default;
     ~SetPropertiesOp() = default;
 
+    /// precondition: fMtx is locked.
+    void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
+    {
+        fOutstandingDevices.reserve(fTasks.size());
+        for (const auto& task : fTasks) {
+            const DeviceStatus& ds = stateData.at(stateIndex.at(task.GetId()));
+            // Do not wait for an errored/exited device that is not yet ignored
+            if (ds.state == DeviceState::Error || ds.state == DeviceState::Exiting) {
+                ++fCount;
+            }
+            // but always list at as failed/outstanding
+            fOutstandingDevices.emplace(task.GetId());
+        }
+    }
+
     void Update(const DDSTask::Id taskId, cc::Result result)
     {
         std::lock_guard<std::mutex> lk(fMtx);
@@ -83,6 +92,19 @@ struct SetPropertiesOp
         }
         ++fCount;
         TryCompletion();
+    }
+
+    /// precondition: fMtx is locked.
+    void TryCompletion()
+    {
+        if (!fOp.IsCompleted() && fCount == fTasks.size()) {
+            fTimer.cancel();
+            if (!fOutstandingDevices.empty()) {
+                fOp.Complete(MakeErrorCode(ErrorCode::DeviceSetPropertiesFailed), fOutstandingDevices);
+            } else {
+                fOp.Complete(fOutstandingDevices);
+            }
+        }
     }
 
     bool IsCompleted() { return fOp.IsCompleted(); }
@@ -97,16 +119,10 @@ struct SetPropertiesOp
     std::mutex& fMtx;
 
     /// precondition: fMtx is locked.
-    void TryCompletion()
+    bool ContainsTask(DDSTask::Id id)
     {
-        if (!fOp.IsCompleted() && fCount == fTasks.size()) {
-            fTimer.cancel();
-            if (!fOutstandingDevices.empty()) {
-                fOp.Complete(MakeErrorCode(ErrorCode::DeviceSetPropertiesFailed), fOutstandingDevices);
-            } else {
-                fOp.Complete(fOutstandingDevices);
-            }
-        }
+        auto it = std::find_if(fTasks.begin(), fTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
+        return it != fTasks.end();
     }
 };
 

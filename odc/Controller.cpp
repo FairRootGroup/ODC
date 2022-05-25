@@ -796,7 +796,7 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopoTrans
         if (!success) {
             auto failed = stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
             if (static_cast<ErrorCode>(errorCode.value()) != ErrorCode::DeviceChangeStateInvalidTransition) {
-                success = attemptStateChangeRecovery(failed, session, common);
+                success = attemptTopoRecovery(failed, session, common);
             } else {
                 OLOG(debug, common) << "Invalid transition, skipping nMin check.";
             }
@@ -849,7 +849,7 @@ bool Controller::waitForState(const CommonParams& common, Error& error, DeviceSt
         success = !errorCode;
         if (!success) {
             auto failed = stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
-            success = attemptStateChangeRecovery(failed, session, common);
+            success = attemptTopoRecovery(failed, session, common);
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -931,24 +931,36 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
         if (success) {
             OLOG(info, common) << "Set property finished successfully";
         } else {
-            switch (static_cast<ErrorCode>(errorCode.value())) {
-                case ErrorCode::OperationTimeout:
-                    fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for set property: ", errorCode.message()));
-                    break;
-                default:
-                    fillError(common, error, ErrorCode::FairMQSetPropertiesFailed, toString("Set property error message: ", errorCode.message()));
-                    break;
-            }
-            size_t count = 0;
-            OLOG(error, common) << "List of failed devices for SetProperties request (" << failedDevices.size() << "):";
+            FailedTasksCollections failed;
+            size_t count = 1;
+            OLOG(error, common) << "Following devices failed to set properties: ";
             for (auto taskId : failedDevices) {
                 try {
-                    TaskDetails& taskInfo = session.getTaskDetails(taskId);
-                    OLOG(error, common) << right << setw(7) << count << "   Task: " << taskInfo;
+                    TaskDetails& taskDetails = session.getTaskDetails(taskId);
+                    OLOG(error, common) << "  [" << count << "] " << taskDetails;
+                    failed.tasks.push_back(&taskDetails);
+                    auto it = find_if(failed.collections.cbegin(), failed.collections.cend(), [&](const auto& ci) {
+                        return ci->mCollectionID == taskDetails.mCollectionID;
+                    });
+                    if (it == failed.collections.cend()) {
+                        CollectionDetails& collectionDetails = session.getCollectionDetails(taskDetails.mCollectionID);
+                        failed.collections.push_back(&collectionDetails);
+                    }
                 } catch (const exception& e) {
                     OLOG(error, common) << "Set properties error: " << e.what();
                 }
                 ++count;
+            }
+            success = attemptTopoRecovery(failed, session, common);
+            if (!success) {
+                switch (static_cast<ErrorCode>(errorCode.value())) {
+                    case ErrorCode::OperationTimeout:
+                        fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for set property: ", errorCode.message()));
+                        break;
+                    default:
+                        fillError(common, error, ErrorCode::FairMQSetPropertiesFailed, toString("Set property error message: ", errorCode.message()));
+                        break;
+                }
             }
         }
 
@@ -1144,7 +1156,7 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
     return failed;
 }
 
-bool Controller::attemptStateChangeRecovery(FailedTasksCollections& failed, Session& session, const CommonParams& common)
+bool Controller::attemptTopoRecovery(FailedTasksCollections& failed, Session& session, const CommonParams& common)
 {
     if (!failed.collections.empty() && !session.mNinfo.empty()) {
         OLOG(info, common) << "Checking if execution can continue according to the minimum number of nodes requirement...";
