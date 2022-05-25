@@ -323,9 +323,10 @@ RequestResult Controller::execSetProperties(const CommonParams& common, const Se
 {
     Timer timer;
     Error error;
-    setProperties(common, error, params);
+    AggregatedState state{ AggregatedState::Undefined };
+    setProperties(common, error, params, state);
     execRequestTrigger("SetProperties", common);
-    return createRequestResult(common, error, "SetProperties done", timer.duration(), AggregatedState::Undefined);
+    return createRequestResult(common, error, "SetProperties done", timer.duration(), state);
 }
 
 RequestResult Controller::execGetState(const CommonParams& common, const DeviceParams& params)
@@ -913,7 +914,7 @@ bool Controller::getState(const CommonParams& common, Error& error, const string
     return success;
 }
 
-bool Controller::setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params)
+bool Controller::setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params, AggregatedState& aggrState)
 {
     auto& session = getOrCreateSession(common);
     if (session.mTopology == nullptr) {
@@ -950,6 +951,8 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
                 ++count;
             }
         }
+
+        aggrState = AggregateState(session.mTopology->GetCurrentState());
     } catch (exception& e) {
         success = false;
         fillError(common, error, ErrorCode::FairMQSetPropertiesFailed, toString("Set properties failed: ", e.what()));

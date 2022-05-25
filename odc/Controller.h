@@ -199,7 +199,7 @@ class Controller
     bool resetTopology(const CommonParams& common);
     bool createTopology(const CommonParams& common, Error& error, const std::string& topologyFile);
     bool createDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile);
-    bool setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params);
+    bool setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params, AggregatedState& aggrState);
     bool changeState(const CommonParams& common, Error& error, TopoTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool changeStateConfigure(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool changeStateReset(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
