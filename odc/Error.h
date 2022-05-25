@@ -34,6 +34,7 @@ enum class ErrorCode
     OperationTimeout,
     OperationCanceled,
     DeviceChangeStateFailed,
+    DeviceChangeStateInvalidTransition,
     DeviceGetPropertiesFailed,
     DeviceSetPropertiesFailed,
     TopologyFailed,
