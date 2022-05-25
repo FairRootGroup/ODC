@@ -794,7 +794,11 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopoTrans
         success = !errorCode;
         if (!success) {
             auto failed = stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
-            success = attemptStateChangeRecovery(failed, session, common);
+            if (static_cast<ErrorCode>(errorCode.value()) != ErrorCode::DeviceChangeStateInvalidTransition) {
+                success = attemptStateChangeRecovery(failed, session, common);
+            } else {
+                OLOG(debug, common) << "Invalid transition, skipping nMin check.";
+            }
             topoState = session.mTopology->GetCurrentState();
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {

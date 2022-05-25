@@ -393,7 +393,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 if (!op.second.IsCompleted() && op.second.ContainsTask(taskId)) {
                     if (fStateData.at(fStateIndex.at(taskId)).state != op.second.GetTargetState()) {
                         OLOG(error) << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId() << ", device is in " << cmd.GetCurrentState() << " state.";
-                        op.second.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
+                        op.second.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateInvalidTransition));
                     } else {
                         OLOG(debug) << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId() << ", device is already in " << cmd.GetCurrentState() << " state.";
                     }
