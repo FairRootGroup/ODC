@@ -452,25 +452,24 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 }
 
-                auto p = fChangeStateOps.emplace(std::piecewise_construct,
-                                                 std::forward_as_tuple(id),
-                                                 std::forward_as_tuple(id,
-                                                                       transition,
-                                                                       GetTasks(path),
-                                                                       fStateData,
-                                                                       timeout,
-                                                                       *fMtx,
-                                                                       AsioBase<Executor, Allocator>::GetExecutor(),
-                                                                       AsioBase<Executor, Allocator>::GetAllocator(),
-                                                                       std::move(handler))
+                auto [it, inserted] = fChangeStateOps.try_emplace(id,
+                                                                  id,
+                                                                  transition,
+                                                                  GetTasks(path),
+                                                                  fStateData,
+                                                                  timeout,
+                                                                  *fMtx,
+                                                                  AsioBase<Executor, Allocator>::GetExecutor(),
+                                                                  AsioBase<Executor, Allocator>::GetAllocator(),
+                                                                  std::move(handler)
                 );
 
                 cc::Cmds cmds(cc::make<cc::ChangeState>(transition));
                 fDDSCustomCmd.send(cmds.Serialize(), path);
 
-                p.first->second.ResetCount(fStateIndex, fStateData);
+                it->second.ResetCount(fStateIndex, fStateData);
                 // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
-                p.first->second.TryCompletion();
+                it->second.TryCompletion();
             },
             token);
     }
@@ -572,22 +571,21 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 }
 
-                auto p = fWaitForStateOps.emplace(std::piecewise_construct,
-                                                  std::forward_as_tuple(id),
-                                                  std::forward_as_tuple(id,
-                                                                        targetLastState,
-                                                                        targetCurrentState,
-                                                                        GetTasks(path),
-                                                                        timeout,
-                                                                        *fMtx,
-                                                                        AsioBase<Executor, Allocator>::GetExecutor(),
-                                                                        AsioBase<Executor, Allocator>::GetAllocator(),
-                                                                        std::move(handler))
+                auto [it, inserted] = fWaitForStateOps.try_emplace(id,
+                                                                   id,
+                                                                   targetLastState,
+                                                                   targetCurrentState,
+                                                                   GetTasks(path),
+                                                                   timeout,
+                                                                   *fMtx,
+                                                                   AsioBase<Executor, Allocator>::GetExecutor(),
+                                                                   AsioBase<Executor, Allocator>::GetAllocator(),
+                                                                   std::move(handler)
                 );
 
-                p.first->second.ResetCount(fStateIndex, fStateData);
+                it->second.ResetCount(fStateIndex, fStateData);
                 // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
-                p.first->second.TryCompletion();
+                it->second.TryCompletion();
             },
             token);
     }
@@ -667,15 +665,14 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 }
 
-                fGetPropertiesOps.emplace(std::piecewise_construct,
-                                          std::forward_as_tuple(id),
-                                          std::forward_as_tuple(id,
-                                                                GetTasks(path),
-                                                                timeout,
-                                                                *fMtx,
-                                                                AsioBase<Executor, Allocator>::GetExecutor(),
-                                                                AsioBase<Executor, Allocator>::GetAllocator(),
-                                                                std::move(handler))
+                fGetPropertiesOps.try_emplace(id,
+                                              id,
+                                              GetTasks(path),
+                                              timeout,
+                                              *fMtx,
+                                              AsioBase<Executor, Allocator>::GetExecutor(),
+                                              AsioBase<Executor, Allocator>::GetAllocator(),
+                                              std::move(handler)
                 );
 
                 cc::Cmds const cmds(cc::make<cc::GetProperties>(id, query));
@@ -738,23 +735,22 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     }
                 }
 
-                auto p = fSetPropertiesOps.emplace(std::piecewise_construct,
-                                                   std::forward_as_tuple(id),
-                                                   std::forward_as_tuple(id,
-                                                                         GetTasks(path),
-                                                                         timeout,
-                                                                         *fMtx,
-                                                                         AsioBase<Executor, Allocator>::GetExecutor(),
-                                                                         AsioBase<Executor, Allocator>::GetAllocator(),
-                                                                         std::move(handler))
+                auto [it, inserted] = fSetPropertiesOps.try_emplace(id,
+                                                                    id,
+                                                                    GetTasks(path),
+                                                                    timeout,
+                                                                    *fMtx,
+                                                                    AsioBase<Executor, Allocator>::GetExecutor(),
+                                                                    AsioBase<Executor, Allocator>::GetAllocator(),
+                                                                    std::move(handler)
                 );
 
                 cc::Cmds const cmds(cc::make<cc::SetProperties>(id, props));
                 fDDSCustomCmd.send(cmds.Serialize(), path);
 
-                p.first->second.ResetCount(fStateIndex, fStateData);
+                it->second.ResetCount(fStateIndex, fStateData);
                 // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
-                p.first->second.TryCompletion();
+                it->second.TryCompletion();
             },
             token);
     }
