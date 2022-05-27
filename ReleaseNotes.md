@@ -1,10 +1,18 @@
 # ODC Release Notes
 
-## 0.72.0 (not yet released)
+## 0.72.0 (2022-05-27)
 
+- Honor nMin on SetProperties command.
 - Split the log output of the topology generation script provided via gRPC request on new lines.
+- SetProperties command reply includes correct topology state, instead of `Undefined`.
+- Include DDS session ID on Shutdown command reply.
 
-## 0.71.0 (2022-05-20)
+## 0.71.1 (2022-05-20)
+
+- Bugfix: Fixed incorrect tracking of nMin parameter after submission failures.
+- Bugfix: Fixed invalid transitions being treated as task failures leading to task termination on nMin handling.
+
+## 0.71 (2022-05-20)
 
 - Fail earlier for devices that fail between state transitions.
 - Fix tasks incorrectly being labeled as failed during nMin handling.
