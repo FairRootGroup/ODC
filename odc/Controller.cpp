@@ -313,10 +313,17 @@ RequestResult Controller::execShutdown(const CommonParams& common)
 {
     Timer timer;
     Error error;
+
+    auto& session = getOrCreateSession(common);
+    // grab session id before shutting down the session, to return it in the reply
+    string sidStr{ to_string(session.mDDSSession->getSessionID()) };
+
     shutdownDDSSession(common, error);
     removeSession(common);
     execRequestTrigger("Shutdown", common);
-    return createRequestResult(common, error, "Shutdown done", timer.duration(), AggregatedState::Undefined);
+    auto result = createRequestResult(common, error, "Shutdown done", timer.duration(), AggregatedState::Undefined);
+    result.mDDSSessionID = sidStr;
+    return result;
 }
 
 RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
