@@ -585,7 +585,7 @@ bool Controller::requestCommanderInfo(const CommonParams& common, Error& error, 
 bool Controller::waitForNumActiveSlots(Session& session, const CommonParams& common, Error& error, size_t numSlots)
 {
     try {
-        session.mDDSSession->waitForNumAgents<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common));
+        session.mDDSSession->waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common));
     } catch (exception& e) {
         fillError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS slots: ", e.what()));
         return false;
