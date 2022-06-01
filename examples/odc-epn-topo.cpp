@@ -49,6 +49,11 @@ void combineDPLCollections(const vector<string>& _topos, CTopoCollection::Ptr_t 
     }
 }
 
+string removeExtension(const std::string& str)
+{
+    return str.substr(0, str.find_last_of("."));
+}
+
 int main(int argc, char** argv)
 {
     try {
@@ -111,9 +116,9 @@ int main(int argc, char** argv)
             combineDPLCollections(recoTopos, recoCollection, prependExe);
             // Add stderr monitor task and initialize it from XML topology file
             if (!monitorTask.empty()) {
-                auto monTask{ recoCollection->addElement<CTopoTask>("ErrorMonitorTask") };
-                monTask->initFromXML(monitorTask);
-                monTask->setExe(prependExe + monTask->getExe());
+                auto errorMonitorTask{ recoCollection->addElement<CTopoTask>("ErrorMonitorTask") };
+                errorMonitorTask->initFromXML(monitorTask);
+                errorMonitorTask->setExe(prependExe + errorMonitorTask->getExe());
             }
             // Add new requirement - one Reco DPL collection per host
             auto recoInstanceRequirement{ recoCollection->addRequirement("RecoInstanceRequirement") };
@@ -134,27 +139,45 @@ int main(int argc, char** argv)
 
         // Calibration
         if (calibTopos.size() > 0) {
-            cout << "Creating calibration collection..." << endl;
-            // New calibration DPL collection containing all tasks from calibration DPL collections
-            auto calibCollection{ creator.getMainGroup()->addElement<CTopoCollection>("CalibCollection") };
-            // Combine all tasks from calobration DPL collections to a calibration collection
-            combineDPLCollections(calibTopos, calibCollection, prependExe);
-            // Add stderr monitor task and initialize it from XML topology file
-            if (!monitorTask.empty()) {
-                auto errorMonitorTask{ calibCollection->addElement<CTopoTask>("ErrorMonitorTask") };
-                errorMonitorTask->initFromXML(monitorTask);
-                errorMonitorTask->setExe(prependExe + errorMonitorTask->getExe());
+            // check for duplicate collection names
+            std::sort(calibTopos.begin(), calibTopos.end());
+            auto it = std::unique(calibTopos.begin(), calibTopos.end());
+            if (it != calibTopos.end()) {
+                stringstream ss;
+                ss << "duplicate calibration collection(s) found: ";
+                do {
+                    ss << std::quoted(*it) << ", ";
+                    ++it;
+                } while (it != calibTopos.end());
+                string str(ss.str());
+                str.erase(str.size() - 2);
+                throw runtime_error(str);
             }
-            if (!calibWorkerNodes.empty()) {
-                // Add new requirement - calibration worker node name
-                auto calibWnRequirement{ calibCollection->addRequirement("CalibWnRequirement") };
-                calibWnRequirement->setRequirementType(CTopoRequirement::EType::WnName);
-                calibWnRequirement->setValue(calibWorkerNodes);
-            } else if (!calibAgentGroup.empty()) {
-                // Add new requirement - calibration worker node name
-                auto calibAgentGroupRequirement{ calibCollection->addRequirement("CalibAgentGroupRequirement") };
-                calibAgentGroupRequirement->setRequirementType(CTopoRequirement::EType::GroupName);
-                calibAgentGroupRequirement->setValue(calibAgentGroup);
+
+            for (const auto& calibTopo : calibTopos) {
+                cout << "Creating calibration collection '" << calibTopo << "'..." << endl;
+                auto calibCollection{ creator.getMainGroup()->addElement<CTopoCollection>("DPL") };
+                calibCollection->initFromXML(calibTopo);
+                calibCollection->setName(removeExtension(calibTopo));
+
+                // Add stderr monitor task and initialize it from XML topology file
+                if (!monitorTask.empty()) {
+                    auto errorMonitorTask{ calibCollection->addElement<CTopoTask>("ErrorMonitorTask") };
+                    errorMonitorTask->initFromXML(monitorTask);
+                    errorMonitorTask->setExe(prependExe + errorMonitorTask->getExe());
+                }
+
+                if (!calibWorkerNodes.empty()) {
+                    // Add new requirement - calibration worker node name
+                    auto calibWnRequirement{ calibCollection->addRequirement("CalibWnRequirement") };
+                    calibWnRequirement->setRequirementType(CTopoRequirement::EType::WnName);
+                    calibWnRequirement->setValue(calibWorkerNodes);
+                } else if (!calibAgentGroup.empty()) {
+                    // Add new requirement - calibration worker node name
+                    auto calibAgentGroupRequirement{ calibCollection->addRequirement("CalibAgentGroupRequirement") };
+                    calibAgentGroupRequirement->setRequirementType(CTopoRequirement::EType::GroupName);
+                    calibAgentGroupRequirement->setValue(calibAgentGroup);
+                }
             }
         }
 
@@ -180,7 +203,7 @@ int main(int argc, char** argv)
         CTopology topo(outputTopo);
         cout << "DDS topology " << quoted(topo.getName()) << " successfully opened from file " << quoted(topo.getFilepath()) << endl;
     } catch (exception& _e) {
-        cerr << _e.what();
+        cerr << _e.what() << endl;
         return EXIT_FAILURE;
     }
 
