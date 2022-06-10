@@ -27,7 +27,7 @@ class Controller : public core::CliControllerHelper<Controller>
 
     void registerResourcePlugins(const core::PluginManager::PluginMap_t& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
     void registerRequestTriggers(const core::PluginManager::PluginMap_t& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
-    void restore(const std::string& restoreId) { mCtrl.restore(restoreId); }
+    void restore(const std::string& restoreId, const std::string& restoreDir) { mCtrl.restore(restoreId, restoreDir); }
 
     std::string requestInitialize(const core::CommonParams& common, const core::InitializeParams& params) { return generalReply(mCtrl.execInitialize(common, params)); }
     std::string requestSubmit(const core::CommonParams& common, const core::SubmitParams& params) { return generalReply(mCtrl.execSubmit(common, params)); }

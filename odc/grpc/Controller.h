@@ -36,7 +36,7 @@ class Controller final
     void setTimeout(const std::chrono::seconds& timeout) { mController.setTimeout(timeout); }
     void registerResourcePlugins(const core::PluginManager::PluginMap_t& pluginMap) { mController.registerResourcePlugins(pluginMap); }
     void registerRequestTriggers(const core::PluginManager::PluginMap_t& triggerMap) { mController.registerRequestTriggers(triggerMap); }
-    void restore(const std::string& restoreId) { mController.restore(restoreId); }
+    void restore(const std::string& restoreId, const std::string& restoreDir) { mController.restore(restoreId, restoreDir); }
 
     ::grpc::Status Initialize(::grpc::ServerContext* ctx, const odc::InitializeRequest* req, odc::GeneralReply* rep)
     {

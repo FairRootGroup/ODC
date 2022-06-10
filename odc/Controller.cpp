@@ -461,14 +461,14 @@ void Controller::updateRestore()
     }
 
     OLOG(info) << "Updating restore file " << quoted(mRestoreId) << "...";
-    SRestoreData data;
+    RestoreData data;
 
     lock_guard<mutex> lock(mSessionsMtx);
     for (const auto& v : mSessions) {
         const auto& info{ v.second };
         try {
             if (info->mDDSSession->IsRunning()) {
-                data.m_partitions.push_back(SRestorePartition(info->mPartitionID, to_string(info->mDDSSession->getSessionID())));
+                data.mPartitions.push_back(RestorePartition(info->mPartitionID, to_string(info->mDDSSession->getSessionID())));
             }
         } catch (exception& e) {
             OLOG(warning, info->mPartitionID, 0) << "Failed to get session ID or session status: " << e.what();
@@ -477,7 +477,7 @@ void Controller::updateRestore()
 
     // Write the the file is locked by mSessionsMtx
     // This is done in order to prevent write failure in case of a parallel execution.
-    CRestoreFile(mRestoreId, data).write();
+    RestoreFile(mRestoreId, mRestoreDir, data).write();
 }
 
 RequestResult Controller::createRequestResult(const CommonParams& common, const Error& error, const string& msg, size_t execTime, AggregatedState aggrState, unique_ptr<DetailedState> detailedState/*  = nullptr */)
@@ -1436,13 +1436,14 @@ void Controller::registerRequestTriggers(const PluginManager::PluginMap_t& trigg
     }
 }
 
-void Controller::restore(const string& id)
+void Controller::restore(const string& id, const string& dir)
 {
     mRestoreId = id;
+    mRestoreDir = dir;
 
     OLOG(info) << "Restoring sessions for " << quoted(id);
-    auto data{ CRestoreFile(id).read() };
-    for (const auto& v : data.m_partitions) {
+    auto data{ RestoreFile(id, dir).read() };
+    for (const auto& v : data.mPartitions) {
         OLOG(info, v.mPartitionID, 0) << "Restoring (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
         auto result{ execInitialize(CommonParams(v.mPartitionID, 0, 0), InitializeParams(v.mDDSSessionId)) };
         if (result.mError.mCode) {

@@ -137,7 +137,8 @@ class Controller
     /// \brief Restore sessions for the specified ID
     ///  The function has to be called before the service start accepting request.
     /// \param [in] id ID of the restore file
-    void restore(const std::string& id);
+    /// \param [in] dir directory to store restore files in
+    void restore(const std::string& id, const std::string& dir);
 
     // DDS topology and session requests
 
@@ -179,11 +180,12 @@ class Controller
 
   private:
     std::map<std::string, std::unique_ptr<Session>> mSessions; ///< Map of partition ID to session info
-    std::mutex mSessionsMtx; ///< Mutex of sessions map
-    std::chrono::seconds mTimeout{ 30 }; ///< Request timeout in sec
-    DDSSubmit mSubmit;                  ///< ODC to DDS submit resource converter
-    PluginManager mTriggers;            ///< Request triggers
-    std::string mRestoreId;              ///< Restore ID
+    std::mutex mSessionsMtx;                                   ///< Mutex of sessions map
+    std::chrono::seconds mTimeout{ 30 };                       ///< Request timeout in sec
+    DDSSubmit mSubmit;                                         ///< ODC to DDS submit resource converter
+    PluginManager mTriggers;                                   ///< Request triggers
+    std::string mRestoreId;                                    ///< Restore ID
+    std::string mRestoreDir;                                   ///< Restore file directory
 
     void execRequestTrigger(const std::string& plugin, const CommonParams& common);
     void updateRestore();

@@ -37,17 +37,20 @@ int main(int argc, char** argv)
         PluginManager::PluginMap_t pluginMap;
         PluginManager::PluginMap_t triggerMap;
         string restoreId;
+        string restoreDir;
 
         // Generic options
         bpo::options_description options("odc-cli-server options");
-        options.add_options()("help,h", "Print help");
-        options.add_options()("version,v", "Print version");
-        options.add_options()("timeout", boost::program_options::value<size_t>(&timeout)->default_value(30), "Timeout of requests in sec");
+        options.add_options()
+            ("help,h", "Print help")
+            ("version,v", "Print version")
+            ("timeout", boost::program_options::value<size_t>(&timeout)->default_value(30), "Timeout of requests in sec")
+            ("rp", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )")
+            ("rt", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register request triggers ( name1:cmd1 name2:cmd2 )")
+            ("restore", boost::program_options::value<std::string>(&restoreId)->default_value(""), "If set ODC will restore the sessions from file with specified ID")
+            ("restore-dir", boost::program_options::value<std::string>(&restoreDir)->default_value(""), "Directory where restore files are kept (defaults to $HOME/.ODC/restore/)");
         CliHelper::addLogOptions(options, logConfig);
         CliHelper::addBatchOptions(options, batchOptions, batch);
-        options.add_options()("rp", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )");
-        options.add_options()("rt", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register request triggers ( name1:cmd1 name2:cmd2 )");
-        options.add_options()("restore", boost::program_options::value<std::string>(&restoreId)->default_value(""), "If set ODC will restore the sessions from file with specified ID");
 
         // Parsing command-line
         bpo::variables_map vm;
@@ -80,7 +83,7 @@ int main(int argc, char** argv)
         control.registerResourcePlugins(pluginMap);
         control.registerRequestTriggers(triggerMap);
         if (!restoreId.empty()) {
-            control.restore(restoreId);
+            control.restore(restoreId, restoreDir);
         }
         control.run(batchOptions.mOutputCmds);
     } catch (exception& _e) {
