@@ -6,22 +6,30 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef __ODC__DDSSubmit__
-#define __ODC__DDSSubmit__
+#ifndef ODC_CORE_DDSSUBMIT
+#define ODC_CORE_DDSSUBMIT
 
-// STD
-#include <ostream>
-#include <string>
-// BOOST
-#include <boost/filesystem.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
-// ODC
 #include <odc/BuildConstants.h>
 #include <odc/Logger.h>
 #include <odc/PluginManager.h>
 
+#include <boost/filesystem.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+
+#include <algorithm>
+#include <ostream>
+#include <string>
+#include <vector>
+
 namespace odc::core {
+
+struct ZoneInfo
+{
+    int n;
+    int ncores;
+    std::string agentGroup;
+};
 
 class DDSSubmit : public PluginManager
 {
@@ -30,33 +38,29 @@ class DDSSubmit : public PluginManager
     struct Params
     {
         Params() {}
+        Params(const Params&) = default;
+        Params(Params&&) = default;
+        Params& operator=(const Params&) = default;
+        Params& operator=(Params&&) = default;
 
-        /// \brief Constructor with arguments
         Params(const std::string& rmsPlugin,
                const std::string& configFile,
                const std::string& envFile,
+               const std::string& zone,
                const std::string& agentGroup,
                size_t numAgents,
                size_t minAgents,
                size_t numSlots)
             : mRMSPlugin(rmsPlugin)
+            , mZone(zone)
+            , mAgentGroup(agentGroup)
             , mConfigFile(configFile)
             , mEnvFile(envFile)
-            , mAgentGroup(agentGroup)
             , mNumAgents(numAgents)
             , mMinAgents(minAgents)
             , mNumSlots(numSlots)
         {}
 
-        /// \brief Initialization of structure from an XML file
-        // void initFromXML(const std::string& _filepath);
-        /// \brief Initialization of structure from an XML stream
-        // void initFromXML(std::istream& _stream)
-        // {
-        //     boost::property_tree::ptree pt;
-        //     boost::property_tree::read_xml(_stream, pt, boost::property_tree::xml_parser::no_comments);
-        //     initFromPT(pt);
-        // }
         /// \brief Initialization of structure from property tree
         void initFromPT(const boost::property_tree::ptree& pt)
         {
@@ -64,7 +68,7 @@ class DDSSubmit : public PluginManager
             // To support it we need to create a temporary file with configuration content and use it as config file.
 
             // Only valid tags are allowed.
-            std::set<std::string> validTags{ "rms", "configFile", "envFile", "agents", "minAgents", "slots", "agentGroup" };
+            std::set<std::string> validTags{ "rms", "configFile", "envFile", "agents", "minAgents", "slots", "zone" };
             for (const auto& v : pt) {
                 if (validTags.count(v.first.data()) == 0) {
                     throw std::runtime_error(toString("Failed to init from property tree. Unknown key ", std::quoted(v.first.data())));
@@ -73,29 +77,39 @@ class DDSSubmit : public PluginManager
             mRMSPlugin = pt.get<std::string>("rms", "");
             mConfigFile = pt.get<std::string>("configFile", "");
             mEnvFile = pt.get<std::string>("envFile", "");
+            mZone = pt.get<std::string>("zone", "");
+            // set agent group to the zone name initially
+            mAgentGroup = pt.get<std::string>("zone", "");
             mNumAgents = pt.get<size_t>("agents", 0);
             mMinAgents = pt.get<size_t>("minAgents", 0);
             mNumSlots = pt.get<size_t>("slots", 0);
-            mAgentGroup = pt.get<std::string>("agentGroup", "");
+            // number of cores is set dynamically from the topology (if provided), not from the initial resource definition
+            mNumCores = 0;
         }
 
-        std::string mRMSPlugin;       ///< RMS plugin of DDS
-        std::string mConfigFile;      ///< Path to the configuration file of the RMS plugin
-        std::string mEnvFile;         ///< Path to the configuration file of the RMS plugin
-        std::string mAgentGroup;      ///< Agent group name
-        size_t mNumAgents = 0;        ///< Number of DDS agents
-        size_t mMinAgents = 0;        ///< Minimum number of DDS agents
-        size_t mNumSlots = 0;         ///< Number of slots per DDS agent
+        std::string mRMSPlugin;  ///< RMS plugin of DDS
+        std::string mZone;       ///< Zone name
+        std::string mAgentGroup; ///< Agent group name
+        std::string mConfigFile; ///< Path to the configuration file of the RMS plugin
+        std::string mEnvFile;    ///< Path to the environment file
+        size_t mNumAgents = 0;   ///< Number of DDS agents
+        size_t mMinAgents = 0;   ///< Minimum number of DDS agents
+        size_t mNumSlots = 0;    ///< Number of slots per DDS agent
+        size_t mNumCores = 0;    ///< Number of cores
 
         // \brief ostream operator.
         friend std::ostream& operator<<(std::ostream& os, const Params& params)
         {
-            return os << "odc::core::DDSSubmit::Params: rmsPlugin: " << std::quoted(params.mRMSPlugin)
-                      << ", numAgents: " << params.mNumAgents
-                      << ", minAgents: " << params.mMinAgents
+            return os << "odc::core::DDSSubmit::Params: "
+                      << "rmsPlugin: "    << params.mRMSPlugin
+                      << ", zone: "       << params.mZone
                       << ", agentGroup: " << params.mAgentGroup
-                      << ", numSlots: " << params.mNumSlots
-                      << ", configFile: " << std::quoted(params.mConfigFile);
+                      << ", numAgents: "  << params.mNumAgents
+                      << ", minAgents: "  << params.mMinAgents
+                      << ", numSlots: "   << params.mNumSlots
+                      << ", numCores: "   << params.mNumCores
+                      << ", configFile: " << std::quoted(params.mConfigFile)
+                      << ", envFile: "    << std::quoted(params.mEnvFile);
         }
     };
 
@@ -104,7 +118,11 @@ class DDSSubmit : public PluginManager
         registerDefaultPlugin("odc-rp-same");
     }
 
-    std::vector<Params> makeParams(const std::string& plugin, const std::string& resources, const std::string& partitionID, uint64_t runNr)
+    std::vector<Params> makeParams(const std::string& plugin,
+                                   const std::string& resources,
+                                   const std::string& partitionID,
+                                   uint64_t runNr,
+                                   const std::map<std::string, std::vector<ZoneInfo>>& zoneInfos)
     {
         std::vector<Params> params;
         std::stringstream ss{ execPlugin(plugin, resources, partitionID, runNr) };
@@ -115,7 +133,6 @@ class DDSSubmit : public PluginManager
         if (nSubmitTags < 1) {
             params.emplace_back();
             params.back().initFromPT(pt);
-            return params;
         } else {
             for (const auto& [name, element] : pt) {
                 if (name != "submit") {
@@ -123,6 +140,24 @@ class DDSSubmit : public PluginManager
                 }
                 params.emplace_back();
                 params.back().initFromPT(element);
+            }
+        }
+
+        // extend parameters, if ncores is provided
+        for (const auto& zi : zoneInfos) {
+            auto result = find_if(params.begin(), params.end(), [&zi](const auto& p){ return p.mZone == zi.first; });
+            if (result == params.end()) {
+                throw std::runtime_error(toString("Zone '", zi.first, "' not found. Check --zones setting of the resource plugin."));
+            } else {
+                // overwrite the core number for the found parameter set
+                result->mNumCores = zi.second.at(0).ncores;
+                result->mAgentGroup = zi.second.at(0).agentGroup;
+                // for the rest of agent groups (if present), add them as new parameter sets
+                for (size_t i = 1; i < zi.second.size(); ++i) {
+                    params.push_back(*result);
+                    params.back().mNumCores = zi.second.at(i).ncores;
+                    params.back().mAgentGroup = zi.second.at(i).agentGroup;
+                }
             }
         }
 
@@ -136,12 +171,12 @@ class DDSSubmit : public PluginManager
             boost::filesystem::path pluginPath{ kODCBinDir };
             pluginPath /= name;
             registerPlugin(name, pluginPath.string());
-        } catch (const std::exception& _e) {
-            OLOG(error) << "Unable to register default resource plugin " << std::quoted(name) << ": " << _e.what();
+        } catch (const std::exception& e) {
+            OLOG(error) << "Unable to register default resource plugin " << std::quoted(name) << ": " << e.what();
         }
     }
 };
 
 } // namespace odc::core
 
-#endif /* defined(__ODC__DDSSubmit__) */
+#endif /* defined(ODC_CORE_DDSSUBMIT) */

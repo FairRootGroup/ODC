@@ -150,9 +150,9 @@ class CliHelper
         using namespace boost::program_options;
         std::string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
         options.add_options()
-            ("topo", value<std::string>(&params.mDDSTopologyFile)->implicit_value("")->default_value(defaultTopo), "Topology filepath")
-            ("content", value<std::string>(&params.mDDSTopologyContent)->implicit_value("")->default_value(""), "Topology content")
-            ("script", value<std::string>(&params.mDDSTopologyScript)->implicit_value("")->default_value(""), "Topology script");
+            ("topo", value<std::string>(&params.mTopoFile)->implicit_value("")->default_value(defaultTopo), "Topology filepath")
+            ("content", value<std::string>(&params.mTopoContent)->implicit_value("")->default_value(""), "Topology content")
+            ("script", value<std::string>(&params.mTopoScript)->implicit_value("")->default_value(""), "Topology script");
     }
 
     static void addOptions(boost::program_options::options_description& options, UpdateParams& params)
@@ -161,9 +161,9 @@ class CliHelper
         std::string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");
         // std::string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-down.xml");
         options.add_options()
-            ("topo", value<std::string>(&params.mDDSTopologyFile)->default_value(defaultTopo), "Topology filepath")
-            ("content", value<std::string>(&params.mDDSTopologyContent)->default_value(""), "Topology content")
-            ("script", value<std::string>(&params.mDDSTopologyScript)->implicit_value("")->default_value(""), "Topology script");
+            ("topo", value<std::string>(&params.mTopoFile)->default_value(defaultTopo), "Topology filepath")
+            ("content", value<std::string>(&params.mTopoContent)->default_value(""), "Topology content")
+            ("script", value<std::string>(&params.mTopoScript)->implicit_value("")->default_value(""), "Topology script");
     }
 
     static void addOptions(boost::program_options::options_description& options, SubmitParams& params)

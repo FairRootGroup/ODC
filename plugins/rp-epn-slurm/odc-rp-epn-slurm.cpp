@@ -165,7 +165,7 @@ int main(int argc, char** argv)
                 ss << "<minAgents>" << r.mNmin << "</minAgents>";
             }
             ss << "<agents>" << r.mN << "</agents>" // number of agents (assuming it is equals to number of nodes)
-               << "<agentGroup>" << r.mZone << "</agentGroup>" // agent group (zone)
+               << "<zone>" << r.mZone << "</zone>" // zone
                << "<slots>" << zone.numSlots << "</slots>" // number of slots per agent
                << "</submit>";
 

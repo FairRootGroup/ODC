@@ -6,16 +6,16 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-// STD
-#include <iomanip>
-#include <iostream>
-// BOOST
+#include <dds/dds.h>
+#include <dds/TopoVars.h>
+
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-// DDS
-#include <dds/dds.h>
-#include <dds/TopoVars.h>
+
+#include <iomanip>
+#include <iostream>
+#include <set>
 
 using namespace std;
 using namespace dds::topology_api;
@@ -42,16 +42,21 @@ void combineDPLCollections(const vector<string>& _topos, CTopoCollection::Ptr_t 
 
         // Add new tasks
         for (const auto& element : elements) {
-            auto task{ _collection->addElement<CTopoTask>(element->getName()) };
+            auto task = _collection->addElement<CTopoTask>(element->getName());
             task->initFromXML(filepath);
             task->setExe(_prependExe + task->getExe());
         }
     }
 }
 
-string removeExtension(const std::string& str)
+string getFilenameComponent(const string& str)
 {
-    return str.substr(0, str.find_last_of("."));
+    auto pos = str.find_last_of("/");
+    if (pos == string::npos) {
+        return str.substr(0, str.find_last_of("."));
+    } else {
+        return str.substr(str.find_last_of("/") + 1, str.find_last_of("."));
+    }
 }
 
 int main(int argc, char** argv)
@@ -59,14 +64,14 @@ int main(int argc, char** argv)
     try {
         string ddTopo;
         vector<string> recoTopos;
-        string monitorTask;
+        string recoWorkerNodes;
+        string recoZone;
         size_t recoN;
         size_t recoNmin;
         vector<string> calibTopos;
-        string recoWorkerNodes;
-        string recoAgentGroup;
         string calibWorkerNodes;
-        string calibAgentGroup;
+        string calibZone;
+        string monitorTask;
         string outputTopo;
         string prependExe;
 
@@ -76,13 +81,15 @@ int main(int argc, char** argv)
             ("dd",           bpo::value<string>(&ddTopo)->default_value(""),                 "Filepath to XML topology of Data Distribution")
             ("reco,r",       bpo::value<vector<string>>(&recoTopos)->multitoken(),           "Space separated list of filepaths of reconstruction XML topologies")
             ("recown",       bpo::value<string>(&recoWorkerNodes)->default_value(""),        "Name of the reconstruction worker node")
-            ("recogroup",    bpo::value<string>(&recoAgentGroup)->default_value(""),         "Name of the reconstruction agent group")
+            ("recozone",     bpo::value<string>(&recoZone)->default_value(""),               "Name of the reconstruction zone")
             ("mon",          bpo::value<string>(&monitorTask)->default_value(""),            "Filepath to XML topology of a stderr monitor tool")
             ("n",            bpo::value<size_t>(&recoN)->default_value(1),                   "Multiplicator for the reconstruction group")
             ("nmin",         bpo::value<size_t>(&recoNmin)->default_value(0),                "Minimum number of working reco groups before failing a run")
-            ("calib,c",      bpo::value<vector<string>>(&calibTopos)->multitoken(),          "Space separated list of filepaths of calibration XML topologies")
+            ("calib,c",      bpo::value<vector<string>>(&calibTopos)->multitoken(),          "Space separated list of <filepath>:<ncores> of calibration XML topologies "
+                                                                                             "(example: '--calib calib1.xml:20 calib2.xml:10' for two calibration "
+                                                                                             "collections with 20 and 10 cores respectively)")
             ("calibwn",      bpo::value<string>(&calibWorkerNodes)->default_value(""),       "Name of the calibration worker node")
-            ("calibgroup",   bpo::value<string>(&calibAgentGroup)->default_value(""),        "Name of the calibration agent group")
+            ("calibzone",    bpo::value<string>(&calibZone)->default_value(""),              "Name of the calibration zone")
             ("prependexe,p", bpo::value<string>(&prependExe)->default_value(""),             "Prepend with the command all exe tags")
             ("output,o",     bpo::value<string>(&outputTopo)->default_value("topology.xml"), "Output topology filepath");
         bpo::variables_map vm;
@@ -94,89 +101,116 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
-        // DDS topology creator
         CTopoCreator creator;
 
         // Reconstruction
         if ((!ddTopo.empty() || recoTopos.size() > 0) && recoN > 0) {
             cout << "Creating reconstruction collection..." << endl;
             // New Reco group containing Reco DPL collections
-            auto recoGroup{ creator.getMainGroup()->addElement<CTopoGroup>("RecoGroup") };
+            auto recoGroup = creator.getMainGroup()->addElement<CTopoGroup>("RecoGroup");
             // Set required number of Reco DPL collections
             recoGroup->setN(recoN);
             // New Reco DPL collection containing TfBuilder task and all tasks from Reco DPL collections
-            auto recoCollection{ recoGroup->addElement<CTopoCollection>("RecoCollection") };
+            auto recoCol = recoGroup->addElement<CTopoCollection>("RecoCollection");
             // Add TfBuilder task and initialize it from XML topology file
             if (!ddTopo.empty()) {
-                auto ddTask{ recoCollection->addElement<CTopoTask>("TfBuilderTask") };
+                auto ddTask = recoCol->addElement<CTopoTask>("TfBuilderTask");
                 ddTask->initFromXML(ddTopo);
                 ddTask->setExe(prependExe + ddTask->getExe());
             }
             // Combine all tasks from reco DPL collections to a reco collection
-            combineDPLCollections(recoTopos, recoCollection, prependExe);
+            combineDPLCollections(recoTopos, recoCol, prependExe);
+
             // Add stderr monitor task and initialize it from XML topology file
             if (!monitorTask.empty()) {
-                auto errorMonitorTask{ recoCollection->addElement<CTopoTask>("ErrorMonitorTask") };
+                auto errorMonitorTask = recoCol->addElement<CTopoTask>("ErrorMonitorTask");
                 errorMonitorTask->initFromXML(monitorTask);
                 errorMonitorTask->setExe(prependExe + errorMonitorTask->getExe());
             }
-            // Add new requirement - one Reco DPL collection per host
-            auto recoInstanceRequirement{ recoCollection->addRequirement("RecoInstanceRequirement") };
-            recoInstanceRequirement->setRequirementType(CTopoRequirement::EType::MaxInstancesPerHost);
-            recoInstanceRequirement->setValue("1");
+            // limit number of instances per host
+            auto recoInstanceReqs = recoCol->addRequirement("RecoInstanceRequirement");
+            recoInstanceReqs->setRequirementType(CTopoRequirement::EType::MaxInstancesPerHost);
+            recoInstanceReqs->setValue("1");
             if (!recoWorkerNodes.empty()) {
-                // Add new worker node name requirement
-                auto recoWnRequirement{ recoCollection->addRequirement("RecoWnRequirement") };
-                recoWnRequirement->setRequirementType(CTopoRequirement::EType::WnName);
-                recoWnRequirement->setValue(recoWorkerNodes);
-            } else if (!recoAgentGroup.empty()) {
-                // Add new worker node name requirement
-                auto recoAgentGroupRequirement{ recoCollection->addRequirement("RecoAgentGroupRequirement") };
-                recoAgentGroupRequirement->setRequirementType(CTopoRequirement::EType::GroupName);
-                recoAgentGroupRequirement->setValue(recoAgentGroup);
+                auto recoWnReq = recoCol->addRequirement("RecoWnRequirement");
+                recoWnReq->setRequirementType(CTopoRequirement::EType::WnName);
+                recoWnReq->setValue(recoWorkerNodes);
+            } else if (!recoZone.empty()) {
+                // reconstruction agent group name
+                auto recoAgentGroupReq = recoCol->addRequirement("RecoAgentGroupRequirement");
+                recoAgentGroupReq->setRequirementType(CTopoRequirement::EType::GroupName);
+                recoAgentGroupReq->setValue(recoZone);
+                // reconstruction zone name
+                auto recoZoneReq = recoCol->addRequirement("odc_zone_reco");
+                recoZoneReq->setRequirementType(CTopoRequirement::EType::Custom);
+                recoZoneReq->setValue(recoZone);
             }
+
+            cout << " ..name: " << recoCol->getName() << endl;
         }
 
         // Calibration
         if (calibTopos.size() > 0) {
-            // check for duplicate collection names
-            std::sort(calibTopos.begin(), calibTopos.end());
-            auto it = std::unique(calibTopos.begin(), calibTopos.end());
-            if (it != calibTopos.end()) {
-                stringstream ss;
-                ss << "duplicate calibration collection(s) found: ";
-                do {
-                    ss << std::quoted(*it) << ", ";
-                    ++it;
-                } while (it != calibTopos.end());
-                string str(ss.str());
-                str.erase(str.size() - 2);
-                throw runtime_error(str);
-            }
+            set<string> calibs;
 
             for (const auto& calibTopo : calibTopos) {
-                cout << "Creating calibration collection '" << calibTopo << "'..." << endl;
-                auto calibCollection{ creator.getMainGroup()->addElement<CTopoCollection>("DPL") };
-                calibCollection->initFromXML(calibTopo);
-                calibCollection->setName(removeExtension(calibTopo));
+                cout << "Creating calibration collection from " << quoted(calibTopo) << "..." << endl;
+
+                size_t ncores = 0;
+                string filename;
+
+                auto pos = calibTopo.rfind(':');
+                if (pos == string::npos) {
+                    filename = calibTopo;
+                } else {
+                    filename = calibTopo.substr(0, pos);
+                    ncores = stoi(calibTopo.substr(pos + 1));
+                }
+                string calibName = getFilenameComponent(filename);
+                // check for duplicates
+                auto [it, inserted] = calibs.emplace(calibName);
+                if (!inserted) {
+                    stringstream ss;
+                    ss << "duplicate collection found: " << calibTopo;
+                    throw runtime_error(ss.str());
+                }
+
+                cout << " ..name: " << calibName << ", ncores: " << ncores << ", zone: " << endl;
+
+                auto calibCol = creator.getMainGroup()->addElement<CTopoCollection>("DPL");
+                calibCol->initFromXML(filename);
+                calibCol->setName(calibName);
+
+                // add number of cores requirement, if specified
+                if (ncores > 0) {
+                    string requirementName("odc_ncores_" + calibName);
+                    auto calibWnReq = calibCol->addRequirement(requirementName);
+                    calibWnReq->setRequirementType(CTopoRequirement::EType::Custom);
+                    calibWnReq->setValue(to_string(ncores));
+                }
 
                 // Add stderr monitor task and initialize it from XML topology file
                 if (!monitorTask.empty()) {
-                    auto errorMonitorTask{ calibCollection->addElement<CTopoTask>("ErrorMonitorTask") };
+                    auto errorMonitorTask = calibCol->addElement<CTopoTask>("ErrorMonitorTask");
                     errorMonitorTask->initFromXML(monitorTask);
                     errorMonitorTask->setExe(prependExe + errorMonitorTask->getExe());
                 }
 
                 if (!calibWorkerNodes.empty()) {
-                    // Add new requirement - calibration worker node name
-                    auto calibWnRequirement{ calibCollection->addRequirement("CalibWnRequirement") };
-                    calibWnRequirement->setRequirementType(CTopoRequirement::EType::WnName);
-                    calibWnRequirement->setValue(calibWorkerNodes);
-                } else if (!calibAgentGroup.empty()) {
-                    // Add new requirement - calibration worker node name
-                    auto calibAgentGroupRequirement{ calibCollection->addRequirement("CalibAgentGroupRequirement") };
-                    calibAgentGroupRequirement->setRequirementType(CTopoRequirement::EType::GroupName);
-                    calibAgentGroupRequirement->setValue(calibAgentGroup);
+                    // calibration worker node name
+                    auto calibWnReq = calibCol->addRequirement("CalibWnRequirement");
+                    calibWnReq->setRequirementType(CTopoRequirement::EType::WnName);
+                    calibWnReq->setValue(calibWorkerNodes);
+                } else if (!calibZone.empty()) {
+                    // calibration agent group name
+                    auto calibAgentGroupReq = calibCol->addRequirement("CalibAgentGroupRequirement" + to_string(calibs.size()));
+                    calibAgentGroupReq->setRequirementType(CTopoRequirement::EType::GroupName);
+                    string calibGroup(calibZone + to_string(calibs.size()));
+                    calibAgentGroupReq->setValue(calibGroup);
+                    // calibration zone name
+                    auto calibZoneReq = calibCol->addRequirement("odc_zone_calib");
+                    calibZoneReq->setRequirementType(CTopoRequirement::EType::Custom);
+                    calibZoneReq->setValue(calibZone);
                 }
             }
         }
@@ -194,12 +228,11 @@ int main(int argc, char** argv)
             CTopoVars vars;
             vars.initFromXML(outputTopo);
             // "odc_nmin_" is a convention. ODC will look for this prefix, to map reco collections to their nmin value
-            vars.add("odc_nmin_RecoGroup", std::to_string(recoNmin));
+            vars.add("odc_nmin_RecoGroup", to_string(recoNmin));
             vars.saveToXML(outputTopo);
         }
 
-        // Validate created topology
-        // Create a topology from the output file
+        // Validate created topology -create a topology from the output file
         CTopology topo(outputTopo);
         cout << "DDS topology " << quoted(topo.getName()) << " successfully opened from file " << quoted(topo.getFilepath()) << endl;
     } catch (exception& _e) {

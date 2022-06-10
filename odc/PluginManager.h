@@ -11,7 +11,6 @@
 
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
-#include <odc/PluginManager.h>
 #include <odc/Process.h>
 
 #include <boost/filesystem.hpp>

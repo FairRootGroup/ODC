@@ -77,7 +77,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
     vector<DDSSubmit::Params> ddsParams;
     if (!error.mCode) {
         try {
-            ddsParams = mSubmit.makeParams(params.mPlugin, params.mResources, common.mPartitionID, common.mRunNr);
+            ddsParams = mSubmit.makeParams(params.mPlugin, params.mResources, common.mPartitionID, common.mRunNr, session.mZoneInfos);
         } catch (exception& e) {
             fillError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
         }
@@ -229,10 +229,10 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     if (!error.mCode) {
         try {
             if (session.mTopoFilePath.empty()) {
-                session.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile,
-                                                             params.mDDSTopologyContent,
-                                                             params.mDDSTopologyScript);
-                extractNmin(common, session.mTopoFilePath);
+                session.mTopoFilePath = topoFilepath(common, params.mTopoFile,
+                                                             params.mTopoContent,
+                                                             params.mTopoScript);
+                extractRequirements(common, session.mTopoFilePath);
             }
         } catch (exception& e) {
             fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
@@ -262,10 +262,10 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
         error = execInitialize(common, initializeParams).mError;
         if (!error.mCode) {
             try {
-                session.mTopoFilePath = topoFilepath(common, activateParams.mDDSTopologyFile,
-                                                             activateParams.mDDSTopologyContent,
-                                                             activateParams.mDDSTopologyScript);
-                extractNmin(common, session.mTopoFilePath);
+                session.mTopoFilePath = topoFilepath(common, activateParams.mTopoFile,
+                                                             activateParams.mTopoContent,
+                                                             activateParams.mTopoScript);
+                extractRequirements(common, session.mTopoFilePath);
             } catch (exception& e) {
                 fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
             }
@@ -290,8 +290,8 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
     Error error;
 
     try {
-        session.mTopoFilePath = topoFilepath(common, params.mDDSTopologyFile, params.mDDSTopologyContent, params.mDDSTopologyScript);
-        extractNmin(common, session.mTopoFilePath);
+        session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
+        extractRequirements(common, session.mTopoFilePath);
     } catch (exception& e) {
         fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
     }
@@ -528,6 +528,15 @@ bool Controller::submitDDSAgents(Session& session, const CommonParams& common, E
     requestInfo.m_config = params.mConfigFile;
     requestInfo.m_envCfgFilePath = params.mEnvFile;
     requestInfo.m_groupName = params.mAgentGroup;
+
+    // DDS does not support ncores parameter directly, set it here through additional config in case of Slurm
+    if (params.mRMSPlugin == "slurm" && params.mNumCores > 0) {
+        // the following disables `#SBATCH --cpus-per-task=%DDS_NSLOTS%` of DDS for Slurm
+        requestInfo.setFlag(SSubmitRequestData::ESubmitRequestFlags::enable_overbooking, true);
+
+        requestInfo.m_inlineConfig = string("#SBATCH --cpus-per-task=" + to_string(params.mNumCores));
+    }
+
     OLOG(info, common) << "Submitting: " << requestInfo;
 
     condition_variable cv;
@@ -669,6 +678,7 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         session.mTopology.reset();
         session.mDDSTopo.reset();
         session.mNinfo.clear();
+        session.mZoneInfos.clear();
         session.mTopoFilePath.clear();
         // We stop the session anyway if session ID is not nil.
         // Session can already be stopped by `dds-session stop` but session ID is not yet reset to nil.
@@ -689,7 +699,7 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
     return true;
 }
 
-void Controller::extractNmin(const CommonParams& common, const string& topologyFile)
+void Controller::extractRequirements(const CommonParams& common, const string& topologyFile)
 {
     using namespace dds::topology_api;
     auto& session = getOrCreateSession(common);
@@ -704,15 +714,6 @@ void Controller::extractNmin(const CommonParams& common, const string& topologyF
     }
 
     CTopology ddsTopo(topologyFile);
-
-    std::map<std::string, std::string> reqs;
-
-    auto requirements = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::REQUIREMENT);
-    for (const auto& req : requirements) {
-        CTopoRequirement::Ptr_t r = dynamic_pointer_cast<CTopoRequirement>(req);
-        reqs.emplace(r->getName(), r->getValue());
-    }
-
     auto groups = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
     for (const auto& group : groups) {
         CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
@@ -722,9 +723,8 @@ void Controller::extractNmin(const CommonParams& common, const string& topologyF
             auto collections = g->getElementsByType(CTopoBase::EType::COLLECTION);
             if (collections.size() == 1) {
                 CTopoCollection::Ptr_t c = dynamic_pointer_cast<CTopoCollection>(collections.at(0));
-                auto topoReqs = c->getRequirements();
-                for (const auto& tr : topoReqs) {
-                    CTopoRequirement::Ptr_t r = dynamic_pointer_cast<CTopoRequirement>(tr);
+                auto reqs = c->getRequirements();
+                for (const auto& r : reqs) {
                     if (r->getRequirementType() == CTopoRequirement::EType::GroupName) {
                         session.mNinfo.at(g->getName()).agentGroup = r->getValue();
                     }
@@ -735,7 +735,61 @@ void Controller::extractNmin(const CommonParams& common, const string& topologyF
         }
     }
 
-    OLOG(info, common) << "Groups:";
+    auto collections = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::COLLECTION);
+    OLOG(info, common) << "Extracting requirements:";
+    for (const auto& collection : collections) {
+        CTopoCollection::Ptr_t c = dynamic_pointer_cast<CTopoCollection>(collection);
+        auto colReqs = c->getRequirements();
+        string agentGroup;
+        string zone;
+        int ncores = 0;
+        int n = c->getTotalCounter();
+        for (const auto& cr : colReqs) {
+            stringstream ss;
+            ss << "  Collection '" << c->getName() << "' - requirement: " << cr->getName() << ", value: " << cr->getValue();
+            if (cr->getRequirementType() == CTopoRequirement::EType::GroupName) {
+                ss << ", type: GroupName";
+                agentGroup = cr->getValue();
+            } else if (cr->getRequirementType() == CTopoRequirement::EType::HostName) {
+                ss << ", type: HostName";
+            } else if (cr->getRequirementType() == CTopoRequirement::EType::WnName) {
+                ss << ", type: WnName";
+            } else if (cr->getRequirementType() == CTopoRequirement::EType::MaxInstancesPerHost) {
+                ss << ", type: MaxInstancesPerHost";
+            } else if (cr->getRequirementType() == CTopoRequirement::EType::Custom) {
+                ss << ", type: Custom";
+                if (strStartsWith(cr->getName(), "odc_ncores_")) {
+                    ncores = stoi(cr->getValue());
+                } else if (strStartsWith(cr->getName(), "odc_zone_")) {
+                    zone = cr->getValue();
+                }
+            } else {
+                ss << ", type: Unknown";
+            }
+            OLOG(info, common) << ss.str();
+        }
+
+        if (!agentGroup.empty() && !zone.empty()) {
+            auto it = session.mZoneInfos.find(zone);
+            if (it == session.mZoneInfos.end()) {
+                session.mZoneInfos.try_emplace(zone, std::vector<ZoneInfo>{ ZoneInfo{n, ncores, agentGroup} });
+            } else {
+                it->second.emplace_back(ZoneInfo{n, ncores, agentGroup});
+            }
+        }
+    }
+
+    if (!session.mZoneInfos.empty()) {
+        OLOG(info, common) << "Zones from the topology:";
+        for (const auto& z : session.mZoneInfos) {
+            OLOG(info, common) << "  " << quoted(z.first) << ":";
+            for (const auto& zi : z.second) {
+                OLOG(info, common) << "    n: " << zi.n << ", ncores: " << zi.ncores << ", agentGroup: " << zi.agentGroup;
+            }
+        }
+    }
+
+    OLOG(info, common) << "Groups from the topology:";
     for (const auto& [group, nmin] : session.mNinfo) {
         OLOG(info, common) << "  name: " << group
                            << ", n (original): " << nmin.nOriginal

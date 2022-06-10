@@ -88,9 +88,9 @@ class Controller final
         OLOG(info, common) << "Activate request topology file: " << req->topology();
         OLOG(info, common) << "Activate request topology content: "  << req->content();
         if (req->script().empty()) {
-            OLOG(info, common) << "Run request topology script: " << req->script();
+            OLOG(info, common) << "Activate request topology script: " << req->script();
         } else {
-            OLOG(info, common) << "Run request topology script (split by ' '):";
+            OLOG(info, common) << "Activate request topology script (split by ' '):";
             std::vector<std::string> parts;
             boost::split(parts, req->script(), boost::is_any_of(" "));
             for (const auto& part : parts) {

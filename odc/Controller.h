@@ -98,13 +98,13 @@ class Controller
             }
         }
 
-
         std::unique_ptr<dds::topology_api::CTopology> mDDSTopo = nullptr; ///< DDS topology
         std::shared_ptr<dds::tools_api::CSession> mDDSSession = nullptr; ///< DDS session
         std::unique_ptr<Topology> mTopology = nullptr; ///< Topology
         std::string mPartitionID; ///< External partition ID of this DDS session
         std::string mTopoFilePath;
         std::map<std::string, TopoGroupInfo> mNinfo; ///< Holds information on minimum number of groups, by group name
+        std::map<std::string, std::vector<ZoneInfo>> mZoneInfos; ///< Zones info zoneName:ZoneInfo
         size_t mTotalSlots = 0; ///< total number of DDS slots
         std::unordered_map<uint64_t, uint32_t> mAgentSlots;
 
@@ -230,7 +230,7 @@ class Controller
 
     uint32_t getNumSlots(Session& session, const CommonParams& common) const;
     dds::tools_api::SAgentInfoRequest::responseVector_t getAgentInfo(Session& session, const CommonParams& common) const;
-    void extractNmin(const CommonParams& common, const std::string& topologyFile);
+    void extractRequirements(const CommonParams& common, const std::string& topologyFile);
 
     void printStateStats(const CommonParams& common, const TopoState& topoState);
 };

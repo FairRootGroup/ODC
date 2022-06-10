@@ -6,28 +6,24 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-//
-// This file contains a number of helpers to calculate execution time of a function.
-//
 #ifndef __ODC__MiscUtils__
 #define __ODC__MiscUtils__
 
-// STD
-#include <initializer_list>
-#include <iostream>
-#include <sstream>
-#include <string>
-// SYS
-#include <pwd.h>
-#include <stdlib.h>
-#include <sys/types.h>
-// Boost
+#include <odc/LoggerSeverity.h>
+
 #include <boost/functional/hash.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
-// ODC
-#include <odc/LoggerSeverity.h>
+
+#include <pwd.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
+#include <initializer_list>
+#include <iostream>
+#include <sstream>
+#include <string>
 
 namespace odc::core
 {
@@ -58,6 +54,15 @@ inline std::size_t uuidHash()
     boost::hash<boost::uuids::uuid> uuid_hasher;
     boost::uuids::uuid u = gen();
     return uuid_hasher(u);
+}
+
+inline bool strStartsWith(std::string const& str, std::string const& start)
+{
+    if (str.length() >= start.length()) {
+        return (0 == str.compare(0, start.length(), start));
+    } else {
+        return false;
+    }
 }
 
 //

@@ -167,18 +167,19 @@ struct ActivateParams
 {
     ActivateParams() {}
     ActivateParams(const std::string& topoFile, const std::string& topoContent, const std::string& topoScript)
-        : mDDSTopologyFile(topoFile)
-        , mDDSTopologyContent(topoContent)
-        , mDDSTopologyScript(topoScript)
+        : mTopoFile(topoFile)
+        , mTopoContent(topoContent)
+        , mTopoScript(topoScript)
     {}
-    std::string mDDSTopologyFile;    ///< Path to the topoloy file
-    std::string mDDSTopologyContent; ///< Content of the XML topology
-    std::string mDDSTopologyScript;  ///< Script that generates topology content
+    std::string mTopoFile;    ///< Path to the topology file
+    std::string mTopoContent; ///< Content of the XML topology
+    std::string mTopoScript;  ///< Script that generates topology content
 
     friend std::ostream& operator<<(std::ostream& os, const ActivateParams& p)
     {
-        return os << "ActivateParams: topologyFile: " << quoted(p.mDDSTopologyFile) << ", topologyContent: " << quoted(p.mDDSTopologyContent)
-                  << ", topologyScript: " << quoted(p.mDDSTopologyScript);
+        return os << "ActivateParams: topologyFile: " << quoted(p.mTopoFile)
+                  << ", topologyContent: " << quoted(p.mTopoContent)
+                  << ", topologyScript: " << quoted(p.mTopoScript);
     }
 };
 
@@ -186,18 +187,19 @@ struct UpdateParams
 {
     UpdateParams() {}
     UpdateParams(const std::string& topoFile, const std::string& topoContent, const std::string& topoScript)
-        : mDDSTopologyFile(topoFile)
-        , mDDSTopologyContent(topoContent)
-        , mDDSTopologyScript(topoScript)
+        : mTopoFile(topoFile)
+        , mTopoContent(topoContent)
+        , mTopoScript(topoScript)
     {}
-    std::string mDDSTopologyFile;    ///< Path to the topoloy file
-    std::string mDDSTopologyContent; ///< Content of the XML topology
-    std::string mDDSTopologyScript;  ///< Script that generates topology content
+    std::string mTopoFile;    ///< Path to the topology file
+    std::string mTopoContent; ///< Content of the XML topology
+    std::string mTopoScript;  ///< Script that generates topology content
 
     friend std::ostream& operator<<(std::ostream& os, const UpdateParams& p)
     {
-        return os << "UpdateParams: topologyFile: " << quoted(p.mDDSTopologyFile) << ", topologyContent: " << quoted(p.mDDSTopologyContent)
-                  << ", topologyScript: " << quoted(p.mDDSTopologyScript);
+        return os << "UpdateParams: topologyFile: " << quoted(p.mTopoFile)
+                  << ", topologyContent: " << quoted(p.mTopoContent)
+                  << ", topologyScript: " << quoted(p.mTopoScript);
     }
 };
 
@@ -231,7 +233,7 @@ struct DeviceParams
         : mPath(path)
         , mDetailed(detailed)
     {}
-    std::string mPath;      ///< Path to the topoloy file
+    std::string mPath;      ///< Path to the topology file
     bool mDetailed = false; ///< If True than return also detailed information
 
     friend std::ostream& operator<<(std::ostream& os, const DeviceParams& p)

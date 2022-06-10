@@ -54,9 +54,9 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
     {
         odc::ActivateRequest request;
         updateCommonParams(common, &request);
-        request.set_topology(activateParams.mDDSTopologyFile);
-        request.set_content(activateParams.mDDSTopologyContent);
-        request.set_script(activateParams.mDDSTopologyScript);
+        request.set_topology(activateParams.mTopoFile);
+        request.set_content(activateParams.mTopoContent);
+        request.set_script(activateParams.mTopoScript);
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Activate(&context, request, &reply);
@@ -72,9 +72,9 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
         updateCommonParams(common, &request);
         request.set_plugin(submitParams.mPlugin);
         request.set_resources(submitParams.mResources);
-        request.set_topology(activateParams.mDDSTopologyFile);
-        request.set_content(activateParams.mDDSTopologyContent);
-        request.set_script(activateParams.mDDSTopologyScript);
+        request.set_topology(activateParams.mTopoFile);
+        request.set_content(activateParams.mTopoContent);
+        request.set_script(activateParams.mTopoScript);
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Run(&context, request, &reply);
@@ -162,7 +162,7 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
     {
         odc::UpdateRequest request;
         updateCommonParams(common, &request);
-        request.set_topology(updateParams.mDDSTopologyFile);
+        request.set_topology(updateParams.mTopoFile);
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Update(&context, request, &reply);
