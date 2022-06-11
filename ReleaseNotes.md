@@ -1,5 +1,15 @@
 # ODC Release Notes
 
+## 0.73.0 (2022-06-11)
+
+- Require DDS 3.7.15.
+- Add support for core-based scheduling. Includes some **breaking changes** in odc-epn-topo:
+    - `--recogroup` & `--calibgroup` arguments are removed. Agent groups are now set dynamically and internally by the tool.
+    - Instead of the above, `--recozone` & `--calibzone` must be set, whose values must correspond to the zones used at ODC server start in the resource plugin's `--zones`.
+    - To request core-based scheduling for calib topos, add `:<ncores>` in the arguments, e.g. `--calib calib_mft.xml:20`. This is actually non-breaking - omitting `:<ncores>` will simply not add any core-based scheduling.
+- Add `--restore-dir` parameter to control where restore files are located.
+- Add session history file. By default it is in `$HOME/.ODC/history`, can be changed via `--history-dir`.
+
 ## 0.72.0 (2022-05-27)
 
 - Honor nMin on SetProperties command.
