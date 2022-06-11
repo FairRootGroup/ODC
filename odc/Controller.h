@@ -123,7 +123,7 @@ class Controller
     Controller& operator=(Controller&&) = delete;
 
     /// \brief Set timeout of requests
-    /// \param [in] _timeout Timeout in seconds
+    /// \param [in] timeout Timeout in seconds
     void setTimeout(const std::chrono::seconds& timeout) { mTimeout = timeout; }
 
     /// \brief Register resource plugins
@@ -139,6 +139,10 @@ class Controller
     /// \param [in] id ID of the restore file
     /// \param [in] dir directory to store restore files in
     void restore(const std::string& id, const std::string& dir);
+
+    /// \brief Set directory where history file is stored
+    /// \param [in] dir directory path
+    void setHistoryDir(const std::string& dir) { mHistoryDir = dir; }
 
     // DDS topology and session requests
 
@@ -186,9 +190,11 @@ class Controller
     PluginManager mTriggers;                                   ///< Request triggers
     std::string mRestoreId;                                    ///< Restore ID
     std::string mRestoreDir;                                   ///< Restore file directory
+    std::string mHistoryDir;                                   ///< History file directory
 
     void execRequestTrigger(const std::string& plugin, const CommonParams& common);
     void updateRestore();
+    void updateHistory(const CommonParams& common, const std::string& sessionId);
 
     RequestResult createRequestResult(const CommonParams& common, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
     bool createDDSSession(const CommonParams& common, Error& error);

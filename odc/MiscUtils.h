@@ -20,7 +20,9 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+#include <ctime>
 #include <initializer_list>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -250,9 +252,7 @@ inline void smart_path(_T* _Path)
 
     smart_path(_Path);
 }
-/**
- *
- **/
+
 template<class _T>
 inline _T smart_path(const _T& _Path)
 {
@@ -260,5 +260,16 @@ inline _T smart_path(const _T& _Path)
     smart_path(&tmp);
     return tmp;
 }
+
+inline std::string getDateTime()
+{
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+    std::stringstream ss;
+    ss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
+    return ss.str();
+}
+
 } // namespace odc::core
+
 #endif /*__ODC__MiscUtils__*/

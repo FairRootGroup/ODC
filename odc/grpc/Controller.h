@@ -34,6 +34,7 @@ class Controller final
     Controller() {}
 
     void setTimeout(const std::chrono::seconds& timeout) { mController.setTimeout(timeout); }
+    void setHistoryDir(const std::string& dir) { mController.setHistoryDir(dir); }
     void registerResourcePlugins(const core::PluginManager::PluginMap_t& pluginMap) { mController.registerResourcePlugins(pluginMap); }
     void registerRequestTriggers(const core::PluginManager::PluginMap_t& triggerMap) { mController.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId, const std::string& restoreDir) { mController.restore(restoreId, restoreDir); }

@@ -25,6 +25,7 @@
 #include <boost/process.hpp>
 
 #include <algorithm>
+#include <filesystem>
 
 using namespace odc;
 using namespace odc::core;
@@ -480,6 +481,35 @@ void Controller::updateRestore()
     RestoreFile(mRestoreId, mRestoreDir, data).write();
 }
 
+void Controller::updateHistory(const CommonParams& common, const std::string& sessionId)
+{
+    if (mHistoryDir.empty()) {
+        return;
+    }
+
+    lock_guard<mutex> lock(mSessionsMtx);
+
+    try {
+        auto dir = filesystem::path(mHistoryDir);
+        if (!filesystem::exists(dir) && !filesystem::create_directories(dir)) {
+            throw runtime_error(toString("Restore failed to create directory ", quoted(dir.string())));
+        }
+
+        filesystem::path filepath = dir / toString("odc_session_history.log");
+
+        OLOG(info, common) << "Updating history file " << quoted(filepath.string()) << "...";
+
+        stringstream ss;
+        ss << getDateTime() << ", " << common.mPartitionID << ", " << sessionId << "\n";
+
+        ofstream out;
+        out.open(filepath, std::ios_base::app);
+        out << ss.str() << flush;
+    } catch (const std::exception& e) {
+        OLOG(error) << "Failed to write history file " << quoted(toString(mHistoryDir, "/odc_session_history.log")) << ": " << e.what();
+    }
+}
+
 RequestResult Controller::createRequestResult(const CommonParams& common, const Error& error, const string& msg, size_t execTime, AggregatedState aggrState, unique_ptr<DetailedState> detailedState/*  = nullptr */)
 {
     auto& session = getOrCreateSession(common);
@@ -494,6 +524,7 @@ bool Controller::createDDSSession(const CommonParams& common, Error& error)
         auto& session = getOrCreateSession(common);
         boost::uuids::uuid sessionID = session.mDDSSession->create();
         OLOG(info, common) << "DDS session created with session ID: " << to_string(sessionID);
+        updateHistory(common, to_string(sessionID));
     } catch (exception& e) {
         fillError(common, error, ErrorCode::DDSCreateSessionFailed, toString("Failed to create a DDS session: ", e.what()));
         return false;
@@ -1454,7 +1485,6 @@ void Controller::restore(const string& id, const string& dir)
         }
     }
 }
-
 
 void Controller::printStateStats(const CommonParams& common, const TopoState& topoState)
 {

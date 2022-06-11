@@ -64,6 +64,7 @@ class AsyncController final
     void registerResourcePlugins(const odc::core::PluginManager::PluginMap_t& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
     void registerRequestTriggers(const odc::core::PluginManager::PluginMap_t& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId, const std::string& restoreDir) { mCtrl.restore(restoreId, restoreDir); }
+    void setHistoryDir(const std::string& dir) { mCtrl.setHistoryDir(dir); }
 
   private:
     // Class encompasing the state and logic needed to serve a request

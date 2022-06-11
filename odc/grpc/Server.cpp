@@ -35,8 +35,10 @@ void runController(C& ctrl,
                    PluginManager::PluginMap_t& triggers,
                    const std::string& restoreId,
                    const std::string& restoreDir,
+                   const std::string& historyDir,
                    const std::string& host)
 {
+    ctrl.setHistoryDir(historyDir);
     ctrl.setTimeout(chrono::seconds(timeout));
     ctrl.registerResourcePlugins(plugins);
     ctrl.registerRequestTriggers(triggers);
@@ -57,6 +59,7 @@ int main(int argc, char** argv)
         PluginManager::PluginMap_t triggers;
         string restoreId;
         string restoreDir;
+        string historyDir;
 
         bpo::options_description options("dds-control-server options");
         options.add_options()
@@ -68,7 +71,8 @@ int main(int argc, char** argv)
             ("rp", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )")
             ("rt", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register request triggers ( name1:cmd1 name2:cmd2 )")
             ("restore", boost::program_options::value<std::string>(&restoreId)->default_value(""), "If set ODC will restore the sessions from file with specified ID")
-            ("restore-dir", boost::program_options::value<std::string>(&restoreDir)->default_value(""), "Directory where restore files are kept (defaults to $HOME/.ODC/restore/)");
+            ("restore-dir", boost::program_options::value<std::string>(&restoreDir)->default_value(smart_path(toString("$HOME/.ODC/restore/"))), "Directory where restore files are kept")
+            ("history-dir", boost::program_options::value<std::string>(&historyDir)->default_value(smart_path(toString("$HOME/.ODC/history/"))), "Directory where history file (timestamp, partitionId, sessionId) is kept");
         CliHelper::addLogOptions(options, logConfig);
 
         bpo::variables_map vm;
@@ -97,10 +101,10 @@ int main(int argc, char** argv)
 
         if (sync) {
             odc::grpc::SyncController ctrl;
-            runController(ctrl, timeout, plugins, triggers, restoreId, restoreDir, host);
+            runController(ctrl, timeout, plugins, triggers, restoreId, restoreDir, historyDir, host);
         } else {
             odc::grpc::AsyncController ctrl;
-            runController(ctrl, timeout, plugins, triggers, restoreId, restoreDir, host);
+            runController(ctrl, timeout, plugins, triggers, restoreId, restoreDir, historyDir, host);
         }
     } catch (exception& _e) {
         OLOG(clean) << _e.what();

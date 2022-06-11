@@ -32,6 +32,7 @@ class SyncController final : public odc::ODC::Service
         server->Wait();
     }
     void setTimeout(const std::chrono::seconds& timeout) { mCtrl.setTimeout(timeout); }
+    void setHistoryDir(const std::string& dir) { mCtrl.setHistoryDir(dir); }
     void registerResourcePlugins(const odc::core::PluginManager::PluginMap_t& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
     void registerRequestTriggers(const odc::core::PluginManager::PluginMap_t& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId, const std::string& restoreDir) { mCtrl.restore(restoreId, restoreDir); }
