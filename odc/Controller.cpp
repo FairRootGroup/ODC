@@ -113,23 +113,28 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 
     if (session.mDDSSession->IsRunning()) {
         map<string, uint32_t> agentCounts; // agent count sorted by their group name
-        auto agentInfo = getAgentInfo(session, common);
-        OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
-        for (const auto& ai : agentInfo) {
-            agentCounts[ai.m_groupName]++;
-            session.mAgentSlots[ai.m_agentID] = ai.m_nSlots;
-            OLOG(info, common) << "Agent ID: " << ai.m_agentID
-                               // << ", pid: " << ai.m_agentPid
-                               << ", host: " << ai.m_host
-                               << ", path: " << ai.m_DDSPath
-                               << ", group: " << ai.m_groupName
-                               // << ", index: " << ai.m_index
-                               // << ", username: " << ai.m_username
-                               << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
-        }
-        OLOG(info, common) << "Number of launched agents, sorted by group:";
-        for (const auto& [groupName, count] : agentCounts) {
-            OLOG(info, common) << groupName << ": " << count;
+
+        try {
+            auto agentInfo = getAgentInfo(session, common);
+            OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
+            for (const auto& ai : agentInfo) {
+                agentCounts[ai.m_groupName]++;
+                session.mAgentSlots[ai.m_agentID] = ai.m_nSlots;
+                OLOG(info, common) << "Agent ID: " << ai.m_agentID
+                                // << ", pid: " << ai.m_agentPid
+                                << ", host: " << ai.m_host
+                                << ", path: " << ai.m_DDSPath
+                                << ", group: " << ai.m_groupName
+                                // << ", index: " << ai.m_index
+                                // << ", username: " << ai.m_username
+                                << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
+            }
+            OLOG(info, common) << "Number of launched agents, sorted by group:";
+            for (const auto& [groupName, count] : agentCounts) {
+                OLOG(info, common) << groupName << ": " << count;
+            }
+        } catch (const exception& e) {
+            fillError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Failed getting agent info: ", e.what()));
         }
 
         if (error.mCode) {
@@ -172,15 +177,19 @@ void Controller::attemptSubmitRecovery(Session& session,
         }
     }
     if (!error.mCode) {
-        session.mTotalSlots = getNumSlots(session, common);
-        updateTopology(session, agentCounts, common);
-        for (auto& tgi : session.mNinfo) {
-            auto it = find_if(agentCounts.cbegin(), agentCounts.cend(), [&](const auto& ac) {
-                return ac.first == tgi.second.agentGroup;
-            });
-            if (it != agentCounts.cend()) {
-                tgi.second.nCurrent = it->second;
+        try {
+            session.mTotalSlots = getNumSlots(session, common);
+            updateTopology(session, agentCounts, common);
+            for (auto& tgi : session.mNinfo) {
+                auto it = find_if(agentCounts.cbegin(), agentCounts.cend(), [&](const auto& ac) {
+                    return ac.first == tgi.second.agentGroup;
+                });
+                if (it != agentCounts.cend()) {
+                    tgi.second.nCurrent = it->second;
+                }
             }
+        } catch (const exception& e) {
+            fillError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed updating topology: ", e.what()));
         }
     }
 }
@@ -1343,7 +1352,6 @@ bool Controller::attemptTopoRecovery(FailedTasksCollections& failed, Session& se
 
     return false;
 }
-
 
 dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(Session& session, const CommonParams& common) const
 {
