@@ -14,6 +14,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
+#include <filesystem>
 #include <string>
 
 namespace odc::core {
@@ -88,11 +89,11 @@ class RestoreFile
     void write()
     {
         try {
-            auto dir{ boost::filesystem::path(mDir) };
-            if (!boost::filesystem::exists(dir) && !boost::filesystem::create_directories(dir)) {
-                throw std::runtime_error(toString("Restore failed to create directory ", std::quoted(dir.string())));
+            if (!std::filesystem::exists(mDir) && !std::filesystem::create_directories(mDir)) {
+                throw std::runtime_error(toString("Restore failed to create directory ", std::quoted(mDir.string())));
             }
 
+            OLOG(info) << "Writing restore file " << std::quoted(getFilepath());
             boost::property_tree::write_json(getFilepath(), mData.toPT());
         } catch (const std::exception& e) {
             OLOG(error) << "Failed to write restore data " << quoted(mId) << " to file " << quoted(getFilepath()) << ": " << e.what();
@@ -102,6 +103,7 @@ class RestoreFile
     {
         try {
             boost::property_tree::ptree pt;
+            OLOG(info) << "Reading restore file " << std::quoted(getFilepath());
             boost::property_tree::read_json(getFilepath(), pt);
             mData = RestoreData(pt);
         } catch (const std::exception& e) {
@@ -111,10 +113,13 @@ class RestoreFile
     }
 
   private:
-    std::string getFilepath() const { return toString(mDir, "odc_", mId, ".json"); }
+    std::string getFilepath() const
+    {
+        return std::filesystem::path(mDir / toString("odc_", mId, ".json")).string();
+    }
 
     std::string mId;
-    std::string mDir;
+    std::filesystem::path mDir;
     RestoreData mData;
 };
 

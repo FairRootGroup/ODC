@@ -470,7 +470,6 @@ void Controller::updateRestore()
         return;
     }
 
-    OLOG(info) << "Updating restore file " << quoted(mRestoreId) << "...";
     RestoreData data;
 
     lock_guard<mutex> lock(mSessionsMtx);
@@ -501,7 +500,7 @@ void Controller::updateHistory(const CommonParams& common, const std::string& se
     try {
         auto dir = filesystem::path(mHistoryDir);
         if (!filesystem::exists(dir) && !filesystem::create_directories(dir)) {
-            throw runtime_error(toString("Restore failed to create directory ", quoted(dir.string())));
+            throw runtime_error(toString("History: failed to create directory ", quoted(dir.string())));
         }
 
         filesystem::path filepath = dir / toString("odc_session_history.log");
