@@ -1,5 +1,10 @@
 # ODC Release Notes
 
+## 0.73.1 (2022-06-22)
+
+- fixed: --restore-dir working incorrectly with missing trailing slash.
+- fixed: odc-epn-topo: calib was missing prependExe.
+
 ## 0.73.0 (2022-06-11)
 
 - Require DDS 3.7.15.
