@@ -181,6 +181,17 @@ int main(int argc, char** argv)
                 calibCol->initFromXML(filename);
                 calibCol->setName(calibName);
 
+                // prepend exe of tasks with the given value
+                if (!prependExe.empty()) {
+                    const auto& elements{ calibCol->getElements() };
+                    for (const auto& element : elements) {
+                        if (element->getType() == CTopoBase::EType::TASK) {
+                            CTopoTask::Ptr_t task = dynamic_pointer_cast<CTopoTask>(element);
+                            task->setExe(prependExe + task->getExe());
+                        }
+                    }
+                }
+
                 // add number of cores requirement, if specified
                 if (ncores > 0) {
                     string requirementName("odc_ncores_" + calibName);
