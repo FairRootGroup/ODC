@@ -1307,7 +1307,7 @@ bool Controller::attemptTopoRecovery(FailedTasksCollections& failed, Session& se
         // using namespace dds::topology_api;
 
         try {
-            size_t currentSlotsCount = session.mTotalSlots;
+            size_t currentSlotCount = session.mTotalSlots;
 
             size_t numSlotsToRemove = 0;
             for (const auto& c : failed.collections) {
@@ -1326,21 +1326,21 @@ bool Controller::attemptTopoRecovery(FailedTasksCollections& failed, Session& se
             }
 
             // TODO: notification on agent shutdown in development in DDS
-            OLOG(info, common) << "Current number of slots: " << getNumSlots(session, common);
-            currentSlotsCount = getNumSlots(session, common);
+            currentSlotCount = getNumSlots(session, common);
+            OLOG(info, common) << "Current number of slots: " << currentSlotCount;
             size_t attempts = 0;
-            while (currentSlotsCount != expectedNumSlots && attempts < 400) {
+            while (currentSlotCount != expectedNumSlots && attempts < 400) {
                 this_thread::sleep_for(chrono::milliseconds(50));
-                currentSlotsCount = getNumSlots(session, common);
-                // OLOG(info, common) << "Current number of slots: " << currentSlotsCount;
+                currentSlotCount = getNumSlots(session, common);
+                // OLOG(info, common) << "Current number of slots: " << currentSlotCount;
                 ++attempts;
             }
-            if (currentSlotsCount != expectedNumSlots) {
-                OLOG(warning, common) << "Could not reduce the number of slots to " << expectedNumSlots << ", current count is: " << currentSlotsCount;
+            if (currentSlotCount != expectedNumSlots) {
+                OLOG(warning, common) << "Could not reduce the number of slots to " << expectedNumSlots << ", current count is: " << currentSlotCount;
             } else {
-                OLOG(info, common) << "Successfully reduced number of slots to " << currentSlotsCount;
+                OLOG(info, common) << "Successfully reduced number of slots to " << currentSlotCount;
             }
-            session.mTotalSlots = currentSlotsCount;
+            session.mTotalSlots = currentSlotCount;
         } catch (exception& e) {
             OLOG(error, common) << "Failed updating nubmer of slots: " << e.what();
             return false;
