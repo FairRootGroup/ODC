@@ -11,6 +11,7 @@
 #include <fairmq/runDevice.h>
 
 #include <cstdlib> // getenv
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -35,39 +36,17 @@ struct Processor : fair::mq::Device
         std::string ddsTaskPath(std::getenv("DDS_TASK_PATH"));
         LOG(info) << "DDS_TASK_PATH: " << ddsTaskPath;
 
-        selfDestructTaskIdx = GetConfig()->GetProperty<std::vector<int>>("self-destruct-task-index", std::vector<int>());
-        selfDestructCollectionIdx = GetConfig()->GetProperty<std::vector<int>>("self-destruct-collection-index", std::vector<int>());
         selfDestructPaths = GetConfig()->GetProperty<std::vector<std::string>>("self-destruct-paths", std::vector<std::string>());
-        taskIndex = GetConfig()->GetProperty<int>("task-index", 0);
-        collectionIndex = GetConfig()->GetProperty<int>("collection-index", 0);
-
-        LOG(info) << "<<< taskIndex == " << taskIndex << ", collectionIndex == " << collectionIndex;
-        if (!selfDestructTaskIdx.empty() && !selfDestructCollectionIdx.empty()) {
-            auto taskMatch = std::find(begin(selfDestructTaskIdx), end(selfDestructTaskIdx), taskIndex);
-            auto colMatch = std::find(begin(selfDestructCollectionIdx), end(selfDestructCollectionIdx), collectionIndex);
-            if (taskMatch != std::end(selfDestructTaskIdx) && colMatch != std::end(selfDestructCollectionIdx)) {
-                LOG(info) << "<<< taskIndex == " << taskIndex << ", collectionIndex == " << collectionIndex << ", aborting >>>";
-                ChangeState(fair::mq::Transition::ErrorFound);
-            }
-        } else if (!selfDestructTaskIdx.empty()) {
-            auto taskMatch = std::find(begin(selfDestructTaskIdx), end(selfDestructTaskIdx), taskIndex);
-            if (taskMatch != std::end(selfDestructTaskIdx)) {
-                LOG(info) << "<<< taskIndex == " << taskIndex << ", aborting >>>";
-                ChangeState(fair::mq::Transition::ErrorFound);
-            }
-        } else if (!selfDestructCollectionIdx.empty()) {
-            auto colMatch = std::find(begin(selfDestructCollectionIdx), end(selfDestructCollectionIdx), collectionIndex);
-            if (colMatch != std::end(selfDestructCollectionIdx)) {
-                LOG(info) << "<<< collectionIndex == " << collectionIndex << ", aborting >>>";
-                ChangeState(fair::mq::Transition::ErrorFound);
-            }
-        } else if (!selfDestructPaths.empty()) {
-            auto pathMatch = std::find(begin(selfDestructPaths), end(selfDestructPaths), ddsTaskPath);
-            if (pathMatch != std::end(selfDestructPaths)) {
-                LOG(info) << "<<< task path == " << ddsTaskPath << ", aborting >>>";
-                ChangeState(fair::mq::Transition::ErrorFound);
-            } else {
-                LOG(info) << "no match: " << ddsTaskPath << " is not in selfDestructPaths";
+        if (!selfDestructPaths.empty()) {
+            for (const auto& pathRegexStr : selfDestructPaths) {
+                std::regex pathRegex(pathRegexStr);
+                if (std::regex_match(ddsTaskPath, pathRegex)) {
+                    LOG(info) << "<<< task path " << std::quoted(ddsTaskPath) << " matches " << std::quoted(pathRegexStr) << ", aborting >>>";
+                    ChangeState(fair::mq::Transition::ErrorFound);
+                    break;
+                } else {
+                    LOG(info) << "task path " << std::quoted(ddsTaskPath) << " does not match: " << std::quoted(pathRegexStr) << ".";
+                }
             }
         }
     }
@@ -103,11 +82,7 @@ struct Processor : fair::mq::Device
 void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()
-        ("self-destruct-task-index", bpo::value<std::vector<int>>()->multitoken()->composing(), "Set of task indicies for which task should destroy itself.")
-        ("self-destruct-collection-index", bpo::value<std::vector<int>>()->multitoken()->composing(), "Set of collection indicies for which task should destroy itself.")
-        ("self-destruct-paths", bpo::value<std::vector<std::string>>()->multitoken()->composing(), "Set of topology paths for which task should destroy itself.")
-        ("task-index", bpo::value<int>()->default_value(0), "DDS task index")
-        ("collection-index", bpo::value<int>()->default_value(0), "DDS collection index");
+        ("self-destruct-paths", bpo::value<std::vector<std::string>>()->multitoken()->composing(), "Set of topology paths for which task should destroy itself.");
 }
 
 std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/) { return std::make_unique<Processor>(); }
