@@ -215,8 +215,9 @@ class Controller
 
     bool getState(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
 
-    void fillError(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
-    void fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
+    void fillError(               const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
+    void fillFatalError(          const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
+    void fillFatalErrorLineByLine(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
 
     AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopoState& topoState, const std::string& path);
 

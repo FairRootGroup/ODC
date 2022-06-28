@@ -245,7 +245,7 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
                 extractRequirements(common, session.mTopoFilePath);
             }
         } catch (exception& e) {
-            fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+            fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
         }
         if (!error.mCode) {
             activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
@@ -277,7 +277,7 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
                                                              activateParams.mTopoScript);
                 extractRequirements(common, session.mTopoFilePath);
             } catch (exception& e) {
-                fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+                fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
             }
             if (!error.mCode) {
                 error = execSubmit(common, submitParams).mError;
@@ -303,7 +303,7 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
         session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
         extractRequirements(common, session.mTopoFilePath);
     } catch (exception& e) {
-        fillFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+        fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
     }
 
     if (!error.mCode) {
@@ -904,10 +904,10 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopoTrans
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
-                        fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", transition, " transition"));
+                        fillFatalError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", transition, " transition"));
                         break;
                     default:
-                        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("FairMQ change state failed: ", errorCode.message()));
+                        fillFatalError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", errorCode.message()));
                         break;
                 }
             }
@@ -921,10 +921,9 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopoTrans
         }
 
         printStateStats(common, topoState);
-
     } catch (exception& e) {
         stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
-        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
+        fillFatalError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
         success = false;
     }
 
@@ -1129,16 +1128,23 @@ void Controller::fillError(const CommonParams& common, Error& error, ErrorCode e
 {
     error.mCode = MakeErrorCode(errorCode);
     error.mDetails = msg;
-    OLOG(error, common) << error;
+    OLOG(error, common) << error.mDetails;
 }
 
 void Controller::fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
 {
     error.mCode = MakeErrorCode(errorCode);
     error.mDetails = msg;
+    OLOG(fatal, common) << error.mDetails;
+}
+
+void Controller::fillFatalErrorLineByLine(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
+{
+    error.mCode = MakeErrorCode(errorCode);
+    error.mDetails = msg;
     stringstream ss(error.mDetails);
     string line;
-    OLOG(fatal, common) << error.mCode;
+    // OLOG(fatal, common) << error.mCode;
     while (getline(ss, line, '\n')) {
         OLOG(fatal, common) << line;
     }
