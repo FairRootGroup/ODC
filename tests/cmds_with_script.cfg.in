@@ -1,6 +1,6 @@
 .init --id @TEST_SESSION@
 .submit --id @TEST_SESSION@
-.activate --id @TEST_SESSION@ --topo "" --script "cat @ODC_DATADIR@/ex-dds-topology-infinite.xml"
+.activate --id @TEST_SESSION@ --topo "" --script "cat @ODC_DATADIR@/ex-topo-infinite.xml"
 .config --id @TEST_SESSION@
 .start --id @TEST_SESSION@
 .sleep --ms 1000

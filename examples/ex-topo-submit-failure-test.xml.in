@@ -1,6 +1,6 @@
 <topology name="Example">
 
-    <var name="odc_nmin_ProcessorGroup" value="2" />
+    <var name="odc_nmin_ProcessorGroup" value="1" />
 
     <declrequirement name="onlineReq" type="groupname" value="online"/>
     <declrequirement name="calibReq" type="groupname" value="calib"/>

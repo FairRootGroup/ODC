@@ -21,9 +21,9 @@ odc-cli-server
 
 By default this example uses [localhost plugin](http://dds.gsi.de/doc/nightly/RMS-plugins.html#localhost-plugin) of [DDS](https://github.com/FairRootGroup/DDS) and three topologies which are installed in `INSTALL_DIR/share/odc/`:
 
-* `ex-dds-topology-infinite.xml` - initial topology with 12 FairMQ devices;
-* `ex-dds-topology-infinite-up.xml` - upscaled topololy with 36 FairMQ devices;
-* `ex-dds-topology-infinite-down.xml` - downscaled topology with 24 FairMQ devices.
+* `ex-topo-infinite.xml` - initial topology with 12 FairMQ devices;
+* `ex-topo-infinite-up.xml` - upscaled topololy with 36 FairMQ devices;
+* `ex-topo-infinite-down.xml` - downscaled topology with 24 FairMQ devices.
 
 ## Run on ALICE EPN cluster
 
@@ -160,14 +160,14 @@ Submit request looks like:
 ```
 .init
 .submit -p odc-rp-same -r "<rms>ssh</rms><configFile>hosts.cfg</configFile>"
-.activate --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite.xml
+.activate --topo INSTALL_DIR/share/odc/ex-topo-infinite.xml
 .config
 .start
 .stop
-.upscale --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite-up.xml
+.upscale --topo INSTALL_DIR/share/odc/ex-topo-infinite-up.xml
 .start
 .stop
-.downscale --topo INSTALL_DIR/share/odc/ex-dds-topology-infinite-down.xml
+.downscale --topo INSTALL_DIR/share/odc/ex-topo-infinite-down.xml
 .start
 .stop
 .reset

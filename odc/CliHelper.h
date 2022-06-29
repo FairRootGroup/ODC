@@ -85,8 +85,8 @@ class CliHelper
     static void addOptions(boost::program_options::options_description& options, BatchOptions& batchOptions)
     {
         const std::vector<std::string> defaultPartitions{ "a1b2c3", "d4e5f6" };
-        const std::string defaultUpTopo{ kODCDataDir + "/ex-dds-topology-infinite-up.xml" };
-        const std::string defaultDownTopo{ kODCDataDir + "/ex-dds-topology-infinite-down.xml" };
+        const std::string defaultUpTopo{ kODCDataDir + "/ex-topo-infinite-up.xml" };
+        const std::string defaultDownTopo{ kODCDataDir + "/ex-topo-infinite-down.xml" };
         const std::string upStr{ ".upscale --topo " + defaultUpTopo };
         const std::string downStr{ ".downscale --topo " + defaultDownTopo };
         const std::vector<std::string> defaultCmds{ ".status", ".init", ".status", ".submit", ".activate", ".config", ".start", ".status", ".stop", upStr,    ".start",
@@ -148,7 +148,7 @@ class CliHelper
     static void addOptions(boost::program_options::options_description& options, ActivateParams& params)
     {
         using namespace boost::program_options;
-        std::string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite.xml");
+        std::string defaultTopo(kODCDataDir + "/ex-topo-infinite.xml");
         options.add_options()
             ("topo", value<std::string>(&params.mTopoFile)->implicit_value("")->default_value(defaultTopo), "Topology filepath")
             ("content", value<std::string>(&params.mTopoContent)->implicit_value("")->default_value(""), "Topology content")
@@ -158,8 +158,8 @@ class CliHelper
     static void addOptions(boost::program_options::options_description& options, UpdateParams& params)
     {
         using namespace boost::program_options;
-        std::string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-up.xml");
-        // std::string defaultTopo(kODCDataDir + "/ex-dds-topology-infinite-down.xml");
+        std::string defaultTopo(kODCDataDir + "/ex-topo-infinite-up.xml");
+        // std::string defaultTopo(kODCDataDir + "/ex-topo-infinite-down.xml");
         options.add_options()
             ("topo", value<std::string>(&params.mTopoFile)->default_value(defaultTopo), "Topology filepath")
             ("content", value<std::string>(&params.mTopoContent)->default_value(""), "Topology content")
