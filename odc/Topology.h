@@ -155,7 +155,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             if (!firstRun) {
                 const DeviceStatus& ds = fStateData.at(fStateIndex.at(task.first));
                 if (ds.ignored) {
-                    // OLOG(debug) << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping";
+                    // std::cout << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping" << std::endl;
                     continue;
                 }
             }
@@ -230,6 +230,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             for (auto& op : fWaitForStateOps) {
                 op.second.Update(task.taskId, task.lastState, task.state);
             }
+            // std::cout << "task " << task.taskId << " exited" << std::endl;
             // TODO: include set/get property ops
         });
         fDDSSession->sendRequest<SOnTaskDoneRequest>(fDDSOnTaskDoneRequest);
@@ -370,7 +371,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
             task.lastState = cmd.GetLastState();
             task.state = cmd.GetCurrentState();
-            // OLOG(debug) << "Updated state entry: taskId=" << taskId << ", state=" << task.state;
+            // std::cout << "Updated state entry: taskId=" << taskId << ", state=" << task.state << std::endl;
 
             for (auto& op : fChangeStateOps) {
                 op.second.Update(taskId, cmd.GetCurrentState());

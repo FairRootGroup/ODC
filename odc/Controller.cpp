@@ -1194,8 +1194,7 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
     size_t numTasks = topoState.size();
     size_t numFailedTasks = 0;
     for (const auto& status : topoState) {
-        // Print only failed devices
-        if (status.state == expectedState) {
+        if (status.state == expectedState || status.ignored) {
             continue;
         }
 
@@ -1232,8 +1231,12 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
     for (const auto& [collectionId, states] : collectionMap) {
         try {
             auto collectionState = AggregateState(states);
-            // Print only failed collections
             if (collectionState == expectedState) {
+                continue;
+            }
+
+            if (std::all_of(states.cbegin(), states.cend(), [](const auto& status){ return status.ignored; })) {
+                // std::cout << "All devices in " << collectionId << " are ignored" << std::endl;
                 continue;
             }
 

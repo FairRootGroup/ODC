@@ -338,6 +338,7 @@ void ODC::HandleCmd(const string& id, odc::cc::Cmd& cmd, const string& cond, uin
         } break;
         case Type::change_state: {
             Transition transition = static_cast<ChangeState&>(cmd).GetTransition();
+            // LOG(info) << "Transition requested: '" << static_cast<ChangeState&>(cmd).GetTransition() << "'";
             if (ChangeDeviceState(transition)) {
                 // disable OK response for now - currently not used.
                 // Cmds outCmds(make<TransitionStatus>(id, fDDSTaskId, Result::Ok, transition, GetCurrentDeviceState()));
