@@ -245,13 +245,13 @@ struct TaskDetails
 
     friend std::ostream& operator<<(std::ostream& os, const TaskDetails& td)
     {
-        return os << "agentID: " << td.mAgentID
-                  << ", slotID: " << td.mSlotID
-                  << ", taskID: " << td.mTaskID
+        return os << "taskID: "         << td.mTaskID
+                  << ", agentID: "      << td.mAgentID
+                  << ", slotID: "       << td.mSlotID
                   << ", collectionID: " << td.mCollectionID
-                  << ", path: " << td.mPath
-                  << ", host: " << td.mHost
-                  << ", wrkDir: " << td.mWrkDir;
+                  << ", path: "         << td.mPath
+                  << ", host: "         << td.mHost
+                  << ", wrkDir: "       << td.mWrkDir;
     }
 };
 
@@ -266,12 +266,12 @@ struct CollectionDetails
 
     friend std::ostream& operator<<(std::ostream& os, const CollectionDetails& cd)
     {
-        return os << "agentID: " << cd.mAgentID
-                  << ", slotID: " << cd.mSlotID
-                  << ", collectionID: " << cd.mCollectionID
-                  << ", path: " << cd.mPath
-                  << ", host: " << cd.mHost
-                  << ", wrkDir: " << cd.mWrkDir;
+        return os << "collectionID: " << cd.mCollectionID
+                  << ", agentID: "    << cd.mAgentID
+                  << ", slotID: "     << cd.mSlotID
+                  << ", path: "       << cd.mPath
+                  << ", host: "       << cd.mHost
+                  << ", wrkDir: "     << cd.mWrkDir;
     }
 };
 
