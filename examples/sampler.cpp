@@ -45,7 +45,7 @@ struct Sampler : fair::mq::Device
 
 void addCustomOptions(bpo::options_description& options)
 {
-    options.add_options()("iterations,i", bpo::value<uint64_t>()->default_value(1000), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
+    options.add_options()("iterations,i", bpo::value<uint64_t>()->default_value(0), "Maximum number of iterations of Run/ConditionalRun/OnData (0 - infinite)");
 }
 
 std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/) { return std::make_unique<Sampler>(); }
