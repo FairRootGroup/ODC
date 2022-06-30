@@ -152,9 +152,10 @@ class DDSSubmit : public PluginManager
                 // overwrite the core number for the found parameter set
                 result->mNumCores = zi.second.at(0).ncores;
                 result->mAgentGroup = zi.second.at(0).agentGroup;
+                Params tempParams = *result;
                 // for the rest of agent groups (if present), add them as new parameter sets
                 for (size_t i = 1; i < zi.second.size(); ++i) {
-                    params.push_back(*result);
+                    params.push_back(tempParams);
                     params.back().mNumCores = zi.second.at(i).ncores;
                     params.back().mAgentGroup = zi.second.at(i).agentGroup;
                 }
