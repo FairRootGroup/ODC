@@ -1,5 +1,12 @@
 # ODC Release Notes
 
+## 0.73.2 (2022-06-30)
+
+- State change errors are now logged as fatal.
+- fixed: wrong severity logged in some cases.
+- fixed: repeated task failures are counted multiple times despite being ignored.
+- fixed: Use of moved-from value during Submit.
+
 ## 0.73.1 (2022-06-22)
 
 - fixed: --restore-dir working incorrectly with missing trailing slash.
