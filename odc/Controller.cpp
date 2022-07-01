@@ -719,9 +719,7 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         session.mNinfo.clear();
         session.mZoneInfos.clear();
         session.mTopoFilePath.clear();
-        // We stop the session anyway if session ID is not nil.
-        // Session can already be stopped by `dds-session stop` but session ID is not yet reset to nil.
-        // If session is already stopped dds::tools_api::CSession::shutdown will reset pointers.
+
         if (session.mDDSSession->getSessionID() != boost::uuids::nil_uuid()) {
             session.mDDSSession->shutdown();
             if (session.mDDSSession->getSessionID() == boost::uuids::nil_uuid()) {
@@ -730,6 +728,8 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
                 fillError(common, error, ErrorCode::DDSShutdownSessionFailed, "Failed to shut down DDS session");
                 return false;
             }
+        } else {
+            OLOG(info, common) << "The session ID for the current DDS session is already zero. Not calling shutdown().";
         }
     } catch (exception& e) {
         fillError(common, error, ErrorCode::DDSShutdownSessionFailed, toString("Shutdown failed: ", e.what()));
@@ -1169,11 +1169,11 @@ Controller::Session& Controller::getOrCreateSession(const CommonParams& common)
 void Controller::removeSession(const CommonParams& common)
 {
     lock_guard<mutex> lock(mSessionsMtx);
-    auto numRemoved = mSessions.erase(common.mPartitionID);
+    size_t numRemoved = mSessions.erase(common.mPartitionID);
     if (numRemoved == 1) {
         OLOG(debug, common) << "Removed session for partition ID " << quoted(common.mPartitionID);
     } else {
-        OLOG(debug, common) << "Found session for partition ID " << quoted(common.mPartitionID);
+        OLOG(debug, common) << "Found no session for partition ID " << quoted(common.mPartitionID);
     }
 }
 

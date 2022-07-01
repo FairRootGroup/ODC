@@ -6,7 +6,6 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-
 #include <odc/Logger.h>
 #include <odc/Version.h>
 
