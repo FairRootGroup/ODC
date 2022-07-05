@@ -64,12 +64,10 @@ int main(int argc, char** argv)
     try {
         string ddTopo;
         vector<string> recoTopos;
-        string recoWorkerNodes;
         string recoZone;
         size_t recoN;
         size_t recoNmin;
         vector<string> calibTopos;
-        string calibWorkerNodes;
         string calibZone;
         string monitorTask;
         string outputTopo;
@@ -80,7 +78,6 @@ int main(int argc, char** argv)
             ("help,h",       "Produce help message")
             ("dd",           bpo::value<string>(&ddTopo)->default_value(""),                 "Filepath to XML topology of Data Distribution")
             ("reco,r",       bpo::value<vector<string>>(&recoTopos)->multitoken(),           "Space separated list of filepaths of reconstruction XML topologies")
-            ("recown",       bpo::value<string>(&recoWorkerNodes)->default_value(""),        "Name of the reconstruction worker node")
             ("recozone",     bpo::value<string>(&recoZone)->default_value(""),               "Name of the reconstruction zone")
             ("mon",          bpo::value<string>(&monitorTask)->default_value(""),            "Filepath to XML topology of a stderr monitor tool")
             ("n",            bpo::value<size_t>(&recoN)->default_value(1),                   "Multiplicator for the reconstruction group")
@@ -88,7 +85,6 @@ int main(int argc, char** argv)
             ("calib,c",      bpo::value<vector<string>>(&calibTopos)->multitoken(),          "Space separated list of <filepath>:<ncores> of calibration XML topologies "
                                                                                              "(example: '--calib calib1.xml:20 calib2.xml:10' for two calibration "
                                                                                              "collections with 20 and 10 cores respectively)")
-            ("calibwn",      bpo::value<string>(&calibWorkerNodes)->default_value(""),       "Name of the calibration worker node")
             ("calibzone",    bpo::value<string>(&calibZone)->default_value(""),              "Name of the calibration zone")
             ("prependexe,p", bpo::value<string>(&prependExe)->default_value(""),             "Prepend with the command all exe tags")
             ("output,o",     bpo::value<string>(&outputTopo)->default_value("topology.xml"), "Output topology filepath");
@@ -131,11 +127,7 @@ int main(int argc, char** argv)
             auto recoInstanceReqs = recoCol->addRequirement("RecoInstanceRequirement");
             recoInstanceReqs->setRequirementType(CTopoRequirement::EType::MaxInstancesPerHost);
             recoInstanceReqs->setValue("1");
-            if (!recoWorkerNodes.empty()) {
-                auto recoWnReq = recoCol->addRequirement("RecoWnRequirement");
-                recoWnReq->setRequirementType(CTopoRequirement::EType::WnName);
-                recoWnReq->setValue(recoWorkerNodes);
-            } else if (!recoZone.empty()) {
+            if (!recoZone.empty()) {
                 // reconstruction agent group name
                 auto recoAgentGroupReq = recoCol->addRequirement("RecoAgentGroupRequirement");
                 recoAgentGroupReq->setRequirementType(CTopoRequirement::EType::GroupName);
@@ -195,9 +187,9 @@ int main(int argc, char** argv)
                 // add number of cores requirement, if specified
                 if (ncores > 0) {
                     string requirementName("odc_ncores_" + calibName);
-                    auto calibWnReq = calibCol->addRequirement(requirementName);
-                    calibWnReq->setRequirementType(CTopoRequirement::EType::Custom);
-                    calibWnReq->setValue(to_string(ncores));
+                    auto calibNCoresReq = calibCol->addRequirement(requirementName);
+                    calibNCoresReq->setRequirementType(CTopoRequirement::EType::Custom);
+                    calibNCoresReq->setValue(to_string(ncores));
                 }
 
                 // Add stderr monitor task and initialize it from XML topology file
@@ -207,12 +199,7 @@ int main(int argc, char** argv)
                     errorMonitorTask->setExe(prependExe + errorMonitorTask->getExe());
                 }
 
-                if (!calibWorkerNodes.empty()) {
-                    // calibration worker node name
-                    auto calibWnReq = calibCol->addRequirement("CalibWnRequirement");
-                    calibWnReq->setRequirementType(CTopoRequirement::EType::WnName);
-                    calibWnReq->setValue(calibWorkerNodes);
-                } else if (!calibZone.empty()) {
+                if (!calibZone.empty()) {
                     // calibration agent group name
                     auto calibAgentGroupReq = calibCol->addRequirement("CalibAgentGroupRequirement" + to_string(calibs.size()));
                     calibAgentGroupReq->setRequirementType(CTopoRequirement::EType::GroupName);
