@@ -16,7 +16,6 @@
 #include <odc/Topology.h>
 
 #include <dds/dds.h>
-#include <dds/TopoVars.h>
 #include <dds/Tools.h>
 #include <dds/Topology.h>
 
@@ -120,7 +119,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
             for (const auto& ai : agentInfo) {
                 agentCounts[ai.m_groupName]++;
                 session.mAgentSlots[ai.m_agentID] = ai.m_nSlots;
-                OLOG(info, common) << "Agent ID: " << ai.m_agentID
+                OLOG(info, common) << "  Agent ID: " << ai.m_agentID
                                 // << ", pid: " << ai.m_agentPid
                                 << ", host: " << ai.m_host
                                 << ", path: " << ai.m_DDSPath
@@ -129,9 +128,9 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
                                 // << ", username: " << ai.m_username
                                 << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
             }
-            OLOG(info, common) << "Number of launched agents, sorted by group:";
+            OLOG(info, common) << "Launched " << agentCounts.size() << " DDS agent groups:";
             for (const auto& [groupName, count] : agentCounts) {
-                OLOG(info, common) << groupName << ": " << count;
+                OLOG(info, common) << "  " << groupName << ": " << count << " agents";
             }
         } catch (const exception& e) {
             fillError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Failed getting agent info: ", e.what()));
@@ -179,7 +178,6 @@ void Controller::attemptSubmitRecovery(Session& session,
     if (!error.mCode) {
         try {
             session.mTotalSlots = getNumSlots(session, common);
-            updateTopology(session, agentCounts, common);
             for (auto& tgi : session.mNinfo) {
                 auto it = find_if(agentCounts.cbegin(), agentCounts.cend(), [&](const auto& ac) {
                     return ac.first == tgi.second.agentGroup;
@@ -188,27 +186,35 @@ void Controller::attemptSubmitRecovery(Session& session,
                     tgi.second.nCurrent = it->second;
                 }
             }
+            updateTopology(session, common);
         } catch (const exception& e) {
             fillError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed updating topology: ", e.what()));
         }
     }
 }
 
-void Controller::updateTopology(Session& session, const map<string, uint32_t>& agentCounts, const CommonParams& common)
+void Controller::updateTopology(Session& session, const CommonParams& common)
 {
     using namespace dds::topology_api;
     OLOG(info, common) << "Updating current topology file (" << session.mTopoFilePath << ") to reflect the reduced number of groups";
 
     CTopoCreator creator;
     creator.getMainGroup()->initFromXML(session.mTopoFilePath);
-    auto groups = creator.getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
-    for (const auto& group : groups) {
-        CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
-        try {
-            string agentGroup = session.mNinfo.at(g->getName()).agentGroup;
-            g->setN(agentCounts.at(agentGroup));
-        } catch (exception& e) {
-            continue;
+
+    auto collections = creator.getMainGroup()->getElementsByType(CTopoBase::EType::COLLECTION);
+    for (auto& col : collections) {
+        // if a collection has nMin setting, update the n value of the group it is in to the current n
+        auto it = session.mNinfo.find(col->getName());
+        if (it != session.mNinfo.end()) {
+            auto parent = col->getParent();
+            if (parent->getType() == CTopoBase::EType::GROUP && parent->getName() != "main") {
+                OLOG(info, common) << "nMin: updating `n` for collection " << std::quoted(col->getName()) << " to " << it->second.nCurrent;
+                static_cast<CTopoGroup*>(parent)->setN(it->second.nCurrent);
+            } else {
+                OLOG(error, common) << "nMin: collection " << std::quoted(col->getName()) << " is not in a group. Not updating it's `n` value.";
+            }
+        } else {
+            OLOG(info, common) << "nMin: collection " << std::quoted(col->getName()) << " has no nMin setting. Nothing to update";
         }
     }
 
@@ -218,14 +224,6 @@ void Controller::updateTopology(Session& session, const map<string, uint32_t>& a
     const bfs::path filepath{ tmpPath / name };
     creator.save(filepath.string());
 
-    // re-add the nmin variables
-    CTopoVars vars;
-    vars.initFromXML(filepath.string());
-    for (const auto& [groupName, groupInfo] : session.mNinfo) {
-        string varName("odc_nmin_" + groupName);
-        vars.add(varName, std::to_string(groupInfo.nMin));
-    }
-    vars.saveToXML(filepath.string());
     session.mTopoFilePath = filepath.string();
 
     OLOG(info, common) << "Saved updated topology file as " << session.mTopoFilePath;
@@ -742,70 +740,61 @@ void Controller::extractRequirements(const CommonParams& common, const string& t
 {
     using namespace dds::topology_api;
     auto& session = getOrCreateSession(common);
-    // extract the nmin variables and detect corresponding collections
-    session.mNinfo.clear();
-    CTopoVars vars;
-    vars.initFromXML(topologyFile);
-    for (const auto& [var, nmin] : vars.getMap()) {
-        if (0 == var.compare(0, 9, "odc_nmin_")) {
-            session.mNinfo.emplace(var.substr(9), TopoGroupInfo{0, 0, stoull(nmin), ""});
-        }
-    }
 
     CTopology ddsTopo(topologyFile);
-    auto groups = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::GROUP);
-    for (const auto& group : groups) {
-        CTopoGroup::Ptr_t g = dynamic_pointer_cast<CTopoGroup>(group);
-        try {
-            session.mNinfo.at(g->getName()).nOriginal = g->getN();
-            session.mNinfo.at(g->getName()).nCurrent = g->getN();
-            auto collections = g->getElementsByType(CTopoBase::EType::COLLECTION);
-            if (collections.size() == 1) {
-                CTopoCollection::Ptr_t c = dynamic_pointer_cast<CTopoCollection>(collections.at(0));
-                auto reqs = c->getRequirements();
-                for (const auto& r : reqs) {
-                    if (r->getRequirementType() == CTopoRequirement::EType::GroupName) {
-                        session.mNinfo.at(g->getName()).agentGroup = r->getValue();
-                    }
-                }
-            }
-        } catch (out_of_range&) {
-            continue;
-        }
-    }
 
     auto collections = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::COLLECTION);
     OLOG(info, common) << "Extracting requirements:";
     for (const auto& collection : collections) {
         CTopoCollection::Ptr_t c = dynamic_pointer_cast<CTopoCollection>(collection);
         auto colReqs = c->getRequirements();
+
         string agentGroup;
         string zone;
         int ncores = 0;
-        int n = c->getTotalCounter();
+        int32_t n = c->getTotalCounter();
+        int32_t nmin = -1;
+
         for (const auto& cr : colReqs) {
             stringstream ss;
-            ss << "  Collection '" << c->getName() << "' - requirement: " << cr->getName() << ", value: " << cr->getValue();
+            ss << "  Collection '" << c->getName() << "' - requirement: " << cr->getName() << ", value: " << cr->getValue() << ", type: ";
             if (cr->getRequirementType() == CTopoRequirement::EType::GroupName) {
-                ss << ", type: GroupName";
+                ss << "GroupName";
                 agentGroup = cr->getValue();
             } else if (cr->getRequirementType() == CTopoRequirement::EType::HostName) {
-                ss << ", type: HostName";
+                ss << "HostName";
             } else if (cr->getRequirementType() == CTopoRequirement::EType::WnName) {
-                ss << ", type: WnName";
+                ss << "WnName";
             } else if (cr->getRequirementType() == CTopoRequirement::EType::MaxInstancesPerHost) {
-                ss << ", type: MaxInstancesPerHost";
+                ss << "MaxInstancesPerHost";
             } else if (cr->getRequirementType() == CTopoRequirement::EType::Custom) {
-                ss << ", type: Custom";
+                ss << "Custom";
                 if (strStartsWith(cr->getName(), "odc_ncores_")) {
                     ncores = stoi(cr->getValue());
                 } else if (strStartsWith(cr->getName(), "odc_zone_")) {
                     zone = cr->getValue();
+                } else if (strStartsWith(cr->getName(), "odc_nmin_")) {
+                    // nMin is only relevant for collections that are in a group (which is not the main group)
+                    auto parent = c->getParent();
+                    if (parent->getType() == CTopoBase::EType::GROUP && parent->getName() != "main") {
+                        nmin = stoull(cr->getValue());
+                    } else {
+                        // OLOG(info, common) << "collection " << c->getName() << " is not in a group, skipping nMin requirement";
+                    }
                 }
             } else {
                 ss << ", type: Unknown";
             }
             OLOG(info, common) << ss.str();
+        }
+
+        if (!agentGroup.empty() && nmin >= 0) {
+            auto it = session.mNinfo.find(c->getName());
+            if (it == session.mNinfo.end()) {
+                session.mNinfo.try_emplace(c->getName(), CollectionNInfo{ n, n, nmin, agentGroup });
+            } else {
+                // OLOG(info, common) << "collection " << c->getName() << " is already in the mNinfo";
+            }
         }
 
         if (!agentGroup.empty() && !zone.empty()) {
@@ -828,9 +817,9 @@ void Controller::extractRequirements(const CommonParams& common, const string& t
         }
     }
 
-    OLOG(info, common) << "Groups from the topology:";
-    for (const auto& [group, nmin] : session.mNinfo) {
-        OLOG(info, common) << "  name: " << group
+    OLOG(info, common) << "N info:";
+    for (const auto& [collection, nmin] : session.mNinfo) {
+        OLOG(info, common) << "  name: " << collection
                            << ", n (original): " << nmin.nOriginal
                            << ", n (current): " << nmin.nCurrent
                            << ", n (minimum): " << nmin.nMin
@@ -1273,37 +1262,34 @@ bool Controller::attemptTopoRecovery(FailedTasksCollections& failed, Session& se
         //   - are failed collections inside of a group?
         //   - do all failed collections have nMin parameter defined?
         //   - is the nMin parameter satisfied?
-        map<string, uint64_t> failedCollectionsCount;
+        map<string, int32_t> failedCollectionsCount;
         for (const auto& c : failed.collections) {
-            // OLOG(info, common) << "Checking collection '" << c->mPath << "' with agend id " << c->mAgentID;
+            string collectionName = session.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getName();
+            OLOG(info, common) << "Checking collection '" << c->mPath << "' with agend id " << c->mAgentID << ", name in the topology: " << collectionName;
             string collectionParentName = session.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getParent()->getName();
-            for (const auto& [groupName, groupInfo] : session.mNinfo) {
-                if (collectionParentName != groupName) {
-                    // stop recovery, conditions not satisifed
-                    OLOG(error, common) << "Failed collection '" << c->mPath << "' is not in a group that has the nmin parameter specified";
-                    return false;
+            auto it = session.mNinfo.find(collectionName);
+            if (it != session.mNinfo.end()) {
+                if (failedCollectionsCount.find(collectionName) == failedCollectionsCount.end()) {
+                    failedCollectionsCount.emplace(collectionName, 1);
                 } else {
-                    // increment failed collection count per group name
-                    if (failedCollectionsCount.find(groupName) == failedCollectionsCount.end()) {
-                        failedCollectionsCount.emplace(groupName, 1);
-                    } else {
-                        failedCollectionsCount[groupName]++;
-                    }
-                    // OLOG(info, common) << "Group '" << groupName << "', failed collection count " << failedCollectionsCount.at(groupName);
+                    failedCollectionsCount[collectionName]++;
                 }
+            } else {
+                OLOG(error, common) << "Failed collection '" << c->mPath << "' is not in a group that has the nmin parameter specified";
+                return false;
             }
         }
 
         // proceed only if remaining collections > nmin.
-        for (auto& [gName, gInfo] : session.mNinfo) {
-            uint64_t failedCount = failedCollectionsCount.at(gName);
-            uint64_t remainingCount = gInfo.nCurrent - failedCount;
-            OLOG(info, common) << "Group '" << gName << "' with n (original): " << gInfo.nOriginal << ", n (current): " << gInfo.nCurrent << ", nmin: " << gInfo.nMin << ". Failed count: " << failedCount;
-            if (remainingCount < gInfo.nMin) {
-                OLOG(error, common) << "Number of remaining collections in group '" << gName << "' (" << remainingCount << ") is below nmin (" << gInfo.nMin << ")";
+        for (auto& [colName, nInfo] : session.mNinfo) {
+            int32_t failedCount = failedCollectionsCount.at(colName);
+            int32_t remainingCount = nInfo.nCurrent - failedCount;
+            OLOG(info, common) << "Collection '" << colName << "' with n (original): " << nInfo.nOriginal << ", n (current): " << nInfo.nCurrent << ", nmin: " << nInfo.nMin << ". Failed count: " << failedCount;
+            if (remainingCount < nInfo.nMin) {
+                OLOG(error, common) << "Number of remaining '" << colName << "' collections (" << remainingCount << ") is below nmin (" << nInfo.nMin << ")";
                 return false;
             } else {
-                gInfo.nCurrent = remainingCount;
+                nInfo.nCurrent = remainingCount;
             }
         }
 

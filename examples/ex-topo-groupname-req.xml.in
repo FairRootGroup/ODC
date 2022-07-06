@@ -1,9 +1,8 @@
 <topology name="Example">
 
-    <var name="odc_nmin_ProcessorGroup" value="1" />
-
     <declrequirement name="onlineReq" type="groupname" value="online"/>
     <declrequirement name="calibReq" type="groupname" value="calib"/>
+    <declrequirement name="odc_nmin_Processors" type="custom" value="1"/>
 
     <property name="fmqchan_data1" />
     <property name="fmqchan_data2" />
@@ -46,6 +45,7 @@
     <declcollection name="Processors">
         <requirements>
             <name>onlineReq</name>
+            <name>odc_nmin_Processors</name>
         </requirements>
        <tasks>
            <name>Processor</name>

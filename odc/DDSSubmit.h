@@ -26,7 +26,7 @@ namespace odc::core {
 
 struct ZoneInfo
 {
-    int n;
+    int32_t n;
     int ncores;
     std::string agentGroup;
 };

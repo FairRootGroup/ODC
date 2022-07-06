@@ -7,7 +7,6 @@
  ********************************************************************************/
 
 #include <dds/dds.h>
-#include <dds/TopoVars.h>
 
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -127,6 +126,16 @@ int main(int argc, char** argv)
             auto recoInstanceReqs = recoCol->addRequirement("RecoInstanceRequirement");
             recoInstanceReqs->setRequirementType(CTopoRequirement::EType::MaxInstancesPerHost);
             recoInstanceReqs->setValue("1");
+            // Set minimum number of required reco collections
+            if (recoNmin > 0) {
+                if (recoNmin > recoN) {
+                    cerr << "--nmin (" << recoNmin << ") cannot be larger than --n (" << recoN << "), aborting" << endl;
+                    return EXIT_FAILURE;
+                }
+                auto recoNMinReq = recoCol->addRequirement("odc_nmin_RecoCollection");
+                recoNMinReq->setRequirementType(CTopoRequirement::EType::Custom);
+                recoNMinReq->setValue(to_string(recoNmin));
+            }
             if (!recoZone.empty()) {
                 // reconstruction agent group name
                 auto recoAgentGroupReq = recoCol->addRequirement("RecoAgentGroupRequirement");
@@ -217,24 +226,11 @@ int main(int argc, char** argv)
         creator.save(outputTopo);
         cout << "New DDS topology successfully created and saved to a file " << quoted(outputTopo) << endl;
 
-        if (recoTopos.size() > 0 && recoN > 0 && recoNmin > 0) {
-            if (recoNmin > recoN) {
-                cerr << "--nmin (" << recoNmin << ") cannot be larger than --n (" << recoN << "), aborting" << endl;
-                return EXIT_FAILURE;
-            }
-
-            CTopoVars vars;
-            vars.initFromXML(outputTopo);
-            // "odc_nmin_" is a convention. ODC will look for this prefix, to map reco collections to their nmin value
-            vars.add("odc_nmin_RecoGroup", to_string(recoNmin));
-            vars.saveToXML(outputTopo);
-        }
-
-        // Validate created topology -create a topology from the output file
+        // Validate created topology - create a topology from the output file
         CTopology topo(outputTopo);
         cout << "DDS topology " << quoted(topo.getName()) << " successfully opened from file " << quoted(topo.getFilepath()) << endl;
-    } catch (exception& _e) {
-        cerr << _e.what() << endl;
+    } catch (exception& e) {
+        cerr << e.what() << endl;
         return EXIT_FAILURE;
     }
 

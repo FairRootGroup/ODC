@@ -275,11 +275,11 @@ struct CollectionDetails
     }
 };
 
-struct TopoGroupInfo
+struct CollectionNInfo
 {
-    uint64_t nOriginal;
-    uint64_t nCurrent;
-    uint64_t nMin;
+    int32_t nOriginal;
+    int32_t nCurrent;
+    int32_t nMin;
     std::string agentGroup;
 };
 

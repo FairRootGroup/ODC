@@ -103,7 +103,7 @@ class Controller
         std::unique_ptr<Topology> mTopology = nullptr; ///< Topology
         std::string mPartitionID; ///< External partition ID of this DDS session
         std::string mTopoFilePath;
-        std::map<std::string, TopoGroupInfo> mNinfo; ///< Holds information on minimum number of groups, by group name
+        std::map<std::string, CollectionNInfo> mNinfo; ///< Holds information on minimum number of collections, by collection name
         std::map<std::string, std::vector<ZoneInfo>> mZoneInfos; ///< Zones info zoneName:ZoneInfo
         size_t mTotalSlots = 0; ///< total number of DDS slots
         std::unordered_map<uint64_t, uint32_t> mAgentSlots;
@@ -229,7 +229,7 @@ class Controller
     FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, const TopoState& topoState, DeviceState expectedState, Session& session);
     bool attemptTopoRecovery(FailedTasksCollections& failed, Session& session, const CommonParams& common);
     void attemptSubmitRecovery(Session& session, const std::vector<DDSSubmit::Params>& ddsParams, const std::map<std::string, uint32_t>& agentCounts, Error& error, const CommonParams& common);
-    void updateTopology(Session& session, const std::map<std::string, uint32_t>& agentCounts, const CommonParams& common);
+    void updateTopology(Session& session, const CommonParams& common);
 
     bool subscribeToDDSSession(const CommonParams& common, Error& error);
 
