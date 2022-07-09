@@ -341,6 +341,7 @@ RequestResult Controller::execShutdown(const CommonParams& common)
 
     shutdownDDSSession(common, error);
     removeSession(common);
+    updateRestore();
     execRequestTrigger("Shutdown", common);
     auto result = createRequestResult(common, error, "Shutdown done", timer.duration(), AggregatedState::Undefined);
     result.mDDSSessionID = sidStr;
@@ -502,7 +503,7 @@ void Controller::updateRestore()
         }
     }
 
-    // Write the the file is locked by mSessionsMtx
+    // Writing the file is locked by mSessionsMtx
     // This is done in order to prevent write failure in case of a parallel execution.
     RestoreFile(mRestoreId, mRestoreDir, data).write();
 }
