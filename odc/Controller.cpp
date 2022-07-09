@@ -34,8 +34,8 @@ namespace bfs = boost::filesystem;
 RequestResult Controller::execInitialize(const CommonParams& common, const InitializeParams& params)
 {
     Timer timer;
-
     Error error;
+
     if (params.mDDSSessionID.empty()) {
         // Create new DDS session
         // Shutdown DDS session if it is running already
@@ -66,9 +66,10 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
 RequestResult Controller::execSubmit(const CommonParams& common, const SubmitParams& params)
 {
     Timer timer;
-
     Error error;
+
     auto& session = getOrCreateSession(common);
+
     if (!session.mDDSSession->IsRunning()) {
         fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
     }
@@ -95,7 +96,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
             }
             OLOG(info, common) << "Submitting [" << i + 1 << "/" << ddsParams.size() << "]: " << ddsParams.at(i);
 
-            if (submitDDSAgents(session, common, error, ddsParams.at(i))) {
+            if (submitDDSAgents(common, session, error, ddsParams.at(i))) {
                 session.mTotalSlots += ddsParams.at(i).mNumAgents * ddsParams.at(i).mNumSlots;
             } else {
                 OLOG(error, common) << "Submission failed";
@@ -104,7 +105,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
         }
         if (!error.mCode) {
             OLOG(info, common) << "Waiting for " << session.mTotalSlots << " slots...";
-            if (waitForNumActiveSlots(session, common, error, session.mTotalSlots)) {
+            if (waitForNumActiveSlots(common, session, error, session.mTotalSlots)) {
                 OLOG(info, common) << "Done waiting for " << session.mTotalSlots << " slots.";
             }
         }
@@ -114,7 +115,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
         map<string, uint32_t> agentCounts; // agent count sorted by their group name
 
         try {
-            auto agentInfo = getAgentInfo(session, common);
+            auto agentInfo = getAgentInfo(common, session);
             OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
             for (const auto& ai : agentInfo) {
                 agentCounts[ai.m_groupName]++;
@@ -137,7 +138,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
         }
 
         if (error.mCode) {
-            attemptSubmitRecovery(session, ddsParams, agentCounts, error, common);
+            attemptSubmitRecovery(common, session, error, ddsParams, agentCounts);
         }
     }
 
@@ -145,11 +146,11 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
     return createRequestResult(common, error, "Submit done", timer.duration(), AggregatedState::Undefined);
 }
 
-void Controller::attemptSubmitRecovery(Session& session,
-                                       const vector<DDSSubmit::Params>& ddsParams,
-                                       const map<string, uint32_t>& agentCounts,
+void Controller::attemptSubmitRecovery(const CommonParams& common,
+                                       Session& session,
                                        Error& error,
-                                       const CommonParams& common)
+                                       const vector<DDSSubmit::Params>& ddsParams,
+                                       const map<string, uint32_t>& agentCounts)
 {
     error = Error();
     for (const auto& p : ddsParams) {
@@ -177,7 +178,7 @@ void Controller::attemptSubmitRecovery(Session& session,
     }
     if (!error.mCode) {
         try {
-            session.mTotalSlots = getNumSlots(session, common);
+            session.mTotalSlots = getNumSlots(common, session);
             for (auto& tgi : session.mNinfo) {
                 auto it = find_if(agentCounts.cbegin(), agentCounts.cend(), [&](const auto& ac) {
                     return ac.first == tgi.second.agentGroup;
@@ -186,14 +187,14 @@ void Controller::attemptSubmitRecovery(Session& session,
                     tgi.second.nCurrent = it->second;
                 }
             }
-            updateTopology(session, common);
+            updateTopology(common, session);
         } catch (const exception& e) {
             fillError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed updating topology: ", e.what()));
         }
     }
 }
 
-void Controller::updateTopology(Session& session, const CommonParams& common)
+void Controller::updateTopology(const CommonParams& common, Session& session)
 {
     using namespace dds::topology_api;
     OLOG(info, common) << "Updating current topology file (" << session.mTopoFilePath << ") to reflect the reduced number of groups";
@@ -260,10 +261,11 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
 RequestResult Controller::execRun(const CommonParams& common, const InitializeParams& initializeParams, const SubmitParams& submitParams, const ActivateParams& activateParams)
 {
     Timer timer;
-    // Run request doesn't support attachment to a DDS session.
+    Error error;
+
     auto& session = getOrCreateSession(common);
 
-    Error error;
+    // Run request doesn't support attachment to a DDS session.
     if (!initializeParams.mDDSSessionID.empty()) {
         error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Attachment to a DDS session not supported");
     } else {
@@ -293,9 +295,11 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
 RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
 {
     Timer timer;
-    auto& session = getOrCreateSession(common);
-    AggregatedState state{ AggregatedState::Undefined };
     Error error;
+
+    auto& session = getOrCreateSession(common);
+
+    AggregatedState state{ AggregatedState::Undefined };
 
     try {
         session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
@@ -323,6 +327,7 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     Error error;
 
     auto& session = getOrCreateSession(common);
+
     // grab session id before shutting down the session, to return it in the reply
     string sidStr{ to_string(session.mDDSSession->getSessionID()) };
 
@@ -338,6 +343,7 @@ RequestResult Controller::execSetProperties(const CommonParams& common, const Se
 {
     Timer timer;
     Error error;
+
     AggregatedState state{ AggregatedState::Undefined };
     setProperties(common, error, params, state);
     execRequestTrigger("SetProperties", common);
@@ -347,9 +353,10 @@ RequestResult Controller::execSetProperties(const CommonParams& common, const Se
 RequestResult Controller::execGetState(const CommonParams& common, const DeviceParams& params)
 {
     Timer timer;
+    Error error;
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
     getState(common, error, params.mPath, state, detailedState.get());
     execRequestTrigger("GetState", common);
     return createRequestResult(common, error, "GetState done", timer.duration(), state, move(detailedState));
@@ -358,9 +365,10 @@ RequestResult Controller::execGetState(const CommonParams& common, const DeviceP
 RequestResult Controller::execConfigure(const CommonParams& common, const DeviceParams& params)
 {
     Timer timer;
+    Error error;
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
     changeStateConfigure(common, error, params.mPath, state, detailedState.get());
     execRequestTrigger("Configure", common);
     return createRequestResult(common, error, "Configure done", timer.duration(), state, move(detailedState));
@@ -369,9 +377,10 @@ RequestResult Controller::execConfigure(const CommonParams& common, const Device
 RequestResult Controller::execStart(const CommonParams& common, const DeviceParams& params)
 {
     Timer timer;
+    Error error;
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
     changeState(common, error, TopoTransition::Run, params.mPath, state, detailedState.get());
     execRequestTrigger("Start", common);
     return createRequestResult(common, error, "Start done", timer.duration(), state, move(detailedState));
@@ -380,9 +389,10 @@ RequestResult Controller::execStart(const CommonParams& common, const DevicePara
 RequestResult Controller::execStop(const CommonParams& common, const DeviceParams& params)
 {
     Timer timer;
+    Error error;
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
     changeState(common, error, TopoTransition::Stop, params.mPath, state, detailedState.get());
     execRequestTrigger("Stop", common);
     return createRequestResult(common, error, "Stop done", timer.duration(), state, move(detailedState));
@@ -391,9 +401,10 @@ RequestResult Controller::execStop(const CommonParams& common, const DeviceParam
 RequestResult Controller::execReset(const CommonParams& common, const DeviceParams& params)
 {
     Timer timer;
+    Error error;
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
     changeStateReset(common, error, params.mPath, state, detailedState.get());
     execRequestTrigger("Reset", common);
     return createRequestResult(common, error, "Reset done", timer.duration(), state, move(detailedState));
@@ -402,9 +413,10 @@ RequestResult Controller::execReset(const CommonParams& common, const DevicePara
 RequestResult Controller::execTerminate(const CommonParams& common, const DeviceParams& params)
 {
     Timer timer;
+    Error error;
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    Error error;
     changeState(common, error, TopoTransition::End, params.mPath, state, detailedState.get());
     execRequestTrigger("Terminate", common);
     return createRequestResult(common, error, "Terminate done", timer.duration(), state, move(detailedState));
@@ -551,7 +563,7 @@ bool Controller::attachToDDSSession(const CommonParams& common, Error& error, co
     return true;
 }
 
-bool Controller::submitDDSAgents(Session& session, const CommonParams& common, Error& error, const DDSSubmit::Params& params)
+bool Controller::submitDDSAgents(const CommonParams& common, Session& session, Error& error, const DDSSubmit::Params& params)
 {
     bool success = true;
     using namespace dds::tools_api;
@@ -628,7 +640,7 @@ bool Controller::requestCommanderInfo(const CommonParams& common, Error& error, 
     }
 }
 
-bool Controller::waitForNumActiveSlots(Session& session, const CommonParams& common, Error& error, size_t numSlots)
+bool Controller::waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots)
 {
     try {
         session.mDDSSession->waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common));
@@ -852,7 +864,6 @@ bool Controller::createTopology(const CommonParams& common, Error& error, const 
 {
     auto& session = getOrCreateSession(common);
     try {
-        session.mTopology.reset();
         session.mTopology = make_unique<Topology>(dds::topology_api::CTopology(topologyFile), session.mDDSSession);
     } catch (exception& e) {
         session.mTopology = nullptr;
@@ -883,9 +894,9 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopoTrans
 
         success = !errorCode;
         if (!success) {
-            auto failed = stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
+            auto failed = stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
             if (static_cast<ErrorCode>(errorCode.value()) != ErrorCode::DeviceChangeStateInvalidTransition) {
-                success = attemptTopoRecovery(failed, session, common);
+                success = attemptTopoRecovery(common, session, failed);
             } else {
                 OLOG(debug, common) << "Invalid transition, skipping nMin check.";
             }
@@ -911,7 +922,7 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopoTrans
 
         printStateStats(common, topoState);
     } catch (exception& e) {
-        stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
+        stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
         fillFatalError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
         success = false;
     }
@@ -936,8 +947,8 @@ bool Controller::waitForState(const CommonParams& common, Error& error, DeviceSt
 
         success = !errorCode;
         if (!success) {
-            auto failed = stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
-            success = attemptTopoRecovery(failed, session, common);
+            auto failed = stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
+            success = attemptTopoRecovery(common, session, failed);
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -954,7 +965,7 @@ bool Controller::waitForState(const CommonParams& common, Error& error, DeviceSt
             OLOG(info, common) << "Topology state is now " << expState;
         }
     } catch (exception& e) {
-        stateSummaryOnFailure(common, session.mTopology->GetCurrentState(), expState, session);
+        stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
         fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Wait for state failed: ", e.what()));
         success = false;
     }
@@ -1039,7 +1050,7 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
                 }
                 ++count;
             }
-            success = attemptTopoRecovery(failed, session, common);
+            success = attemptTopoRecovery(common, session, failed);
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -1063,11 +1074,13 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
 
 AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopoState& topoState, const string& path)
 {
-    if (path.empty())
+    if (path.empty()) {
         return AggregateState(topoState);
+    }
 
-    if (ddsTopo == nullptr)
+    if (ddsTopo == nullptr) {
         throw runtime_error("DDS topology is not initialized");
+    }
 
     try {
         // Check if path points to a single task
@@ -1090,8 +1103,9 @@ AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopo
             taskIds.insert(v.second.m_taskId);
         });
 
-        if (taskIds.empty())
+        if (taskIds.empty()) {
             throw runtime_error("No tasks found matching the path " + path);
+        }
 
         // Find a state of a first task
         auto firstIt{ find_if(topoState.cbegin(), topoState.cend(), [&](const TopoState::value_type& v) {
@@ -1176,7 +1190,7 @@ Error Controller::checkSessionIsRunning(const CommonParams& common, ErrorCode er
     return error;
 }
 
-FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& common, const TopoState& topoState, DeviceState expectedState, Session& session)
+FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& common, Session& session, const TopoState& topoState, DeviceState expectedState)
 {
     FailedTasksCollections failed;
 
@@ -1254,7 +1268,7 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
     return failed;
 }
 
-bool Controller::attemptTopoRecovery(FailedTasksCollections& failed, Session& session, const CommonParams& common)
+bool Controller::attemptTopoRecovery(const CommonParams& common, Session& session, FailedTasksCollections& failed)
 {
     if (!failed.collections.empty() && !session.mNinfo.empty()) {
         OLOG(info, common) << "Checking if execution can continue according to the minimum number of nodes requirement...";
@@ -1321,12 +1335,12 @@ bool Controller::attemptTopoRecovery(FailedTasksCollections& failed, Session& se
             }
 
             // TODO: notification on agent shutdown in development in DDS
-            currentSlotCount = getNumSlots(session, common);
+            currentSlotCount = getNumSlots(common, session);
             OLOG(info, common) << "Current number of slots: " << currentSlotCount;
             size_t attempts = 0;
             while (currentSlotCount != expectedNumSlots && attempts < 400) {
                 this_thread::sleep_for(chrono::milliseconds(50));
-                currentSlotCount = getNumSlots(session, common);
+                currentSlotCount = getNumSlots(common, session);
                 // OLOG(info, common) << "Current number of slots: " << currentSlotCount;
                 ++attempts;
             }
@@ -1347,7 +1361,7 @@ bool Controller::attemptTopoRecovery(FailedTasksCollections& failed, Session& se
     return false;
 }
 
-dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(Session& session, const CommonParams& common) const
+dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(const CommonParams& common, Session& session) const
 {
     using namespace dds::tools_api;
     SAgentInfoRequest::request_t agentInfoRequest;
@@ -1356,7 +1370,7 @@ dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(Ses
     return agentInfo;
 }
 
-uint32_t Controller::getNumSlots(Session& session, const CommonParams& common) const
+uint32_t Controller::getNumSlots(const CommonParams& common, Session& session) const
 {
     using namespace dds::tools_api;
     SAgentCountRequest::response_t agentCountInfo;
