@@ -233,8 +233,14 @@ void Controller::updateTopology(const CommonParams& common, Session& session)
 RequestResult Controller::execActivate(const CommonParams& common, const ActivateParams& params)
 {
     Timer timer;
+    Error error;
+
     auto& session = getOrCreateSession(common);
-    Error error{ checkSessionIsRunning(common, ErrorCode::DDSActivateTopologyFailed) };
+
+    if (!session.mDDSSession->IsRunning()) {
+        fillError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
+    }
+
     if (!error.mCode) {
         try {
             if (session.mTopoFilePath.empty()) {
@@ -326,10 +332,12 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     Timer timer;
     Error error;
 
-    auto& session = getOrCreateSession(common);
-
     // grab session id before shutting down the session, to return it in the reply
-    string sidStr{ to_string(session.mDDSSession->getSessionID()) };
+    string sidStr;
+    {
+        auto& session = getOrCreateSession(common);
+        sidStr = to_string(session.mDDSSession->getSessionID());
+    }
 
     shutdownDDSSession(common, error);
     removeSession(common);
@@ -1178,16 +1186,6 @@ void Controller::removeSession(const CommonParams& common)
     } else {
         OLOG(debug, common) << "Found no session for partition ID " << quoted(common.mPartitionID);
     }
-}
-
-Error Controller::checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode)
-{
-    Error error;
-    auto& session = getOrCreateSession(common);
-    if (!session.mDDSSession->IsRunning()) {
-        fillError(common, error, errorCode, "DDS session is not running. Use Init or Run to start the session.");
-    }
-    return error;
 }
 
 FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& common, Session& session, const TopoState& topoState, DeviceState expectedState)

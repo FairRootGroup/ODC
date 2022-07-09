@@ -224,8 +224,6 @@ class Controller
     Session& getOrCreateSession(const CommonParams& common);
     void removeSession(const CommonParams& common);
 
-    Error checkSessionIsRunning(const CommonParams& common, ErrorCode errorCode);
-
     FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, Session& session, const TopoState& topoState, DeviceState expectedState);
     bool attemptTopoRecovery(const CommonParams& common, Session& session, FailedTasksCollections& failed);
     void attemptSubmitRecovery(const CommonParams& common, Session& session, Error& error, const std::vector<DDSSubmit::Params>& ddsParams, const std::map<std::string, uint32_t>& agentCounts);
