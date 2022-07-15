@@ -114,6 +114,10 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
     if (session.mDDSSession->IsRunning()) {
         map<string, uint32_t> agentCounts; // agent count sorted by their group name
 
+        for (const auto& p : ddsParams) {
+            agentCounts[p.mAgentGroup] = 0;
+        }
+
         try {
             auto agentInfo = getAgentInfo(common, session);
             OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
@@ -153,44 +157,48 @@ void Controller::attemptSubmitRecovery(const CommonParams& common,
                                        const map<string, uint32_t>& agentCounts)
 {
     error = Error();
-    for (const auto& p : ddsParams) {
-        if (p.mNumAgents != agentCounts.at(p.mAgentGroup)) {
-            // fail recovery if insufficient agents, and no nMin is defined
-            if (p.mMinAgents == 0) {
-                fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
-                    "Number of agents (", agentCounts.at(p.mAgentGroup), ") for group '", p.mAgentGroup
-                    , "' is less than requested (", p.mNumAgents, "), "
-                    , "and no nMin is defined"));
-                return;
-            }
-            // fail recovery if insufficient agents, and no nMin is defined
-            if (agentCounts.at(p.mAgentGroup) < p.mMinAgents) {
-                fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
-                    "Number of agents (", agentCounts.at(p.mAgentGroup), ") for group '", p.mAgentGroup
-                    , "' is less than requested (", p.mNumAgents, "), "
-                    , "and nMin (", p.mMinAgents, ") is not satisfied"));
-                return;
-            }
-            OLOG(info, common) << "Number of agents (" << agentCounts.at(p.mAgentGroup) << ") for group '" << p.mAgentGroup
-                               << "' is less than requested (" << p.mNumAgents << "), "
-                               << "but nMin (" << p.mMinAgents << ") is satisfied";
-        }
-    }
-    if (!error.mCode) {
-        try {
-            session.mTotalSlots = getNumSlots(common, session);
-            for (auto& tgi : session.mNinfo) {
-                auto it = find_if(agentCounts.cbegin(), agentCounts.cend(), [&](const auto& ac) {
-                    return ac.first == tgi.second.agentGroup;
-                });
-                if (it != agentCounts.cend()) {
-                    tgi.second.nCurrent = it->second;
+    try {
+        for (const auto& p : ddsParams) {
+            if (p.mNumAgents != agentCounts.at(p.mAgentGroup)) {
+                // fail recovery if insufficient agents, and no nMin is defined
+                if (p.mMinAgents == 0) {
+                    fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
+                        "Number of agents (", agentCounts.at(p.mAgentGroup), ") for group '", p.mAgentGroup
+                        , "' is less than requested (", p.mNumAgents, "), "
+                        , "and no nMin is defined"));
+                    return;
                 }
+                // fail recovery if insufficient agents, and no nMin is defined
+                if (agentCounts.at(p.mAgentGroup) < p.mMinAgents) {
+                    fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
+                        "Number of agents (", agentCounts.at(p.mAgentGroup), ") for group '", p.mAgentGroup
+                        , "' is less than requested (", p.mNumAgents, "), "
+                        , "and nMin (", p.mMinAgents, ") is not satisfied"));
+                    return;
+                }
+                OLOG(info, common) << "Number of agents (" << agentCounts.at(p.mAgentGroup) << ") for group '" << p.mAgentGroup
+                                << "' is less than requested (" << p.mNumAgents << "), "
+                                << "but nMin (" << p.mMinAgents << ") is satisfied";
             }
-            updateTopology(common, session);
-        } catch (const exception& e) {
-            fillError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed updating topology: ", e.what()));
         }
+        if (!error.mCode) {
+            try {
+                session.mTotalSlots = getNumSlots(common, session);
+                for (auto& tgi : session.mNinfo) {
+                    auto it = find_if(agentCounts.cbegin(), agentCounts.cend(), [&](const auto& ac) {
+                        return ac.first == tgi.second.agentGroup;
+                    });
+                    if (it != agentCounts.cend()) {
+                        tgi.second.nCurrent = it->second;
+                    }
+                }
+                updateTopology(common, session);
+            } catch (const exception& e) {
+                fillError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed updating topology: ", e.what()));
+            }
+        }
+    } catch (const exception& e) {
+        fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Recovery failed: ", e.what()));
     }
 }
 
