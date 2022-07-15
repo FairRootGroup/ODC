@@ -174,21 +174,17 @@ class CliHelper
 
     static void addOptions(boost::program_options::options_description& options, DeviceParams& params)
     {
+        using namespace boost::program_options;
         options.add_options()
-            ("path", boost::program_options::value<std::string>(&params.mPath)->default_value(""), "Topology path of devices")
-            ("detailed", boost::program_options::bool_switch(&params.mDetailed)->default_value(false), "Detailed reply of devices");
+            ("path", value<std::string>(&params.mPath)->default_value(""), "Topology path of devices")
+            ("detailed", bool_switch(&params.mDetailed)->default_value(false), "Detailed reply of devices");
     }
 
     static void addOptions(boost::program_options::options_description& options, SetPropertiesParams& params)
     {
         using namespace boost::program_options;
-        const SetPropertiesParams::Props props{ { "key1", "value1" }, { "key2", "value2" } };
-        std::vector<std::string> defaults;
-        transform(props.begin(), props.end(), back_inserter(defaults), [](const SetPropertiesParams::Prop& p) -> std::string { return p.first + ":" + p.second; });
-        std::string defaultsStr{ boost::algorithm::join(defaults, " ") };
         options.add_options()
-            ("prop", value<std::vector<std::string>>()->multitoken()->default_value(defaults, defaultsStr),
-                "Key-value pairs for a set properties request ( key1:value1 key2:value2 )")
+            ("prop", value<std::vector<std::string>>()->multitoken(), "Key-value pairs for a set properties request ( key1:value1 key2:value2 )")
             ("path", value<std::string>(&params.mPath)->default_value(""), "Path for a set property request");
     }
 
@@ -237,8 +233,6 @@ class CliHelper
                 }
             }
             params.mProperties = props;
-        } else {
-            params.mProperties = { { "key1", "value1" }, { "key2", "value2" } };
         }
     }
 

@@ -1,6 +1,7 @@
 .init --id @TEST_SESSION@
 .submit --id @TEST_SESSION@
 .activate --id @TEST_SESSION@ --script "cat @ODC_DATADIR@/ex-topo-infinite.xml"
+.prop --id @TEST_SESSION@ --prop key1:value1 key2:value2
 .config --id @TEST_SESSION@
 .start --id @TEST_SESSION@
 .sleep --ms 1000

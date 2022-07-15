@@ -6,6 +6,8 @@
 .submit --id @TEST_SESSION2@
 .activate --id @TEST_SESSION1@ --topo @ODC_DATADIR@/ex-topo-infinite.xml
 .activate --id @TEST_SESSION2@ --topo @ODC_DATADIR@/ex-topo-infinite.xml
+.prop --id @TEST_SESSION1@ --prop key1:value1 key2:value2
+.prop --id @TEST_SESSION2@ --prop key1:value1 key2:value2
 .config --id @TEST_SESSION1@
 .config --id @TEST_SESSION2@
 .start --id @TEST_SESSION1@

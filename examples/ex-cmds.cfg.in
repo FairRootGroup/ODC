@@ -6,6 +6,8 @@
 .submit --id f6e5d4
 .activate --id c3b2a1 --topo @ODC_DATADIR@/ex-topo-infinite.xml
 .activate --id f6e5d4 --topo @ODC_DATADIR@/ex-topo-infinite.xml
+.prop --id c3b2a1 --prop key1:value1 key2:value2
+.prop --id f6e5d4 --prop key1:value1 key2:value2
 .config --id c3b2a1
 .config --id f6e5d4
 .start --id c3b2a1
