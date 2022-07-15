@@ -166,10 +166,9 @@ class CliHelper
     static void addOptions(boost::program_options::options_description& options, SubmitParams& params)
     {
         using namespace boost::program_options;
-        std::string defaultTopo("<rms>localhost</rms><agents>1</agents><slots>36</slots>");
         options.add_options()
-            ("plugin,p", value<std::string>(&params.mPlugin)->default_value("odc-rp-same"), "ODC resource plugin name.")
-            ("resources,r", value<std::string>(&params.mResources)->default_value(defaultTopo), "A resource description for a corresponding ODC resource plugin.");
+            ("plugin,p", value<std::string>(&params.mPlugin), "ODC resource plugin name.")
+            ("resources,r", value<std::string>(&params.mResources), "A resource description for a corresponding ODC resource plugin.");
     }
 
     static void addOptions(boost::program_options::options_description& options, DeviceParams& params)

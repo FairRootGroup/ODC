@@ -1,4 +1,4 @@
-.submit --id @TEST_SESSION@
+.submit --id @TEST_SESSION@ --plugin odc-rp-same -r "<rms>localhost</rms><agents>1</agents><slots>36</slots>"
 .activate --id @TEST_SESSION@ --topo @ODC_DATADIR@/ex-topo-infinite.xml
 .prop --id @TEST_SESSION@ --prop key1:value1 key2:value2
 .upscale --id @TEST_SESSION@

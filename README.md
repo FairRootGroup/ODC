@@ -100,7 +100,7 @@ By default this example uses [localhost plugin](http://dds.gsi.de/doc/nightly/RM
 The basic sequence of commands for interactive mode:
 ```
 .init
-.submit
+.submit --plugin odc-rp-same -r "<rms>localhost</rms><agents>1</agents><slots>36</slots>"
 .activate --topo INSTALL_DIR/share/odc/ex-topo-infinite.xml
 .config
 .start

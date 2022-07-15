@@ -2,8 +2,8 @@
 .init --id c3b2a1
 .init --id f6e5d4
 .status
-.submit --id c3b2a1
-.submit --id f6e5d4
+.submit --id c3b2a1 --plugin odc-rp-same -r "<rms>localhost</rms><agents>1</agents><slots>36</slots>"
+.submit --id f6e5d4 --plugin odc-rp-same -r "<rms>localhost</rms><agents>1</agents><slots>36</slots>"
 .activate --id c3b2a1 --topo @ODC_DATADIR@/ex-topo-infinite.xml
 .activate --id f6e5d4 --topo @ODC_DATADIR@/ex-topo-infinite.xml
 .prop --id c3b2a1 --prop key1:value1 key2:value2
