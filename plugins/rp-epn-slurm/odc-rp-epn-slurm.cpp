@@ -81,22 +81,22 @@ struct Resources
 struct ZoneConfig
 {
     size_t numSlots;
-    std::string slurmCfgPath;
-    std::string envCfgPath;
+    string slurmCfgPath;
+    string envCfgPath;
 };
 
-std::map<std::string, ZoneConfig> getZoneConfig(const std::vector<std::string>& zonesStr)
+map<string, ZoneConfig> getZoneConfig(const vector<string>& zonesStr)
 {
-    std::map<std::string, ZoneConfig> result;
+    map<string, ZoneConfig> result;
 
     for (const auto& z : zonesStr) {
-        std::vector<std::string> zoneCfg;
+        vector<string> zoneCfg;
         boost::algorithm::split(zoneCfg, z, boost::algorithm::is_any_of(":"));
         if (zoneCfg.size() != 4) {
             OLOG(error) << "Provided zones configuration has incorrect format. Expected <name>:<numSlots>:<slurmCfgPath>:<envCfgPath>.";
-            throw std::runtime_error("Provided zones configuration has incorrect format. Expected <name>:<numSlots>:<slurmCfgPath>:<envCfgPath>.");
+            throw runtime_error("Provided zones configuration has incorrect format. Expected <name>:<numSlots>:<slurmCfgPath>:<envCfgPath>.");
         }
-        result.emplace(zoneCfg.at(0), ZoneConfig{ std::stoul(zoneCfg.at(1)), zoneCfg.at(2), zoneCfg.at(3) });
+        result.emplace(zoneCfg.at(0), ZoneConfig{ stoul(zoneCfg.at(1)), zoneCfg.at(2), zoneCfg.at(3) });
     }
 
     return result;
@@ -108,7 +108,7 @@ int main(int argc, char** argv)
         string resources;
         Logger::Config logConfig;
         string partitionID;
-        std::vector<std::string> zonesStr;
+        vector<string> zonesStr;
 
         string defaultLogDir{ smart_path(string("$HOME/.ODC/log")) };
 
@@ -116,12 +116,12 @@ int main(int argc, char** argv)
         opts.add_options()
             ("help,h", "Help message")
             ("version,v", "Print version")
-            ("res", bpo::value<string>(&resources)->default_value("{\"zone\":\"online\",\"n\":1}"), "Resource description in JSON format")
+            ("res", bpo::value<string>(&resources), "Resource description in JSON format. E.g. {\"zone\":\"online\",\"n\":1}")
             ("logdir", bpo::value<string>(&logConfig.mLogDir)->default_value(defaultLogDir), "Log files directory")
             ("severity", bpo::value<ESeverity>(&logConfig.mSeverity)->default_value(ESeverity::info), "Log severity level")
             ("infologger", bpo::bool_switch(&logConfig.mInfologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
             ("id", bpo::value<string>(&partitionID)->default_value(""), "ECS partition ID")
-            ("zones", bpo::value<std::vector<std::string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath>:<envCfgPath> format");
+            ("zones", bpo::value<vector<string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath>:<envCfgPath> format");
 
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(opts).run(), vm);
@@ -147,7 +147,7 @@ int main(int argc, char** argv)
         OLOG(info, partitionID, 0) << "Starting epn slurm plugin";
 
         Resources res(resources);
-        std::map<std::string, ZoneConfig> zones{getZoneConfig(zonesStr)};
+        map<string, ZoneConfig> zones{getZoneConfig(zonesStr)};
 
         for (const auto& r : res.mResources) {
             stringstream ss;
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
                << "</submit>";
 
             OLOG(info, partitionID, 0) << ss.str();
-            std::cout << ss.str() << std::endl;
+            cout << ss.str() << endl;
         }
 
         OLOG(info, partitionID, 0) << "Finishing epn slurm plugin";
