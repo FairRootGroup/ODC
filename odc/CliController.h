@@ -26,8 +26,8 @@ class Controller : public core::CliControllerHelper<Controller>
     void setTimeout(const std::chrono::seconds& timeout) { mCtrl.setTimeout(timeout); }
     void setHistoryDir(const std::string& dir) { mCtrl.setHistoryDir(dir); }
 
-    void registerResourcePlugins(const core::PluginManager::PluginMap_t& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
-    void registerRequestTriggers(const core::PluginManager::PluginMap_t& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
+    void registerResourcePlugins(const core::PluginManager::PluginMap& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
+    void registerRequestTriggers(const core::PluginManager::PluginMap& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId, const std::string& restoreDir) { mCtrl.restore(restoreId, restoreDir); }
 
     std::string requestInitialize(const core::CommonParams& common, const core::InitializeParams& params) { return generalReply(mCtrl.execInitialize(common, params)); }

@@ -27,7 +27,7 @@ class PluginManager
 {
   public:
     // Plugin map <plugin name, cmd>
-    using PluginMap_t = std::map<std::string, std::string>;
+    using PluginMap = std::map<std::string, std::string>;
 
     void registerPlugin(const std::string& plugin, const std::string& cmd)
     {
@@ -86,10 +86,11 @@ class PluginManager
         }
         return out;
     }
+
     bool isPluginRegistered(const std::string& plugin) const { return mPlugins.find(plugin) != mPlugins.end(); }
 
   private:
-    PluginMap_t mPlugins; ///< Plugin map
+    PluginMap mPlugins; ///< Plugin map
 };
 
 } // namespace odc::core

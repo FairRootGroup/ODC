@@ -205,16 +205,16 @@ struct UpdateParams
 
 struct SetPropertiesParams
 {
-    using Property_t = std::pair<std::string, std::string>;
-    using Properties_t = std::vector<Property_t>;
+    using Prop = std::pair<std::string, std::string>;
+    using Props = std::vector<Prop>;
 
     SetPropertiesParams() {}
-    SetPropertiesParams(const Properties_t& properties, const std::string& path)
+    SetPropertiesParams(const Props& props, const std::string& path)
         : mPath(path)
-        , mProperties(properties)
+        , mProperties(props)
     {}
     std::string mPath;        ///< Path in the topology
-    Properties_t mProperties; ///< List of device configuration properties
+    Props mProperties; ///< List of device configuration properties
 
     friend std::ostream& operator<<(std::ostream& os, const SetPropertiesParams& p)
     {

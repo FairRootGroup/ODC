@@ -6,23 +6,22 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-// ODC
 #include <odc/BuildConstants.h>
 #include <odc/CliController.h>
 #include <odc/CliHelper.h>
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/Version.h>
-// STD
-#include <chrono>
-#include <cstdlib>
-#include <iostream>
-// BOOST
+
+#include <dds/Tools.h>
+
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-// DDS
-#include <dds/Tools.h>
+
+#include <chrono>
+#include <cstdlib>
+#include <iostream>
 
 using namespace std;
 using namespace odc::core;
@@ -35,8 +34,8 @@ int main(int argc, char** argv)
         Logger::Config logConfig;
         CliHelper::BatchOptions batchOptions;
         bool batch;
-        PluginManager::PluginMap_t pluginMap;
-        PluginManager::PluginMap_t triggerMap;
+        PluginManager::PluginMap pluginMap;
+        PluginManager::PluginMap triggerMap;
         string restoreId;
         string restoreDir;
         string historyDir;

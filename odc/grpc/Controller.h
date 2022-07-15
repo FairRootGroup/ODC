@@ -35,8 +35,8 @@ class Controller final
 
     void setTimeout(const std::chrono::seconds& timeout) { mController.setTimeout(timeout); }
     void setHistoryDir(const std::string& dir) { mController.setHistoryDir(dir); }
-    void registerResourcePlugins(const core::PluginManager::PluginMap_t& pluginMap) { mController.registerResourcePlugins(pluginMap); }
-    void registerRequestTriggers(const core::PluginManager::PluginMap_t& triggerMap) { mController.registerRequestTriggers(triggerMap); }
+    void registerResourcePlugins(const core::PluginManager::PluginMap& pluginMap) { mController.registerResourcePlugins(pluginMap); }
+    void registerRequestTriggers(const core::PluginManager::PluginMap& triggerMap) { mController.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId, const std::string& restoreDir) { mController.restore(restoreId, restoreDir); }
 
     ::grpc::Status Initialize(::grpc::ServerContext* ctx, const odc::InitializeRequest* req, odc::GeneralReply* rep)
@@ -172,11 +172,11 @@ class Controller final
 
         // Convert from protobuf to ODC format
         OLOG(info, common) << "SetProperties request properties: ";
-        core::SetPropertiesParams::Properties_t props;
+        core::SetPropertiesParams::Props props;
         for (int i = 0; i < req->properties_size(); i++) {
             auto prop{ req->properties(i) };
             OLOG(info, common) << "  key: " << prop.key() << ", value: " << prop.value();
-            props.push_back(core::SetPropertiesParams::Property_t(prop.key(), prop.value()));
+            props.push_back(core::SetPropertiesParams::Prop(prop.key(), prop.value()));
         }
 
         core::SetPropertiesParams setPropertiesParams{ props, req->path() };

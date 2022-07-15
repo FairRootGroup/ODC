@@ -128,11 +128,11 @@ class Controller
 
     /// \brief Register resource plugins
     /// \param [in] pluginMap Map of plugin name to path
-    void registerResourcePlugins(const PluginManager::PluginMap_t& pluginMap);
+    void registerResourcePlugins(const PluginManager::PluginMap& pluginMap);
 
     /// \brief Register request triggers
     /// \param [in] triggerMap Map of plugin name to path
-    void registerRequestTriggers(const PluginManager::PluginMap_t& triggerMap);
+    void registerRequestTriggers(const PluginManager::PluginMap& triggerMap);
 
     /// \brief Restore sessions for the specified ID
     ///  The function has to be called before the service start accepting request.

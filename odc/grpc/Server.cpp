@@ -31,8 +31,8 @@ namespace bpo = boost::program_options;
 template<typename C>
 void runController(C& ctrl,
                    size_t timeout,
-                   PluginManager::PluginMap_t& plugins,
-                   PluginManager::PluginMap_t& triggers,
+                   PluginManager::PluginMap& plugins,
+                   PluginManager::PluginMap& triggers,
                    const std::string& restoreId,
                    const std::string& restoreDir,
                    const std::string& historyDir,
@@ -55,8 +55,8 @@ int main(int argc, char** argv)
         size_t timeout;
         string host;
         Logger::Config logConfig;
-        PluginManager::PluginMap_t plugins;
-        PluginManager::PluginMap_t triggers;
+        PluginManager::PluginMap plugins;
+        PluginManager::PluginMap triggers;
         string restoreId;
         string restoreDir;
         string historyDir;

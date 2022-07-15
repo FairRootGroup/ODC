@@ -117,13 +117,15 @@ class CliHelper
 
     static void addBatchOptions(boost::program_options::options_description& options, BatchOptions& batchOptions, bool& batch)
     {
-        options.add_options()("batch", boost::program_options::bool_switch(&batch)->default_value(false), "Non interactive batch mode");
+        options.add_options()
+            ("batch", boost::program_options::bool_switch(&batch)->default_value(false), "Non interactive batch mode");
         addOptions(options, batchOptions);
     }
 
     static void addOptions(boost::program_options::options_description& options, SleepOptions& sleepOptions)
     {
-        options.add_options()("ms", boost::program_options::value<size_t>(&sleepOptions.mMs)->default_value(1000), "Sleep time in ms");
+        options.add_options()
+            ("ms", boost::program_options::value<size_t>(&sleepOptions.mMs)->default_value(1000), "Sleep time in ms");
     }
 
     // Request specific options
@@ -180,9 +182,9 @@ class CliHelper
     static void addOptions(boost::program_options::options_description& options, SetPropertiesParams& params)
     {
         using namespace boost::program_options;
-        const SetPropertiesParams::Properties_t props{ { "key1", "value1" }, { "key2", "value2" } };
+        const SetPropertiesParams::Props props{ { "key1", "value1" }, { "key2", "value2" } };
         std::vector<std::string> defaults;
-        transform(props.begin(), props.end(), back_inserter(defaults), [](const SetPropertiesParams::Property_t& p) -> std::string { return p.first + ":" + p.second; });
+        transform(props.begin(), props.end(), back_inserter(defaults), [](const SetPropertiesParams::Prop& p) -> std::string { return p.first + ":" + p.second; });
         std::string defaultsStr{ boost::algorithm::join(defaults, " ") };
         options.add_options()
             ("prop", value<std::vector<std::string>>()->multitoken()->default_value(defaults, defaultsStr),
@@ -198,7 +200,7 @@ class CliHelper
 
     // Options parsing
 
-    static void parsePluginMapOptions(const boost::program_options::variables_map& vm, PluginManager::PluginMap_t& pluginMap, const std::string& option)
+    static void parsePluginMapOptions(const boost::program_options::variables_map& vm, PluginManager::PluginMap& pluginMap, const std::string& option)
     {
         if (vm.count(option)) {
             const auto& kvp(vm[option].as<std::vector<std::string>>());
@@ -224,7 +226,7 @@ class CliHelper
     {
         if (vm.count("prop")) {
             const auto& kvp(vm["prop"].as<std::vector<std::string>>());
-            SetPropertiesParams::Properties_t props;
+            SetPropertiesParams::Props props;
             for (const auto& v : kvp) {
                 std::vector<std::string> strs;
                 boost::split(strs, v, boost::is_any_of(":"));

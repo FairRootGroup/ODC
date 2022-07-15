@@ -1472,14 +1472,14 @@ chrono::seconds Controller::requestTimeout(const CommonParams& common) const
     return timeout;
 }
 
-void Controller::registerResourcePlugins(const DDSSubmit::PluginMap_t& pluginMap)
+void Controller::registerResourcePlugins(const DDSSubmit::PluginMap& pluginMap)
 {
     for (const auto& v : pluginMap) {
         mSubmit.registerPlugin(v.first, v.second);
     }
 }
 
-void Controller::registerRequestTriggers(const PluginManager::PluginMap_t& triggerMap)
+void Controller::registerRequestTriggers(const PluginManager::PluginMap& triggerMap)
 {
     const set<string> avail{ "Initialize", "Submit", "Activate", "Run", "Update", "Configure", "SetProperties", "GetState", "Start", "Stop", "Reset", "Terminate", "Shutdown", "Status" };
     for (const auto& v : triggerMap) {
