@@ -10,7 +10,6 @@
 #define __ODC__CliHelper__
 
 #include <odc/BuildConstants.h>
-#include <odc/CmdsFile.h>
 #include <odc/Logger.h>
 #include <odc/Params.h>
 #include <odc/PluginManager.h>
@@ -20,12 +19,39 @@
 #include <boost/program_options/variables_map.hpp>
 
 #include <cstddef>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace odc::core
 {
+
+class CmdsFile
+{
+  public:
+    static std::vector<std::string> getCmds(const std::string& filepath)
+    {
+        std::ifstream fs(filepath, std::ifstream::in);
+        if (!fs) {
+            std::stringstream ss;
+            ss << "Failed to open commands file " << std::quoted(filepath);
+            throw std::runtime_error(ss.str());
+        }
+
+        std::vector<std::string> result;
+
+        std::string line;
+        while (getline(fs, line)) {
+            if (line.length() > 0) {
+                result.push_back(line);
+            }
+        }
+        return result;
+    }
+};
 
 class CliHelper
 {

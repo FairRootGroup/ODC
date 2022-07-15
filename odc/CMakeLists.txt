@@ -22,7 +22,6 @@ add_library(${target} STATIC
   "CliController.h"
   "CliHelper.h"
   "CliControllerHelper.h"
-  "CmdsFile.h"
   "Controller.cpp"
   "Controller.h"
   "DDSSubmit.h"
