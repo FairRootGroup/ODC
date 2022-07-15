@@ -139,28 +139,26 @@ class CliHelper
 
     static void addOptions(boost::program_options::options_description& options, InitializeParams& params)
     {
-        options.add_options()("sid", boost::program_options::value<std::string>(&params.mDDSSessionID)->default_value(""), "Session ID of DDS");
+        options.add_options()
+            ("sid", boost::program_options::value<std::string>(&params.mDDSSessionID)->default_value(""), "Session ID of DDS");
     }
 
     static void addOptions(boost::program_options::options_description& options, ActivateParams& params)
     {
         using namespace boost::program_options;
-        std::string defaultTopo(kODCDataDir + "/ex-topo-infinite.xml");
         options.add_options()
-            ("topo", value<std::string>(&params.mTopoFile)->implicit_value("")->default_value(defaultTopo), "Topology filepath")
-            ("content", value<std::string>(&params.mTopoContent)->implicit_value("")->default_value(""), "Topology content")
-            ("script", value<std::string>(&params.mTopoScript)->implicit_value("")->default_value(""), "Topology script");
+            ("topo", value<std::string>(&params.mTopoFile)->implicit_value(""), "Topology filepath")
+            ("content", value<std::string>(&params.mTopoContent)->implicit_value(""), "Topology content")
+            ("script", value<std::string>(&params.mTopoScript)->implicit_value(""), "Topology script");
     }
 
     static void addOptions(boost::program_options::options_description& options, UpdateParams& params)
     {
         using namespace boost::program_options;
-        std::string defaultTopo(kODCDataDir + "/ex-topo-infinite-up.xml");
-        // std::string defaultTopo(kODCDataDir + "/ex-topo-infinite-down.xml");
         options.add_options()
-            ("topo", value<std::string>(&params.mTopoFile)->default_value(defaultTopo), "Topology filepath")
-            ("content", value<std::string>(&params.mTopoContent)->default_value(""), "Topology content")
-            ("script", value<std::string>(&params.mTopoScript)->implicit_value("")->default_value(""), "Topology script");
+            ("topo", value<std::string>(&params.mTopoFile), "Topology filepath")
+            ("content", value<std::string>(&params.mTopoContent), "Topology content")
+            ("script", value<std::string>(&params.mTopoScript)->implicit_value(""), "Topology script");
     }
 
     static void addOptions(boost::program_options::options_description& options, SubmitParams& params)
@@ -194,7 +192,8 @@ class CliHelper
 
     static void addOptions(boost::program_options::options_description& options, StatusParams& params)
     {
-        options.add_options()("running", boost::program_options::bool_switch(&params.mRunning)->default_value(false), "Select only running sessions");
+        options.add_options()
+            ("running", boost::program_options::bool_switch(&params.mRunning)->default_value(false), "Select only running sessions");
     }
 
     // Options parsing

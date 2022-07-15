@@ -1,5 +1,5 @@
 .submit --id @TEST_SESSION@
-.activate --id @TEST_SESSION@
+.activate --id @TEST_SESSION@ --topo @ODC_DATADIR@/ex-topo-infinite.xml
 .prop --id @TEST_SESSION@
 .upscale --id @TEST_SESSION@
 .downscale --id @TEST_SESSION@

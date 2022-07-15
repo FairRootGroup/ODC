@@ -4,8 +4,8 @@
 .status
 .submit --id c3b2a1
 .submit --id f6e5d4
-.activate --id c3b2a1
-.activate --id f6e5d4
+.activate --id c3b2a1 --topo @ODC_DATADIR@/ex-topo-infinite.xml
+.activate --id f6e5d4 --topo @ODC_DATADIR@/ex-topo-infinite.xml
 .config --id c3b2a1
 .config --id f6e5d4
 .start --id c3b2a1
