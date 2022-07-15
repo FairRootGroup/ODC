@@ -112,7 +112,7 @@ The basic sequence of commands for interactive mode:
 ```
 The full list of available commands is printed on start of `odc-grpc-client` and `odc-cli-server`. Most of the commands have additional options. Use `--help` to print help message with a list of available options, i.e. `.start --help`. 
 
-A sequence of request can also be executed in a batch mode using `--batch` option of `odc-grpc-client` and `odc-cli-server`. The sequence of commands can be changed via `--cmds` or `--cf` options. `--cmds` accepts an array of commands together with command line options seperated by space. For example, initializing and shutting down two partitions (sessions) in batch mode:
+A sequence of requests can also be executed in a batch mode using `--batch` option of `odc-grpc-client` and `odc-cli-server`. The sequence of commands can be set via `--cmds` or `--cf` options. `--cmds` accepts an array of commands together with command line options seperated by space. For example, initializing and shutting down two partitions (sessions) in batch mode:
 ```bash
 odc-grpc-client --batch --cmds ".init --id a1b2" ".init --id c3d4" ".down --id a1b2" ".down --id c3d4"
 ```

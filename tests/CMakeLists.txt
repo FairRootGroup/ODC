@@ -15,13 +15,18 @@ list(APPEND TEST_ENV "PATH=${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_BINDIR}:$EN
 file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/tmp")
 list(APPEND TEST_ENV "TMPDIR=${CMAKE_BINARY_DIR}/tmp")
 
+set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
+string(RANDOM LENGTH 8 TEST_SESSION1)
+string(RANDOM LENGTH 8 TEST_SESSION2)
+
 set(target odc-cli-server)
 # Test odc-cli-server with default set of options
+configure_file(cmds_old_defaults.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_old_defaults.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_old_defaults.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 set(test ${target}::default)
-add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --batch)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_old_defaults.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
-set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
 string(RANDOM LENGTH 8 TEST_SESSION)
 
 # Test odc-cli-server by sending different commands without running session

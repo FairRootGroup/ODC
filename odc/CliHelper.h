@@ -84,38 +84,9 @@ class CliHelper
 
     static void addOptions(boost::program_options::options_description& options, BatchOptions& batchOptions)
     {
-        const std::vector<std::string> defaultPartitions{ "a1b2c3", "d4e5f6" };
-        const std::string defaultUpTopo{ kODCDataDir + "/ex-topo-infinite-up.xml" };
-        const std::string defaultDownTopo{ kODCDataDir + "/ex-topo-infinite-down.xml" };
-        const std::string upStr{ ".upscale --topo " + defaultUpTopo };
-        const std::string downStr{ ".downscale --topo " + defaultDownTopo };
-        const std::vector<std::string> defaultCmds{ ".status", ".init", ".status", ".submit", ".activate", ".config", ".start", ".status", ".stop", upStr,    ".start",
-                                                    ".status", ".stop", downStr,   ".start",  ".status",   ".stop",   ".reset", ".term",   ".down", ".status" };
-
-        std::vector<std::string> cmds;
-        for (const auto& cmd : defaultCmds) {
-            // Give some time for processing before going to stop
-            if (boost::starts_with(cmd, ".stop")) {
-                cmds.push_back(".sleep --ms 1000");
-            }
-            if (boost::starts_with(cmd, ".status")) {
-                cmds.push_back(cmd);
-            } else {
-                for (const auto& prt : defaultPartitions) {
-                    cmds.push_back(cmd + " --id " + prt);
-                }
-            }
-        }
-
-        const std::string cmdsStr{ boost::algorithm::join(cmds, " ") };
         options.add_options()
-            ("cmds", boost::program_options::value<std::vector<std::string>>(&batchOptions.mCmds)->multitoken()->default_value(cmds, cmdsStr),
-                "Array of command to be executed in batch mode");
-
-        const std::string defaultConfig{ kODCDataDir + "/ex-cmds.cfg" };
-        options.add_options()
-            ("cf", boost::program_options::value<std::string>(&batchOptions.mCmdsFilepath)->default_value(defaultConfig),
-                "Config file containing an array of command to be executed in batch mode");
+            ("cmds", boost::program_options::value<std::vector<std::string>>(&batchOptions.mCmds)->multitoken(), "Array of command to be executed in batch mode")
+            ("cf", boost::program_options::value<std::string>(&batchOptions.mCmdsFilepath), "Config file containing an array of command to be executed in batch mode");
     }
 
     static void addBatchOptions(boost::program_options::options_description& options, BatchOptions& batchOptions, bool& batch)
