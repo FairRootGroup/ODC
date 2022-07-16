@@ -279,28 +279,35 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
 
     auto& session = getOrCreateSession(common);
 
-    // Run request doesn't support attachment to a DDS session.
-    if (!initializeParams.mDDSSessionID.empty()) {
-        error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Attachment to a DDS session not supported");
-    } else {
-        error = execInitialize(common, initializeParams).mError;
-        if (!error.mCode) {
-            try {
-                session.mTopoFilePath = topoFilepath(common, activateParams.mTopoFile,
-                                                             activateParams.mTopoContent,
-                                                             activateParams.mTopoScript);
-                extractRequirements(common, session.mTopoFilePath);
-            } catch (exception& e) {
-                fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
-            }
+    if (!session.mRunAttempted) {
+        session.mRunAttempted = true;
+
+        // Run request doesn't support attachment to a DDS session.
+        if (!initializeParams.mDDSSessionID.empty()) {
+            error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Attachment to a DDS session is not supported");
+        } else {
+            error = execInitialize(common, initializeParams).mError;
             if (!error.mCode) {
-                error = execSubmit(common, submitParams).mError;
+                try {
+                    session.mTopoFilePath = topoFilepath(common, activateParams.mTopoFile,
+                                                                activateParams.mTopoContent,
+                                                                activateParams.mTopoScript);
+                    extractRequirements(common, session.mTopoFilePath);
+                } catch (exception& e) {
+                    fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+                }
                 if (!error.mCode) {
-                    error = execActivate(common, activateParams).mError;
+                    error = execSubmit(common, submitParams).mError;
+                    if (!error.mCode) {
+                        error = execActivate(common, activateParams).mError;
+                    }
                 }
             }
         }
+    } else {
+        error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Repeated Run request is not supported. Shutdown this partition to retry.");
     }
+
     AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
     execRequestTrigger("Run", common);
     return createRequestResult(common, error, "Run done", timer.duration(), state);

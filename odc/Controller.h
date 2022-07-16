@@ -107,6 +107,7 @@ class Controller
         std::map<std::string, std::vector<ZoneInfo>> mZoneInfos; ///< Zones info zoneName:ZoneInfo
         size_t mTotalSlots = 0; ///< total number of DDS slots
         std::unordered_map<uint64_t, uint32_t> mAgentSlots;
+        bool mRunAttempted = false;
 
       private:
         std::mutex mTaskDetailsMtx; ///< Mutex for the tasks container
