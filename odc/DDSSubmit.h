@@ -46,7 +46,7 @@ class DDSSubmit : public PluginManager
         Params(const boost::property_tree::ptree& pt)
         {
             // Only valid tags are allowed.
-            std::set<std::string> validTags{ "rms", "configFile", "envFile", "agents", "minAgents", "slots", "zone" };
+            std::set<std::string> validTags{ "rms", "configFile", "envFile", "agents", "slots", "zone" };
             for (const auto& v : pt) {
                 if (validTags.count(v.first.data()) == 0) {
                     throw std::runtime_error(toString("Failed to init from property tree. Unknown key ", std::quoted(v.first.data())));
@@ -59,7 +59,7 @@ class DDSSubmit : public PluginManager
             mEnvFile = pt.get<std::string>("envFile", "");
             // set agent group to the zone name initially
             mNumAgents = pt.get<size_t>("agents", 0);
-            mMinAgents = pt.get<size_t>("minAgents", 0);
+            mMinAgents = 0;
             mNumSlots = pt.get<size_t>("slots", 0);
             // number of cores is set dynamically from the topology (if provided), not from the initial resource definition
             mNumCores = 0;

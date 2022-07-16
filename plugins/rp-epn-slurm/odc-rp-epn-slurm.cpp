@@ -32,24 +32,22 @@ struct Resource
 {
     Resource(const bpt::ptree& pt)
     {
-        // Do some basic validation of the input tree.
         // Only valid tags are allowed.
-        set<string> validTags{ "zone", "n", "nmin" };
-        for (const auto& v : pt) {
-            if (validTags.count(v.first.data()) == 0) {
+        set<string> validTags{ "zone", "n" };
+        for (const auto& [tagName, tree] : pt) {
+            if (validTags.count(tagName) == 0) {
                 stringstream ss;
-                ss << "Failed to init from property tree. Unknown key " << quoted(v.first.data());
+                ss << "Failed to init from property tree. Unknown key " << quoted(tagName);
                 throw runtime_error(ss.str());
             }
         }
-        mZone = pt.get<string>("zone", "online");
-        mN = pt.get<size_t>("n", 1);
-        mNmin = pt.get<size_t>("nmin", 0);
+        // throw if these tags are not present
+        mZone = pt.get<string>("zone");
+        mN = pt.get<size_t>("n");
     }
 
     string mZone;
     size_t mN = 0;
-    size_t mNmin = 0;
 };
 
 struct Resources
@@ -59,18 +57,23 @@ struct Resources
         bpt::ptree pt;
         stringstream ss;
         ss << res;
-        bpt::read_json(ss, pt);
-
         try {
-            // Single resource
+            bpt::read_json(ss, pt);
+        } catch (const exception& e) {
+            stringstream ss2;
+            ss2 << "Invalid resource JSON string provided: " << res;
+            throw runtime_error(ss2.str());
+        }
+
+        size_t numArrayElements = pt.count("");
+        if (numArrayElements == 0) {
+            // single resource
             mResources.push_back(Resource(pt));
-        } catch (const exception& _e) {
-            // Array of resources
-            auto rpt{ pt.get_child_optional("") };
-            if (rpt) {
-                for (const auto& v : rpt.get()) {
-                    mResources.push_back(Resource(v.second));
-                }
+        } else {
+            // array of resources
+            const auto& resArray = pt.get_child("");
+            for (const auto& [tagName, tree] : resArray) {
+                mResources.push_back(Resource(tree));
             }
         }
     }
@@ -93,7 +96,6 @@ map<string, ZoneConfig> getZoneConfig(const vector<string>& zonesStr)
         vector<string> zoneCfg;
         boost::algorithm::split(zoneCfg, z, boost::algorithm::is_any_of(":"));
         if (zoneCfg.size() != 4) {
-            OLOG(error) << "Provided zones configuration has incorrect format. Expected <name>:<numSlots>:<slurmCfgPath>:<envCfgPath>.";
             throw runtime_error("Provided zones configuration has incorrect format. Expected <name>:<numSlots>:<slurmCfgPath>:<envCfgPath>.");
         }
         result.emplace(zoneCfg.at(0), ZoneConfig{ stoul(zoneCfg.at(1)), zoneCfg.at(2), zoneCfg.at(3) });
@@ -129,8 +131,8 @@ int main(int argc, char** argv)
 
         try {
             Logger::instance().init(logConfig);
-        } catch (exception& _e) {
-            cerr << "Can't initialize log: " << _e.what() << endl;
+        } catch (exception& e) {
+            cerr << "Can't initialize log: " << e.what() << endl;
             return EXIT_FAILURE;
         }
 
@@ -140,7 +142,7 @@ int main(int argc, char** argv)
         }
 
         if (vm.count("version")) {
-            OLOG(clean) << ODC_VERSION;
+            cout << ODC_VERSION << endl;
             return EXIT_SUCCESS;
         }
 
@@ -151,6 +153,10 @@ int main(int argc, char** argv)
 
         for (const auto& r : res.mResources) {
             stringstream ss;
+            if (zones.find(r.mZone) == zones.end()) {
+                cerr << "Zone not found: " << r.mZone;
+                return EXIT_FAILURE;
+            }
             const auto& zone = zones.at(r.mZone);
             ss << "<submit>"
                << "<rms>slurm</rms>";
@@ -159,9 +165,6 @@ int main(int argc, char** argv)
             }
             if (!zone.envCfgPath.empty()) {
                 ss << "<envFile>" << zone.envCfgPath << "</envFile>";
-            }
-            if (r.mNmin != 0) {
-                ss << "<minAgents>" << r.mNmin << "</minAgents>";
             }
             ss << "<agents>" << r.mN << "</agents>" // number of agents (assuming it is equals to number of nodes)
                << "<zone>" << r.mZone << "</zone>" // zone
