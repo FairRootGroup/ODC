@@ -43,30 +43,8 @@ class DDSSubmit : public PluginManager
         Params& operator=(const Params&) = default;
         Params& operator=(Params&&) = default;
 
-        Params(const std::string& rmsPlugin,
-               const std::string& configFile,
-               const std::string& envFile,
-               const std::string& zone,
-               const std::string& agentGroup,
-               size_t numAgents,
-               size_t minAgents,
-               size_t numSlots)
-            : mRMSPlugin(rmsPlugin)
-            , mZone(zone)
-            , mAgentGroup(agentGroup)
-            , mConfigFile(configFile)
-            , mEnvFile(envFile)
-            , mNumAgents(numAgents)
-            , mMinAgents(minAgents)
-            , mNumSlots(numSlots)
-        {}
-
-        /// \brief Initialization of structure from property tree
-        void initFromPT(const boost::property_tree::ptree& pt)
+        Params(const boost::property_tree::ptree& pt)
         {
-            // TODO: FIXME: <configContent> is not yet defined
-            // To support it we need to create a temporary file with configuration content and use it as config file.
-
             // Only valid tags are allowed.
             std::set<std::string> validTags{ "rms", "configFile", "envFile", "agents", "minAgents", "slots", "zone" };
             for (const auto& v : pt) {
@@ -75,11 +53,11 @@ class DDSSubmit : public PluginManager
                 }
             }
             mRMSPlugin = pt.get<std::string>("rms", "");
+            mZone = pt.get<std::string>("zone", "");
+            mAgentGroup = pt.get<std::string>("zone", "");
             mConfigFile = pt.get<std::string>("configFile", "");
             mEnvFile = pt.get<std::string>("envFile", "");
-            mZone = pt.get<std::string>("zone", "");
             // set agent group to the zone name initially
-            mAgentGroup = pt.get<std::string>("zone", "");
             mNumAgents = pt.get<size_t>("agents", 0);
             mMinAgents = pt.get<size_t>("minAgents", 0);
             mNumSlots = pt.get<size_t>("slots", 0);
@@ -131,15 +109,13 @@ class DDSSubmit : public PluginManager
         // check if parameters are children of <submit> tag(s), or flat
         size_t nSubmitTags = pt.count("submit");
         if (nSubmitTags < 1) {
-            params.emplace_back();
-            params.back().initFromPT(pt);
+            params.emplace_back(pt);
         } else {
             for (const auto& [name, element] : pt) {
                 if (name != "submit") {
                     throw std::runtime_error(toString("Failed to init from property tree. Unknown top level tag ", std::quoted(name)));
                 }
-                params.emplace_back();
-                params.back().initFromPT(element);
+                params.emplace_back(element);
             }
         }
 

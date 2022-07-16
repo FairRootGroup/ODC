@@ -42,7 +42,7 @@ or
    "n":1
 }]
 ```
-`zone` is the zone name (defaults to `online`). `n` is the number of EPN nodes (defaults to `1`).
+`zone` is the zone name. `n` is the number of EPN nodes.
 
 ### Register custom plugins
 
