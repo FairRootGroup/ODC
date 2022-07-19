@@ -1,5 +1,17 @@
 # ODC Release Notes
 
+## 0.74.0 (2022-07-19)
+
+- epnc plugin removed.
+- restore file is now updated after session shutdown, to avoid inconsistent entries.
+- bugfix: crash during submit recovery when no agents were launched.
+- defaults removed from --cmds, --cf batch options.
+- defaults removed from --topo, --script, --content, --prop, --plugin, --resources options.
+- defaults removed from --res of the odc-rp-epn-slurm plugin.
+- improved resource validation in the Slurm plugin. More errors are caught with improved error messages.
+- disallow repeated Run requests per partition. Only single Run request is allowed, until partition is shut down.
+- allow skipping 'n' in the resource field, and pick up core scheduling settings from the topology.
+
 ## 0.73.2 (2022-06-30)
 
 - State change errors are now logged as fatal.
