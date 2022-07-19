@@ -43,11 +43,12 @@ struct Resource
         }
         // throw if these tags are not present
         mZone = pt.get<string>("zone");
-        mN = pt.get<size_t>("n");
+        // use defaults if these tags are not present
+        mN = pt.get<int32_t>("n", -1);
     }
 
     string mZone;
-    size_t mN = 0;
+    int32_t mN = -1;
 };
 
 struct Resources

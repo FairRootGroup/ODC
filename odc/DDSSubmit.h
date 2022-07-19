@@ -24,7 +24,7 @@
 
 namespace odc::core {
 
-struct ZoneInfo
+struct ZoneGroup
 {
     int32_t n;
     int ncores;
@@ -58,7 +58,7 @@ class DDSSubmit : public PluginManager
             mConfigFile = pt.get<std::string>("configFile", "");
             mEnvFile = pt.get<std::string>("envFile", "");
             // set agent group to the zone name initially
-            mNumAgents = pt.get<size_t>("agents", 0);
+            mNumAgents = pt.get<int32_t>("agents", -1);
             mMinAgents = 0;
             mNumSlots = pt.get<size_t>("slots", 0);
             // number of cores is set dynamically from the topology (if provided), not from the initial resource definition
@@ -70,7 +70,7 @@ class DDSSubmit : public PluginManager
         std::string mAgentGroup; ///< Agent group name
         std::string mConfigFile; ///< Path to the configuration file of the RMS plugin
         std::string mEnvFile;    ///< Path to the environment file
-        size_t mNumAgents = 0;   ///< Number of DDS agents
+        int32_t mNumAgents = 0;   ///< Number of DDS agents
         size_t mMinAgents = 0;   ///< Minimum number of DDS agents
         size_t mNumSlots = 0;    ///< Number of slots per DDS agent
         size_t mNumCores = 0;    ///< Number of cores
@@ -100,7 +100,7 @@ class DDSSubmit : public PluginManager
                                    const std::string& resources,
                                    const std::string& partitionID,
                                    uint64_t runNr,
-                                   const std::map<std::string, std::vector<ZoneInfo>>& zoneInfos)
+                                   const std::map<std::string, std::vector<ZoneGroup>>& zoneInfos)
     {
         std::vector<Params> params;
         std::stringstream ss{ execPlugin(plugin, resources, partitionID, runNr) };
@@ -120,23 +120,35 @@ class DDSSubmit : public PluginManager
         }
 
         // extend parameters, if ncores is provided
-        for (const auto& zi : zoneInfos) {
-            auto result = find_if(params.begin(), params.end(), [&zi](const auto& p){ return p.mZone == zi.first; });
+        for (const auto& [zoneNameSB, zoneGroups] : zoneInfos) {
+            std::string zoneName(zoneNameSB);
+            auto result = find_if(params.begin(), params.end(), [&zoneName](const auto& p){ return p.mZone == zoneName; });
             if (result == params.end()) {
-                throw std::runtime_error(toString("Zone '", zi.first, "' not found. Check --zones setting of the resource plugin."));
+                throw std::runtime_error(toString("Zone '", zoneName, "' not found. Check --zones setting of the resource plugin."));
             } else {
                 // overwrite the core number for the found parameter set
-                result->mNumCores = zi.second.at(0).ncores;
-                result->mAgentGroup = zi.second.at(0).agentGroup;
+                result->mNumCores = zoneGroups.at(0).ncores;
+                result->mAgentGroup = zoneGroups.at(0).agentGroup;
+                // for core-based scheduling, set number of agents to 1
+                if (result->mNumCores != 0) {
+                    result->mNumAgents = 1;
+                }
                 Params tempParams = *result;
                 // for the rest of agent groups (if present), add them as new parameter sets
-                for (size_t i = 1; i < zi.second.size(); ++i) {
+                for (size_t i = 1; i < zoneGroups.size(); ++i) {
                     params.push_back(tempParams);
-                    params.back().mNumCores = zi.second.at(i).ncores;
-                    params.back().mAgentGroup = zi.second.at(i).agentGroup;
+                    params.back().mNumCores = zoneGroups.at(i).ncores;
+                    params.back().mAgentGroup = zoneGroups.at(i).agentGroup;
                 }
             }
         }
+
+        // if no 'n' was provided, and the selected zone did not get any core scheduling, remove it
+        params.erase(
+            std::remove_if(params.begin(), params.end(), [](const auto& p){
+                return p.mNumAgents == -1; }),
+            params.end()
+        );
 
         return params;
     }

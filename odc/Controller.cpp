@@ -85,7 +85,10 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
     }
 
     if (!error.mCode) {
-        OLOG(info, common) << "Preparing to submit " << ddsParams.size() << " configurations";
+        OLOG(info, common) << "Preparing to submit " << ddsParams.size() << " configurations:";
+        for (unsigned int i = 0; i < ddsParams.size(); ++i) {
+            OLOG(info, common) << "  [" << i + 1 << "/" << ddsParams.size() << "]: " << ddsParams.at(i);
+        }
 
         for (unsigned int i = 0; i < ddsParams.size(); ++i) {
             auto it = find_if(session.mNinfo.cbegin(), session.mNinfo.cend(), [&](const auto& tgi) {
@@ -836,9 +839,9 @@ void Controller::extractRequirements(const CommonParams& common, const string& t
         if (!agentGroup.empty() && !zone.empty()) {
             auto it = session.mZoneInfos.find(zone);
             if (it == session.mZoneInfos.end()) {
-                session.mZoneInfos.try_emplace(zone, std::vector<ZoneInfo>{ ZoneInfo{n, ncores, agentGroup} });
+                session.mZoneInfos.try_emplace(zone, std::vector<ZoneGroup>{ ZoneGroup{n, ncores, agentGroup} });
             } else {
-                it->second.emplace_back(ZoneInfo{n, ncores, agentGroup});
+                it->second.emplace_back(ZoneGroup{n, ncores, agentGroup});
             }
         }
     }
