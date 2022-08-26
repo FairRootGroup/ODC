@@ -20,29 +20,39 @@ string(RANDOM LENGTH 8 TEST_SESSION1)
 string(RANDOM LENGTH 8 TEST_SESSION2)
 
 set(target odc-cli-server)
-# Test odc-cli-server with default set of options
-configure_file(cmds_old_defaults.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_old_defaults.cfg @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_old_defaults.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
-set(test ${target}::default)
-add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_old_defaults.cfg)
+
+# Test odc-cli-server with a certain set of options
+configure_file(cmd_set_1.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_1.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_1.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+set(test ${target}::cmd_set_1)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_1.cfg)
+set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
+
+string(RANDOM LENGTH 8 TEST_SESSION)
+
+# Test odc-cli-server with the same set of options, except init+submit+activate are replaced with run command
+configure_file(cmd_set_1_run.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_1_run.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_1_run.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+set(test ${target}::cmd_set_1_run)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_1_run.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
 string(RANDOM LENGTH 8 TEST_SESSION)
 
 # Test odc-cli-server by sending different commands without running session
-configure_file(cmds.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmds.cfg @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmds.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
-set(test ${target}::batch_cmds_from_file)
-add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmds.cfg)
+configure_file(cmd_set_2.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_2.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_2.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+set(test ${target}::cmd_set_2)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_2.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "Sleeping 100 ms" ENVIRONMENT "${TEST_ENV}")
 
 string(RANDOM LENGTH 8 TEST_SESSION)
 
 # Test --script option of odc-cli-server
-configure_file(cmds_with_script.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_with_script.cfg @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_with_script.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
-set(test ${target}::batch_cmds_from_file_with_script)
-add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmds_with_script.cfg)
+configure_file(cmd_set_3_with_script.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_3_with_script.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_3_with_script.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+set(test ${target}::cmd_set_3_with_script)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_3_with_script.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
 # Test nmin feature that reduces set of active devices when some fail, without failing entire topology

@@ -71,6 +71,7 @@ struct BaseRequestResult
         , mExecTime(execTime)
         , mError(error)
     {}
+
     StatusCode mStatusCode = StatusCode::unknown; ///< Operation status code
     std::string mMsg;                             ///< General message about the status
     size_t mExecTime = 0;                         ///< Execution time in milliseconds
@@ -154,8 +155,9 @@ struct SubmitParams
         : mPlugin(plugin)
         , mResources(resources)
     {}
+
     std::string mPlugin;    ///< ODC resource plugin name. Plugin has to be registered in ODC server.
-    std::string mResources; ///< Parcable description of the requested resources.
+    std::string mResources; ///< Parsable description of the requested resources.
 
     friend std::ostream& operator<<(std::ostream& os, const SubmitParams& p)
     {
@@ -171,15 +173,49 @@ struct ActivateParams
         , mTopoContent(topoContent)
         , mTopoScript(topoScript)
     {}
+
     std::string mTopoFile;    ///< Path to the topology file
     std::string mTopoContent; ///< Content of the XML topology
     std::string mTopoScript;  ///< Script that generates topology content
 
     friend std::ostream& operator<<(std::ostream& os, const ActivateParams& p)
     {
-        return os << "ActivateParams: topologyFile: " << quoted(p.mTopoFile)
+        return os << "ActivateParams"
+                  << ": topologyFile: "    << quoted(p.mTopoFile)
                   << ", topologyContent: " << quoted(p.mTopoContent)
-                  << ", topologyScript: " << quoted(p.mTopoScript);
+                  << ", topologyScript: "  << quoted(p.mTopoScript);
+    }
+};
+
+struct RunParams
+{
+    RunParams() {}
+    RunParams(const std::string& plugin,
+              const std::string& resources,
+              const std::string& topoFile,
+              const std::string& topoContent,
+              const std::string& topoScript)
+        : mPlugin(plugin)
+        , mResources(resources)
+        , mTopoFile(topoFile)
+        , mTopoContent(topoContent)
+        , mTopoScript(topoScript)
+    {}
+
+    std::string mPlugin;      ///< ODC resource plugin name. Plugin has to be registered in ODC server.
+    std::string mResources;   ///< Parsable description of the requested resources.
+    std::string mTopoFile;    ///< Path to the topology file
+    std::string mTopoContent; ///< Content of the XML topology
+    std::string mTopoScript;  ///< Script that generates topology content
+
+    friend std::ostream& operator<<(std::ostream& os, const RunParams& p)
+    {
+        return os << "RunParams"
+                  << ": plugin: "          << quoted(p.mPlugin)
+                  << ", resource: "        << quoted(p.mResources)
+                  << ", topologyFile: "    << quoted(p.mTopoFile)
+                  << ", topologyContent: " << quoted(p.mTopoContent)
+                  << ", topologyScript: "  << quoted(p.mTopoScript);
     }
 };
 
@@ -191,6 +227,7 @@ struct UpdateParams
         , mTopoContent(topoContent)
         , mTopoScript(topoScript)
     {}
+
     std::string mTopoFile;    ///< Path to the topology file
     std::string mTopoContent; ///< Content of the XML topology
     std::string mTopoScript;  ///< Script that generates topology content
@@ -213,6 +250,7 @@ struct SetPropertiesParams
         : mPath(path)
         , mProperties(props)
     {}
+
     std::string mPath;        ///< Path in the topology
     Props mProperties; ///< List of device configuration properties
 
@@ -233,6 +271,7 @@ struct DeviceParams
         : mPath(path)
         , mDetailed(detailed)
     {}
+
     std::string mPath;      ///< Path to the topology file
     bool mDetailed = false; ///< If True than return also detailed information
 

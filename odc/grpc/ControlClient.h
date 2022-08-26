@@ -63,18 +63,15 @@ class GrpcControlClient : public odc::core::CliControllerHelper<GrpcControlClien
         return GetReplyString(status, reply);
     }
 
-    std::string requestRun(const odc::core::CommonParams& common,
-                           const odc::core::InitializeParams& /* initializeParams */,
-                           const odc::core::SubmitParams& submitParams,
-                           const odc::core::ActivateParams& activateParams)
+    std::string requestRun(const odc::core::CommonParams& common, const odc::core::RunParams& runParams)
     {
         odc::RunRequest request;
         updateCommonParams(common, &request);
-        request.set_plugin(submitParams.mPlugin);
-        request.set_resources(submitParams.mResources);
-        request.set_topology(activateParams.mTopoFile);
-        request.set_content(activateParams.mTopoContent);
-        request.set_script(activateParams.mTopoScript);
+        request.set_plugin(runParams.mPlugin);
+        request.set_resources(runParams.mResources);
+        request.set_topology(runParams.mTopoFile);
+        request.set_content(runParams.mTopoContent);
+        request.set_script(runParams.mTopoScript);
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Run(&context, request, &reply);

@@ -205,7 +205,7 @@ class CliControllerHelper
         } else if (cmd == ".activate") {
             reply = request("Activate",      args, &Owner::requestActivate,      CommonParams(), ActivateParams());
         } else if (cmd == ".run") {
-            reply = request("Run",           args, &Owner::requestRun,           CommonParams(), InitializeParams(), SubmitParams(), ActivateParams());
+            reply = request("Run",           args, &Owner::requestRun,           CommonParams(), RunParams());
         } else if (cmd == ".upscale") {
             reply = request("Upscale",       args, &Owner::requestUpscale,       CommonParams(), UpdateParams());
         } else if (cmd == ".downscale") {

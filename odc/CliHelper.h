@@ -171,6 +171,17 @@ class CliHelper
             ("resources,r", value<std::string>(&params.mResources), "A resource description for a corresponding ODC resource plugin.");
     }
 
+    static void addOptions(boost::program_options::options_description& options, RunParams& params)
+    {
+        using namespace boost::program_options;
+        options.add_options()
+            ("plugin,p", value<std::string>(&params.mPlugin), "ODC resource plugin name.")
+            ("resources,r", value<std::string>(&params.mResources), "A resource description for a corresponding ODC resource plugin.")
+            ("topo", value<std::string>(&params.mTopoFile)->implicit_value(""), "Topology filepath")
+            ("content", value<std::string>(&params.mTopoContent)->implicit_value(""), "Topology content")
+            ("script", value<std::string>(&params.mTopoScript)->implicit_value(""), "Topology script");
+    }
+
     static void addOptions(boost::program_options::options_description& options, DeviceParams& params)
     {
         using namespace boost::program_options;

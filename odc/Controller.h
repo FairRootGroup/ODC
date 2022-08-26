@@ -154,7 +154,7 @@ class Controller
     /// \brief Activate topology
     RequestResult execActivate(const CommonParams& common, const ActivateParams& params);
     /// \brief Run request combines Initialize, Submit and Activate
-    RequestResult execRun(const CommonParams& common, const InitializeParams& initializeParams, const SubmitParams& submitParams, const ActivateParams& activateParams);
+    RequestResult execRun(const CommonParams& common, const RunParams& params);
     /// \brief Update topology. Can be called multiple times in order to update topology.
     RequestResult execUpdate(const CommonParams& common, const UpdateParams& params);
     /// \brief Shutdown DDS session
@@ -200,7 +200,9 @@ class Controller
     RequestResult createRequestResult(const CommonParams& common, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
     bool createDDSSession(const CommonParams& common, Error& error);
     bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
+    void submit(const CommonParams& common, Session& session, Error& error, const std::string& plugin, const std::string& res);
     bool submitDDSAgents(const CommonParams& common, Session& session, Error& error, const DDSSubmit::Params& params);
+    void activate(const CommonParams& common, Session& session, Error& error, const std::string& topoFile, const std::string& topoContent, const std::string& topoScript);
     bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
     bool waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots);
     bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);

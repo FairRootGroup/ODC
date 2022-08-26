@@ -33,21 +33,11 @@ class Controller : public core::CliControllerHelper<Controller>
     std::string requestInitialize(const core::CommonParams& common, const core::InitializeParams& params) { return generalReply(mCtrl.execInitialize(common, params)); }
     std::string requestSubmit(const core::CommonParams& common, const core::SubmitParams& params) { return generalReply(mCtrl.execSubmit(common, params)); }
     std::string requestActivate(const core::CommonParams& common, const core::ActivateParams& params) { return generalReply(mCtrl.execActivate(common, params)); }
-    std::string requestRun(const core::CommonParams& common,
-                           const core::InitializeParams& initializeParams,
-                           const core::SubmitParams& submitParams,
-                           const core::ActivateParams& activateParams)
-    {
-        return generalReply(mCtrl.execRun(common, initializeParams, submitParams, activateParams));
-    }
-
+    std::string requestRun(const core::CommonParams& common, const core::RunParams& runParams) { return generalReply(mCtrl.execRun(common, runParams)); }
     std::string requestUpscale(const core::CommonParams& common, const core::UpdateParams& params) { return generalReply(mCtrl.execUpdate(common, params)); }
     std::string requestDownscale(const core::CommonParams& common, const core::UpdateParams& params) { return generalReply(mCtrl.execUpdate(common, params)); }
     std::string requestGetState(const core::CommonParams& common, const core::DeviceParams& params) { return generalReply(mCtrl.execGetState(common, params)); }
-    std::string requestSetProperties(const core::CommonParams& common, const core::SetPropertiesParams& params)
-    {
-        return generalReply(mCtrl.execSetProperties(common, params));
-    }
+    std::string requestSetProperties(const core::CommonParams& common, const core::SetPropertiesParams& params) { return generalReply(mCtrl.execSetProperties(common, params)); }
     std::string requestConfigure(const core::CommonParams& common, const core::DeviceParams& params) { return generalReply(mCtrl.execConfigure(common, params)); }
     std::string requestStart(const core::CommonParams& common, const core::DeviceParams& params) { return generalReply(mCtrl.execStart(common, params)); }
 

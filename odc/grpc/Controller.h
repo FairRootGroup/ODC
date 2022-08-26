@@ -132,10 +132,8 @@ class Controller final
             OLOG(info, common) << "Run request END OF TOPOLOGY SCRIPT";
         }
 
-        core::InitializeParams initializeParams{ "" };
-        core::SubmitParams submitParams{ req->plugin(), req->resources() };
-        core::ActivateParams activateParams{ req->topology(), req->content(), req->script() };
-        core::RequestResult res{ mController.execRun(common, initializeParams, submitParams, activateParams) };
+        core::RunParams runParams{ req->plugin(), req->resources(), req->topology(), req->content(), req->script() };
+        core::RequestResult res{ mController.execRun(common, runParams) };
 
         setupGeneralReply(rep, res);
         logGeneralReply("Run", common, *rep);

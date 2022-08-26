@@ -70,15 +70,24 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 
     auto& session = getOrCreateSession(common);
 
+    submit(common, session, error, params.mPlugin, params.mResources);
+
+    execRequestTrigger("Submit", common);
+    return createRequestResult(common, error, "Submit done", timer.duration(), AggregatedState::Undefined);
+}
+
+void Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res)
+{
     if (!session.mDDSSession->IsRunning()) {
         fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
+        return;
     }
 
     // Get DDS submit parameters from ODC resource plugin
     vector<DDSSubmit::Params> ddsParams;
     if (!error.mCode) {
         try {
-            ddsParams = mSubmit.makeParams(params.mPlugin, params.mResources, common.mPartitionID, common.mRunNr, session.mZoneInfos);
+            ddsParams = mSubmit.makeParams(plugin, res, common.mPartitionID, common.mRunNr, session.mZoneInfos);
         } catch (exception& e) {
             fillError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
         }
@@ -148,9 +157,6 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
             attemptSubmitRecovery(common, session, error, ddsParams, agentCounts);
         }
     }
-
-    execRequestTrigger("Submit", common);
-    return createRequestResult(common, error, "Submit done", timer.duration(), AggregatedState::Undefined);
 }
 
 void Controller::attemptSubmitRecovery(const CommonParams& common,
@@ -253,29 +259,33 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     }
 
     if (!error.mCode) {
-        try {
-            if (session.mTopoFilePath.empty()) {
-                session.mTopoFilePath = topoFilepath(common, params.mTopoFile,
-                                                             params.mTopoContent,
-                                                             params.mTopoScript);
-                extractRequirements(common, session.mTopoFilePath);
-            }
-        } catch (exception& e) {
-            fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
-        }
-        if (!error.mCode) {
-            activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
-                && createDDSTopology(common, error, session.mTopoFilePath)
-                && createTopology(common, error, session.mTopoFilePath)
-                && waitForState(common, error, DeviceState::Idle, "");
-        }
+        activate(common, session, error, params.mTopoFile, params.mTopoContent, params.mTopoScript);
     }
+
     AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
     execRequestTrigger("Activate", common);
     return createRequestResult(common, error, "Activate done", timer.duration(), state);
 }
 
-RequestResult Controller::execRun(const CommonParams& common, const InitializeParams& initializeParams, const SubmitParams& submitParams, const ActivateParams& activateParams)
+void Controller::activate(const CommonParams& common, Session& session, Error& error, const string& topoFile, const string& topoContent, const string& topoScript)
+{
+    try {
+        if (session.mTopoFilePath.empty()) {
+            session.mTopoFilePath = topoFilepath(common, topoFile, topoContent, topoScript);
+            extractRequirements(common, session.mTopoFilePath);
+        }
+    } catch (exception& e) {
+        fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+    }
+    if (!error.mCode) {
+        activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
+            && createDDSTopology(common, error, session.mTopoFilePath)
+            && createTopology(common, error, session.mTopoFilePath)
+            && waitForState(common, error, DeviceState::Idle, "");
+    }
+}
+
+RequestResult Controller::execRun(const CommonParams& common, const RunParams& params)
 {
     Timer timer;
     Error error;
@@ -285,25 +295,36 @@ RequestResult Controller::execRun(const CommonParams& common, const InitializePa
     if (!session.mRunAttempted) {
         session.mRunAttempted = true;
 
-        // Run request doesn't support attachment to a DDS session.
-        if (!initializeParams.mDDSSessionID.empty()) {
-            error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Attachment to a DDS session is not supported");
-        } else {
-            error = execInitialize(common, initializeParams).mError;
+        // Create new DDS session
+        // Shutdown DDS session if it is running already
+        shutdownDDSSession(common, error)
+            && createDDSSession(common, error)
+            && subscribeToDDSSession(common, error);
+
+        execRequestTrigger("Initialize", common);
+        updateRestore();
+
+        if (!error.mCode) {
+            try {
+                session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
+                extractRequirements(common, session.mTopoFilePath);
+            } catch (exception& e) {
+                fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+            }
+
             if (!error.mCode) {
-                try {
-                    session.mTopoFilePath = topoFilepath(common, activateParams.mTopoFile,
-                                                                activateParams.mTopoContent,
-                                                                activateParams.mTopoScript);
-                    extractRequirements(common, session.mTopoFilePath);
-                } catch (exception& e) {
-                    fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+                if (!session.mDDSSession->IsRunning()) {
+                    fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
                 }
+
+                submit(common, session, error, params.mPlugin, params.mResources);
+
+                if (!session.mDDSSession->IsRunning()) {
+                    fillError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
+                }
+
                 if (!error.mCode) {
-                    error = execSubmit(common, submitParams).mError;
-                    if (!error.mCode) {
-                        error = execActivate(common, activateParams).mError;
-                    }
+                    activate(common, session, error, params.mTopoFile, params.mTopoContent, params.mTopoScript);
                 }
             }
         }
