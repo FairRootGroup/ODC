@@ -129,61 +129,59 @@ class CliControllerHelper
     void execBatch(const std::vector<std::string>& args)
     {
         CliHelper::BatchOptions bopt;
-        if (parseCommand(args, bopt)) {
-            execCmds(bopt.mOutputCmds);
-        }
+        parseCommand(args, bopt);
+        execCmds(bopt.mOutputCmds);
     }
 
     void execSleep(const std::vector<std::string>& args)
     {
-        CliHelper::SleepOptions sopt;
-        if (parseCommand(args, sopt)) {
+        try {
+            CliHelper::SleepOptions sopt;
+            parseCommand(args, sopt);
             if (sopt.mMs > 0) {
                 std::cout << "Sleeping " << sopt.mMs << " ms" << std::endl;
                 std::this_thread::sleep_for(std::chrono::milliseconds(sopt.mMs));
             }
+        } catch(const std::exception& e) {
+            std::cout << "Error parsing command: " << e.what() << std::endl;
         }
     }
 
     template<typename... RequestParams>
-    bool parseCommand(const std::vector<std::string>& args, RequestParams&&... params)
+    void parseCommand(const std::vector<std::string>& args, RequestParams&&... params)
     {
-        try {
-            bpo::options_description options("Request options");
-            options.add_options()("help,h", "Print help");
+        bpo::options_description options("Request options");
+        options.add_options()("help,h", "Print help");
 
-            // Loop over input parameters and add program options
-            std::apply([&options](auto&&... par) { ((CliHelper::addOptions(options, par)), ...); }, std::tie(params...));
+        // Loop over input parameters and add program options
+        std::apply([&options](auto&&... par) { ((CliHelper::addOptions(options, par)), ...); }, std::tie(params...));
 
-            bpo::variables_map vm;
-            bpo::store(bpo::command_line_parser(args).options(options).run(), vm);
-            bpo::notify(vm);
+        bpo::variables_map vm;
+        bpo::store(bpo::command_line_parser(args).options(options).run(), vm);
+        bpo::notify(vm);
 
-            std::apply([&vm](auto&&... par) { ((CliHelper::parseOptions(vm, par)), ...); }, std::tie(params...));
+        std::apply([&vm](auto&&... par) { ((CliHelper::parseOptions(vm, par)), ...); }, std::tie(params...));
 
-            if (vm.count("help")) {
-                std::cout << options << std::endl;
-                return false;
-            }
-        } catch (std::exception& _e) {
-            std::cout << "Error parsing options: " << _e.what() << std::endl;
-            return false;
+        if (vm.count("help")) {
+            std::cout << options << std::endl;
         }
-        return true;
     }
 
     template<typename T>
     void print(const T& value) { std::cout << value << std::endl; }
 
     template<typename... RequestParams, typename Func>
-    std::string request(const std::string& msg, const std::vector<std::string>& args, Func func, RequestParams&&... params)
+    std::string request(const std::string& name, const std::vector<std::string>& args, Func func, RequestParams&&... params)
     {
         std::string result;
-        if (parseCommand(args, params...)) {
-            std::cout << "Sending " << msg << " request..." << std::endl;
+        try {
+            parseCommand(args, params...);
+            std::cout << "Sending " << name << " request..." << std::endl;
             std::apply([this](auto&&... par) { ((this->print(par)), ...); }, std::tie(params...));
             Owner* p = reinterpret_cast<Owner*>(this);
             result = (p->*func)(params...);
+        } catch(const std::exception& e) {
+            std::cout << "Error parsing command: " << e.what() << std::endl;
         }
         return result;
     }

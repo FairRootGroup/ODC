@@ -55,6 +55,17 @@ set(test ${target}::cmd_set_3_with_script)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_3_with_script.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
+# Test options from the provided example
+set(test ${target}::cmd_set_example)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_BINARY_DIR}/examples/ex-cmds.cfg)
+set_tests_properties(${test} PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}")
+
+# Test options from the provided example as --cmds
+file(STRINGS ${CMAKE_BINARY_DIR}/examples/ex-cmds.cfg cmds)
+set(test ${target}::cmd_set_example_as_cmds)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cmds ${cmds})
+set_tests_properties(${test} PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}")
+
 # Test nmin feature that reduces set of active devices when some fail, without failing entire topology
 macro(add_nmin_test TITLE PASS FAIL)
   set(TEST_SETUP test_${TITLE})

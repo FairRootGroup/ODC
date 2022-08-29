@@ -10,7 +10,7 @@
 .reset --id @TEST_SESSION@
 .term --id @TEST_SESSION@
 .down --id @TEST_SESSION@
-.status --id @TEST_SESSION@
+.status
 .init --id @TEST_SESSION@
 .down --id @TEST_SESSION@
 .sleep --ms 100

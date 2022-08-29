@@ -41,15 +41,15 @@ class CmdsFile
             throw std::runtime_error(ss.str());
         }
 
-        std::vector<std::string> result;
+        std::vector<std::string> cmds;
 
         std::string line;
         while (getline(fs, line)) {
             if (line.length() > 0) {
-                result.push_back(line);
+                cmds.push_back(line);
             }
         }
-        return result;
+        return cmds;
     }
 };
 
@@ -68,24 +68,16 @@ class CliHelper
         size_t mMs; ///> Sleep time in milliseconds
     };
 
-    /// Checks that 'opt1' and 'opt2' are not specified at the same time
-    static void conflictingOptions(const boost::program_options::variables_map& vm, const std::string& opt1, const std::string& opt2)
-    {
-        if (vm.count(opt1) && !vm[opt1].defaulted() && vm.count(opt2) && !vm[opt2].defaulted()) {
-            std::stringstream ss;
-            ss << "Conflicting options " << std::quoted(opt1) << " and " << std::quoted(opt2);
-            throw std::runtime_error(ss.str());
-        }
-    }
-
     /// \brief Fills BatchOptions::m_outputCmds
     static void batchCmds(const boost::program_options::variables_map& vm, bool batch, BatchOptions& batchOptions)
     {
-        CliHelper::conflictingOptions(vm, "cmds", "cf");
+        if (vm.count("cmds") && vm.count("cf")) {
+            throw std::runtime_error("Only --cmds OR --cf can be specified at the same time, not both.");
+        }
         if (batch) {
-            if ((vm.count("cmds") && vm["cmds"].defaulted() && vm.count("cf") && vm["cf"].defaulted()) || (vm.count("cmds") && !vm["cmds"].defaulted())) {
+            if (vm.count("cmds")) {
                 batchOptions.mOutputCmds = batchOptions.mCmds;
-            } else if (vm.count("cf") && !vm["cf"].defaulted()) {
+            } else if (vm.count("cf")) {
                 batchOptions.mOutputCmds = CmdsFile::getCmds(batchOptions.mCmdsFilepath);
             }
         } else {

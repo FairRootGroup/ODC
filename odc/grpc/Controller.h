@@ -457,9 +457,9 @@ class Controller final
     {
         const auto clientMetadata{ ctx.client_metadata() };
         return core::toString("[", ctx.peer(), "] ",
-                        std::accumulate(clientMetadata.begin(), clientMetadata.end(), std::string{}, [](std::string prefix, const auto element) {
-                            return core::toString(std::move(prefix), prefix.empty() ? "" : ",", element.first, ":", element.second);
-                        }));
+            std::accumulate(clientMetadata.begin(), clientMetadata.end(), std::string{}, [](std::string prefix, const auto element) {
+                return core::toString(std::move(prefix), prefix.empty() ? "" : ",", element.first, ":", element.second);
+            }));
     }
 
     core::Controller mController; ///< Core ODC service
