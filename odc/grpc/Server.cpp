@@ -106,9 +106,9 @@ int main(int argc, char** argv)
             odc::grpc::AsyncController ctrl;
             runController(ctrl, timeout, plugins, triggers, restoreId, restoreDir, historyDir, host);
         }
-    } catch (exception& _e) {
-        OLOG(clean) << _e.what();
-        OLOG(fatal) << _e.what();
+    } catch (exception& e) {
+        OLOG(clean) << e.what();
+        OLOG(fatal) << e.what();
         return EXIT_FAILURE;
     } catch (...) {
         OLOG(clean) << "Unexpected Exception occurred.";

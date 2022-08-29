@@ -50,8 +50,8 @@ class Controller final
         logCommonRequest("Initialize", client, common, req);
         OLOG(info, common) << "Initialize request session ID: "   << req->sessionid();
 
-        core::InitializeParams initializeParams{ req->sessionid() };
-        core::RequestResult res{ mController.execInitialize(common, initializeParams) };
+        const core::InitializeParams initializeParams{ req->sessionid() };
+        const core::RequestResult res{ mController.execInitialize(common, initializeParams) };
 
         setupGeneralReply(rep, res);
         logGeneralReply("Initialize", common, *rep);
@@ -67,10 +67,10 @@ class Controller final
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         logCommonRequest("Submit", client, common, req);
-        OLOG(info, common) << "Submit request plugin: "   << req->plugin() << ", resources: "   << req->resources();
+        OLOG(info, common) << "Submit request plugin: " << req->plugin() << ", resources: " << req->resources();
 
-        core::SubmitParams submitParams{ req->plugin(), req->resources() };
-        core::RequestResult res{ mController.execSubmit(common, submitParams) };
+        const core::SubmitParams submitParams{ req->plugin(), req->resources() };
+        const core::RequestResult res{ mController.execSubmit(common, submitParams) };
 
         setupGeneralReply(rep, res);
         logGeneralReply("Submit", common, *rep);
@@ -100,8 +100,8 @@ class Controller final
             OLOG(info, common) << "Run request END OF TOPOLOGY SCRIPT";
         }
 
-        core::ActivateParams activateParams{ req->topology(), req->content(), req->script() };
-        core::RequestResult res{ mController.execActivate(common, activateParams) };
+        const core::ActivateParams activateParams{ req->topology(), req->content(), req->script() };
+        const core::RequestResult res{ mController.execActivate(common, activateParams) };
 
         setupGeneralReply(rep, res);
         logGeneralReply("Activate", common, *rep);
@@ -132,8 +132,8 @@ class Controller final
             OLOG(info, common) << "Run request END OF TOPOLOGY SCRIPT";
         }
 
-        core::RunParams runParams{ req->plugin(), req->resources(), req->topology(), req->content(), req->script() };
-        core::RequestResult res{ mController.execRun(common, runParams) };
+        const core::RunParams runParams{ req->plugin(), req->resources(), req->topology(), req->content(), req->script() };
+        const core::RequestResult res{ mController.execRun(common, runParams) };
 
         setupGeneralReply(rep, res);
         logGeneralReply("Run", common, *rep);
@@ -149,8 +149,8 @@ class Controller final
         logCommonRequest("GetState", client, common, req);
         OLOG(info, common) << "GetState request detailed: " << req->detailed() << ", path: "   << req->path();
 
-        core::DeviceParams deviceParams{ req->path(), req->detailed() };
-        core::RequestResult res{ mController.execGetState(common, deviceParams) };
+        const core::DeviceParams deviceParams{ req->path(), req->detailed() };
+        const core::RequestResult res{ mController.execGetState(common, deviceParams) };
 
         setupStateReply(rep, res);
         logStateReply("GetState", common, *rep);
@@ -177,8 +177,8 @@ class Controller final
             props.push_back(core::SetPropertiesParams::Prop(prop.key(), prop.value()));
         }
 
-        core::SetPropertiesParams setPropertiesParams{ props, req->path() };
-        core::RequestResult res{ mController.execSetProperties(common, setPropertiesParams) };
+        const core::SetPropertiesParams setPropertiesParams{ props, req->path() };
+        const core::RequestResult res{ mController.execSetProperties(common, setPropertiesParams) };
 
         setupGeneralReply(rep, res);
         logGeneralReply("SetProperties", common, *rep);
@@ -198,8 +198,8 @@ class Controller final
         OLOG(info, common) << "Update request content: "  << req->content();
         OLOG(info, common) << "Update request script: "   << req->script();
 
-        core::UpdateParams updateParams{ req->topology(), req->content(), req->script() };
-        core::RequestResult res{ mController.execUpdate(common, updateParams) };
+        const core::UpdateParams updateParams{ req->topology(), req->content(), req->script() };
+        const core::RequestResult res{ mController.execUpdate(common, updateParams) };
 
         setupGeneralReply(rep, res);
         logGeneralReply("Update", common, *rep);
@@ -216,8 +216,8 @@ class Controller final
 
         logCommonRequest("Configure", client, common, &(req->request()));
 
-        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
-        core::RequestResult res{ mController.execConfigure(common, deviceParams) };
+        const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        const core::RequestResult res{ mController.execConfigure(common, deviceParams) };
 
         setupStateReply(rep, res);
         logStateReply("Configure", common, *rep);
@@ -234,8 +234,8 @@ class Controller final
 
         logCommonRequest("Start", client, common, &(req->request()));
 
-        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
-        core::RequestResult res{ mController.execStart(common, deviceParams) };
+        const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        const core::RequestResult res{ mController.execStart(common, deviceParams) };
 
         setupStateReply(rep, res);
         logStateReply("Start", common, *rep);
@@ -252,8 +252,8 @@ class Controller final
 
         logCommonRequest("Stop", client, common, &(req->request()));
 
-        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
-        core::RequestResult res{ mController.execStop(common, deviceParams) };
+        const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        const core::RequestResult res{ mController.execStop(common, deviceParams) };
 
         setupStateReply(rep, res);
         logStateReply("Stop", common, *rep);
@@ -270,8 +270,8 @@ class Controller final
 
         logCommonRequest("Reset", client, common, &(req->request()));
 
-        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
-        core::RequestResult res{ mController.execReset(common, deviceParams) };
+        const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        const core::RequestResult res{ mController.execReset(common, deviceParams) };
 
         setupStateReply(rep, res);
         logStateReply("Reset", common, *rep);
@@ -288,8 +288,8 @@ class Controller final
 
         logCommonRequest("Terminate", client, common, &(req->request()));
 
-        core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
-        core::RequestResult res{ mController.execTerminate(common, deviceParams) };
+        const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
+        const core::RequestResult res{ mController.execTerminate(common, deviceParams) };
 
         setupStateReply(rep, res);
         logStateReply("Terminate", common, *rep);
@@ -306,7 +306,7 @@ class Controller final
 
         logCommonRequest("Shutdown", client, common, req);
 
-        core::RequestResult res{ mController.execShutdown(common) };
+        const core::RequestResult res{ mController.execShutdown(common) };
 
         setupGeneralReply(rep, res);
         logGeneralReply("Shutdown", common, *rep);
@@ -320,7 +320,7 @@ class Controller final
 
         OLOG(info) << "Status request from " << client << ": runnning: " << req->running();
 
-        core::StatusRequestResult res{ mController.execStatus(core::StatusParams(req->running())) };
+        const core::StatusRequestResult res{ mController.execStatus(core::StatusParams(req->running())) };
         setupStatusReply(rep, res);
 
         if (rep->status() == odc::ReplyStatus::SUCCESS) {
