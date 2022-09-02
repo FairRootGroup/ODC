@@ -18,13 +18,13 @@ template<typename TimeT = std::chrono::milliseconds>
 struct Timer
 {
     Timer()
-        : mStart(std::chrono::system_clock::now())
+        : mStart(std::chrono::steady_clock::now())
     {}
 
-    typename TimeT::rep duration() const { return std::chrono::duration_cast<TimeT>(std::chrono::system_clock::now() - mStart).count(); }
+    typename TimeT::rep duration() const { return std::chrono::duration_cast<TimeT>(std::chrono::steady_clock::now() - mStart).count(); }
 
   private:
-    std::chrono::system_clock::time_point mStart;
+    std::chrono::steady_clock::time_point mStart;
 };
 
 } // namespace odc::core
