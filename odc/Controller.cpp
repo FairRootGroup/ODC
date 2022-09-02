@@ -260,7 +260,7 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
 
     try {
         session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
-        extractRequirements(common, session.mTopoFilePath);
+        extractRequirements(common, session);
     } catch (exception& e) {
         fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
     }
@@ -304,7 +304,7 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
         if (!error.mCode) {
             try {
                 session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
-                extractRequirements(common, session.mTopoFilePath);
+                extractRequirements(common, session);
             } catch (exception& e) {
                 fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
             }
@@ -345,7 +345,7 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
 
     try {
         session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
-        extractRequirements(common, session.mTopoFilePath);
+        extractRequirements(common, session);
     } catch (exception& e) {
         fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
     }
@@ -793,12 +793,11 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
     return true;
 }
 
-void Controller::extractRequirements(const CommonParams& common, const string& topologyFile)
+void Controller::extractRequirements(const CommonParams& common, Session& session)
 {
     using namespace dds::topology_api;
-    auto& session = getOrCreateSession(common);
 
-    CTopology ddsTopo(topologyFile);
+    CTopology ddsTopo(session.mTopoFilePath);
 
     auto collections = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::COLLECTION);
     OLOG(info, common) << "Extracting requirements:";
