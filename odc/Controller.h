@@ -14,6 +14,7 @@
 #include <odc/Process.h>
 #include <odc/Topology.h>
 
+#include <chrono>
 #include <map>
 #include <memory>
 #include <string>
@@ -202,7 +203,7 @@ class Controller
     bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
     void submit(const CommonParams& common, Session& session, Error& error, const std::string& plugin, const std::string& res);
     bool submitDDSAgents(const CommonParams& common, Session& session, Error& error, const DDSSubmit::Params& params);
-    void activate(const CommonParams& common, Session& session, Error& error, const std::string& topoFile, const std::string& topoContent, const std::string& topoScript);
+    void activate(const CommonParams& common, Session& session, Error& error);
     bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
     bool waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots);
     bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
@@ -236,7 +237,12 @@ class Controller
 
     std::string topoFilepath(const CommonParams& common, const std::string& topologyFile, const std::string& topologyContent, const std::string& topologyScript);
 
-    std::chrono::seconds requestTimeout(const CommonParams& common) const;
+    std::chrono::seconds requestTimeout(const CommonParams& common) const
+    {
+        std::chrono::seconds timeout = (common.mTimeout == 0) ? mTimeout : std::chrono::seconds(common.mTimeout);
+        OLOG(debug, common) << "Request timeout: " << timeout.count() << " sec";
+        return timeout;
+    }
 
     uint32_t getNumSlots(const CommonParams& common, Session& session) const;
     dds::tools_api::SAgentInfoRequest::responseVector_t getAgentInfo(const CommonParams& common, Session& session) const;

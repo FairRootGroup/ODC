@@ -14,14 +14,16 @@
 namespace odc::core
 {
 
-template<typename TimeT = std::chrono::milliseconds>
 struct Timer
 {
     Timer()
         : mStart(std::chrono::steady_clock::now())
     {}
 
-    typename TimeT::rep duration() const { return std::chrono::duration_cast<TimeT>(std::chrono::steady_clock::now() - mStart).count(); }
+    int64_t duration() const
+    {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - mStart).count();
+    }
 
   private:
     std::chrono::steady_clock::time_point mStart;

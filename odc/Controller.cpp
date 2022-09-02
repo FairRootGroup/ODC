@@ -258,8 +258,15 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
         fillError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
     }
 
+    try {
+        session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
+        extractRequirements(common, session.mTopoFilePath);
+    } catch (exception& e) {
+        fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+    }
+
     if (!error.mCode) {
-        activate(common, session, error, params.mTopoFile, params.mTopoContent, params.mTopoScript);
+        activate(common, session, error);
     }
 
     AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
@@ -267,22 +274,12 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     return createRequestResult(common, error, "Activate done", timer.duration(), state);
 }
 
-void Controller::activate(const CommonParams& common, Session& session, Error& error, const string& topoFile, const string& topoContent, const string& topoScript)
+void Controller::activate(const CommonParams& common, Session& session, Error& error)
 {
-    try {
-        if (session.mTopoFilePath.empty()) {
-            session.mTopoFilePath = topoFilepath(common, topoFile, topoContent, topoScript);
-            extractRequirements(common, session.mTopoFilePath);
-        }
-    } catch (exception& e) {
-        fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
-    }
-    if (!error.mCode) {
-        activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
-            && createDDSTopology(common, error, session.mTopoFilePath)
-            && createTopology(common, error, session.mTopoFilePath)
-            && waitForState(common, error, DeviceState::Idle, "");
-    }
+    activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
+        && createDDSTopology(common, error, session.mTopoFilePath)
+        && createTopology(common, error, session.mTopoFilePath)
+        && waitForState(common, error, DeviceState::Idle, "");
 }
 
 RequestResult Controller::execRun(const CommonParams& common, const RunParams& params)
@@ -324,7 +321,7 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
                 }
 
                 if (!error.mCode) {
-                    activate(common, session, error, params.mTopoFile, params.mTopoContent, params.mTopoScript);
+                    activate(common, session, error);
                 }
             }
         }
@@ -1402,9 +1399,8 @@ bool Controller::attemptTopoRecovery(const CommonParams& common, Session& sessio
 dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(const CommonParams& common, Session& session) const
 {
     using namespace dds::tools_api;
-    SAgentInfoRequest::request_t agentInfoRequest;
     SAgentInfoRequest::responseVector_t agentInfo;
-    session.mDDSSession->syncSendRequest<SAgentInfoRequest>(agentInfoRequest, agentInfo, requestTimeout(common));
+    session.mDDSSession->syncSendRequest<SAgentInfoRequest>(SAgentInfoRequest::request_t(), agentInfo, requestTimeout(common));
     return agentInfo;
 }
 
@@ -1494,13 +1490,6 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
     file << content;
     OLOG(info, common) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
     return filepath.string();
-}
-
-chrono::seconds Controller::requestTimeout(const CommonParams& common) const
-{
-    auto timeout{ (common.mTimeout == 0) ? mTimeout : chrono::seconds(common.mTimeout) };
-    OLOG(debug, common) << "Request timeout: " << timeout.count() << " sec";
-    return timeout;
 }
 
 void Controller::registerResourcePlugins(const DDSSubmit::PluginMap& pluginMap)
