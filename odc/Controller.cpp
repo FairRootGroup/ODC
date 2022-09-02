@@ -341,7 +341,7 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
 
     auto& session = getOrCreateSession(common);
 
-    AggregatedState state{ AggregatedState::Undefined };
+    AggregatedState state = AggregatedState::Undefined;
 
     try {
         session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
@@ -369,19 +369,19 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     Error error;
 
     // grab session id before shutting down the session, to return it in the reply
-    string sidStr;
+    string ddsSessionId;
     {
         auto& session = getOrCreateSession(common);
-        sidStr = to_string(session.mDDSSession->getSessionID());
+        ddsSessionId = to_string(session.mDDSSession->getSessionID());
     }
 
     shutdownDDSSession(common, error);
     removeSession(common);
     updateRestore();
     execRequestTrigger("Shutdown", common);
-    auto result = createRequestResult(common, error, "Shutdown done", timer.duration(), AggregatedState::Undefined);
-    result.mDDSSessionID = sidStr;
-    return result;
+
+    StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
+    return RequestResult(status, "Shutdown done", timer.duration(), error, common.mPartitionID, common.mRunNr, ddsSessionId, AggregatedState::Undefined, nullptr);
 }
 
 RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
