@@ -166,7 +166,7 @@ class Controller
     /// \brief Get state
     RequestResult execGetState(const CommonParams& common, const DeviceParams& params);
 
-    // FairMQ device change state requests
+    // change state requests
 
     /// \brief Configure devices: InitDevice->CompleteInit->Bind->Connect->InitTask
     RequestResult execConfigure(const CommonParams& common, const DeviceParams& params);
@@ -178,8 +178,6 @@ class Controller
     RequestResult execReset(const CommonParams& common, const DeviceParams& params);
     /// \brief Terminate devices: End
     RequestResult execTerminate(const CommonParams& common, const DeviceParams& params);
-
-    // Generic requests
 
     /// \brief Status request
     StatusRequestResult execStatus(const StatusParams& params);
@@ -208,9 +206,9 @@ class Controller
     bool waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots);
     bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
     bool shutdownDDSSession(const CommonParams& common, Error& error);
-    bool resetTopology(const CommonParams& common);
-    bool createTopology(const CommonParams& common, Error& error, const std::string& topologyFile);
+    bool resetTopology(Session& session);
     bool createDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile);
+    bool createTopology(const CommonParams& common, Error& error);
     bool setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params, AggregatedState& aggrState);
     bool changeState(const CommonParams& common, Error& error, TopoTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool changeStateConfigure(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);

@@ -64,8 +64,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param topo CTopology
     /// @param session CSession
     /// @param blockUntilConnected if true, ctor will wait for all tasks to confirm subscriptions
-    BasicTopology(dds::topology_api::CTopology topo, std::shared_ptr<dds::tools_api::CSession> session, bool blockUntilConnected = false)
-        : BasicTopology<Executor, Allocator>(boost::asio::system_executor(), std::move(topo), std::move(session), blockUntilConnected)
+    BasicTopology(dds::topology_api::CTopology& topo, std::shared_ptr<dds::tools_api::CSession> session, bool blockUntilConnected = false)
+        : BasicTopology<Executor, Allocator>(boost::asio::system_executor(), topo, std::move(session), blockUntilConnected)
     {}
 
     /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
@@ -75,12 +75,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param blockUntilConnected if true, ctor will wait for all tasks to confirm subscriptions
     /// @throws RuntimeError
     BasicTopology(const Executor& ex,
-                  dds::topology_api::CTopology topo,
-                  std::shared_ptr<dds::tools_api::CSession> session,
+                  dds::topology_api::CTopology& topo,
+                  std::shared_ptr<dds::tools_api::CSession> ddsSession,
                   bool blockUntilConnected = false,
                   Allocator alloc = DefaultAllocator())
         : AsioBase<Executor, Allocator>(ex, std::move(alloc))
-        , fDDSSession(session)
+        , fDDSSession(ddsSession)
         , fDDSCustomCmd(fDDSService)
         , fDDSTopo(topo)
         , fMtx(std::make_unique<std::mutex>())
@@ -793,7 +793,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     std::shared_ptr<dds::tools_api::CSession> fDDSSession;
     dds::intercom_api::CIntercomService fDDSService;
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
-    dds::topology_api::CTopology fDDSTopo;
+    dds::topology_api::CTopology& fDDSTopo;
     dds::tools_api::SOnTaskDoneRequest::ptr_t fDDSOnTaskDoneRequest;
     TopoState fStateData;
     TopoStateIndex fStateIndex;

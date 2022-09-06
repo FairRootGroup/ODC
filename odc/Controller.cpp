@@ -44,7 +44,6 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
             && subscribeToDDSSession(common, error);
     } else {
         // Attach to an existing DDS session
-        // Shutdown DDS session if it is running already
         bool success = attachToDDSSession(common, error, params.mDDSSessionID)
             && subscribeToDDSSession(common, error);
 
@@ -55,7 +54,7 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
             requestCommanderInfo(common, error, commanderInfo)
                 && !commanderInfo.m_activeTopologyPath.empty()
                 && createDDSTopology(common, error, commanderInfo.m_activeTopologyPath)
-                && createTopology(common, error, commanderInfo.m_activeTopologyPath);
+                && createTopology(common, error);
         }
     }
     execRequestTrigger("Initialize", common);
@@ -278,7 +277,7 @@ void Controller::activate(const CommonParams& common, Session& session, Error& e
 {
     activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
         && createDDSTopology(common, error, session.mTopoFilePath)
-        && createTopology(common, error, session.mTopoFilePath)
+        && createTopology(common, error)
         && waitForState(common, error, DeviceState::Idle, "");
 }
 
@@ -352,10 +351,10 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
 
     if (!error.mCode) {
         changeStateReset(common, error, "", state)
-            && resetTopology(common)
+            && resetTopology(session)
             && activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::UPDATE)
             && createDDSTopology(common, error, session.mTopoFilePath)
-            && createTopology(common, error, session.mTopoFilePath)
+            && createTopology(common, error)
             && waitForState(common, error, DeviceState::Idle, "")
             && changeStateConfigure(common, error, "", state);
     }
@@ -897,18 +896,17 @@ bool Controller::createDDSTopology(const CommonParams& common, Error& error, con
     return true;
 }
 
-bool Controller::resetTopology(const CommonParams& common)
+bool Controller::resetTopology(Session& session)
 {
-    auto& session = getOrCreateSession(common);
     session.mTopology.reset();
     return true;
 }
 
-bool Controller::createTopology(const CommonParams& common, Error& error, const string& topologyFile)
+bool Controller::createTopology(const CommonParams& common, Error& error)
 {
     auto& session = getOrCreateSession(common);
     try {
-        session.mTopology = make_unique<Topology>(dds::topology_api::CTopology(topologyFile), session.mDDSSession);
+        session.mTopology = make_unique<Topology>(*(session.mDDSTopo), session.mDDSSession);
     } catch (exception& e) {
         session.mTopology = nullptr;
         fillError(common, error, ErrorCode::FairMQCreateTopologyFailed, toString("Failed to initialize FairMQ topology: ", e.what()));
@@ -1344,10 +1342,9 @@ bool Controller::attemptTopoRecovery(const CommonParams& common, Session& sessio
         // mark all tasks in the failed collections as failed and set them to be ignored for further actions
         session.mTopology->IgnoreFailedCollections(failed.collections);
 
-        // shutdown agents responsible for failed collections (https://github.com/FairRootGroup/DDS/blob/master/dds-tools-lib/tests/TestSession.cpp#L632)
+        // shutdown agents responsible for failed collections
 
         using namespace dds::tools_api;
-        // using namespace dds::topology_api;
 
         try {
             size_t currentSlotCount = session.mTotalSlots;
