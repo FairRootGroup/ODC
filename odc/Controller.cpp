@@ -77,7 +77,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 
 void Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res)
 {
-    if (!session.mDDSSession->IsRunning()) {
+    if (!session.mDDSSession.IsRunning()) {
         fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
         return;
     }
@@ -122,7 +122,7 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
         }
     }
 
-    if (session.mDDSSession->IsRunning()) {
+    if (session.mDDSSession.IsRunning()) {
         map<string, uint32_t> agentCounts; // agent count sorted by their group name
 
         for (const auto& p : ddsParams) {
@@ -253,7 +253,7 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
 
     auto& session = getOrCreateSession(common);
 
-    if (!session.mDDSSession->IsRunning()) {
+    if (!session.mDDSSession.IsRunning()) {
         fillError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
     }
 
@@ -309,13 +309,13 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
             }
 
             if (!error.mCode) {
-                if (!session.mDDSSession->IsRunning()) {
+                if (!session.mDDSSession.IsRunning()) {
                     fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
                 }
 
                 submit(common, session, error, params.mPlugin, params.mResources);
 
-                if (!session.mDDSSession->IsRunning()) {
+                if (!session.mDDSSession.IsRunning()) {
                     fillError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
                 }
 
@@ -371,7 +371,7 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     string ddsSessionId;
     {
         auto& session = getOrCreateSession(common);
-        ddsSessionId = to_string(session.mDDSSession->getSessionID());
+        ddsSessionId = to_string(session.mDDSSession.getSessionID());
     }
 
     shutdownDDSSession(common, error);
@@ -476,8 +476,8 @@ StatusRequestResult Controller::execStatus(const StatusParams& params)
         PartitionStatus status;
         status.mPartitionID = info->mPartitionID;
         try {
-            status.mDDSSessionID = to_string(info->mDDSSession->getSessionID());
-            status.mDDSSessionStatus = (info->mDDSSession->IsRunning()) ? DDSSessionStatus::running : DDSSessionStatus::stopped;
+            status.mDDSSessionID = to_string(info->mDDSSession.getSessionID());
+            status.mDDSSessionStatus = (info->mDDSSession.IsRunning()) ? DDSSessionStatus::running : DDSSessionStatus::stopped;
         } catch (exception& e) {
             OLOG(warning, status.mPartitionID, 0) << "Failed to get session ID or session status: " << e.what();
         }
@@ -530,8 +530,8 @@ void Controller::updateRestore()
     for (const auto& v : mSessions) {
         const auto& info{ v.second };
         try {
-            if (info->mDDSSession->IsRunning()) {
-                data.mPartitions.push_back(RestorePartition(info->mPartitionID, to_string(info->mDDSSession->getSessionID())));
+            if (info->mDDSSession.IsRunning()) {
+                data.mPartitions.push_back(RestorePartition(info->mPartitionID, to_string(info->mDDSSession.getSessionID())));
             }
         } catch (exception& e) {
             OLOG(warning, info->mPartitionID, 0) << "Failed to get session ID or session status: " << e.what();
@@ -575,7 +575,7 @@ void Controller::updateHistory(const CommonParams& common, const std::string& se
 RequestResult Controller::createRequestResult(const CommonParams& common, const Error& error, const string& msg, size_t execTime, AggregatedState aggrState, unique_ptr<DetailedState> detailedState/*  = nullptr */)
 {
     auto& session = getOrCreateSession(common);
-    string sidStr{ to_string(session.mDDSSession->getSessionID()) };
+    string sidStr{ to_string(session.mDDSSession.getSessionID()) };
     StatusCode status{ error.mCode ? StatusCode::error : StatusCode::ok };
     return RequestResult(status, msg, execTime, error, common.mPartitionID, common.mRunNr, sidStr, aggrState, move(detailedState));
 }
@@ -584,7 +584,7 @@ bool Controller::createDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& session = getOrCreateSession(common);
-        boost::uuids::uuid sessionID = session.mDDSSession->create();
+        boost::uuids::uuid sessionID = session.mDDSSession.create();
         OLOG(info, common) << "DDS session created with session ID: " << to_string(sessionID);
         updateHistory(common, to_string(sessionID));
     } catch (exception& e) {
@@ -598,7 +598,7 @@ bool Controller::attachToDDSSession(const CommonParams& common, Error& error, co
 {
     try {
         auto& session = getOrCreateSession(common);
-        session.mDDSSession->attach(sessionID);
+        session.mDDSSession.attach(sessionID);
         OLOG(info, common) << "Attached to DDS session: " << sessionID;
     } catch (exception& e) {
         fillError(common, error, ErrorCode::DDSAttachToSessionFailed, toString("Failed to attach to a DDS session: ", e.what()));
@@ -650,7 +650,7 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
         cv.notify_all();
     });
 
-    session.mDDSSession->sendRequest<SSubmitRequest>(requestPtr);
+    session.mDDSSession.sendRequest<SSubmitRequest>(requestPtr);
 
     mutex mtx;
     unique_lock<mutex> lock(mtx);
@@ -671,7 +671,7 @@ bool Controller::requestCommanderInfo(const CommonParams& common, Error& error, 
     try {
         stringstream ss;
         auto& session = getOrCreateSession(common);
-        session.mDDSSession->syncSendRequest<SCommanderInfoRequest>(SCommanderInfoRequest::request_t(),
+        session.mDDSSession.syncSendRequest<SCommanderInfoRequest>(SCommanderInfoRequest::request_t(),
                                                                     commanderInfo,
                                                                     requestTimeout(common),
                                                                     &ss);
@@ -687,7 +687,7 @@ bool Controller::requestCommanderInfo(const CommonParams& common, Error& error, 
 bool Controller::waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots)
 {
     try {
-        session.mDDSSession->waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common));
+        session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common));
     } catch (exception& e) {
         fillError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS slots: ", e.what()));
         return false;
@@ -746,7 +746,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
 
     requestPtr->setDoneCallback([&cv]() { cv.notify_all(); });
 
-    session.mDDSSession->sendRequest<dds::tools_api::STopologyRequest>(requestPtr);
+    session.mDDSSession.sendRequest<dds::tools_api::STopologyRequest>(requestPtr);
 
     mutex mtx;
     unique_lock<mutex> lock(mtx);
@@ -774,9 +774,9 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         session.mZoneInfos.clear();
         session.mTopoFilePath.clear();
 
-        if (session.mDDSSession->getSessionID() != boost::uuids::nil_uuid()) {
-            session.mDDSSession->shutdown();
-            if (session.mDDSSession->getSessionID() == boost::uuids::nil_uuid()) {
+        if (session.mDDSSession.getSessionID() != boost::uuids::nil_uuid()) {
+            session.mDDSSession.shutdown();
+            if (session.mDDSSession.getSessionID() == boost::uuids::nil_uuid()) {
                 OLOG(info, common) << "DDS session has been shut down";
             } else {
                 fillError(common, error, ErrorCode::DDSShutdownSessionFailed, "Failed to shut down DDS session");
@@ -1201,7 +1201,6 @@ Controller::Session& Controller::getOrCreateSession(const CommonParams& common)
     auto it = mSessions.find(common.mPartitionID);
     if (it == mSessions.end()) {
         auto newSession = make_unique<Session>();
-        newSession->mDDSSession = make_unique<dds::tools_api::CSession>();
         newSession->mPartitionID = common.mPartitionID;
         auto ret = mSessions.emplace(common.mPartitionID, move(newSession));
         // OLOG(debug, common) << "Created session for partition ID " << quoted(common.mPartitionID);
@@ -1362,7 +1361,7 @@ bool Controller::attemptTopoRecovery(const CommonParams& common, Session& sessio
                 SAgentCommandRequest::request_t agentCmd;
                 agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
                 agentCmd.m_arg1 = c->mAgentID;
-                session.mDDSSession->syncSendRequest<SAgentCommandRequest>(agentCmd, requestTimeout(common));
+                session.mDDSSession.syncSendRequest<SAgentCommandRequest>(agentCmd, requestTimeout(common));
             }
 
             // TODO: notification on agent shutdown in development in DDS
@@ -1396,7 +1395,7 @@ dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(con
 {
     using namespace dds::tools_api;
     SAgentInfoRequest::responseVector_t agentInfo;
-    session.mDDSSession->syncSendRequest<SAgentInfoRequest>(SAgentInfoRequest::request_t(), agentInfo, requestTimeout(common));
+    session.mDDSSession.syncSendRequest<SAgentInfoRequest>(SAgentInfoRequest::request_t(), agentInfo, requestTimeout(common));
     return agentInfo;
 }
 
@@ -1404,7 +1403,7 @@ uint32_t Controller::getNumSlots(const CommonParams& common, Session& session) c
 {
     using namespace dds::tools_api;
     SAgentCountRequest::response_t agentCountInfo;
-    session.mDDSSession->syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), agentCountInfo, requestTimeout(common));
+    session.mDDSSession.syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), agentCountInfo, requestTimeout(common));
     return agentCountInfo.m_activeSlotsCount;
 }
 
@@ -1412,7 +1411,7 @@ bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
 {
     try {
         auto& session = getOrCreateSession(common);
-        if (session.mDDSSession->IsRunning()) {
+        if (session.mDDSSession.IsRunning()) {
             // Subscrube on TaskDone events
             auto request{ dds::tools_api::SOnTaskDoneRequest::makeRequest(dds::tools_api::SOnTaskDoneRequest::request_t()) };
             request->setResponseCallback([common](const dds::tools_api::SOnTaskDoneResponseData& i) {
@@ -1429,8 +1428,8 @@ bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
                     OLOG(debug, common) << ss.str();
                 }
             });
-            session.mDDSSession->sendRequest<dds::tools_api::SOnTaskDoneRequest>(request);
-            OLOG(info, common) << "Subscribed to task done event from session " << quoted(to_string(session.mDDSSession->getSessionID()));
+            session.mDDSSession.sendRequest<dds::tools_api::SOnTaskDoneRequest>(request);
+            OLOG(info, common) << "Subscribed to task done event from session " << quoted(to_string(session.mDDSSession.getSessionID()));
         } else {
             fillError(common, error, ErrorCode::DDSSubscribeToSessionFailed, "Failed to subscribe to task done events: session is not running");
             return false;

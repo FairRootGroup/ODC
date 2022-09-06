@@ -32,18 +32,17 @@ struct AsyncOpFixture
 struct TopologyFixture
 {
     TopologyFixture(std::string topoXMLPath)
-        : mDDSSession(std::make_shared<dds::tools_api::CSession>())
-        , mDDSTopo(std::move(topoXMLPath))
+        : mDDSTopo(std::move(topoXMLPath))
     {
         using namespace dds::tools_api;
         using namespace odc::core;
 
-        mDDSSession->create();
+        mDDSSession.create();
 
         Logger::Config logConfig;
         logConfig.mSeverity = ESeverity::debug;
         std::stringstream ss;
-        ss << mDDSSession->getSessionID();
+        ss << mDDSSession.getSessionID();
         const boost::filesystem::path p{ boost::filesystem::temp_directory_path() / ss.str() };
         logConfig.mLogDir = p.string();
 
@@ -63,7 +62,7 @@ struct TopologyFixture
         auto submitRequest = SSubmitRequest::makeRequest(submitInfo);
         submitRequest->setMessageCallback([](const SMessageResponseData& message) { BOOST_TEST_MESSAGE(message.m_msg); });
         submitRequest->setDoneCallback([blocker]() mutable { blocker.Signal(); });
-        mDDSSession->sendRequest<SSubmitRequest>(submitRequest);
+        mDDSSession.sendRequest<SSubmitRequest>(submitRequest);
         blocker.Wait();
 
         std::size_t idleSlotsCount(0);
@@ -72,7 +71,7 @@ struct TopologyFixture
             std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             interval = std::min(256, interval * 2);
             SAgentCountRequest::response_t res;
-            mDDSSession->syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), res);
+            mDDSSession.syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), res);
             idleSlotsCount = res.m_idleSlotsCount;
         }
 
@@ -83,7 +82,7 @@ struct TopologyFixture
         auto topologyRequest = STopologyRequest::makeRequest(topologyInfo);
         topologyRequest->setMessageCallback([](const SMessageResponseData& message) { BOOST_TEST_MESSAGE(message.m_msg); });
         topologyRequest->setDoneCallback([blocker]() mutable { blocker.Signal(); });
-        mDDSSession->sendRequest<STopologyRequest>(topologyRequest);
+        mDDSSession.sendRequest<STopologyRequest>(topologyRequest);
         blocker.Wait();
 
         std::size_t execSlotsCount(0);
@@ -92,20 +91,20 @@ struct TopologyFixture
             std::this_thread::sleep_for(std::chrono::milliseconds(interval));
             interval = std::min(256, interval * 2);
             SAgentCountRequest::response_t res;
-            mDDSSession->syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), res);
+            mDDSSession.syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), res);
             execSlotsCount = res.m_executingSlotsCount;
         }
     }
 
     ~TopologyFixture()
     {
-        if (mDDSSession->IsRunning()) {
-            mDDSSession->shutdown();
+        if (mDDSSession.IsRunning()) {
+            mDDSSession.shutdown();
         }
     }
 
     static constexpr int mSlots = 6;
-    std::shared_ptr<dds::tools_api::CSession> mDDSSession;
+    dds::tools_api::CSession mDDSSession;
     dds::topology_api::CTopology mDDSTopo;
     boost::asio::io_context mIoContext;
 };

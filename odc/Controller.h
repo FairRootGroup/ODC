@@ -100,7 +100,7 @@ class Controller
         }
 
         std::unique_ptr<dds::topology_api::CTopology> mDDSTopo = nullptr; ///< DDS topology
-        std::shared_ptr<dds::tools_api::CSession> mDDSSession = nullptr; ///< DDS session
+        dds::tools_api::CSession mDDSSession; ///< DDS session
         std::unique_ptr<Topology> mTopology = nullptr; ///< Topology
         std::string mPartitionID; ///< External partition ID of this DDS session
         std::string mTopoFilePath;

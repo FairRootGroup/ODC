@@ -621,7 +621,7 @@ BOOST_AUTO_TEST_CASE(underlying_session_terminated)
         Topology topo(f.mDDSTopo, f.mDDSSession);
         BOOST_CHECK_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
         BOOST_CHECK_EQUAL(topo.ChangeState(TopoTransition::CompleteInit).first, std::error_code());
-        f.mDDSSession->shutdown();
+        f.mDDSSession.shutdown();
         BOOST_TEST_CHECKPOINT("Session shut down.");
     }
     BOOST_TEST_CHECKPOINT("Topology destructed.");
@@ -673,7 +673,7 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_serial)
             ioContext.post([&f, &topos, i, transition]() {
                 auto [ec, state] = topos[i].ChangeState(transition);
                 BOOST_REQUIRE_EQUAL(ec, std::error_code());
-                BOOST_TEST_MESSAGE(f[i].mDDSSession->getSessionID() << ": " << AggregateState(state) << " -> " << ec);
+                BOOST_TEST_MESSAGE(f[i].mDDSSession.getSessionID() << ": " << AggregateState(state) << " -> " << ec);
             });
         });
     }
@@ -703,7 +703,7 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_interleaved)
             ioContext.post([&f, &topos, i, transition]() {
                 auto [ec, state] = topos[i].ChangeState(transition);
                 BOOST_REQUIRE_EQUAL(ec, std::error_code());
-                BOOST_TEST_MESSAGE(f[i].mDDSSession->getSessionID() << ": " << AggregateState(state) << " -> " << ec);
+                BOOST_TEST_MESSAGE(f[i].mDDSSession.getSessionID() << ": " << AggregateState(state) << " -> " << ec);
             });
         }
     });

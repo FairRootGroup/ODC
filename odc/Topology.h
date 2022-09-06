@@ -64,8 +64,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param topo CTopology
     /// @param session CSession
     /// @param blockUntilConnected if true, ctor will wait for all tasks to confirm subscriptions
-    BasicTopology(dds::topology_api::CTopology& topo, std::shared_ptr<dds::tools_api::CSession> session, bool blockUntilConnected = false)
-        : BasicTopology<Executor, Allocator>(boost::asio::system_executor(), topo, std::move(session), blockUntilConnected)
+    BasicTopology(dds::topology_api::CTopology& topo, dds::tools_api::CSession& session, bool blockUntilConnected = false)
+        : BasicTopology<Executor, Allocator>(boost::asio::system_executor(), topo, session, blockUntilConnected)
     {}
 
     /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
@@ -76,7 +76,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @throws RuntimeError
     BasicTopology(const Executor& ex,
                   dds::topology_api::CTopology& topo,
-                  std::shared_ptr<dds::tools_api::CSession> ddsSession,
+                  dds::tools_api::CSession& ddsSession,
                   bool blockUntilConnected = false,
                   Allocator alloc = DefaultAllocator())
         : AsioBase<Executor, Allocator>(ex, std::move(alloc))
@@ -101,7 +101,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         SubscribeToCommands();
         SubscribeToTaskDoneEvents();
 
-        fDDSService.start(to_string(fDDSSession->getSessionID()));
+        fDDSService.start(to_string(fDDSSession.getSessionID()));
         SubscribeToStateChanges();
         if (blockUntilConnected) {
             WaitForPublisherCount(fStateIndex.size());
@@ -233,7 +233,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             // std::cout << "task " << task.taskId << " exited" << std::endl;
             // TODO: include set/get property ops
         });
-        fDDSSession->sendRequest<SOnTaskDoneRequest>(fDDSOnTaskDoneRequest);
+        fDDSSession.sendRequest<SOnTaskDoneRequest>(fDDSOnTaskDoneRequest);
     }
 
     void WaitForPublisherCount(unsigned int number)
@@ -244,7 +244,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         auto count = 0;
         constexpr auto checkInterval(50ms);
         constexpr auto maxCount(30s / checkInterval);
-        while (!publisherCountReached() && fDDSSession->IsRunning() && count < maxCount) {
+        while (!publisherCountReached() && fDDSSession.IsRunning() && count < maxCount) {
             fStateChangeSubscriptionsCV->wait_for(lk, checkInterval, publisherCountReached);
             ++count;
         }
@@ -790,7 +790,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     void SetHeartbeatInterval(std::chrono::milliseconds duration) { fHeartbeatInterval = duration; }
 
   private:
-    std::shared_ptr<dds::tools_api::CSession> fDDSSession;
+    dds::tools_api::CSession& fDDSSession;
     dds::intercom_api::CIntercomService fDDSService;
     dds::intercom_api::CCustomCmd fDDSCustomCmd;
     dds::topology_api::CTopology& fDDSTopo;
