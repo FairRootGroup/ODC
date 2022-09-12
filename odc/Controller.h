@@ -109,6 +109,7 @@ class Controller
         size_t mTotalSlots = 0; ///< total number of DDS slots
         std::unordered_map<uint64_t, uint32_t> mAgentSlots;
         bool mRunAttempted = false;
+        dds::tools_api::SOnTaskDoneRequest::ptr_t fDDSOnTaskDoneRequest;
 
       private:
         std::mutex mTaskDetailsMtx; ///< Mutex for the tasks container

@@ -775,6 +775,9 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         session.mTopoFilePath.clear();
 
         if (session.mDDSSession.getSessionID() != boost::uuids::nil_uuid()) {
+            if (session.fDDSOnTaskDoneRequest) {
+                session.fDDSOnTaskDoneRequest->unsubscribeResponseCallback();
+            }
             session.mDDSSession.shutdown();
             if (session.mDDSSession.getSessionID() == boost::uuids::nil_uuid()) {
                 OLOG(info, common) << "DDS session has been shut down";
@@ -1409,26 +1412,27 @@ uint32_t Controller::getNumSlots(const CommonParams& common, Session& session) c
 
 bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
 {
+    using namespace dds::tools_api;
     try {
         auto& session = getOrCreateSession(common);
         if (session.mDDSSession.IsRunning()) {
             // Subscrube on TaskDone events
-            auto request{ dds::tools_api::SOnTaskDoneRequest::makeRequest(dds::tools_api::SOnTaskDoneRequest::request_t()) };
-            request->setResponseCallback([common](const dds::tools_api::SOnTaskDoneResponseData& i) {
+            session.fDDSOnTaskDoneRequest = SOnTaskDoneRequest::makeRequest(SOnTaskDoneRequest::request_t());
+            session.fDDSOnTaskDoneRequest->setResponseCallback([common](const SOnTaskDoneResponseData& task) {
                 stringstream ss;
-                ss << "Task " << i.m_taskID
-                   << " with path '" << i.m_taskPath
-                   << "' exited with code " << i.m_exitCode
-                   << " and signal " << i.m_signal
-                   << " on host " << i.m_host
-                   << " in working directory '" << i.m_wrkDir << "'";
-                if (i.m_exitCode != 0 || i.m_signal != 0) {
+                ss << "Task "                   << task.m_taskID
+                   << " with path '"            << task.m_taskPath
+                   << "' exited with code "     << task.m_exitCode
+                   << " and signal "            << task.m_signal
+                   << " on host "               << task.m_host
+                   << " in working directory '" << task.m_wrkDir << "'";
+                if (task.m_exitCode != 0 || task.m_signal != 0) {
                     OLOG(error, common) << ss.str();
                 } else {
                     OLOG(debug, common) << ss.str();
                 }
             });
-            session.mDDSSession.sendRequest<dds::tools_api::SOnTaskDoneRequest>(request);
+            session.mDDSSession.sendRequest<SOnTaskDoneRequest>(session.fDDSOnTaskDoneRequest);
             OLOG(info, common) << "Subscribed to task done event from session " << quoted(to_string(session.mDDSSession.getSessionID()));
         } else {
             fillError(common, error, ErrorCode::DDSSubscribeToSessionFailed, "Failed to subscribe to task done events: session is not running");
