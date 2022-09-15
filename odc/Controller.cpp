@@ -12,7 +12,6 @@
 #include <odc/Logger.h>
 #include <odc/Process.h>
 #include <odc/Restore.h>
-#include <odc/Timer.h>
 #include <odc/Topology.h>
 
 #include <dds/dds.h>
@@ -33,7 +32,6 @@ namespace bfs = boost::filesystem;
 
 RequestResult Controller::execInitialize(const CommonParams& common, const InitializeParams& params)
 {
-    Timer timer;
     Error error;
 
     if (params.mDDSSessionID.empty()) {
@@ -59,12 +57,11 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
     }
     execRequestTrigger("Initialize", common);
     updateRestore();
-    return createRequestResult(common, error, "Initialize done", timer.duration(), AggregatedState::Undefined);
+    return createRequestResult(common, error, "Initialize done", common.mTimer.duration(), AggregatedState::Undefined);
 }
 
 RequestResult Controller::execSubmit(const CommonParams& common, const SubmitParams& params)
 {
-    Timer timer;
     Error error;
 
     auto& session = getOrCreateSession(common);
@@ -72,7 +69,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
     submit(common, session, error, params.mPlugin, params.mResources);
 
     execRequestTrigger("Submit", common);
-    return createRequestResult(common, error, "Submit done", timer.duration(), AggregatedState::Undefined);
+    return createRequestResult(common, error, "Submit done", common.mTimer.duration(), AggregatedState::Undefined);
 }
 
 void Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res)
@@ -86,7 +83,7 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
     vector<DDSSubmit::Params> ddsParams;
     if (!error.mCode) {
         try {
-            ddsParams = mSubmit.makeParams(plugin, res, common.mPartitionID, common.mRunNr, session.mZoneInfos);
+            ddsParams = mSubmit.makeParams(plugin, res, common.mPartitionID, common.mRunNr, session.mZoneInfos, requestTimeout(common));
         } catch (exception& e) {
             fillError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
         }
@@ -248,7 +245,6 @@ void Controller::updateTopology(const CommonParams& common, Session& session)
 
 RequestResult Controller::execActivate(const CommonParams& common, const ActivateParams& params)
 {
-    Timer timer;
     Error error;
 
     auto& session = getOrCreateSession(common);
@@ -270,7 +266,7 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
 
     AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
     execRequestTrigger("Activate", common);
-    return createRequestResult(common, error, "Activate done", timer.duration(), state);
+    return createRequestResult(common, error, "Activate done", common.mTimer.duration(), state);
 }
 
 void Controller::activate(const CommonParams& common, Session& session, Error& error)
@@ -283,7 +279,6 @@ void Controller::activate(const CommonParams& common, Session& session, Error& e
 
 RequestResult Controller::execRun(const CommonParams& common, const RunParams& params)
 {
-    Timer timer;
     Error error;
 
     auto& session = getOrCreateSession(common);
@@ -330,12 +325,11 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
 
     AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
     execRequestTrigger("Run", common);
-    return createRequestResult(common, error, "Run done", timer.duration(), state);
+    return createRequestResult(common, error, "Run done", common.mTimer.duration(), state);
 }
 
 RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
 {
-    Timer timer;
     Error error;
 
     auto& session = getOrCreateSession(common);
@@ -359,12 +353,11 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
             && changeStateConfigure(common, error, "", state);
     }
     execRequestTrigger("Update", common);
-    return createRequestResult(common, error, "Update done", timer.duration(), state);
+    return createRequestResult(common, error, "Update done", common.mTimer.duration(), state);
 }
 
 RequestResult Controller::execShutdown(const CommonParams& common)
 {
-    Timer timer;
     Error error;
 
     // grab session id before shutting down the session, to return it in the reply
@@ -380,96 +373,89 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     execRequestTrigger("Shutdown", common);
 
     StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
-    return RequestResult(status, "Shutdown done", timer.duration(), error, common.mPartitionID, common.mRunNr, ddsSessionId, AggregatedState::Undefined, nullptr);
+    return RequestResult(status, "Shutdown done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, ddsSessionId, AggregatedState::Undefined, nullptr);
 }
 
 RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
 {
-    Timer timer;
     Error error;
 
     AggregatedState state{ AggregatedState::Undefined };
     setProperties(common, error, params, state);
     execRequestTrigger("SetProperties", common);
-    return createRequestResult(common, error, "SetProperties done", timer.duration(), state);
+    return createRequestResult(common, error, "SetProperties done", common.mTimer.duration(), state);
 }
 
 RequestResult Controller::execGetState(const CommonParams& common, const DeviceParams& params)
 {
-    Timer timer;
     Error error;
 
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     getState(common, error, params.mPath, state, detailedState.get());
     execRequestTrigger("GetState", common);
-    return createRequestResult(common, error, "GetState done", timer.duration(), state, move(detailedState));
+    return createRequestResult(common, error, "GetState done", common.mTimer.duration(), state, move(detailedState));
 }
 
 RequestResult Controller::execConfigure(const CommonParams& common, const DeviceParams& params)
 {
-    Timer timer;
     Error error;
 
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeStateConfigure(common, error, params.mPath, state, detailedState.get());
     execRequestTrigger("Configure", common);
-    return createRequestResult(common, error, "Configure done", timer.duration(), state, move(detailedState));
+    return createRequestResult(common, error, "Configure done", common.mTimer.duration(), state, move(detailedState));
 }
 
 RequestResult Controller::execStart(const CommonParams& common, const DeviceParams& params)
 {
-    Timer timer;
     Error error;
 
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeState(common, error, TopoTransition::Run, params.mPath, state, detailedState.get());
     execRequestTrigger("Start", common);
-    return createRequestResult(common, error, "Start done", timer.duration(), state, move(detailedState));
+    return createRequestResult(common, error, "Start done", common.mTimer.duration(), state, move(detailedState));
 }
 
 RequestResult Controller::execStop(const CommonParams& common, const DeviceParams& params)
 {
-    Timer timer;
     Error error;
 
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeState(common, error, TopoTransition::Stop, params.mPath, state, detailedState.get());
     execRequestTrigger("Stop", common);
-    return createRequestResult(common, error, "Stop done", timer.duration(), state, move(detailedState));
+    return createRequestResult(common, error, "Stop done", common.mTimer.duration(), state, move(detailedState));
 }
 
 RequestResult Controller::execReset(const CommonParams& common, const DeviceParams& params)
 {
-    Timer timer;
     Error error;
 
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeStateReset(common, error, params.mPath, state, detailedState.get());
     execRequestTrigger("Reset", common);
-    return createRequestResult(common, error, "Reset done", timer.duration(), state, move(detailedState));
+    return createRequestResult(common, error, "Reset done", common.mTimer.duration(), state, move(detailedState));
 }
 
 RequestResult Controller::execTerminate(const CommonParams& common, const DeviceParams& params)
 {
-    Timer timer;
     Error error;
 
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeState(common, error, TopoTransition::End, params.mPath, state, detailedState.get());
     execRequestTrigger("Terminate", common);
-    return createRequestResult(common, error, "Terminate done", timer.duration(), state, move(detailedState));
+    return createRequestResult(common, error, "Terminate done", common.mTimer.duration(), state, move(detailedState));
 }
 
 StatusRequestResult Controller::execStatus(const StatusParams& params)
 {
     lock_guard<mutex> lock(mSessionsMtx);
-    Timer timer;
+
     StatusRequestResult result;
     for (const auto& v : mSessions) {
         const auto& info{ v.second };
@@ -498,7 +484,7 @@ StatusRequestResult Controller::execStatus(const StatusParams& params)
     }
     result.mStatusCode = StatusCode::ok;
     result.mMsg = "Status done";
-    result.mExecTime = timer.duration();
+    result.mExecTime = params.mTimer.duration();
     execRequestTrigger("Status", CommonParams());
     return result;
 }
@@ -508,7 +494,7 @@ void Controller::execRequestTrigger(const string& plugin, const CommonParams& co
     if (mTriggers.isPluginRegistered(plugin)) {
         try {
             OLOG(debug, common) << "Executing request trigger " << quoted(plugin);
-            string out{ mTriggers.execPlugin(plugin, "", common.mPartitionID, common.mRunNr) };
+            string out{ mTriggers.execPlugin(plugin, "", common.mPartitionID, common.mRunNr, requestTimeout(common)) };
             OLOG(debug, common) << "Request trigger " << quoted(plugin) << " done: " << out;
         } catch (exception& e) {
             OLOG(error, common) << "Request trigger " << quoted(plugin) << " failed: " << e.what();
@@ -1370,12 +1356,18 @@ bool Controller::attemptTopoRecovery(const CommonParams& common, Session& sessio
             // TODO: notification on agent shutdown in development in DDS
             currentSlotCount = getNumSlots(common, session);
             OLOG(info, common) << "Current number of slots: " << currentSlotCount;
-            size_t attempts = 0;
-            while (currentSlotCount != expectedNumSlots && attempts < 400) {
-                this_thread::sleep_for(chrono::milliseconds(50));
-                currentSlotCount = getNumSlots(common, session);
-                // OLOG(info, common) << "Current number of slots: " << currentSlotCount;
-                ++attempts;
+
+            if (currentSlotCount != expectedNumSlots) {
+                int64_t secondsLeft = requestTimeout(common).count();
+                if (secondsLeft > 0) {
+                    int64_t maxAttempts = (secondsLeft * 1000) / 50;
+                    while (currentSlotCount != expectedNumSlots && maxAttempts > 0) {
+                        this_thread::sleep_for(chrono::milliseconds(50));
+                        currentSlotCount = getNumSlots(common, session);
+                        // OLOG(info, common) << "Current number of slots: " << currentSlotCount;
+                        --maxAttempts;
+                    }
+                }
             }
             if (currentSlotCount != expectedNumSlots) {
                 OLOG(warning, common) << "Could not reduce the number of slots to " << expectedNumSlots << ", current count is: " << currentSlotCount;

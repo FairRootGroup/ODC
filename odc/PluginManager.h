@@ -64,7 +64,7 @@ class PluginManager
         }
     }
 
-    std::string execPlugin(const std::string& plugin, const std::string& resources, const std::string& partitionID, uint64_t runNr) const
+    std::string execPlugin(const std::string& plugin, const std::string& resources, const std::string& partitionID, uint64_t runNr, std::chrono::seconds timeout) const
     {
         // Check if plugin exists
         auto it = mPlugins.find(plugin);
@@ -74,7 +74,6 @@ class PluginManager
 
         // Execute plugin
         const std::string cmd{ toString(it->second, " --res ", std::quoted(resources), " --id ", std::quoted(partitionID)) };
-        const std::chrono::seconds timeout{ 30 };
         std::string out;
         std::string err;
         int exitCode{ EXIT_SUCCESS };

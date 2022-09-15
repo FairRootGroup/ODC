@@ -238,9 +238,14 @@ class Controller
 
     std::chrono::seconds requestTimeout(const CommonParams& common) const
     {
-        std::chrono::seconds timeout = (common.mTimeout == 0) ? mTimeout : std::chrono::seconds(common.mTimeout);
-        OLOG(debug, common) << "Request timeout: " << timeout.count() << " sec";
-        return timeout;
+        std::chrono::seconds configuredTimeoutS = (common.mTimeout == 0 ? mTimeout : std::chrono::seconds(common.mTimeout));
+        std::chrono::milliseconds configuredTimeoutMs = std::chrono::duration_cast<std::chrono::milliseconds>(configuredTimeoutS);
+        // subtract time elapsed since the beginning of the request
+        std::chrono::milliseconds realTimeoutMs = configuredTimeoutMs - std::chrono::milliseconds(common.mTimer.duration());
+        OLOG(debug, common) << "Configured request timeout: " << configuredTimeoutMs.count() << "ms "
+            << (common.mTimeout == 0 ? "(controller default)" : "(request parameter)")
+            << ", remaining time: " << realTimeoutMs.count() << "ms";
+        return std::chrono::duration_cast<std::chrono::seconds>(realTimeoutMs);
     }
 
     uint32_t getNumSlots(const CommonParams& common, Session& session) const;

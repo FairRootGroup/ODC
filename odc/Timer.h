@@ -30,4 +30,5 @@ struct Timer
 };
 
 } // namespace odc::core
+
 #endif /*ODC_CORE_TIMER*/

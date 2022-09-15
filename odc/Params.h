@@ -9,6 +9,7 @@
 #ifndef ODC_CORE_DEFS
 #define ODC_CORE_DEFS
 
+#include <odc/Timer.h>
 #include <odc/TopologyDefs.h>
 
 #include <memory>
@@ -129,6 +130,7 @@ struct CommonParams
     std::string mPartitionID; ///< Partition ID.
     uint64_t mRunNr = 0;      ///< Run number.
     size_t mTimeout = 0;      ///< Request timeout in seconds. 0 means "not set"
+    Timer mTimer; // TODO: put this into a wrapper "Request" class that encompases Params + timer
 
     friend std::ostream& operator<<(std::ostream& os, const CommonParams& p)
     {
@@ -289,6 +291,7 @@ struct StatusParams
     {}
 
     bool mRunning = false; ///< Select only running DDS sessions
+    Timer mTimer; // TODO: put this into a wrapper "Request" class that encompases Params + timer
 
     friend std::ostream& operator<<(std::ostream& os, const StatusParams& p) { return os << "StatusParams: running: " << p.mRunning; }
 };

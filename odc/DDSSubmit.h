@@ -18,6 +18,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -100,10 +101,11 @@ class DDSSubmit : public PluginManager
                                    const std::string& resources,
                                    const std::string& partitionID,
                                    uint64_t runNr,
-                                   const std::map<std::string, std::vector<ZoneGroup>>& zoneInfos)
+                                   const std::map<std::string, std::vector<ZoneGroup>>& zoneInfos,
+                                   std::chrono::seconds timeout)
     {
         std::vector<Params> params;
-        std::stringstream ss{ execPlugin(plugin, resources, partitionID, runNr) };
+        std::stringstream ss{ execPlugin(plugin, resources, partitionID, runNr, timeout) };
         boost::property_tree::ptree pt;
         boost::property_tree::read_xml(ss, pt, boost::property_tree::xml_parser::no_comments);
         // check if parameters are children of <submit> tag(s), or flat
