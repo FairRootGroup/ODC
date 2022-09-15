@@ -761,8 +761,8 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         session.mTopoFilePath.clear();
 
         if (session.mDDSSession.getSessionID() != boost::uuids::nil_uuid()) {
-            if (session.fDDSOnTaskDoneRequest) {
-                session.fDDSOnTaskDoneRequest->unsubscribeResponseCallback();
+            if (session.mDDSOnTaskDoneRequest) {
+                session.mDDSOnTaskDoneRequest->unsubscribeResponseCallback();
             }
             session.mDDSSession.shutdown();
             if (session.mDDSSession.getSessionID() == boost::uuids::nil_uuid()) {
@@ -1409,8 +1409,8 @@ bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
         auto& session = getOrCreateSession(common);
         if (session.mDDSSession.IsRunning()) {
             // Subscrube on TaskDone events
-            session.fDDSOnTaskDoneRequest = SOnTaskDoneRequest::makeRequest(SOnTaskDoneRequest::request_t());
-            session.fDDSOnTaskDoneRequest->setResponseCallback([common](const SOnTaskDoneResponseData& task) {
+            session.mDDSOnTaskDoneRequest = SOnTaskDoneRequest::makeRequest(SOnTaskDoneRequest::request_t());
+            session.mDDSOnTaskDoneRequest->setResponseCallback([common](const SOnTaskDoneResponseData& task) {
                 stringstream ss;
                 ss << "Task "                   << task.m_taskID
                    << " with path '"            << task.m_taskPath
@@ -1424,7 +1424,7 @@ bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
                     OLOG(debug, common) << ss.str();
                 }
             });
-            session.mDDSSession.sendRequest<SOnTaskDoneRequest>(session.fDDSOnTaskDoneRequest);
+            session.mDDSSession.sendRequest<SOnTaskDoneRequest>(session.mDDSOnTaskDoneRequest);
             OLOG(info, common) << "Subscribed to task done event from session " << quoted(to_string(session.mDDSSession.getSessionID()));
         } else {
             fillError(common, error, ErrorCode::DDSSubscribeToSessionFailed, "Failed to subscribe to task done events: session is not running");
