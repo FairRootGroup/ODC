@@ -274,7 +274,7 @@ void Controller::activate(const CommonParams& common, Session& session, Error& e
     activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::ACTIVATE)
         && createDDSTopology(common, error, session.mTopoFilePath)
         && createTopology(common, error)
-        && waitForState(common, error, DeviceState::Idle, "");
+        && waitForState(common, session, error, DeviceState::Idle, "");
 }
 
 RequestResult Controller::execRun(const CommonParams& common, const RunParams& params)
@@ -344,13 +344,13 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
     }
 
     if (!error.mCode) {
-        changeStateReset(common, error, "", state)
+        changeStateReset(common, session, error, "", state)
             && resetTopology(session)
             && activateDDSTopology(common, error, session.mTopoFilePath, dds::tools_api::STopologyRequest::request_t::EUpdateType::UPDATE)
             && createDDSTopology(common, error, session.mTopoFilePath)
             && createTopology(common, error)
-            && waitForState(common, error, DeviceState::Idle, "")
-            && changeStateConfigure(common, error, "", state);
+            && waitForState(common, session, error, DeviceState::Idle, "")
+            && changeStateConfigure(common, session, error, "", state);
     }
     execRequestTrigger("Update", common);
     return createRequestResult(common, error, "Update done", common.mTimer.duration(), state);
@@ -401,9 +401,11 @@ RequestResult Controller::execConfigure(const CommonParams& common, const Device
 {
     Error error;
 
+    auto& session = getOrCreateSession(common);
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    changeStateConfigure(common, error, params.mPath, state, detailedState.get());
+    changeStateConfigure(common, session, error, params.mPath, state, detailedState.get());
     execRequestTrigger("Configure", common);
     return createRequestResult(common, error, "Configure done", common.mTimer.duration(), state, move(detailedState));
 }
@@ -412,9 +414,11 @@ RequestResult Controller::execStart(const CommonParams& common, const DevicePara
 {
     Error error;
 
+    auto& session = getOrCreateSession(common);
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    changeState(common, error, TopoTransition::Run, params.mPath, state, detailedState.get());
+    changeState(common, session, error, TopoTransition::Run, params.mPath, state, detailedState.get());
     execRequestTrigger("Start", common);
     return createRequestResult(common, error, "Start done", common.mTimer.duration(), state, move(detailedState));
 }
@@ -423,9 +427,11 @@ RequestResult Controller::execStop(const CommonParams& common, const DeviceParam
 {
     Error error;
 
+    auto& session = getOrCreateSession(common);
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    changeState(common, error, TopoTransition::Stop, params.mPath, state, detailedState.get());
+    changeState(common, session, error, TopoTransition::Stop, params.mPath, state, detailedState.get());
     execRequestTrigger("Stop", common);
     return createRequestResult(common, error, "Stop done", common.mTimer.duration(), state, move(detailedState));
 }
@@ -434,9 +440,11 @@ RequestResult Controller::execReset(const CommonParams& common, const DevicePara
 {
     Error error;
 
+    auto& session = getOrCreateSession(common);
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    changeStateReset(common, error, params.mPath, state, detailedState.get());
+    changeStateReset(common, session, error, params.mPath, state, detailedState.get());
     execRequestTrigger("Reset", common);
     return createRequestResult(common, error, "Reset done", common.mTimer.duration(), state, move(detailedState));
 }
@@ -445,9 +453,11 @@ RequestResult Controller::execTerminate(const CommonParams& common, const Device
 {
     Error error;
 
+    auto& session = getOrCreateSession(common);
+
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
-    changeState(common, error, TopoTransition::End, params.mPath, state, detailedState.get());
+    changeState(common, session, error, TopoTransition::End, params.mPath, state, detailedState.get());
     execRequestTrigger("Terminate", common);
     return createRequestResult(common, error, "Terminate done", common.mTimer.duration(), state, move(detailedState));
 }
@@ -903,9 +913,8 @@ bool Controller::createTopology(const CommonParams& common, Error& error)
     return session.mTopology != nullptr;
 }
 
-bool Controller::changeState(const CommonParams& common, Error& error, TopoTransition transition, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
+bool Controller::changeState(const CommonParams& common, Session& session, Error& error, TopoTransition transition, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
 {
-    auto& session = getOrCreateSession(common);
     if (session.mTopology == nullptr) {
         fillError(common, error, ErrorCode::FairMQChangeStateFailed, "FairMQ topology is not initialized");
         return false;
@@ -961,9 +970,8 @@ bool Controller::changeState(const CommonParams& common, Error& error, TopoTrans
     return success;
 }
 
-bool Controller::waitForState(const CommonParams& common, Error& error, DeviceState expState, const string& path)
+bool Controller::waitForState(const CommonParams& common, Session& session, Error& error, DeviceState expState, const string& path)
 {
-    auto& session = getOrCreateSession(common);
     if (session.mTopology == nullptr) {
         fillError(common, error, ErrorCode::FairMQWaitForStateFailed, "FairMQ topology is not initialized");
         return false;
@@ -1004,19 +1012,19 @@ bool Controller::waitForState(const CommonParams& common, Error& error, DeviceSt
     return success;
 }
 
-bool Controller::changeStateConfigure(const CommonParams& common, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
+bool Controller::changeStateConfigure(const CommonParams& common, Session& session, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
 {
-    return changeState(common, error, TopoTransition::InitDevice,   path, aggrState, detailedState)
-        && changeState(common, error, TopoTransition::CompleteInit, path, aggrState, detailedState)
-        && changeState(common, error, TopoTransition::Bind,         path, aggrState, detailedState)
-        && changeState(common, error, TopoTransition::Connect,      path, aggrState, detailedState)
-        && changeState(common, error, TopoTransition::InitTask,     path, aggrState, detailedState);
+    return changeState(common, session, error, TopoTransition::InitDevice,   path, aggrState, detailedState)
+        && changeState(common, session, error, TopoTransition::CompleteInit, path, aggrState, detailedState)
+        && changeState(common, session, error, TopoTransition::Bind,         path, aggrState, detailedState)
+        && changeState(common, session, error, TopoTransition::Connect,      path, aggrState, detailedState)
+        && changeState(common, session, error, TopoTransition::InitTask,     path, aggrState, detailedState);
 }
 
-bool Controller::changeStateReset(const CommonParams& common, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
+bool Controller::changeStateReset(const CommonParams& common, Session& session, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
 {
-    return changeState(common, error, TopoTransition::ResetTask,   path, aggrState, detailedState)
-        && changeState(common, error, TopoTransition::ResetDevice, path, aggrState, detailedState);
+    return changeState(common, session, error, TopoTransition::ResetTask,   path, aggrState, detailedState)
+        && changeState(common, session, error, TopoTransition::ResetDevice, path, aggrState, detailedState);
 }
 
 bool Controller::getState(const CommonParams& common, Error& error, const string& path, AggregatedState& aggrState, DetailedState* detailedState)

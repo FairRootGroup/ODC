@@ -213,10 +213,10 @@ class Controller
     bool createDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile);
     bool createTopology(const CommonParams& common, Error& error);
     bool setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params, AggregatedState& aggrState);
-    bool changeState(const CommonParams& common, Error& error, TopoTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
-    bool changeStateConfigure(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
-    bool changeStateReset(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
-    bool waitForState(const CommonParams& common, Error& error, DeviceState expState, const std::string& path);
+    bool changeState(const CommonParams& common, Session& session, Error& error, TopoTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool changeStateConfigure(const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool changeStateReset(const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool waitForState(const CommonParams& common, Session& session, Error& error, DeviceState expState, const std::string& path);
 
     bool getState(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
 
