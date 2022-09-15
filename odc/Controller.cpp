@@ -1196,6 +1196,7 @@ Controller::Session& Controller::getOrCreateSession(const CommonParams& common)
         return *(ret.first->second);
     }
     // OLOG(debug, common) << "Found session for partition ID " << quoted(common.mPartitionID);
+    it->second->mLastRunNr.store(common.mRunNr);
     return *(it->second);
 }
 
@@ -1410,7 +1411,7 @@ bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
         if (session.mDDSSession.IsRunning()) {
             // Subscrube on TaskDone events
             session.mDDSOnTaskDoneRequest = SOnTaskDoneRequest::makeRequest(SOnTaskDoneRequest::request_t());
-            session.mDDSOnTaskDoneRequest->setResponseCallback([common](const SOnTaskDoneResponseData& task) {
+            session.mDDSOnTaskDoneRequest->setResponseCallback([common, &session](const SOnTaskDoneResponseData& task) {
                 stringstream ss;
                 ss << "Task "                   << task.m_taskID
                    << " with path '"            << task.m_taskPath
@@ -1419,9 +1420,9 @@ bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
                    << " on host "               << task.m_host
                    << " in working directory '" << task.m_wrkDir << "'";
                 if (task.m_exitCode != 0 || task.m_signal != 0) {
-                    OLOG(error, common) << ss.str();
+                    OLOG(error, common.mPartitionID, session.mLastRunNr.load()) << ss.str();
                 } else {
-                    OLOG(debug, common) << ss.str();
+                    OLOG(debug, common.mPartitionID, session.mLastRunNr.load()) << ss.str();
                 }
             });
             session.mDDSSession.sendRequest<SOnTaskDoneRequest>(session.mDDSOnTaskDoneRequest);

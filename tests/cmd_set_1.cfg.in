@@ -10,24 +10,24 @@
 .prop --id @TEST_SESSION2@ --prop key1:value1 key2:value2
 .config --id @TEST_SESSION1@
 .config --id @TEST_SESSION2@
-.start --id @TEST_SESSION1@
-.start --id @TEST_SESSION2@
+.start --id @TEST_SESSION1@ --run 10
+.start --id @TEST_SESSION2@ --run 20
 .status
 .sleep --ms 1000
 .stop --id @TEST_SESSION1@
 .stop --id @TEST_SESSION2@
 .upscale --topo @ODC_DATADIR@/ex-topo-infinite-up.xml --id @TEST_SESSION1@
 .upscale --topo @ODC_DATADIR@/ex-topo-infinite-up.xml --id @TEST_SESSION2@
-.start --id @TEST_SESSION1@
-.start --id @TEST_SESSION2@
+.start --id @TEST_SESSION1@ --run 11
+.start --id @TEST_SESSION2@ --run 21
 .status
 .sleep --ms 1000
 .stop --id @TEST_SESSION1@
 .stop --id @TEST_SESSION2@
 .downscale --topo @ODC_DATADIR@/ex-topo-infinite-down.xml --id @TEST_SESSION1@
 .downscale --topo @ODC_DATADIR@/ex-topo-infinite-down.xml --id @TEST_SESSION2@
-.start --id @TEST_SESSION1@
-.start --id @TEST_SESSION2@
+.start --id @TEST_SESSION1@ --run 12
+.start --id @TEST_SESSION2@ --run 22
 .status
 .sleep --ms 1000
 .stop --id @TEST_SESSION1@

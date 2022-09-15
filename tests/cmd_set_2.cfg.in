@@ -5,7 +5,7 @@
 .downscale --id @TEST_SESSION@
 .state --id @TEST_SESSION@
 .config --id @TEST_SESSION@
-.start --id @TEST_SESSION@
+.start --id @TEST_SESSION@ --run 10
 .stop --id @TEST_SESSION@
 .reset --id @TEST_SESSION@
 .term --id @TEST_SESSION@

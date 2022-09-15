@@ -14,6 +14,7 @@
 #include <odc/Process.h>
 #include <odc/Topology.h>
 
+#include <atomic>
 #include <chrono>
 #include <map>
 #include <memory>
@@ -110,6 +111,7 @@ class Controller
         std::unordered_map<uint64_t, uint32_t> mAgentSlots;
         bool mRunAttempted = false;
         dds::tools_api::SOnTaskDoneRequest::ptr_t mDDSOnTaskDoneRequest;
+        std::atomic<uint64_t> mLastRunNr = 0;
 
       private:
         std::mutex mTaskDetailsMtx; ///< Mutex for the tasks container

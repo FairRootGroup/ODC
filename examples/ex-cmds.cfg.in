@@ -10,24 +10,24 @@
 .prop --id f6e5d4 --prop key1:value1 key2:value2
 .config --id c3b2a1
 .config --id f6e5d4
-.start --id c3b2a1
-.start --id f6e5d4
+.start --id c3b2a1 --run 10
+.start --id f6e5d4 --run 20
 .status
 .sleep --ms 1000
 .stop --id c3b2a1
 .stop --id f6e5d4
 .upscale --topo @ODC_DATADIR@/ex-topo-infinite-up.xml --id c3b2a1
 .upscale --topo @ODC_DATADIR@/ex-topo-infinite-up.xml --id f6e5d4
-.start --id c3b2a1
-.start --id f6e5d4
+.start --id c3b2a1 --run 11
+.start --id f6e5d4 --run 21
 .status
 .sleep --ms 1000
 .stop --id c3b2a1
 .stop --id f6e5d4
 .downscale --topo @ODC_DATADIR@/ex-topo-infinite-down.xml --id c3b2a1
 .downscale --topo @ODC_DATADIR@/ex-topo-infinite-down.xml --id f6e5d4
-.start --id c3b2a1
-.start --id f6e5d4
+.start --id c3b2a1 --run 12
+.start --id f6e5d4 --run 22
 .status
 .sleep --ms 1000
 .stop --id c3b2a1
