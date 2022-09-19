@@ -415,8 +415,10 @@ RequestResult Controller::execStart(const CommonParams& common, const DevicePara
     Error error;
 
     auto& session = getOrCreateSession(common);
+    // update run number
+    session.mLastRunNr.store(common.mRunNr);
 
-    AggregatedState state{ AggregatedState::Undefined };
+    AggregatedState state = AggregatedState::Undefined;
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeState(common, session, error, TopoTransition::Run, params.mPath, state, detailedState.get());
     execRequestTrigger("Start", common);
@@ -429,9 +431,13 @@ RequestResult Controller::execStop(const CommonParams& common, const DeviceParam
 
     auto& session = getOrCreateSession(common);
 
-    AggregatedState state{ AggregatedState::Undefined };
+    AggregatedState state = AggregatedState::Undefined;
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeState(common, session, error, TopoTransition::Stop, params.mPath, state, detailedState.get());
+
+    // reset the run number, which is valid only for the running state
+    session.mLastRunNr.store(0);
+
     execRequestTrigger("Stop", common);
     return createRequestResult(common, error, "Stop done", common.mTimer.duration(), state, move(detailedState));
 }
@@ -1204,7 +1210,6 @@ Controller::Session& Controller::getOrCreateSession(const CommonParams& common)
         return *(ret.first->second);
     }
     // OLOG(debug, common) << "Found session for partition ID " << quoted(common.mPartitionID);
-    it->second->mLastRunNr.store(common.mRunNr);
     return *(it->second);
 }
 
