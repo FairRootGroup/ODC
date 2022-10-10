@@ -1,5 +1,10 @@
 # ODC Release Notes
 
+## 0.75.0 (2022-10-10)
+
+- Adjust timeout on subsequent async ops within one request to avoid delaying execution beyond original timeout value.
+- Include run number into the exiting task log entry, when it is valid (primarily during Running state).
+
 ## 0.74.0 (2022-07-19)
 
 - epnc plugin removed.
