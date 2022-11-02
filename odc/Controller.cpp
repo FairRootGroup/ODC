@@ -75,7 +75,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 void Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res)
 {
     if (!session.mDDSSession.IsRunning()) {
-        fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
+        fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
         return;
     }
 
@@ -85,7 +85,7 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
         try {
             ddsParams = mSubmit.makeParams(plugin, res, common.mPartitionID, common.mRunNr, session.mZoneInfos, requestTimeout(common));
         } catch (exception& e) {
-            fillError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
+            fillAndLogError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
         }
     }
 
@@ -146,7 +146,7 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
                 OLOG(info, common) << "  " << groupName << ": " << count << " agents";
             }
         } catch (const exception& e) {
-            fillError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Failed getting agent info: ", e.what()));
+            fillAndLogError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Failed getting agent info: ", e.what()));
         }
 
         if (error.mCode) {
@@ -167,7 +167,7 @@ void Controller::attemptSubmitRecovery(const CommonParams& common,
             if (p.mNumAgents != agentCounts.at(p.mAgentGroup)) {
                 // fail recovery if insufficient agents, and no nMin is defined
                 if (p.mMinAgents == 0) {
-                    fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
+                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
                         "Number of agents (", agentCounts.at(p.mAgentGroup), ") for group '", p.mAgentGroup
                         , "' is less than requested (", p.mNumAgents, "), "
                         , "and no nMin is defined"));
@@ -175,7 +175,7 @@ void Controller::attemptSubmitRecovery(const CommonParams& common,
                 }
                 // fail recovery if insufficient agents, and no nMin is defined
                 if (agentCounts.at(p.mAgentGroup) < p.mMinAgents) {
-                    fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
+                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
                         "Number of agents (", agentCounts.at(p.mAgentGroup), ") for group '", p.mAgentGroup
                         , "' is less than requested (", p.mNumAgents, "), "
                         , "and nMin (", p.mMinAgents, ") is not satisfied"));
@@ -199,11 +199,11 @@ void Controller::attemptSubmitRecovery(const CommonParams& common,
                 }
                 updateTopology(common, session);
             } catch (const exception& e) {
-                fillError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed updating topology: ", e.what()));
+                fillAndLogError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed updating topology: ", e.what()));
             }
         }
     } catch (const exception& e) {
-        fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Recovery failed: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Recovery failed: ", e.what()));
     }
 }
 
@@ -250,14 +250,14 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     auto& session = getOrCreateSession(common);
 
     if (!session.mDDSSession.IsRunning()) {
-        fillError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
+        fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
     }
 
     try {
         session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
         extractRequirements(common, session);
     } catch (exception& e) {
-        fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+        fillAndLogFatalError(common, error, ErrorCode::TopologyFailed, e.what());
     }
 
     if (!error.mCode) {
@@ -300,18 +300,18 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
                 session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
                 extractRequirements(common, session);
             } catch (exception& e) {
-                fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+                fillAndLogFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
             }
 
             if (!error.mCode) {
                 if (!session.mDDSSession.IsRunning()) {
-                    fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
+                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
                 }
 
                 submit(common, session, error, params.mPlugin, params.mResources);
 
                 if (!session.mDDSSession.IsRunning()) {
-                    fillError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
+                    fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
                 }
 
                 if (!error.mCode) {
@@ -340,7 +340,7 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
         session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
         extractRequirements(common, session);
     } catch (exception& e) {
-        fillFatalErrorLineByLine(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
+        fillAndLogFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
     }
 
     if (!error.mCode) {
@@ -590,7 +590,7 @@ bool Controller::createDDSSession(const CommonParams& common, Error& error)
         OLOG(info, common) << "DDS session created with session ID: " << to_string(sessionID);
         updateHistory(common, to_string(sessionID));
     } catch (exception& e) {
-        fillError(common, error, ErrorCode::DDSCreateSessionFailed, toString("Failed to create a DDS session: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::DDSCreateSessionFailed, toString("Failed to create a DDS session: ", e.what()));
         return false;
     }
     return true;
@@ -603,7 +603,7 @@ bool Controller::attachToDDSSession(const CommonParams& common, Error& error, co
         session.mDDSSession.attach(sessionID);
         OLOG(info, common) << "Attached to DDS session: " << sessionID;
     } catch (exception& e) {
-        fillError(common, error, ErrorCode::DDSAttachToSessionFailed, toString("Failed to attach to a DDS session: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::DDSAttachToSessionFailed, toString("Failed to attach to a DDS session: ", e.what()));
         return false;
     }
     return true;
@@ -641,7 +641,7 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
     requestPtr->setMessageCallback([&success, &error, &common, this](const SMessageResponseData& msg) {
         if (msg.m_severity == dds::intercom_api::EMsgSeverity::error) {
             success = false;
-            fillError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit error: ", msg.m_msg));
+            fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit error: ", msg.m_msg));
         } else {
             OLOG(info, common) << "...Submit: " << msg.m_msg;
         }
@@ -660,7 +660,7 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
 
     if (waitStatus == cv_status::timeout) {
         success = false;
-        fillError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
+        fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
     } else {
         // OLOG(info, common) << "Agent submission done successfully";
     }
@@ -681,7 +681,7 @@ bool Controller::requestCommanderInfo(const CommonParams& common, Error& error, 
         OLOG(debug, common) << "Commander info: " << commanderInfo;
         return true;
     } catch (exception& e) {
-        fillError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Error getting DDS commander info: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Error getting DDS commander info: ", e.what()));
         return false;
     }
 }
@@ -691,7 +691,7 @@ bool Controller::waitForNumActiveSlots(const CommonParams& common, Session& sess
     try {
         session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common));
     } catch (exception& e) {
-        fillError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS slots: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS slots: ", e.what()));
         return false;
     }
     return true;
@@ -714,7 +714,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
     requestPtr->setMessageCallback([&success, &error, &common, this](const dds::tools_api::SMessageResponseData& msg) {
         if (msg.m_severity == dds::intercom_api::EMsgSeverity::error) {
             success = false;
-            fillError(common, error, ErrorCode::DDSActivateTopologyFailed, toString("DDS Activate error: ", msg.m_msg));
+            fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, toString("DDS Activate error: ", msg.m_msg));
         } else {
             // OLOG(debug, common) << "DDS Activate Message: " << msg.m_msg;
         }
@@ -756,7 +756,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Error& error, c
 
     if (waitStatus == cv_status::timeout) {
         success = false;
-        fillError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for topology activation");
+        fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for topology activation");
         OLOG(error, common) << error;
     }
 
@@ -784,14 +784,14 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
             if (session.mDDSSession.getSessionID() == boost::uuids::nil_uuid()) {
                 OLOG(info, common) << "DDS session has been shut down";
             } else {
-                fillError(common, error, ErrorCode::DDSShutdownSessionFailed, "Failed to shut down DDS session");
+                fillAndLogError(common, error, ErrorCode::DDSShutdownSessionFailed, "Failed to shut down DDS session");
                 return false;
             }
         } else {
             OLOG(info, common) << "The session ID for the current DDS session is already zero. Not calling shutdown().";
         }
     } catch (exception& e) {
-        fillError(common, error, ErrorCode::DDSShutdownSessionFailed, toString("Shutdown failed: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::DDSShutdownSessionFailed, toString("Shutdown failed: ", e.what()));
         return false;
     }
     return true;
@@ -895,7 +895,7 @@ bool Controller::createDDSTopology(const CommonParams& common, Error& error, con
         session.mDDSTopo = make_unique<CTopology>(topologyFile);
         OLOG(info, common) << "DDS topology " << quoted(topologyFile) << " created successfully";
     } catch (exception& e) {
-        fillError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed to initialize DDS topology: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed to initialize DDS topology: ", e.what()));
         return false;
     }
     return true;
@@ -914,7 +914,7 @@ bool Controller::createTopology(const CommonParams& common, Error& error)
         session.mTopology = make_unique<Topology>(*(session.mDDSTopo), session.mDDSSession);
     } catch (exception& e) {
         session.mTopology = nullptr;
-        fillError(common, error, ErrorCode::FairMQCreateTopologyFailed, toString("Failed to initialize FairMQ topology: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::FairMQCreateTopologyFailed, toString("Failed to initialize FairMQ topology: ", e.what()));
     }
     return session.mTopology != nullptr;
 }
@@ -922,14 +922,14 @@ bool Controller::createTopology(const CommonParams& common, Error& error)
 bool Controller::changeState(const CommonParams& common, Session& session, Error& error, TopoTransition transition, const string& path, AggregatedState& aggrState, DetailedState* detailedState)
 {
     if (session.mTopology == nullptr) {
-        fillError(common, error, ErrorCode::FairMQChangeStateFailed, "FairMQ topology is not initialized");
+        fillAndLogError(common, error, ErrorCode::FairMQChangeStateFailed, "FairMQ topology is not initialized");
         return false;
     }
 
     auto it = gExpectedState.find(transition);
     DeviceState expState{ it != gExpectedState.end() ? it->second : DeviceState::Undefined };
     if (expState == DeviceState::Undefined) {
-        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Unexpected FairMQ transition ", transition));
+        fillAndLogError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Unexpected FairMQ transition ", transition));
         return false;
     }
 
@@ -950,10 +950,10 @@ bool Controller::changeState(const CommonParams& common, Session& session, Error
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
-                        fillFatalError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", transition, " transition"));
+                        fillAndLogFatalError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", transition, " transition"));
                         break;
                     default:
-                        fillFatalError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", errorCode.message()));
+                        fillAndLogFatalError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", errorCode.message()));
                         break;
                 }
             }
@@ -969,7 +969,7 @@ bool Controller::changeState(const CommonParams& common, Session& session, Error
         printStateStats(common, topoState);
     } catch (exception& e) {
         stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
-        fillFatalError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
+        fillAndLogFatalError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
         success = false;
     }
 
@@ -979,7 +979,7 @@ bool Controller::changeState(const CommonParams& common, Session& session, Error
 bool Controller::waitForState(const CommonParams& common, Session& session, Error& error, DeviceState expState, const string& path)
 {
     if (session.mTopology == nullptr) {
-        fillError(common, error, ErrorCode::FairMQWaitForStateFailed, "FairMQ topology is not initialized");
+        fillAndLogError(common, error, ErrorCode::FairMQWaitForStateFailed, "FairMQ topology is not initialized");
         return false;
     }
 
@@ -997,10 +997,10 @@ bool Controller::waitForState(const CommonParams& common, Session& session, Erro
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
-                        fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", expState, " state"));
+                        fillAndLogError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for ", expState, " state"));
                         break;
                     default:
-                        fillError(common, error, ErrorCode::FairMQWaitForStateFailed, toString("Failed waiting for ", expState, " state: ", errorCode.message()));
+                        fillAndLogError(common, error, ErrorCode::FairMQWaitForStateFailed, toString("Failed waiting for ", expState, " state: ", errorCode.message()));
                         break;
                 }
             }
@@ -1011,7 +1011,7 @@ bool Controller::waitForState(const CommonParams& common, Session& session, Erro
         }
     } catch (exception& e) {
         stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
-        fillError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Wait for state failed: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Wait for state failed: ", e.what()));
         success = false;
     }
 
@@ -1049,7 +1049,7 @@ bool Controller::getState(const CommonParams& common, Error& error, const string
         aggrState = aggregateStateForPath(session.mDDSTopo.get(), topoState, path);
     } catch (exception& e) {
         success = false;
-        fillError(common, error, ErrorCode::FairMQGetStateFailed, toString("Get state failed: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::FairMQGetStateFailed, toString("Get state failed: ", e.what()));
     }
     session.fillDetailedState(topoState, detailedState);
 
@@ -1062,7 +1062,7 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
 {
     auto& session = getOrCreateSession(common);
     if (session.mTopology == nullptr) {
-        fillError(common, error, ErrorCode::FairMQSetPropertiesFailed, "FairMQ topology is not initialized");
+        fillAndLogError(common, error, ErrorCode::FairMQSetPropertiesFailed, "FairMQ topology is not initialized");
         return false;
     }
 
@@ -1099,10 +1099,10 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
-                        fillError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for set property: ", errorCode.message()));
+                        fillAndLogError(common, error, ErrorCode::RequestTimeout, toString("Timed out waiting for set property: ", errorCode.message()));
                         break;
                     default:
-                        fillError(common, error, ErrorCode::FairMQSetPropertiesFailed, toString("Set property error message: ", errorCode.message()));
+                        fillAndLogError(common, error, ErrorCode::FairMQSetPropertiesFailed, toString("Set property error message: ", errorCode.message()));
                         break;
                 }
             }
@@ -1111,7 +1111,7 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
         aggrState = AggregateState(session.mTopology->GetCurrentState());
     } catch (exception& e) {
         success = false;
-        fillError(common, error, ErrorCode::FairMQSetPropertiesFailed, toString("Set properties failed: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::FairMQSetPropertiesFailed, toString("Set properties failed: ", e.what()));
     }
 
     return success;
@@ -1172,27 +1172,24 @@ AggregatedState Controller::aggregateStateForPath(const dds::topology_api::CTopo
     }
 }
 
-void Controller::fillError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
+void Controller::fillAndLogError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
 {
     error.mCode = MakeErrorCode(errorCode);
     error.mDetails = msg;
     OLOG(error, common) << error.mDetails;
 }
 
-void Controller::fillFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
+void Controller::fillAndLogFatalError(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
 {
     error.mCode = MakeErrorCode(errorCode);
     error.mDetails = msg;
     OLOG(fatal, common) << error.mDetails;
 }
 
-void Controller::fillFatalErrorLineByLine(const CommonParams& common, Error& error, ErrorCode errorCode, const string& msg)
+void Controller::logFatalLineByLine(const CommonParams& common, const string& msg)
 {
-    error.mCode = MakeErrorCode(errorCode);
-    error.mDetails = msg;
-    stringstream ss(error.mDetails);
+    stringstream ss(msg);
     string line;
-    // OLOG(fatal, common) << error.mCode;
     while (getline(ss, line, '\n')) {
         OLOG(fatal, common) << line;
     }
@@ -1441,11 +1438,11 @@ bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
             session.mDDSSession.sendRequest<SOnTaskDoneRequest>(session.mDDSOnTaskDoneRequest);
             OLOG(info, common) << "Subscribed to task done event from session " << quoted(to_string(session.mDDSSession.getSessionID()));
         } else {
-            fillError(common, error, ErrorCode::DDSSubscribeToSessionFailed, "Failed to subscribe to task done events: session is not running");
+            fillAndLogError(common, error, ErrorCode::DDSSubscribeToSessionFailed, "Failed to subscribe to task done events: session is not running");
             return false;
         }
     } catch (exception& e) {
-        fillError(common, error, ErrorCode::DDSSubscribeToSessionFailed, string("Failed to subscribe to task done events: ") + e.what());
+        fillAndLogError(common, error, ErrorCode::DDSSubscribeToSessionFailed, string("Failed to subscribe to task done events: ") + e.what());
         return false;
     }
     return true;
@@ -1471,15 +1468,22 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
         string err;
         int exitCode = EXIT_SUCCESS;
         string cmd{ ssCmd.str() };
-        OLOG(info, common) << "Executing topology script: " << cmd;
+        OLOG(info, common) << "Executing topology generation script: " << cmd;
         execute(cmd, requestTimeout(common), &out, &err, &exitCode);
 
-        if (exitCode != EXIT_SUCCESS) {
-            throw runtime_error(toString("Topology generation script ", quoted(cmd), " failed with exit code: ", exitCode, "; stderr: ", quoted(err), "; stdout: ", quoted(out)));
+        const size_t shortSize = 75;
+        string shortSuffix;
+        string shortOut = out.substr(0, shortSize);
+        if (out.length() > shortSize) {
+            shortSuffix = " [...]";
         }
 
-        const string shortOut{ out.substr(0, min(out.length(), size_t(20))) };
-        OLOG(info, common) << "Topology script executed successfully: stdout (" << quoted(shortOut) << "...) stderr (" << quoted(err) << ")";
+        if (exitCode != EXIT_SUCCESS) {
+            logFatalLineByLine(common, toString("Topology generation script failed with exit code: ", exitCode, ", stderr:\n", quoted(err), ",\nstdout:\n", quoted(shortOut), shortSuffix));
+            throw runtime_error(toString("Topology generation script failed with exit code: ", exitCode, ", stderr: ", quoted(err)));
+        }
+
+        OLOG(info, common) << "Topology generation script successfull. stderr: " << quoted(err) << ", stdout: " << quoted(shortOut) << shortSuffix;
 
         content = out;
     }
@@ -1490,7 +1494,7 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
     const bfs::path filepath{ tmpPath / "topology.xml" };
     ofstream file(filepath.string());
     if (!file.is_open()) {
-        throw runtime_error(toString("Failed to create temp topology file ", quoted(filepath.string())));
+        throw runtime_error(toString("Failed to create temporary topology file ", quoted(filepath.string())));
     }
     file << content;
     OLOG(info, common) << "Temp topology file " << quoted(filepath.string()) << " created successfully";
