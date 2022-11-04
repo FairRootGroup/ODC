@@ -183,3 +183,11 @@ The default sequence of request can also be executed in batch mode using `--batc
 [The DDS topology example](odc-topo.cpp) shows how to create a topology XML file using [DDS topology APIs](https://github.com/FairRootGroup/DDS/tree/master/dds-topology-lib/src). In the example we combine two topologies [1](ex-dpl-topology.xml) and [2](ex-dd-topology.xml) into a single XML file. The first topology is an example of the DPL export to DDS. The second one is an example of TfBuilder task declaration.
 
 We create a "EPNGroup" group and add it into the main group of the topology. Set required number of  collections. Read DPL collection from XML file and add it to "EPNGroup" group. Add TfBuilder task, which is read from XML file, to "EPNGroup". Save the topology to a file.
+
+## Example topologies
+
+`ex-topo-infinite.xml`: 
+`ex-topo-submit-failure-test.xml`: 
+`ex-topo-groupname-req.xml`: 
+`ex-topo-groupname-req-ncores.xml`: 
+`ex-topo-groupname-req-crashing.xml`: 
