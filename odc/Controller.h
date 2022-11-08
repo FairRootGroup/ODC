@@ -236,7 +236,7 @@ class Controller
     void removeSession(const CommonParams& common);
 
     FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, Session& session, const TopoState& topoState, DeviceState expectedState);
-    bool attemptTopoRecovery(const CommonParams& common, Session& session, FailedTasksCollections& failed);
+    bool attemptStateRecovery(const CommonParams& common, Session& session, FailedTasksCollections& failed);
     void attemptSubmitRecovery(const CommonParams& common, Session& session, Error& error, const std::vector<DDSSubmit::Params>& ddsParams, const std::map<std::string, uint32_t>& agentCounts);
     void updateTopology(const CommonParams& common, Session& session);
 

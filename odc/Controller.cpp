@@ -942,7 +942,7 @@ bool Controller::changeState(const CommonParams& common, Session& session, Error
         if (!success) {
             auto failed = stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
             if (static_cast<ErrorCode>(errorCode.value()) != ErrorCode::DeviceChangeStateInvalidTransition) {
-                success = attemptTopoRecovery(common, session, failed);
+                success = attemptStateRecovery(common, session, failed);
             } else {
                 OLOG(debug, common) << "Invalid transition, skipping nMin check.";
             }
@@ -993,7 +993,7 @@ bool Controller::waitForState(const CommonParams& common, Session& session, Erro
         success = !errorCode;
         if (!success) {
             auto failed = stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
-            success = attemptTopoRecovery(common, session, failed);
+            success = attemptStateRecovery(common, session, failed);
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -1095,7 +1095,7 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
                 }
                 ++count;
             }
-            success = attemptTopoRecovery(common, session, failed);
+            success = attemptStateRecovery(common, session, failed);
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -1299,7 +1299,7 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
     return failed;
 }
 
-bool Controller::attemptTopoRecovery(const CommonParams& common, Session& session, FailedTasksCollections& failed)
+bool Controller::attemptStateRecovery(const CommonParams& common, Session& session, FailedTasksCollections& failed)
 {
     if (!failed.collections.empty() && !session.mNinfo.empty()) {
         OLOG(info, common) << "Checking if execution can continue according to the minimum number of nodes requirement...";
