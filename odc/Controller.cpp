@@ -164,26 +164,22 @@ void Controller::attemptSubmitRecovery(const CommonParams& common,
     error = Error();
     try {
         for (const auto& p : ddsParams) {
-            if (p.mNumAgents != agentCounts.at(p.mAgentGroup)) {
+            uint32_t actualCount = agentCounts.at(p.mAgentGroup);
+            uint32_t requestedCount = p.mNumAgents;
+            uint32_t minCount = p.mMinAgents;
+
+            if (requestedCount != actualCount) {
                 // fail recovery if insufficient agents, and no nMin is defined
-                if (p.mMinAgents == 0) {
-                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
-                        "Number of agents (", agentCounts.at(p.mAgentGroup), ") for group '", p.mAgentGroup
-                        , "' is less than requested (", p.mNumAgents, "), "
-                        , "and no nMin is defined"));
+                if (minCount == 0) {
+                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", actualCount, ") for group ", p.mAgentGroup, " is less than requested (", requestedCount, "), " , "and no nMin is defined"));
                     return;
                 }
                 // fail recovery if insufficient agents, and no nMin is defined
-                if (agentCounts.at(p.mAgentGroup) < p.mMinAgents) {
-                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString(
-                        "Number of agents (", agentCounts.at(p.mAgentGroup), ") for group '", p.mAgentGroup
-                        , "' is less than requested (", p.mNumAgents, "), "
-                        , "and nMin (", p.mMinAgents, ") is not satisfied"));
+                if (actualCount < minCount) {
+                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", actualCount, ") for group ", p.mAgentGroup, " is less than requested (", requestedCount, "), " , "and nMin (", minCount, ") is not satisfied"));
                     return;
                 }
-                OLOG(info, common) << "Number of agents (" << agentCounts.at(p.mAgentGroup) << ") for group '" << p.mAgentGroup
-                                << "' is less than requested (" << p.mNumAgents << "), "
-                                << "but nMin (" << p.mMinAgents << ") is satisfied";
+                OLOG(info, common) << "Number of agents (" << actualCount << ") for group " << p.mAgentGroup << " is less than requested (" << requestedCount << "), " << "but nMin (" << minCount << ") is satisfied";
             }
         }
         if (!error.mCode) {
