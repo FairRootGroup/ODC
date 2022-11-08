@@ -31,19 +31,25 @@ class Controller
     {
         void addTaskDetails(TaskDetails&& taskDetails)
         {
-            std::lock_guard<std::mutex> lock(mTaskDetailsMtx);
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
             mTaskDetails.emplace(taskDetails.mTaskID, taskDetails);
         }
 
         void addCollectionDetails(CollectionDetails&& collectionDetails)
         {
-            std::lock_guard<std::mutex> lock(mCollectionDetailsMtx);
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
             mCollectionDetails.emplace(collectionDetails.mCollectionID, collectionDetails);
+        }
+
+        void addAgentDetails(AgentDetails&& agentDetails)
+        {
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
+            mAgentDetails.emplace(agentDetails.mID, agentDetails);
         }
 
         TaskDetails& getTaskDetails(uint64_t taskID)
         {
-            std::lock_guard<std::mutex> lock(mTaskDetailsMtx);
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
             auto it = mTaskDetails.find(taskID);
             if (it == mTaskDetails.end()) {
                 throw std::runtime_error(toString("Failed to get additional task info for ID (", taskID, ")"));
@@ -53,7 +59,7 @@ class Controller
 
         CollectionDetails& getCollectionDetails(uint64_t collectionID)
         {
-            std::lock_guard<std::mutex> lock(mCollectionDetailsMtx);
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
             auto it = mCollectionDetails.find(collectionID);
             if (it == mCollectionDetails.end()) {
                 throw std::runtime_error(toString("Failed to get additional collection info for ID (", collectionID, ")"));
@@ -70,7 +76,7 @@ class Controller
             detailedState->clear();
             detailedState->reserve(topoState.size());
 
-            std::lock_guard<std::mutex> lock(mTaskDetailsMtx);
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
 
             for (const auto& state : topoState) {
                 auto it = mTaskDetails.find(state.taskId);
@@ -84,19 +90,18 @@ class Controller
 
         void debug()
         {
-            {
-                OLOG(info) << "tasks:";
-                std::lock_guard<std::mutex> lock(mTaskDetailsMtx);
-                for (const auto& t : mTaskDetails) {
-                    OLOG(info) << t.second;
-                }
+            OLOG(info) << "tasks:";
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
+            for (const auto& t : mTaskDetails) {
+                OLOG(info) << t.second;
             }
-            {
-                OLOG(info) << "collections:";
-                std::lock_guard<std::mutex> lock(mCollectionDetailsMtx);
-                for (const auto& c : mCollectionDetails) {
-                    OLOG(info) << c.second;
-                }
+            OLOG(info) << "collections:";
+            for (const auto& c : mCollectionDetails) {
+                OLOG(info) << c.second;
+            }
+            OLOG(info) << "agents:";
+            for (const auto& a : mAgentDetails) {
+                OLOG(info) << a.second;
             }
         }
 
@@ -114,10 +119,10 @@ class Controller
         std::atomic<uint64_t> mLastRunNr = 0;
 
       private:
-        std::mutex mTaskDetailsMtx; ///< Mutex for the tasks container
-        std::mutex mCollectionDetailsMtx; ///< Mutex for the collections container
+        std::mutex mDetailsMtx; ///< Mutex for the tasks/collections container
         std::unordered_map<uint64_t, TaskDetails> mTaskDetails; ///< Additional information about task
         std::unordered_map<uint64_t, CollectionDetails> mCollectionDetails; ///< Additional information about collection
+        std::unordered_map<uint64_t, AgentDetails> mAgentDetails; ///< Additional information about agent
     };
 
     Controller() {}
