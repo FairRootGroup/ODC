@@ -1297,100 +1297,99 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
 
 bool Controller::attemptStateRecovery(const CommonParams& common, Session& session, FailedTasksCollections& failed)
 {
-    if (!failed.collections.empty() && !session.mNinfo.empty()) {
-        OLOG(info, common) << "Checking if execution can continue according to the minimum number of nodes requirement...";
-        // get failed collections and determine if recovery makes sense:
-        //   - are failed collections inside of a group?
-        //   - do all failed collections have nMin parameter defined?
-        //   - is the nMin parameter satisfied?
-        map<string, int32_t> failedCollectionsCount;
-        for (const auto& c : failed.collections) {
-            string collectionName = session.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getName();
-            OLOG(info, common) << "Checking collection '" << c->mPath << "' with agend id " << c->mAgentID << ", name in the topology: " << collectionName;
-            string collectionParentName = session.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getParent()->getName();
-            auto it = session.mNinfo.find(collectionName);
-            if (it != session.mNinfo.end()) {
-                if (failedCollectionsCount.find(collectionName) == failedCollectionsCount.end()) {
-                    failedCollectionsCount.emplace(collectionName, 1);
-                } else {
-                    failedCollectionsCount[collectionName]++;
-                }
-            } else {
-                OLOG(error, common) << "Failed collection '" << c->mPath << "' is not in a group that has the nmin parameter specified";
-                return false;
-            }
-        }
-
-        // proceed only if remaining collections > nmin.
-        for (auto& [colName, nInfo] : session.mNinfo) {
-            int32_t failedCount = failedCollectionsCount.at(colName);
-            int32_t remainingCount = nInfo.nCurrent - failedCount;
-            OLOG(info, common) << "Collection '" << colName << "' with n (original): " << nInfo.nOriginal << ", n (current): " << nInfo.nCurrent << ", nmin: " << nInfo.nMin << ". Failed count: " << failedCount;
-            if (remainingCount < nInfo.nMin) {
-                OLOG(error, common) << "Number of remaining '" << colName << "' collections (" << remainingCount << ") is below nmin (" << nInfo.nMin << ")";
-                return false;
-            } else {
-                nInfo.nCurrent = remainingCount;
-            }
-        }
-
-        // mark all tasks in the failed collections as failed and set them to be ignored for further actions
-        session.mTopology->IgnoreFailedCollections(failed.collections);
-
-        // shutdown agents responsible for failed collections
-
-        using namespace dds::tools_api;
-
-        try {
-            size_t currentSlotCount = session.mTotalSlots;
-
-            size_t numSlotsToRemove = 0;
-            for (const auto& c : failed.collections) {
-                numSlotsToRemove += session.mAgentSlots.at(c->mAgentID);
-            }
-
-            size_t expectedNumSlots = session.mTotalSlots - numSlotsToRemove;
-            OLOG(info, common) << "Current number of slots: " << session.mTotalSlots << ", expecting to reduce to " << expectedNumSlots;
-
-            for (const auto& c : failed.collections) {
-                OLOG(info, common) << "Sending shutdown signal to agent " << c->mAgentID << ", responsible for " << c->mPath;
-                SAgentCommandRequest::request_t agentCmd;
-                agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
-                agentCmd.m_arg1 = c->mAgentID;
-                session.mDDSSession.syncSendRequest<SAgentCommandRequest>(agentCmd, requestTimeout(common));
-            }
-
-            // TODO: notification on agent shutdown in development in DDS
-            currentSlotCount = getNumSlots(common, session);
-            OLOG(info, common) << "Current number of slots: " << currentSlotCount;
-
-            if (currentSlotCount != expectedNumSlots) {
-                int64_t secondsLeft = requestTimeout(common).count();
-                if (secondsLeft > 0) {
-                    int64_t maxAttempts = (secondsLeft * 1000) / 50;
-                    while (currentSlotCount != expectedNumSlots && maxAttempts > 0) {
-                        this_thread::sleep_for(chrono::milliseconds(50));
-                        currentSlotCount = getNumSlots(common, session);
-                        // OLOG(info, common) << "Current number of slots: " << currentSlotCount;
-                        --maxAttempts;
-                    }
-                }
-            }
-            if (currentSlotCount != expectedNumSlots) {
-                OLOG(warning, common) << "Could not reduce the number of slots to " << expectedNumSlots << ", current count is: " << currentSlotCount;
-            } else {
-                OLOG(info, common) << "Successfully reduced number of slots to " << currentSlotCount;
-            }
-            session.mTotalSlots = currentSlotCount;
-        } catch (exception& e) {
-            OLOG(error, common) << "Failed updating nubmer of slots: " << e.what();
-            return false;
-        }
-
-        return true;
+    if (failed.collections.empty() || session.mNinfo.empty()) {
+        return false;
     }
 
-    return false;
+    OLOG(info, common) << "Checking if execution can continue according to the minimum number of nodes requirement...";
+    // get failed collections and determine if recovery makes sense:
+    //   - are failed collections inside of a group?
+    //   - do all failed collections have nMin parameter defined?
+    //   - is the nMin parameter satisfied?
+    map<string, int32_t> failedCollectionsCount;
+    for (const auto& c : failed.collections) {
+        string collectionName = session.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getName();
+        OLOG(info, common) << "Checking collection '" << c->mPath << "' with agend id " << c->mAgentID << ", name in the topology: " << collectionName;
+        auto it = session.mNinfo.find(collectionName);
+        if (it != session.mNinfo.end()) {
+            if (failedCollectionsCount.find(collectionName) == failedCollectionsCount.end()) {
+                failedCollectionsCount.emplace(collectionName, 1);
+            } else {
+                failedCollectionsCount[collectionName]++;
+            }
+        } else {
+            OLOG(error, common) << "Failed collection '" << c->mPath << "' is not in a group that has the nmin parameter specified";
+            return false;
+        }
+    }
+
+    // proceed only if remaining collections > nmin.
+    for (auto& [colName, nInfo] : session.mNinfo) {
+        int32_t failedCount = failedCollectionsCount.at(colName);
+        int32_t remainingCount = nInfo.nCurrent - failedCount;
+        OLOG(info, common) << "Collection '" << colName << "' with n (original): " << nInfo.nOriginal << ", n (current): " << nInfo.nCurrent << ", nmin: " << nInfo.nMin << ". Failed count: " << failedCount;
+        if (remainingCount < nInfo.nMin) {
+            OLOG(error, common) << "Number of remaining '" << colName << "' collections (" << remainingCount << ") is below nmin (" << nInfo.nMin << ")";
+            return false;
+        } else {
+            nInfo.nCurrent = remainingCount;
+        }
+    }
+
+    // mark all tasks in the failed collections as failed and set them to be ignored for further actions
+    session.mTopology->IgnoreFailedCollections(failed.collections);
+
+    // shutdown agents responsible for failed collections
+
+    using namespace dds::tools_api;
+
+    try {
+        size_t currentSlotCount = session.mTotalSlots;
+
+        size_t numSlotsToRemove = 0;
+        for (const auto& c : failed.collections) {
+            numSlotsToRemove += session.mAgentSlots.at(c->mAgentID);
+        }
+
+        size_t expectedNumSlots = session.mTotalSlots - numSlotsToRemove;
+        OLOG(info, common) << "Current number of slots: " << session.mTotalSlots << ", expecting to reduce to " << expectedNumSlots;
+
+        for (const auto& c : failed.collections) {
+            OLOG(info, common) << "Sending shutdown signal to agent " << c->mAgentID << ", responsible for " << c->mPath;
+            SAgentCommandRequest::request_t agentCmd;
+            agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
+            agentCmd.m_arg1 = c->mAgentID;
+            session.mDDSSession.syncSendRequest<SAgentCommandRequest>(agentCmd, requestTimeout(common));
+        }
+
+        // TODO: notification on agent shutdown in development in DDS
+        currentSlotCount = getNumSlots(common, session);
+        OLOG(info, common) << "Current number of slots: " << currentSlotCount;
+
+        if (currentSlotCount != expectedNumSlots) {
+            int64_t secondsLeft = requestTimeout(common).count();
+            if (secondsLeft > 0) {
+                int64_t maxAttempts = (secondsLeft * 1000) / 50;
+                while (currentSlotCount != expectedNumSlots && maxAttempts > 0) {
+                    this_thread::sleep_for(chrono::milliseconds(50));
+                    currentSlotCount = getNumSlots(common, session);
+                    // OLOG(info, common) << "Current number of slots: " << currentSlotCount;
+                    --maxAttempts;
+                }
+            }
+        }
+        if (currentSlotCount != expectedNumSlots) {
+            OLOG(warning, common) << "Could not reduce the number of slots to " << expectedNumSlots << ", current count is: " << currentSlotCount;
+        } else {
+            OLOG(info, common) << "Successfully reduced number of slots to " << currentSlotCount;
+        }
+        session.mTotalSlots = currentSlotCount;
+    } catch (exception& e) {
+        OLOG(error, common) << "Failed updating nubmer of slots: " << e.what();
+        return false;
+    }
+
+    return true;
 }
 
 dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(const CommonParams& common, Session& session) const
