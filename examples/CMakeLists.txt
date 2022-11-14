@@ -45,13 +45,14 @@ macro(odcConfigExampleTopo N FILE_IN FILE_OUT)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${FILE_OUT} DESTINATION ${PROJECT_INSTALL_DATADIR})
 endmacro()
 
-odcConfigExampleTopo(4 ex-topo-groupname-req-crashing.xml.in ex-topo-groupname-req-crashing.xml)
-odcConfigExampleTopo(4 ex-topo-groupname-req-ncores.xml.in ex-topo-groupname-req-ncores.xml)
-odcConfigExampleTopo(4 ex-topo-groupname-req.xml.in ex-topo-groupname-req.xml)
-odcConfigExampleTopo(2 ex-topo-submit-failure-test.xml.in ex-topo-submit-failure-test.xml)
-odcConfigExampleTopo(1 ex-topo-infinite.xml.in ex-topo-infinite.xml)
-odcConfigExampleTopo(3 ex-topo-infinite.xml.in ex-topo-infinite-up.xml)
-odcConfigExampleTopo(2 ex-topo-infinite.xml.in ex-topo-infinite-down.xml)
+odcConfigExampleTopo(4 ex-topo-groupname-crashing-expendable-task.xml.in ex-topo-groupname-crashing-expendable-task.xml)
+odcConfigExampleTopo(4 ex-topo-groupname-crashing.xml.in                 ex-topo-groupname-crashing.xml)
+odcConfigExampleTopo(4 ex-topo-groupname-ncores.xml.in                   ex-topo-groupname-ncores.xml)
+odcConfigExampleTopo(4 ex-topo-groupname.xml.in                          ex-topo-groupname.xml)
+odcConfigExampleTopo(2 ex-topo-submit-failure-test.xml.in                ex-topo-submit-failure-test.xml)
+odcConfigExampleTopo(1 ex-topo-infinite.xml.in                           ex-topo-infinite.xml)
+odcConfigExampleTopo(3 ex-topo-infinite.xml.in                           ex-topo-infinite-up.xml)
+odcConfigExampleTopo(2 ex-topo-infinite.xml.in                           ex-topo-infinite-down.xml)
 
 configure_file(ex-env.sh.in ${CMAKE_CURRENT_BINARY_DIR}/odc-ex-env.sh)
 
@@ -83,7 +84,6 @@ install(TARGETS odc-epn-topo EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION $
 install(TARGETS odc-topo EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 
 # Install example topologies
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ex-qc-topology.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ex-dpl-topology.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ex-dd-topology.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
 install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/odc-rp-example.sh DESTINATION ${PROJECT_INSTALL_BINDIR})

@@ -186,8 +186,13 @@ We create a "EPNGroup" group and add it into the main group of the topology. Set
 
 ## Example topologies
 
-`ex-topo-infinite.xml`: 
-`ex-topo-submit-failure-test.xml`: 
-`ex-topo-groupname-req.xml`: 
-`ex-topo-groupname-req-ncores.xml`: 
-`ex-topo-groupname-req-crashing.xml`: 
+| topology                                         | note                                      | required num agents[num slots]           |
+| ------------------------------------------------ | ----------------------------------------- | ---------------------------------------- |
+| `ex-topo-infinite.xml`                           | simple setup                              | 1[12]                                    |
+| `ex-topo-infinite-up.xml`                        | simple setup with 3 x processors          | 3[12]                                    |
+| `ex-topo-infinite-down.xml`                      | simple setup with 2 x processors          | 2[12]                                    |
+| `ex-topo-submit-failure-test.xml`                | submit recovery if nMin satisfied         | calib: 1[2], online: 2[1]                |
+| `ex-topo-groupname.xml`                          | agent groups                              | calib: 1[2], online: 4[1]                |
+| `ex-topo-groupname-crashing.xml`                 | nMin test - some tasks fail purposefully. | calib: 1[2], online: 4[2]                |
+| `ex-topo-groupname-crashing-expendable-task.xml` | expendable tasks are allowed to fail      | calib: 1[2], online: 4[2]                |
+| `ex-topo-groupname-ncores.xml`                   | test core-based scheduling with Slurm     | calib1: 1[1], calib2: 1[1], online: 4[1] |
