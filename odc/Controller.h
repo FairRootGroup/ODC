@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace odc::core
 {
@@ -88,6 +89,24 @@ class Controller
             }
         }
 
+        void addExpendableTask(uint64_t taskId)
+        {
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
+            mExpendableTasks.emplace(taskId);
+        }
+
+        bool isTaskExpendable(uint64_t taskId)
+        {
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
+            return mExpendableTasks.count(taskId);
+        }
+
+        void clearExpendableTasks()
+        {
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
+            return mExpendableTasks.clear();
+        }
+
         void debug()
         {
             OLOG(info) << "tasks:";
@@ -103,6 +122,18 @@ class Controller
             for (const auto& a : mAgentDetails) {
                 OLOG(info) << a.second;
             }
+        }
+
+        size_t numTasks()
+        {
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
+            return mTaskDetails.size();
+        }
+
+        size_t numCollections()
+        {
+            std::lock_guard<std::mutex> lock(mDetailsMtx);
+            return mCollectionDetails.size();
         }
 
         std::unique_ptr<dds::topology_api::CTopology> mDDSTopo = nullptr; ///< DDS topology
@@ -123,6 +154,7 @@ class Controller
         std::unordered_map<uint64_t, TaskDetails> mTaskDetails; ///< Additional information about task
         std::unordered_map<uint64_t, CollectionDetails> mCollectionDetails; ///< Additional information about collection
         std::unordered_map<uint64_t, AgentDetails> mAgentDetails; ///< Additional information about agent
+        std::unordered_set<uint64_t> mExpendableTasks; ///< List of expandable task IDs
     };
 
     Controller() {}

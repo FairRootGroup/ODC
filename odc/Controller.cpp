@@ -771,6 +771,7 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         session.mNinfo.clear();
         session.mZoneInfos.clear();
         session.mTopoFilePath.clear();
+        session.clearExpendableTasks();
 
         if (session.mDDSSession.getSessionID() != boost::uuids::nil_uuid()) {
             if (session.mDDSOnTaskDoneRequest) {
@@ -799,21 +800,47 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
 
     CTopology ddsTopo(session.mTopoFilePath);
 
-    auto collections = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::COLLECTION);
     OLOG(info, common) << "Extracting requirements:";
-    for (const auto& collection : collections) {
-        CTopoCollection::Ptr_t c = dynamic_pointer_cast<CTopoCollection>(collection);
-        auto colReqs = c->getRequirements();
+
+    auto taskIt = ddsTopo.getRuntimeTaskIterator();
+
+    std::for_each(taskIt.first, taskIt.second, [&](const dds::topology_api::STopoRuntimeTask::FilterIterator_t::value_type& v) {
+        auto& task = v.second;
+        auto& topoTask = *(task.m_task);
+        auto taskReqs = topoTask.getRequirements();
+
+        for (const auto& tr : taskReqs) {
+            if (tr->getRequirementType() == CTopoRequirement::EType::Custom) {
+                if (strStartsWith(tr->getName(), "odc_expendable_")) {
+                    if (tr->getValue() == "true") {
+                        OLOG(debug, common) << "  Task '" << topoTask.getName() << "' (" << task.m_taskId << "), path: " << topoTask.getPath() << " [" << task.m_taskPath << "] is expendable";
+                        session.addExpendableTask(task.m_taskId);
+                    } else if (tr->getValue() == "false") {
+                        OLOG(debug, common) << "  Task '" << topoTask.getName() << "' (" << task.m_taskId << "), path: " << topoTask.getPath() << " [" << task.m_taskPath << "] is not expendable";
+                    } else {
+                        OLOG(error, common) << "  Task '" << topoTask.getName() << "' (" << task.m_taskId << "), path: " << topoTask.getPath() << " [" << task.m_taskPath << "] has 'odc_expendable_*' requirement defined, but with unknown value: " << quoted(tr->getValue());
+                    }
+                }
+            }
+        }
+    });
+
+    auto colIt = ddsTopo.getRuntimeCollectionIterator();
+
+    std::for_each(colIt.first, colIt.second, [&](const dds::topology_api::STopoRuntimeCollection::FilterIterator_t::value_type& v) {
+        auto& col = v.second;
+        auto& topoCol = *(col.m_collection);
+        auto colReqs = topoCol.getRequirements();
 
         string agentGroup;
         string zone;
         int ncores = 0;
-        int32_t n = c->getTotalCounter();
+        int32_t n = topoCol.getTotalCounter();
         int32_t nmin = -1;
 
         for (const auto& cr : colReqs) {
             stringstream ss;
-            ss << "  Collection '" << c->getName() << "' - requirement: " << cr->getName() << ", value: " << cr->getValue() << ", type: ";
+            ss << "  Collection '" << topoCol.getName() << "' - requirement: " << cr->getName() << ", value: " << cr->getValue() << ", type: ";
             if (cr->getRequirementType() == CTopoRequirement::EType::GroupName) {
                 ss << "GroupName";
                 agentGroup = cr->getValue();
@@ -831,12 +858,14 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
                     zone = cr->getValue();
                 } else if (strStartsWith(cr->getName(), "odc_nmin_")) {
                     // nMin is only relevant for collections that are in a group (which is not the main group)
-                    auto parent = c->getParent();
+                    auto parent = topoCol.getParent();
                     if (parent->getType() == CTopoBase::EType::GROUP && parent->getName() != "main") {
                         nmin = stoull(cr->getValue());
                     } else {
-                        // OLOG(info, common) << "collection " << c->getName() << " is not in a group, skipping nMin requirement";
+                        // OLOG(info, common) << "collection " << topoCol.getName() << " is not in a group, skipping nMin requirement";
                     }
+                } else {
+                    OLOG(debug, common) << "Unknown custom requirement found. name: " << quoted(cr->getName()) << ", value: " << quoted(cr->getValue());
                 }
             } else {
                 ss << ", type: Unknown";
@@ -845,11 +874,11 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
 
         if (!agentGroup.empty() && nmin >= 0) {
-            auto it = session.mNinfo.find(c->getName());
+            auto it = session.mNinfo.find(topoCol.getName());
             if (it == session.mNinfo.end()) {
-                session.mNinfo.try_emplace(c->getName(), CollectionNInfo{ n, n, nmin, agentGroup });
+                session.mNinfo.try_emplace(topoCol.getName(), CollectionNInfo{ n, n, nmin, agentGroup });
             } else {
-                // OLOG(info, common) << "collection " << c->getName() << " is already in the mNinfo";
+                // OLOG(info, common) << "collection " << topoCol.getName() << " is already in the mNinfo";
             }
         }
 
@@ -861,7 +890,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
                 it->second.emplace_back(ZoneGroup{n, ncores, agentGroup});
             }
         }
-    }
+    });
 
     if (!session.mZoneInfos.empty()) {
         OLOG(info, common) << "Zones from the topology:";
@@ -938,7 +967,11 @@ bool Controller::changeState(const CommonParams& common, Session& session, Error
         if (!success) {
             auto failed = stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
             if (static_cast<ErrorCode>(errorCode.value()) != ErrorCode::DeviceChangeStateInvalidTransition) {
-                success = attemptStateRecovery(common, session, failed);
+                if (failed.tasks.empty()) {
+                    success = true;
+                } else if (failed.recoverable) {
+                    success = attemptStateRecovery(common, session, failed);
+                }
             } else {
                 OLOG(debug, common) << "Invalid transition, skipping nMin check.";
             }
@@ -989,7 +1022,11 @@ bool Controller::waitForState(const CommonParams& common, Session& session, Erro
         success = !errorCode;
         if (!success) {
             auto failed = stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
-            success = attemptStateRecovery(common, session, failed);
+            if (failed.tasks.empty()) {
+                success = true;
+            } else if (failed.recoverable) {
+                success = attemptStateRecovery(common, session, failed);
+            }
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -1072,26 +1109,46 @@ bool Controller::setProperties(const CommonParams& common, Error& error, const S
             OLOG(info, common) << "Set property finished successfully";
         } else {
             FailedTasksCollections failed;
-            size_t count = 1;
+            size_t count = 0;
             OLOG(error, common) << "Following devices failed to set properties: ";
             for (auto taskId : failedDevices) {
-                try {
-                    TaskDetails& taskDetails = session.getTaskDetails(taskId);
-                    OLOG(error, common) << "  [" << count << "] " << taskDetails;
-                    failed.tasks.push_back(&taskDetails);
-                    auto it = find_if(failed.collections.cbegin(), failed.collections.cend(), [&](const auto& ci) {
-                        return ci->mCollectionID == taskDetails.mCollectionID;
-                    });
-                    if (it == failed.collections.cend()) {
-                        CollectionDetails& collectionDetails = session.getCollectionDetails(taskDetails.mCollectionID);
-                        failed.collections.push_back(&collectionDetails);
-                    }
-                } catch (const exception& e) {
-                    OLOG(error, common) << "Set properties error: " << e.what();
+                TaskDetails& taskDetails = session.getTaskDetails(taskId);
+                OLOG(error, common) << "  [" << ++count << "] " << taskDetails;
+                // if expendable tasks fail - simply ignore them in the Topology
+                if (session.isTaskExpendable(taskId)) {
+                    OLOG(info, common) << "Task " << taskId << " failed, but it is marked as expendable, ignoring its failure.";
+                    session.mTopology->IgnoreFailedTask(taskId);
+                    continue;
                 }
-                ++count;
+                // otherwise add it to the list of failed tasks
+                failed.tasks.push_back(&taskDetails);
+                // if the task is not in a collection, then recovery is not possible
+                if (taskDetails.mCollectionID == 0) {
+                    failed.recoverable = false;
+                    continue;
+                }
+                // check if the failed collection is already stored
+                auto it = find_if(failed.collections.cbegin(), failed.collections.cend(), [&](const auto& ci) {
+                    return ci->mCollectionID == taskDetails.mCollectionID;
+                });
+                // if it is, mark the collection as failed
+                if (it == failed.collections.cend()) {
+                    CollectionDetails& collectionDetails = session.getCollectionDetails(taskDetails.mCollectionID);
+                    failed.collections.push_back(&collectionDetails);
+                }
             }
-            success = attemptStateRecovery(common, session, failed);
+            size_t numFailedCollections = 0;
+            if (!failed.collections.empty()) {
+                OLOG(error, common) << "Following collections failed to set properties: ";
+                for (const auto& col : failed.collections) {
+                    OLOG(error, common) << "  [" << ++numFailedCollections << "] " << col;
+                }
+            }
+            if (failed.tasks.empty()) {
+                success = true;
+            } else if (failed.recoverable) {
+                success = attemptStateRecovery(common, session, failed);
+            }
             if (!success) {
                 switch (static_cast<ErrorCode>(errorCode.value())) {
                     case ErrorCode::OperationTimeout:
@@ -1220,77 +1277,66 @@ void Controller::removeSession(const CommonParams& common)
 FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& common, Session& session, const TopoState& topoState, DeviceState expectedState)
 {
     FailedTasksCollections failed;
+    try {
+        size_t numFailedTasks = 0;
+        for (const auto& status : topoState) {
+            if (status.state == expectedState || status.ignored) {
+                continue;
+            }
 
-    size_t numTasks = topoState.size();
-    size_t numFailedTasks = 0;
-    for (const auto& status : topoState) {
-        if (status.state == expectedState || status.ignored) {
-            continue;
-        }
+            if (++numFailedTasks == 1) {
+                OLOG(error, common) << "Following devices failed to transition to " << expectedState << " state:";
+            }
 
-        ++numFailedTasks;
-        if (numFailedTasks == 1) {
-            OLOG(error, common) << "Following devices failed to transition to " << expectedState << " state:";
-        }
-        stringstream ss;
-        ss << "  [" << numFailedTasks << "]"
-           << " taskID: " << status.taskId
-           << ", state: " << status.state
-           << ", previous state: " << status.lastState
-           << ", collectionID: " << status.collectionId
-           << ", subscribed: " << boolalpha << status.subscribedToStateChanges
-           << ", ignored: " << boolalpha << status.ignored;
-
-        try {
             TaskDetails& taskDetails = session.getTaskDetails(status.taskId);
+            OLOG(error, common) << "  [" << numFailedTasks << "] "
+                                << taskDetails
+                                << ", state: " << status.state
+                                << ", previous state: " << status.lastState
+                                << ", subscribed: " << boolalpha << status.subscribedToStateChanges
+                                << ", ignored: " << boolalpha << status.ignored;
+
+            // if expendable tasks fail - simply ignore them in the Topology
+            if (session.isTaskExpendable(status.taskId)) {
+                session.mTopology->IgnoreFailedTask(status.taskId);
+                OLOG(info, common) << "Task " << status.taskId << " failed, but it is marked as expendable, ignoring its failure.";
+                continue;
+            }
+
+            // otherwise add it to the list of failed tasks
             failed.tasks.push_back(&taskDetails);
-            ss << ", agentID: " << taskDetails.mAgentID
-               << ", slotID: "  << taskDetails.mSlotID
-               << ", path: "    << taskDetails.mPath
-               << ", host: "    << taskDetails.mHost
-               << ", wrkDir: "  << taskDetails.mWrkDir;
-        } catch (const exception& e) {
-            OLOG(error, common) << "State summary error: " << e.what();
-        }
-        OLOG(error, common) << ss.str();
-    }
-
-    auto collectionMap{ GroupByCollectionId(topoState) };
-    size_t numCollections = collectionMap.size();
-    size_t numFailedCollections = 0;
-    for (const auto& [collectionId, states] : collectionMap) {
-        try {
-            auto collectionState = AggregateState(states);
-            if (collectionState == expectedState) {
+            // if the task is not in a collection, then recovery is not possible
+            if (taskDetails.mCollectionID == 0) {
+                failed.recoverable = false;
                 continue;
             }
-
-            if (std::all_of(states.cbegin(), states.cend(), [](const auto& status){ return status.ignored; })) {
-                // std::cout << "All devices in " << collectionId << " are ignored" << std::endl;
-                continue;
+            // check if the failed collection is in the list of failed collections
+            auto it = find_if(failed.collections.cbegin(), failed.collections.cend(), [&](const auto& ci) {
+                return ci->mCollectionID == taskDetails.mCollectionID;
+            });
+            // otherwise add it
+            if (it == failed.collections.cend()) {
+                CollectionDetails& collectionDetails = session.getCollectionDetails(taskDetails.mCollectionID);
+                failed.collections.push_back(&collectionDetails);
             }
-
-            ++numFailedCollections;
-            if (numFailedCollections == 1) {
-                OLOG(error, common) << "Following collections failed to transition to " << expectedState << " state:";
-            }
-            stringstream ss;
-            ss << "  [" << numFailedCollections << "] state: " << collectionState;
-
-            CollectionDetails& collectionDetails = session.getCollectionDetails(collectionId);
-            failed.collections.push_back(&collectionDetails);
-            ss << ", " << collectionDetails;
-            OLOG(error, common) << ss.str();
-        } catch (const exception& e) {
-            OLOG(error, common) << "State summary error: " << e.what();
         }
-    }
 
-    size_t numSuccessfulTasks = numTasks - numFailedTasks;
-    size_t numSuccessfulCollections = numCollections - numFailedCollections;
-    OLOG(error, common) << "Summary after transitioning to " << expectedState << " state:";
-    OLOG(error, common) << "  [tasks] total: " << numTasks << ", successful: " << numSuccessfulTasks << ", failed: " << numFailedTasks;
-    OLOG(error, common) << "  [collections] total: " << numCollections << ", successful: " << numSuccessfulCollections << ", failed: " << numFailedCollections;
+        size_t numFailedCollections = 0;
+        if (!failed.collections.empty()) {
+            OLOG(error, common) << "Following collections failed to transition to " << expectedState << " state:";
+            for (const auto& col : failed.collections) {
+                OLOG(error, common) << "  [" << ++numFailedCollections << "] " << *col;
+            }
+        }
+
+        size_t numOkTasks = session.numTasks() - numFailedTasks;
+        size_t numOkCollections = session.numCollections() - numFailedCollections;
+        OLOG(error, common) << "Summary after transitioning to " << expectedState << " state:";
+        OLOG(error, common) << "  [tasks] total: " << session.numTasks() << ", successful: " << numOkTasks << ", failed: " << numFailedTasks;
+        OLOG(error, common) << "  [collections] total: " << session.numCollections() << ", successful: " << numOkCollections << ", failed: " << numFailedCollections;
+    } catch (const exception& e) {
+        OLOG(error, common) << "State summary error: " << e.what();
+    }
 
     return failed;
 }
@@ -1419,11 +1465,11 @@ bool Controller::subscribeToDDSSession(const CommonParams& common, Error& error)
             session.mDDSOnTaskDoneRequest->setResponseCallback([common, &session](const SOnTaskDoneResponseData& task) {
                 stringstream ss;
                 ss << "Task "                   << task.m_taskID
-                   << " with path '"            << task.m_taskPath
-                   << "' exited with code "     << task.m_exitCode
+                   << " with path "             << quoted(task.m_taskPath)
+                   << " exited with code "      << task.m_exitCode
                    << " and signal "            << task.m_signal
                    << " on host "               << task.m_host
-                   << " in working directory '" << task.m_wrkDir << "'";
+                   << " in working directory "  << quoted(task.m_wrkDir);
                 if (task.m_exitCode != 0 || task.m_signal != 0) {
                     OLOG(error, common.mPartitionID, session.mLastRunNr.load()) << ss.str();
                 } else {

@@ -120,9 +120,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         UnsubscribeFromStateChanges();
 
-        std::lock_guard<std::mutex> lk(*fMtx);
         fDDSCustomCmd.unsubscribe();
         try {
+            std::lock_guard<std::mutex> lk(*fMtx);
             for (auto& op : fChangeStateOps) {
                 op.second.Complete(MakeErrorCode(ErrorCode::OperationCanceled));
             }

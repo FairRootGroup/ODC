@@ -79,7 +79,7 @@ class DDSSubmit : public PluginManager
         // \brief ostream operator.
         friend std::ostream& operator<<(std::ostream& os, const Params& params)
         {
-            return os << "odc::core::DDSSubmit::Params: "
+            return os << "Params: "
                       << "rmsPlugin: "    << params.mRMSPlugin
                       << ", zone: "       << params.mZone
                       << ", agentGroup: " << params.mAgentGroup

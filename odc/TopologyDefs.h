@@ -303,6 +303,7 @@ struct CollectionNInfo
 
 struct FailedTasksCollections
 {
+    bool recoverable = true;
     std::vector<TaskDetails*> tasks;
     std::vector<CollectionDetails*> collections;
 };
