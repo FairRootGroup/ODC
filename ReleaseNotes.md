@@ -1,5 +1,23 @@
 # ODC Release Notes
 
+## 0.76.0 (2022-11-19)
+
+- Cleanup output of topology generation failure: remove cmd (duplicate), shorten stdout, focus stderr.
+- Allow defining expendable tasks, failure of which will be ignored and excluded from the aggregated state report.
+  To define an expendable task, add a custom DDS requirement in the topology file, whose name starts with `odc_expendable_` and value `true`, e.g.:
+  ```xml
+  <declrequirement name="odc_expendable_task" type="custom" value="true" />
+  ```
+  And use the requirement in the task declaration:
+  ```xml
+  <decltask name="Processor">
+    <exe>odc-ex-processor</exe>
+    <requirements>
+      <name>odc_expendable_task</name>
+    </requirements>
+  </decltask>
+  ```
+
 ## 0.75.0 (2022-10-10)
 
 - Adjust timeout on subsequent async ops within one request to avoid delaying execution beyond original timeout value.
