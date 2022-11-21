@@ -825,22 +825,21 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
     });
 
-    auto colIt = ddsTopo.getRuntimeCollectionIterator();
+    auto collections = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::COLLECTION);
 
-    std::for_each(colIt.first, colIt.second, [&](const dds::topology_api::STopoRuntimeCollection::FilterIterator_t::value_type& v) {
-        auto& col = v.second;
-        auto& topoCol = *(col.m_collection);
-        auto colReqs = topoCol.getRequirements();
+    for (const auto& collection : collections) {
+        CTopoCollection::Ptr_t c = dynamic_pointer_cast<CTopoCollection>(collection);
+        auto colReqs = c->getRequirements();
 
         string agentGroup;
         string zone;
         int ncores = 0;
-        int32_t n = topoCol.getTotalCounter();
+        int32_t n = c->getTotalCounter();
         int32_t nmin = -1;
 
         for (const auto& cr : colReqs) {
             stringstream ss;
-            ss << "  Collection '" << topoCol.getName() << "' - requirement: " << cr->getName() << ", value: " << cr->getValue() << ", type: ";
+            ss << "  Collection '" << c->getName() << "' - requirement: " << cr->getName() << ", value: " << cr->getValue() << ", type: ";
             if (cr->getRequirementType() == CTopoRequirement::EType::GroupName) {
                 ss << "GroupName";
                 agentGroup = cr->getValue();
@@ -858,11 +857,11 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
                     zone = cr->getValue();
                 } else if (strStartsWith(cr->getName(), "odc_nmin_")) {
                     // nMin is only relevant for collections that are in a group (which is not the main group)
-                    auto parent = topoCol.getParent();
+                    auto parent = c->getParent();
                     if (parent->getType() == CTopoBase::EType::GROUP && parent->getName() != "main") {
                         nmin = stoull(cr->getValue());
                     } else {
-                        // OLOG(info, common) << "collection " << topoCol.getName() << " is not in a group, skipping nMin requirement";
+                        // OLOG(info, common) << "collection " << c->getName() << " is not in a group, skipping nMin requirement";
                     }
                 } else {
                     OLOG(debug, common) << "Unknown custom requirement found. name: " << quoted(cr->getName()) << ", value: " << quoted(cr->getValue());
@@ -874,11 +873,11 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
 
         if (!agentGroup.empty() && nmin >= 0) {
-            auto it = session.mNinfo.find(topoCol.getName());
+            auto it = session.mNinfo.find(c->getName());
             if (it == session.mNinfo.end()) {
-                session.mNinfo.try_emplace(topoCol.getName(), CollectionNInfo{ n, n, nmin, agentGroup });
+                session.mNinfo.try_emplace(c->getName(), CollectionNInfo{ n, n, nmin, agentGroup });
             } else {
-                // OLOG(info, common) << "collection " << topoCol.getName() << " is already in the mNinfo";
+                // OLOG(info, common) << "collection " << c->getName() << " is already in the mNinfo";
             }
         }
 
@@ -890,7 +889,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
                 it->second.emplace_back(ZoneGroup{n, ncores, agentGroup});
             }
         }
-    });
+    }
 
     if (!session.mZoneInfos.empty()) {
         OLOG(info, common) << "Zones from the topology:";
