@@ -14,6 +14,7 @@ From: fedora:36
                    fairlogger-devel \
                    fairmq-devel \
                    flatbuffers-devel \
+                   flatbuffers-compiler \
                    gcc-c++ \
                    git \
                    grpc-devel \
@@ -27,7 +28,7 @@ From: fedora:36
                    wget
     dnf -y clean all
 
-    git clone -b 3.7.15 https://github.com/FairRootGroup/DDS
+    git clone -b 3.7.22 https://github.com/FairRootGroup/DDS
     cmake -GNinja -S DDS -B DDS_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_dds-tutorials=OFF
     cmake --build DDS_build --target wn_bin
     cmake --build DDS_build --target install
