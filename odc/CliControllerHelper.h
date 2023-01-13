@@ -129,18 +129,20 @@ class CliControllerHelper
     void execBatch(const std::vector<std::string>& args)
     {
         CliHelper::BatchOptions bopt;
-        parseCommand(args, bopt);
-        execCmds(bopt.mOutputCmds);
+        if (parseCommand(args, bopt)) {
+            execCmds(bopt.mOutputCmds);
+        }
     }
 
     void execSleep(const std::vector<std::string>& args)
     {
         try {
             CliHelper::SleepOptions sopt;
-            parseCommand(args, sopt);
-            if (sopt.mMs > 0) {
-                std::cout << "Sleeping " << sopt.mMs << " ms" << std::endl;
-                std::this_thread::sleep_for(std::chrono::milliseconds(sopt.mMs));
+            if (parseCommand(args, sopt)) {
+                if (sopt.mMs > 0) {
+                    std::cout << "Sleeping " << sopt.mMs << " ms" << std::endl;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(sopt.mMs));
+                }
             }
         } catch(const std::exception& e) {
             std::cout << "Error parsing command: " << e.what() << std::endl;
@@ -148,7 +150,7 @@ class CliControllerHelper
     }
 
     template<typename... RequestParams>
-    void parseCommand(const std::vector<std::string>& args, RequestParams&&... params)
+    bool parseCommand(const std::vector<std::string>& args, RequestParams&&... params)
     {
         bpo::options_description options("Request options");
         options.add_options()("help,h", "Print help");
@@ -164,7 +166,10 @@ class CliControllerHelper
 
         if (vm.count("help")) {
             std::cout << options << std::endl;
+            return false;
         }
+
+        return true;
     }
 
     template<typename T>
@@ -175,11 +180,12 @@ class CliControllerHelper
     {
         std::string result;
         try {
-            parseCommand(args, params...);
-            std::cout << "Sending " << name << " request..." << std::endl;
-            std::apply([this](auto&&... par) { ((this->print(par)), ...); }, std::tie(params...));
-            Owner* p = reinterpret_cast<Owner*>(this);
-            result = (p->*func)(params...);
+            if (parseCommand(args, params...)) {
+                std::cout << "Sending " << name << " request..." << std::endl;
+                std::apply([this](auto&&... par) { ((this->print(par)), ...); }, std::tie(params...));
+                Owner* p = reinterpret_cast<Owner*>(this);
+                result = (p->*func)(params...);
+            }
         } catch(const std::exception& e) {
             std::cout << "Error parsing command: " << e.what() << std::endl;
         }
