@@ -81,7 +81,7 @@ class PluginManager
         execute(cmd, timeout, &out, &err, &exitCode);
 
         if (exitCode != EXIT_SUCCESS) {
-            throw std::runtime_error(toString("Plugin ", std::quoted(plugin), " execution failed with exit code: ", exitCode, ", error: ", err));
+            throw std::runtime_error(toString("Execution of plugin ", std::quoted(plugin), " failed with exit code: ", exitCode, ", error: ", err));
         }
         return out;
     }

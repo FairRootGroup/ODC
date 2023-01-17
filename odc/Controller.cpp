@@ -74,6 +74,8 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 
 void Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res)
 {
+    OLOG(info, common) << "Attempting submission with resources: " << res;
+
     if (!session.mDDSSession.IsRunning()) {
         fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
         return;
@@ -86,6 +88,7 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
             ddsParams = mSubmit.makeParams(plugin, res, common.mPartitionID, common.mRunNr, session.mZoneInfos, requestTimeout(common));
         } catch (exception& e) {
             fillAndLogError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
+            return;
         }
     }
 

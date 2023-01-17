@@ -7,6 +7,7 @@
  ********************************************************************************/
 
 #include <odc/Logger.h>
+#include <odc/MiscUtils.h>
 #include <odc/Version.h>
 
 #include <boost/algorithm/string.hpp>
@@ -97,7 +98,9 @@ map<string, ZoneConfig> getZoneConfig(const vector<string>& zonesStr)
         vector<string> zoneCfg;
         boost::algorithm::split(zoneCfg, z, boost::algorithm::is_any_of(":"));
         if (zoneCfg.size() != 4) {
-            throw runtime_error("Provided zones configuration has incorrect format. Expected <name>:<numSlots>:<slurmCfgPath>:<envCfgPath>.");
+            throw runtime_error(odc::core::toString(
+                "Provided zones configuration has incorrect format. Expected <name>:<numSlots>:<slurmCfgPath>:<envCfgPath>. Received: ",
+            z));
         }
         result.emplace(zoneCfg.at(0), ZoneConfig{ stoul(zoneCfg.at(1)), zoneCfg.at(2), zoneCfg.at(3) });
     }
