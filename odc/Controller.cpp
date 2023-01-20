@@ -90,6 +90,8 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
         }
     }
 
+    size_t expectedNumSlots = session.mTotalSlots;
+
     if (!error.mCode) {
         OLOG(info, common) << "Preparing to submit " << ddsParams.size() << " configurations:";
         for (unsigned int i = 0; i < ddsParams.size(); ++i) {
@@ -106,16 +108,17 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
             OLOG(info, common) << "Submitting [" << i + 1 << "/" << ddsParams.size() << "]: " << ddsParams.at(i);
 
             if (submitDDSAgents(common, session, error, ddsParams.at(i))) {
-                session.mTotalSlots += ddsParams.at(i).mNumAgents * ddsParams.at(i).mNumSlots;
+                expectedNumSlots += ddsParams.at(i).mNumAgents * ddsParams.at(i).mNumSlots;
             } else {
                 OLOG(error, common) << "Submission failed";
                 break;
             }
         }
         if (!error.mCode) {
-            OLOG(info, common) << "Waiting for " << session.mTotalSlots << " slots...";
-            if (waitForNumActiveSlots(common, session, error, session.mTotalSlots)) {
-                OLOG(info, common) << "Done waiting for " << session.mTotalSlots << " slots.";
+            OLOG(info, common) << "Waiting for " << expectedNumSlots << " slots...";
+            if (waitForNumActiveSlots(common, session, error, expectedNumSlots)) {
+                session.mTotalSlots = expectedNumSlots;
+                OLOG(info, common) << "Done waiting for " << expectedNumSlots << " slots.";
             }
         }
     }
@@ -1248,7 +1251,7 @@ void Controller::logFatalLineByLine(const CommonParams& common, const string& ms
     }
 }
 
-Controller::Session& Controller::getOrCreateSession(const CommonParams& common)
+Session& Controller::getOrCreateSession(const CommonParams& common)
 {
     lock_guard<mutex> lock(mSessionsMtx);
     auto it = mSessions.find(common.mPartitionID);
