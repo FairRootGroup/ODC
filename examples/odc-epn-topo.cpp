@@ -6,7 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <dds/dds.h>
+#include <dds/TopoCreator.h>
+#include <dds/Topology.h>
 
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>

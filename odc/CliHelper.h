@@ -134,7 +134,7 @@ class CliHelper
     static void addOptions(boost::program_options::options_description& options, InitializeParams& params)
     {
         options.add_options()
-            ("sid", boost::program_options::value<std::string>(&params.mDDSSessionID)->default_value(""), "Session ID of DDS");
+            ("sid", boost::program_options::value<std::string>(&params.mDDSSessionID)->default_value(""), "DDS session ID");
     }
 
     static void addOptions(boost::program_options::options_description& options, ActivateParams& params)

@@ -6,17 +6,17 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-// ODC
 #include <odc/BuildConstants.h>
-// STD
-#include <iomanip>
-#include <iostream>
-// BOOST
+
+#include <dds/TopoCreator.h>
+#include <dds/Topology.h>
+
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-// DDS
-#include <dds/dds.h>
+
+#include <iomanip>
+#include <iostream>
 
 using namespace std;
 using namespace dds::topology_api;

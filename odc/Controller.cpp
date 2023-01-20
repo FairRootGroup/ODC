@@ -14,9 +14,7 @@
 #include <odc/Restore.h>
 #include <odc/Topology.h>
 
-#include <dds/dds.h>
-#include <dds/Tools.h>
-#include <dds/Topology.h>
+#include <dds/TopoCreator.h>
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -177,7 +175,7 @@ void Controller::attemptSubmitRecovery(const CommonParams& common,
                     fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", actualCount, ") for group ", p.mAgentGroup, " is less than requested (", requestedCount, "), " , "and no nMin is defined"));
                     return;
                 }
-                // fail recovery if insufficient agents, and no nMin is defined
+                // fail recovery if insufficient agents, and actual count is less than nMin
                 if (actualCount < minCount) {
                     fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", actualCount, ") for group ", p.mAgentGroup, " is less than requested (", requestedCount, "), " , "and nMin (", minCount, ") is not satisfied"));
                     return;
