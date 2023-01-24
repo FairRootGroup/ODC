@@ -34,13 +34,12 @@ int main(int argc, char** argv)
         Logger::Config logConfig;
         CliHelper::BatchOptions batchOptions;
         bool batch;
-        PluginManager::PluginMap pluginMap;
-        PluginManager::PluginMap triggerMap;
+        PluginManager::PluginMap plugins;
+        PluginManager::PluginMap triggers;
         string restoreId;
         string restoreDir;
         string historyDir;
 
-        // Generic options
         bpo::options_description options("odc-cli-server options");
         options.add_options()
             ("help,h", "Print help")
@@ -54,7 +53,6 @@ int main(int argc, char** argv)
         CliHelper::addLogOptions(options, logConfig);
         CliHelper::addBatchOptions(options, batchOptions, batch);
 
-        // Parsing command-line
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
         bpo::notify(vm);
@@ -77,18 +75,18 @@ int main(int argc, char** argv)
         }
 
         CliHelper::batchCmds(vm, batch, batchOptions);
-        CliHelper::parsePluginMapOptions(vm, pluginMap, "rp");
-        CliHelper::parsePluginMapOptions(vm, triggerMap, "rt");
+        CliHelper::parsePluginMapOptions(vm, plugins, "rp");
+        CliHelper::parsePluginMapOptions(vm, triggers, "rt");
 
-        odc::cli::Controller control;
-        control.setTimeout(chrono::seconds(timeout));
-        control.setHistoryDir(historyDir);
-        control.registerResourcePlugins(pluginMap);
-        control.registerRequestTriggers(triggerMap);
+        odc::cli::Controller controller;
+        controller.setTimeout(chrono::seconds(timeout));
+        controller.setHistoryDir(historyDir);
+        controller.registerResourcePlugins(plugins);
+        controller.registerRequestTriggers(triggers);
         if (!restoreId.empty()) {
-            control.restore(restoreId, restoreDir);
+            controller.restore(restoreId, restoreDir);
         }
-        control.run(batchOptions.mOutputCmds);
+        controller.run(batchOptions.mOutputCmds);
     } catch (exception& e) {
         std::cout << "Unhandled exception: " << e.what() << std::endl;
         OLOG(fatal) << "Unhandled exception: " << e.what();

@@ -6,14 +6,12 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-
 #include <odc/BuildConstants.h>
 #include <odc/CliHelper.h>
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/Version.h>
-#include <odc/grpc/AsyncController.h>
-#include <odc/grpc/SyncController.h>
+#include <odc/grpc/Controller.h>
 
 #include <dds/Tools.h>
 
@@ -21,6 +19,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 
@@ -28,30 +27,9 @@ using namespace std;
 using namespace odc::core;
 namespace bpo = boost::program_options;
 
-template<typename C>
-void runController(C& ctrl,
-                   size_t timeout,
-                   PluginManager::PluginMap& plugins,
-                   PluginManager::PluginMap& triggers,
-                   const std::string& restoreId,
-                   const std::string& restoreDir,
-                   const std::string& historyDir,
-                   const std::string& host)
-{
-    ctrl.setHistoryDir(historyDir);
-    ctrl.setTimeout(chrono::seconds(timeout));
-    ctrl.registerResourcePlugins(plugins);
-    ctrl.registerRequestTriggers(triggers);
-    if (!restoreId.empty()) {
-        ctrl.restore(restoreId, restoreDir);
-    }
-    ctrl.run(host);
-}
-
 int main(int argc, char** argv)
 {
     try {
-        bool sync;
         size_t timeout;
         string host;
         Logger::Config logConfig;
@@ -65,7 +43,7 @@ int main(int argc, char** argv)
         options.add_options()
             ("help,h", "Print help")
             ("version,v", "Print version")
-            ("sync", boost::program_options::bool_switch(&sync)->default_value(false), "Use sync implementation of the gRPC server")
+            ("sync", boost::program_options::value<bool>(), "Use sync implementation of the gRPC server")
             ("timeout", boost::program_options::value<size_t>(&timeout)->default_value(30), "Timeout of requests in sec")
             ("host", boost::program_options::value<std::string>(&host)->default_value("localhost:50051"), "Server address")
             ("rp", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )")
@@ -89,6 +67,10 @@ int main(int argc, char** argv)
             return EXIT_SUCCESS;
         }
 
+        if (vm.count("sync")) {
+            std::cout << "[warning] --sync option is no longer used and will be removed in future version." << std::endl;
+        }
+
         try {
             Logger::instance().init(logConfig);
         } catch (exception& _e) {
@@ -99,13 +81,15 @@ int main(int argc, char** argv)
         CliHelper::parsePluginMapOptions(vm, plugins, "rp");
         CliHelper::parsePluginMapOptions(vm, triggers, "rt");
 
-        if (sync) {
-            odc::grpc::SyncController ctrl;
-            runController(ctrl, timeout, plugins, triggers, restoreId, restoreDir, historyDir, host);
-        } else {
-            odc::grpc::AsyncController ctrl;
-            runController(ctrl, timeout, plugins, triggers, restoreId, restoreDir, historyDir, host);
+        odc::grpc::Controller controller;
+        controller.setTimeout(chrono::seconds(timeout));
+        controller.setHistoryDir(historyDir);
+        controller.registerResourcePlugins(plugins);
+        controller.registerRequestTriggers(triggers);
+        if (!restoreId.empty()) {
+            controller.restore(restoreId, restoreDir);
         }
+        controller.run(host);
     } catch (exception& e) {
         std::cout << "Unhandled exception: " << e.what() << std::endl;
         OLOG(fatal) << "Unhandled exception: " << e.what();

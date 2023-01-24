@@ -9,10 +9,11 @@
 #ifndef ODC_GRPC_CONTROLLER
 #define ODC_GRPC_CONTROLLER
 
-#include <odc/Controller.h>
 #include <odc/DDSSubmit.h>
+#include <odc/Controller.h>
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
+#include <odc/PluginManager.h>
 #include <odc/Topology.h>
 
 #include <grpcpp/grpcpp.h>
@@ -25,13 +26,21 @@
 #include <sstream>
 #include <string>
 
-namespace odc::grpc
-{
+namespace odc::grpc {
 
-class Controller final
+class Controller final : public odc::ODC::Service
 {
   public:
     Controller() {}
+
+    void run(const std::string& host)
+    {
+        ::grpc::ServerBuilder builder;
+        builder.AddListeningPort(host, ::grpc::InsecureServerCredentials());
+        builder.RegisterService(this);
+        std::unique_ptr<::grpc::Server> server(builder.BuildAndStart());
+        server->Wait();
+    }
 
     void setTimeout(const std::chrono::seconds& timeout) { mController.setTimeout(timeout); }
     void setHistoryDir(const std::string& dir) { mController.setHistoryDir(dir); }
@@ -39,7 +48,8 @@ class Controller final
     void registerRequestTriggers(const core::PluginManager::PluginMap& triggerMap) { mController.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId, const std::string& restoreDir) { mController.restore(restoreId, restoreDir); }
 
-    ::grpc::Status Initialize(::grpc::ServerContext* ctx, const odc::InitializeRequest* req, odc::GeneralReply* rep)
+  private:
+    ::grpc::Status Initialize(::grpc::ServerContext* ctx, const odc::InitializeRequest* req, odc::GeneralReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -48,7 +58,7 @@ class Controller final
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         logCommonRequest("Initialize", client, common, req);
-        OLOG(info, common) << "Initialize request session ID: "   << req->sessionid();
+        OLOG(info, common) << "Initialize request session ID: " << req->sessionid();
 
         const core::InitializeParams initializeParams{ req->sessionid() };
         const core::RequestResult res{ mController.execInitialize(common, initializeParams) };
@@ -58,7 +68,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status Submit(::grpc::ServerContext* ctx, const odc::SubmitRequest* req, odc::GeneralReply* rep)
+    ::grpc::Status Submit(::grpc::ServerContext* ctx, const odc::SubmitRequest* req, odc::GeneralReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -77,7 +87,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status Activate(::grpc::ServerContext* ctx, const odc::ActivateRequest* req, odc::GeneralReply* rep)
+    ::grpc::Status Activate(::grpc::ServerContext* ctx, const odc::ActivateRequest* req, odc::GeneralReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -108,7 +118,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status Run(::grpc::ServerContext* ctx, const odc::RunRequest* req, odc::GeneralReply* rep)
+    ::grpc::Status Run(::grpc::ServerContext* ctx, const odc::RunRequest* req, odc::GeneralReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -140,7 +150,28 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status GetState(::grpc::ServerContext* ctx, const odc::StateRequest* req, odc::StateReply* rep)
+    ::grpc::Status Update(::grpc::ServerContext* ctx, const odc::UpdateRequest* req, odc::GeneralReply* rep) override
+    {
+        assert(ctx);
+        const std::string client{ clientMetadataAsString(*ctx) };
+        const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
+
+        logCommonRequest("Update", client, common, req);
+        OLOG(info, common) << "Update request topology: " << req->topology();
+        OLOG(info, common) << "Update request content: "  << req->content();
+        OLOG(info, common) << "Update request script: "   << req->script();
+
+        const core::UpdateParams updateParams{ req->topology(), req->content(), req->script() };
+        const core::RequestResult res{ mController.execUpdate(common, updateParams) };
+
+        setupGeneralReply(rep, res);
+        logGeneralReply("Update", common, *rep);
+        return ::grpc::Status::OK;
+    }
+
+    ::grpc::Status GetState(::grpc::ServerContext* ctx, const odc::StateRequest* req, odc::StateReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -157,7 +188,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status SetProperties(::grpc::ServerContext* ctx, const odc::SetPropertiesRequest* req, odc::GeneralReply* rep)
+    ::grpc::Status SetProperties(::grpc::ServerContext* ctx, const odc::SetPropertiesRequest* req, odc::GeneralReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -185,28 +216,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status Update(::grpc::ServerContext* ctx, const odc::UpdateRequest* req, odc::GeneralReply* rep)
-    {
-        assert(ctx);
-        const std::string client{ clientMetadataAsString(*ctx) };
-        const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
-
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
-        logCommonRequest("Update", client, common, req);
-        OLOG(info, common) << "Update request topology: " << req->topology();
-        OLOG(info, common) << "Update request content: "  << req->content();
-        OLOG(info, common) << "Update request script: "   << req->script();
-
-        const core::UpdateParams updateParams{ req->topology(), req->content(), req->script() };
-        const core::RequestResult res{ mController.execUpdate(common, updateParams) };
-
-        setupGeneralReply(rep, res);
-        logGeneralReply("Update", common, *rep);
-        return ::grpc::Status::OK;
-    }
-
-    ::grpc::Status Configure(::grpc::ServerContext* ctx, const odc::ConfigureRequest* req, odc::StateReply* rep)
+    ::grpc::Status Configure(::grpc::ServerContext* ctx, const odc::ConfigureRequest* req, odc::StateReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -224,7 +234,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status Start(::grpc::ServerContext* ctx, const odc::StartRequest* req, odc::StateReply* rep)
+    ::grpc::Status Start(::grpc::ServerContext* ctx, const odc::StartRequest* req, odc::StateReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -242,7 +252,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status Stop(::grpc::ServerContext* ctx, const odc::StopRequest* req, odc::StateReply* rep)
+    ::grpc::Status Stop(::grpc::ServerContext* ctx, const odc::StopRequest* req, odc::StateReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -260,7 +270,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status Reset(::grpc::ServerContext* ctx, const odc::ResetRequest* req, odc::StateReply* rep)
+    ::grpc::Status Reset(::grpc::ServerContext* ctx, const odc::ResetRequest* req, odc::StateReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -277,8 +287,7 @@ class Controller final
         logStateReply("Reset", common, *rep);
         return ::grpc::Status::OK;
     }
-
-    ::grpc::Status Terminate(::grpc::ServerContext* ctx, const odc::TerminateRequest* req, odc::StateReply* rep)
+    ::grpc::Status Terminate(::grpc::ServerContext* ctx, const odc::TerminateRequest* req, odc::StateReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -296,7 +305,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status Shutdown(::grpc::ServerContext* ctx, const odc::ShutdownRequest* req, odc::GeneralReply* rep)
+    ::grpc::Status Shutdown(::grpc::ServerContext* ctx, const odc::ShutdownRequest* req, odc::GeneralReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -313,7 +322,7 @@ class Controller final
         return ::grpc::Status::OK;
     }
 
-    ::grpc::Status Status(::grpc::ServerContext* ctx, const odc::StatusRequest* req, odc::StatusReply* rep)
+    ::grpc::Status Status(::grpc::ServerContext* ctx, const odc::StatusRequest* req, odc::StatusReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
@@ -464,12 +473,11 @@ class Controller final
 
     core::Controller mController; ///< Core ODC service
 
-    // Mutex for each partition.
-    // All requests for a certain partition are processed sequentially.
+    // Mutex for each partition - all requests for a certain partition are processed sequentially.
     std::map<std::string, std::mutex> mMutexMap; ///< Mutex for each partition
     std::mutex mMutexMapMutex;                   ///< Mutex of global mutex map
 };
 
 } // namespace odc::grpc
 
-#endif /* defined(ODC_GRPC_CONTROLLER) */
+#endif // ODC_GRPC_CONTROLLER

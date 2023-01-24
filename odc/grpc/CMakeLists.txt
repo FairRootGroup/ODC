@@ -8,10 +8,8 @@
 
 set(target "grpc")
 add_library(${target} STATIC
-  "AsyncController.h"
   "Controller.h"
   "ControlClient.h"
-  "SyncController.h"
   "odc.proto"
 )
 add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
