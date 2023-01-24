@@ -143,6 +143,7 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
                                 << ", group: " << ai.m_groupName
                                 // << ", index: " << ai.m_index
                                 // << ", username: " << ai.m_username
+                                << ", startup time: " << ai.m_startUpTime.count() << " ms"
                                 << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
             }
             OLOG(info, common) << "Launched " << agentCounts.size() << " DDS agent groups:";
