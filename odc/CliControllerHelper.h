@@ -39,7 +39,7 @@ class CliControllerHelper
     /// \param[in] cmds Array of requests. If empty than command line input is required.
     void run(const std::vector<std::string>& cmds = std::vector<std::string>())
     {
-        printDescription();
+        std::cout << "ODC Client. Use \".help\" to list available commands." << std::endl;
 
         // Read the input from commnad line
         if (cmds.empty()) {
@@ -251,10 +251,8 @@ class CliControllerHelper
 
     void printDescription()
     {
-        std::cout << "ODC Client.\n"
-                  << "Each command has a set of extra options. Use " << std::quoted("<command> --help") << " to list available options.\n"
-                  << "For example, " << std::quoted(".activate --topo topo_file.xml") << " command activates a topology " << std::quoted("topo_file.xml") << ".\n\n"
-                  << "Available commands:\n\n"
+        std::cout << "Available commands:\n\n"
+
                   << ".init - Initialize. Creates a new DDS session or attaches to an existing DDS session.\n"
                   << ".submit - Submit DDS agents. Can be called multiple times.\n"
                   << ".activate - Activates DDS topology (devices enter Idle state).\n"
@@ -272,8 +270,10 @@ class CliControllerHelper
                   << ".status - Show statuses of managed partitions/sessions.\n"
                   << ".batch - Execute an array of commands.\n"
                   << ".sleep - Sleep for X ms.\n"
-                  << ".help - Print available commands.\n"
-                  << ".quit - Quit the program.\n" << std::endl;
+                  << ".help - List available commands.\n"
+                  << ".quit - Quit the program.\n\n"
+
+                  << "View command options with \"<command> --help\"" << std::endl;
     }
 };
 } // namespace odc::core

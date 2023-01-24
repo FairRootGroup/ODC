@@ -922,7 +922,7 @@ bool Controller::createDDSTopology(const CommonParams& common, Error& error, con
     try {
         auto& session = getOrCreateSession(common);
         session.mDDSTopo = make_unique<CTopology>(topologyFile);
-        OLOG(info, common) << "DDS topology " << quoted(topologyFile) << " created successfully";
+        OLOG(info, common) << "DDS CTopology for " << quoted(topologyFile) << " created successfully";
     } catch (exception& e) {
         fillAndLogError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed to initialize DDS topology: ", e.what()));
         return false;
