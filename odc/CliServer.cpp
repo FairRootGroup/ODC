@@ -59,21 +59,21 @@ int main(int argc, char** argv)
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
         bpo::notify(vm);
 
+        if (vm.count("help")) {
+            std::cout << options << std::endl;
+            return EXIT_SUCCESS;
+        }
+
+        if (vm.count("version")) {
+            std::cout << ODC_VERSION << std::endl;
+            return EXIT_SUCCESS;
+        }
+
         try {
             Logger::instance().init(logConfig);
         } catch (exception& _e) {
             cerr << "Can't initialize log: " << _e.what() << endl;
             return EXIT_FAILURE;
-        }
-
-        if (vm.count("help")) {
-            OLOG(clean) << options;
-            return EXIT_SUCCESS;
-        }
-
-        if (vm.count("version")) {
-            OLOG(clean) << ODC_VERSION;
-            return EXIT_SUCCESS;
         }
 
         CliHelper::batchCmds(vm, batch, batchOptions);
@@ -89,12 +89,13 @@ int main(int argc, char** argv)
             control.restore(restoreId, restoreDir);
         }
         control.run(batchOptions.mOutputCmds);
-    } catch (exception& _e) {
-        OLOG(clean) << _e.what();
-        OLOG(fatal) << _e.what();
+    } catch (exception& e) {
+        std::cout << "Unhandled exception: " << e.what() << std::endl;
+        OLOG(fatal) << "Unhandled exception: " << e.what();
         return EXIT_FAILURE;
     } catch (...) {
-        OLOG(fatal) << "Unexpected Exception occurred.";
+        std::cout << "Unexpected unhandled exception occurred." << std::endl;
+        OLOG(fatal) << "Unexpected unhandled exception occurred.";
         return EXIT_FAILURE;
     }
 

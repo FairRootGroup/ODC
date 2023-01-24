@@ -79,21 +79,21 @@ int main(int argc, char** argv)
         bpo::store(bpo::command_line_parser(argc, argv).options(options).run(), vm);
         bpo::notify(vm);
 
+        if (vm.count("help")) {
+            std::cout << options << std::endl;
+            return EXIT_SUCCESS;
+        }
+
+        if (vm.count("version")) {
+            std::cout << ODC_VERSION << std::endl;
+            return EXIT_SUCCESS;
+        }
+
         try {
             Logger::instance().init(logConfig);
         } catch (exception& _e) {
             cerr << "Can't initialize log: " << _e.what() << endl;
             return EXIT_FAILURE;
-        }
-
-        if (vm.count("help")) {
-            OLOG(clean) << options;
-            return EXIT_SUCCESS;
-        }
-
-        if (vm.count("version")) {
-            OLOG(clean) << ODC_VERSION;
-            return EXIT_SUCCESS;
         }
 
         CliHelper::parsePluginMapOptions(vm, plugins, "rp");
@@ -107,12 +107,12 @@ int main(int argc, char** argv)
             runController(ctrl, timeout, plugins, triggers, restoreId, restoreDir, historyDir, host);
         }
     } catch (exception& e) {
-        OLOG(clean) << e.what();
-        OLOG(fatal) << e.what();
+        std::cout << "Unhandled exception: " << e.what() << std::endl;
+        OLOG(fatal) << "Unhandled exception: " << e.what();
         return EXIT_FAILURE;
     } catch (...) {
-        OLOG(clean) << "Unexpected Exception occurred.";
-        OLOG(fatal) << "Unexpected Exception occurred.";
+        std::cout << "Unexpected unhandled exception occurred." << std::endl;
+        OLOG(fatal) << "Unexpected unhandled exception occurred.";
         return EXIT_FAILURE;
     }
 
