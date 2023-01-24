@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef ODC_CLI_CONTROLLER
-#define ODC_CLI_CONTROLLER
+#ifndef ODC_CLICONTROLLER
+#define ODC_CLICONTROLLER
 
 #include <odc/CliControllerHelper.h>
 #include <odc/Controller.h>
@@ -16,12 +16,12 @@
 #include <chrono>
 #include <sstream>
 
-namespace odc::cli
-{
-class Controller : public core::CliControllerHelper<Controller>
+namespace odc {
+
+class CliController : public core::CliControllerHelper<CliController>
 {
   public:
-    Controller() {}
+    CliController() {}
 
     void setTimeout(const std::chrono::seconds& timeout) { mCtrl.setTimeout(timeout); }
     void setHistoryDir(const std::string& dir) { mCtrl.setHistoryDir(dir); }
@@ -106,4 +106,4 @@ class Controller : public core::CliControllerHelper<Controller>
 };
 } // namespace odc::cli
 
-#endif /* defined(ODC_CLI_CONTROLLER) */
+#endif /* defined(ODC_CLICONTROLLER) */

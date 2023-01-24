@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef ODC_GRPC_CONTROLLER
-#define ODC_GRPC_CONTROLLER
+#ifndef ODC_GRPCCONTROLLER
+#define ODC_GRPCCONTROLLER
 
 #include <odc/DDSSubmit.h>
 #include <odc/Controller.h>
@@ -26,12 +26,12 @@
 #include <sstream>
 #include <string>
 
-namespace odc::grpc {
+namespace odc {
 
-class Controller final : public odc::ODC::Service
+class GrpcController final : public odc::ODC::Service
 {
   public:
-    Controller() {}
+    GrpcController() {}
 
     void run(const std::string& host)
     {
@@ -480,4 +480,4 @@ class Controller final : public odc::ODC::Service
 
 } // namespace odc::grpc
 
-#endif // ODC_GRPC_CONTROLLER
+#endif // ODC_GRPCCONTROLLER

@@ -78,7 +78,7 @@ int main(int argc, char** argv)
         CliHelper::parsePluginMapOptions(vm, plugins, "rp");
         CliHelper::parsePluginMapOptions(vm, triggers, "rt");
 
-        odc::cli::Controller controller;
+        odc::CliController controller;
         controller.setTimeout(chrono::seconds(timeout));
         controller.setHistoryDir(historyDir);
         controller.registerResourcePlugins(plugins);
