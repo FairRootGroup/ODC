@@ -21,14 +21,11 @@ enum class ESeverity
     info,
     warning,
     error,
-    fatal,
-    stdout,
-    clean, // nothing will be prepend to the output
-    stderr
+    fatal
 };
 
 /// Array of log severity names
-static constexpr std::array<const char*, 8> gSeverityNames{ { "dbg", "inf", "wrn", "err", "fat", "cout", "cout", "cerr" } };
+static constexpr std::array<const char*, 8> gSeverityNames{ { "dbg", "inf", "wrn", "err", "fat" } };
 
 namespace logger {
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", ESeverity)
@@ -36,10 +33,10 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(channel, "Channel", std::string)
 } // namespace logger
 
 // A custom streamer to convert string to odc::core::ESeverity
-inline std::istream& operator>>(std::istream& _in, ESeverity& _severity)
+inline std::istream& operator>>(std::istream& in, ESeverity& severity)
 {
     std::string token;
-    _in >> token;
+    in >> token;
     boost::algorithm::to_lower(token);
 
     auto found = std::find(gSeverityNames.begin(), gSeverityNames.end(), token);
@@ -47,15 +44,15 @@ inline std::istream& operator>>(std::istream& _in, ESeverity& _severity)
         throw std::runtime_error(std::string("Can't convert string ") + token + " to ODC log severity");
     }
 
-    _severity = static_cast<ESeverity>(std::distance(gSeverityNames.begin(), found));
-    return _in;
+    severity = static_cast<ESeverity>(std::distance(gSeverityNames.begin(), found));
+    return in;
 }
 // A custom streamer to convert odc::core::ESeverity to string
-inline std::ostream& operator<<(std::ostream& _out, ESeverity _severity)
+inline std::ostream& operator<<(std::ostream& out, ESeverity severity)
 {
-    const size_t idx{ static_cast<size_t>(_severity) };
-    _out << gSeverityNames.at(idx);
-    return _out;
+    const size_t idx{ static_cast<size_t>(severity) };
+    out << gSeverityNames.at(idx);
+    return out;
 }
 } // namespace odc::core
 

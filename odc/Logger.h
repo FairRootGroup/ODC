@@ -28,7 +28,6 @@
 #include <boost/log/sources/severity_channel_logger.hpp>
 #include <boost/log/support/date_time.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/utility/setup/console.hpp>
 #include <boost/log/utility/setup/file.hpp>
 
 #include <unistd.h> // getpid
@@ -91,8 +90,6 @@ class Logger
 
         // Logging to a file
         createFileSink(cfg);
-        // Logging to console
-        createConsoleSink(cfg);
         // Optional InfoLogger sink
         CInfoLogger::instance().setContext(cfg.mInfologgerFacility, cfg.mInfologgerSystem, cfg.mInfologgerRole);
         CInfoLogger::instance().registerSink(cfg.mSeverity, cfg.mInfologger);
@@ -104,18 +101,6 @@ class Logger
     }
 
   private:
-    void createConsoleSink(const Config& /*cfg*/) const
-    {
-        using namespace boost::log;
-        using OstreamSink = boost::shared_ptr<sinks::synchronous_sink<sinks::text_ostream_backend>>;
-        OstreamSink stdoutSink = add_console_log(std::cout, keywords::format = "%Process%: %Message%");
-        OstreamSink stdoutCleanSink = add_console_log(std::cout, keywords::format = "%Message%");
-        OstreamSink stderrSink = add_console_log(std::cerr, keywords::format = "%Process%: error: %Message%");
-        stdoutSink->set_filter(logger::severity == ESeverity::stdout);
-        stdoutCleanSink->set_filter(logger::severity == ESeverity::clean);
-        stderrSink->set_filter(logger::severity == ESeverity::stderr);
-    }
-
     void createFileSink(const Config& cfg) const
     {
         // Log directory is empty, don't create file sink
