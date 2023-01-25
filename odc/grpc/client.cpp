@@ -10,7 +10,7 @@
 #include <odc/CliHelper.h>
 #include <odc/MiscUtils.h>
 #include <odc/Version.h>
-#include <odc/grpc/ControlClient.h>
+#include <odc/grpc/Client.h>
 
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -51,8 +51,8 @@ int main(int argc, char** argv)
 
         CliHelper::batchCmds(vm, batch, batchOptions);
 
-        GrpcControlClient control(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
-        control.run(batchOptions.mOutputCmds);
+        GrpcClient client(grpc::CreateChannel(host, grpc::InsecureChannelCredentials()));
+        client.run(batchOptions.mOutputCmds);
     } catch (exception& e) {
         std::cout << e.what() << std::endl;
         return EXIT_FAILURE;

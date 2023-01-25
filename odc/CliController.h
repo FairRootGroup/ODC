@@ -18,7 +18,7 @@
 
 namespace odc {
 
-class CliController : public core::CliControllerHelper<CliController>
+class CliController : public odc::core::CliControllerHelper<CliController>
 {
   public:
     CliController() {}

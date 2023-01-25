@@ -9,7 +9,7 @@
 set(target "grpc")
 add_library(${target} STATIC
   "Controller.h"
-  "ControlClient.h"
+  "Client.h"
   "odc.proto"
 )
 add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
@@ -28,11 +28,11 @@ protobuf_generate(TARGET grpc LANGUAGE cpp)
 protobuf_generate(TARGET grpc LANGUAGE grpc GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
 
 set(exe odc-grpc-server)
-add_executable(${exe} "Server.cpp")
+add_executable(${exe} "server.cpp")
 target_link_libraries(${exe} PRIVATE Boost::boost Boost::program_options ODC::grpc)
 install(TARGETS ${exe} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 
 set(exe odc-grpc-client)
-add_executable(${exe} "Client.cpp")
+add_executable(${exe} "client.cpp")
 target_link_libraries(${exe} PRIVATE Boost::boost Boost::program_options ODC::grpc)
 install(TARGETS ${exe} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
