@@ -173,7 +173,7 @@ class CliControllerHelper
     }
 
     template<typename T>
-    void print(const T& value) { std::cout << value << std::endl; }
+    void print(const T& value) { std::cout << "  " << value << "\n"; }
 
     template<typename... RequestParams, typename Func>
     std::string request(const std::string& name, const std::vector<std::string>& args, Func func, RequestParams&&... params)
@@ -181,8 +181,9 @@ class CliControllerHelper
         std::string result;
         try {
             if (parseCommand(args, params...)) {
-                std::cout << "Sending " << name << " request..." << std::endl;
+                std::cout << "Sending " << name << " request:" << "\n";
                 std::apply([this](auto&&... par) { ((this->print(par)), ...); }, std::tie(params...));
+                std::cout << std::endl;
                 Owner* p = reinterpret_cast<Owner*>(this);
                 result = (p->*func)(params...);
             }
@@ -245,7 +246,7 @@ class CliControllerHelper
         }
 
         if (!reply.empty()) {
-            std::cout << "Reply: (\n" << reply << ")" << std::endl;
+            std::cout << "Reply:\n" << reply << std::endl;
         }
     }
 

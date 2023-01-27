@@ -331,19 +331,7 @@ class GrpcController final : public odc::ODC::Service
 
         const core::StatusRequestResult res{ mController.execStatus(core::StatusParams(req->running())) };
         setupStatusReply(rep, res);
-
-        if (rep->status() == odc::ReplyStatus::SUCCESS) {
-            OLOG(info) << "Status: found " << rep->partitions().size() << " partition(s)" << (rep->partitions().size() > 0 ? ":" : "");
-            for (const auto& p : rep->partitions()) {
-                OLOG(info) << "  partitionId: " << p.partitionid()
-                           << ", DDS session: " << odc::SessionStatus_Name(p.status())
-                           << ", DDS session ID: " << p.sessionid()
-                           << ", topology state: " << p.state();
-            }
-        } else {
-            OLOG(error) << "Status: " << rep->DebugString();
-        }
-
+        logStatusReply(*rep);
         return ::grpc::Status::OK;
     }
 
@@ -459,6 +447,22 @@ class GrpcController final : public odc::ODC::Service
                                    << ", ignored: " << d.ignored()
                                    << ", host: "    << d.host();
             }
+        }
+    }
+
+    void logStatusReply(const odc::StatusReply& rep)
+    {
+        if (rep.status() == odc::ReplyStatus::SUCCESS) {
+            OLOG(info) << "Status: found " << rep.partitions().size() << " partition(s)" << (rep.partitions().size() > 0 ? ":" : "");
+            for (const auto& p : rep.partitions()) {
+                OLOG(info) << "  partitionId: " << p.partitionid()
+                           << ", DDS session: " << odc::SessionStatus_Name(p.status())
+                           << ", DDS session ID: " << p.sessionid()
+                           << ", Run Nr.: " << p.runnr()
+                           << ", topology state: " << p.state();
+            }
+        } else {
+            OLOG(error) << "Status: " << rep.DebugString();
         }
     }
 

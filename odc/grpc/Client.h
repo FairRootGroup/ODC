@@ -34,7 +34,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Initialize(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetGeneralReplyString(status, reply);
     }
 
     std::string requestSubmit(const odc::core::CommonParams& common, const odc::core::SubmitParams& submitParams)
@@ -46,7 +46,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Submit(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetGeneralReplyString(status, reply);
     }
 
     std::string requestActivate(const odc::core::CommonParams& common, const odc::core::ActivateParams& activateParams)
@@ -59,7 +59,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Activate(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetGeneralReplyString(status, reply);
     }
 
     std::string requestRun(const odc::core::CommonParams& common, const odc::core::RunParams& runParams)
@@ -74,7 +74,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Run(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetGeneralReplyString(status, reply);
     }
 
     std::string requestUpscale(const odc::core::CommonParams& common, const odc::core::UpdateParams& updateParams) { return updateRequest(common, updateParams); }
@@ -89,7 +89,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::StateReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->GetState(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetStateReplyString(status, reply);
     }
 
     std::string requestSetProperties(const odc::core::CommonParams& common, const odc::core::SetPropertiesParams& setPropsParams)
@@ -105,7 +105,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->SetProperties(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetGeneralReplyString(status, reply);
     }
 
     std::string requestConfigure(const odc::core::CommonParams& common, const odc::core::DeviceParams& deviceParams)
@@ -140,7 +140,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Shutdown(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetGeneralReplyString(status, reply);
     }
 
     std::string requestStatus(const odc::core::StatusParams& statusParams)
@@ -150,7 +150,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::StatusReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Status(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetStatusReplyString(status, reply);
     }
 
   private:
@@ -162,7 +162,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Update(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetGeneralReplyString(status, reply);
     }
 
     template<typename Request, typename StubFunc>
@@ -180,17 +180,78 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         odc::StateReply reply;
         grpc::ClientContext context;
         grpc::Status status = (mStub.get()->*stubFunc)(&context, request, &reply);
-        return GetReplyString(status, reply);
+        return GetStateReplyString(status, reply);
     }
 
   private:
-    template<typename Reply>
-    std::string GetReplyString(const grpc::Status& status, const Reply& rep)
+    std::string GetGeneralReplyString(const grpc::Status& status, const odc::GeneralReply& rep)
     {
+        std::stringstream ss;
         if (status.ok()) {
-            return rep.DebugString();
+            ss << "  msg: "            << rep.msg()
+               << ", Partition ID: "   << rep.partitionid()
+               << ", Run Nr.: "        << rep.runnr()
+               << ", DDS Session ID: " << rep.sessionid()
+               << ", topology state: " << rep.state()
+               << ", execution time: " << rep.exectime() << "ms";
+
+            if (rep.status() == odc::ReplyStatus::ERROR) {
+                ss << ", ERROR: " << rep.error().msg() << " (" << rep.error().code() << ")\n";
+                return ss.str();
+            } else if (rep.status() == odc::ReplyStatus::SUCCESS) {
+                ss << "\n";
+                return ss.str();
+            } else {
+                return rep.DebugString();
+            }
         } else {
-            std::stringstream ss;
+            ss << "  RPC failed with error code " << status.error_code() << ": " << status.error_message() << "\n";
+            return ss.str();
+        }
+    }
+
+    std::string GetStateReplyString(const grpc::Status& status, const odc::StateReply& rep)
+    {
+        std::stringstream ss;
+        if (status.ok()) {
+            ss << GetGeneralReplyString(status, rep.reply());
+            if (!rep.devices().empty()) {
+                ss << "  Devices:\n";
+                for (const auto& d : rep.devices()) {
+                    ss << "    id: " << d.id()
+                    << ", state: "   << d.state()
+                    << ", ignored: " << d.ignored()
+                    << ", host: "    << d.host()
+                    << ", path: "    << d.path() << "\n";
+                }
+            }
+            return ss.str();
+        } else {
+            ss << "  RPC failed with error code " << status.error_code() << ": " << status.error_message() << std::endl;
+            return ss.str();
+        }
+    }
+
+    std::string GetStatusReplyString(const grpc::Status& status, const odc::StatusReply& rep)
+    {
+        std::stringstream ss;
+        if (status.ok()) {
+            if (rep.status() == odc::ReplyStatus::SUCCESS) {
+                ss << "  msg: " << rep.msg() << "\n";
+                ss << "  found " << rep.partitions().size() << " partition(s)" << (rep.partitions().size() > 0 ? ":" : "") << "\n";
+                for (const auto& p : rep.partitions()) {
+                    ss << "    Partition ID: " << p.partitionid()
+                       << ", DDS session: " << odc::SessionStatus_Name(p.status())
+                       << ", DDS session ID: " << p.sessionid()
+                       << ", Run Nr.: " << p.runnr()
+                       << ", topology state: " << p.state() << "\n";
+                }
+                ss << "  execution time: " << rep.exectime() << "ms\n";
+            } else {
+                ss << "Status: " << rep.DebugString();
+            }
+            return ss.str();
+        } else {
             ss << "RPC failed with error code " << status.error_code() << ": " << status.error_message() << std::endl;
             return ss.str();
         }
