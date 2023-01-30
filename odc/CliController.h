@@ -104,6 +104,7 @@ class CliController : public odc::core::CliControllerHelper<CliController>
   private:
     core::Controller mCtrl; ///< Core ODC service
 };
+
 } // namespace odc::cli
 
-#endif /* defined(ODC_CLICONTROLLER) */
+#endif // ODC_CLICONTROLLER

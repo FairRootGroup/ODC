@@ -80,7 +80,7 @@ endif()
 
 if(BUILD_CLI_SERVER)
   set(exe odc-cli-server)
-  add_executable(${exe} "cliServer.cpp")
+  add_executable(${exe} "odc-cli-server.cpp")
   target_link_libraries(${exe} PRIVATE Boost::boost Boost::program_options ODC::odc)
   install(TARGETS ${exe} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_BINDIR})
 endif()
