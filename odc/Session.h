@@ -86,6 +86,12 @@ struct Session
         }
     }
 
+    void fillAgentDetails(const std::unordered_map<uint64_t, AgentDetails>& agentDetails)
+    {
+        std::lock_guard<std::mutex> lock(mDetailsMtx);
+        mAgentDetails = agentDetails;
+    }
+
     void addExpendableTask(uint64_t taskId)
     {
         std::lock_guard<std::mutex> lock(mDetailsMtx);

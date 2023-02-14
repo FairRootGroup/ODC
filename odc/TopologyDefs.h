@@ -278,18 +278,20 @@ struct CollectionDetails
 struct AgentDetails
 {
     uint64_t mID = 0;
-    std::string mHost;
-    std::string mPath;
     std::string mZone;
     std::string mGroup;
+    std::string mHost;
+    std::string mPath;
+    uint32_t mNumSlots = 0;
 
     friend std::ostream& operator<<(std::ostream& os, const AgentDetails& ad)
     {
-        return os << "agentID: " << ad.mID
-                  << ", host: "  << ad.mHost
-                  << ", path: "  << ad.mPath
-                  << ", zone: "  << ad.mZone
-                  << ", group: " << ad.mGroup;
+        return os << "agentID: "    << ad.mID
+                  << ", zone: "     << ad.mZone
+                  << ", group: "    << ad.mGroup
+                  << ", host: "     << ad.mHost
+                  << ", path: "     << ad.mPath
+                  << ", numSlots: " << ad.mNumSlots;
     }
 };
 
