@@ -108,17 +108,111 @@ For tasks and collections from this topology to be deployed on the configured zo
 ```
 Collection `Col1` will be deployed on the `calib` Slurm partition, and `Col2` on the `online` partition.
 
+### core-based scheduling
+
+Since version 0.73.0 ODC provides support for core-based scheduling. It translates provided number of cores parameters into Slurm's `#SBATCH --cpus-per-task=` per agent group.
+
+In odc-epn-topo you can now do `--calib <collection1>:<ncoresx> <collection2>:<ncoresy>`. If the number of cores is ommited, it would be get scheduled as before.
+
+The agent groups are created dynamically by odc-epn-topo. Thus the `--calibgroup` and `--recogroup` arguments are no longer present, you'll have to remove them for ODC 0.73.0. But there still needs to be a mapping to zone definitions of the Slurm plugin of odc-grpc-server (`--zones`). So, now you have to pass `--calibzone` and `--recozone` to odc-epn-topo with corresponding zone names.
+
+Example:
+
+odc-grpc-server:
+
+```
+odc-grpc-server --sync --host "127.0.0.1:6667" --rp "slurm:/home/rbx/dev/ODC/install/bin/odc-rp-epn-slurm --logdir /home/rbx/odclogs --zones online:4:/home/rbx/sync/work/odc/slurm-online.cfg: calib:2:/home/rbx/sync/work/odc/slurm-calib.cfg:"
+```
+
+odc-epn-topo:
+
+```
+odc-epn-topo --dd dd-processing.xml --recozone 'online' --reco reco_numa_1.xml reco_numa_2.xml --n 20 --nmin 15 --calibzone 'calib' --calib calib_its.xml:10 calib_mft.xml:10 calib_tof.xml:20 --prependexe "module load O2PDPSuite/epn-20220215-1 2>&1 ; " --mon epnstderrlog.xml -o test.xml
+```
+
+The above call to odc-epn-topo adds custom requirements to the DDS topology files, that are then used by odc-grpc-server during submission:
+
+```xml
+<topology name="topology">
+    ...
+    <declrequirement name="calib_g1" type="groupname" value="calib1"/>
+    <declrequirement name="calib_g2" type="groupname" value="calib2"/>
+    <declrequirement name="calib_g3" type="groupname" value="calib3"/>
+
+    <declrequirement name="online_g" type="groupname" value="online"/>
+
+    <declrequirement name="odc_ncores_calib_its" type="custom" value="10"/>
+    <declrequirement name="odc_ncores_calib_mft" type="custom" value="10"/>
+    <declrequirement name="odc_ncores_calib_tof" type="custom" value="20"/>
+
+    <declrequirement name="odc_zone_calib" type="custom" value="calib"/>
+    <declrequirement name="odc_zone_reco" type="custom" value="online"/>
+    ...
+    <declcollection name="RecoCollection">
+        <requirements>
+            ...
+            <name>online_g</name>
+            <name>odc_zone_reco</name>
+        </requirements>
+        <tasks>
+            ...
+        </tasks>
+    </declcollection>
+    <declcollection name="calib_its">
+        <requirements>
+            <name>odc_ncores_calib_its</name>
+            <name>calib_g1</name>
+            <name>odc_zone_calib</name>
+        </requirements>
+        <tasks>
+            ...
+        </tasks>
+    </declcollection>
+    <declcollection name="calib_mft">
+        <requirements>
+            <name>odc_ncores_calib_mft</name>
+            <name>calib_g2</name>
+            <name>odc_zone_calib</name>
+        </requirements>
+        <tasks>
+            ...
+        </tasks>
+    </declcollection>
+    <declcollection name="calib_tof">
+        <requirements>
+            <name>odc_ncores_calib_tof</name>
+            <name>calib_g3</name>
+            <name>odc_zone_calib</name>
+        </requirements>
+        <tasks>
+            ...
+        </tasks>
+    </declcollection>
+    <main name="main">
+        <collection>calib_its</collection>
+        <collection>calib_mft</collection>
+        <collection>calib_tof</collection>
+        <group name="RecoGroup" n="20">
+            <collection>RecoCollection</collection>
+        </group>
+    </main>
+</topology>
+```
+
+So, if you wished to create a topo with core-scheduling without the odc-epn-topo, you need to add custom requirements with `odc_ncores_...` and `odc_zone_...`.
+
+
 ### Terminology (to be extended)
 
 As the AliECS/EPN/ODC/DDS terminology is quite large and even partially conflicting, we find it useful to summarize some of it here.
 
 | Term | Description |
 | ---- | ---- |
-| ECS Environment | In Alice's definition it is "part of a whole experiment that can work independently on a task" |
-| ECS Partition | Same as ECS Environment, but can be a human-readable label. Typically ECS Environment/Partition corresponds to one active DDS topology |
+| ECS Environment | part of a whole experiment that can work independently on a task |
+| ECS Partition | Same as ECS Environment, but with a human-readable label. Typically corresponds to one active DDS topology |
 | Slurm Partition | Groups nodes managed by Slurm into logical sets |
-| Run | Run in an ECS partition - a period of continuous data taking. Single ECS partition can contain multiple runs. Individual runs would then be separated by Running->Ready->Running state changes |
-| Zone | A label for a part of a resource request from AliECS. Typicaly maps to a Slurm partition, or a set of nodes managed through SSH or another resource manager |
+| Run | A period of continuous data taking. Single ECS partition can contain multiple runs. Individual runs are separated by Running->Ready->Running state cycle |
+| Zone | A label for a part of a resource request from AliECS. Maps to a Slurm partition, or a set of nodes managed through SSH or another resource manager |
 | DDS Topology | A set of DDS tasks, potentially grouped into DDS Collections and/or multiplied via DDS Groups |
 | DDS Task | A user executable or a script, launched through DDS |
 | DDS Collection | A set of DDS Tasks, grouped together that has to be executed on the same node |
