@@ -6,7 +6,6 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/Version.h>
 
@@ -112,7 +111,6 @@ int main(int argc, char** argv)
 {
     try {
         string resources;
-        Logger::Config logConfig;
         string partitionID;
         vector<string> zonesStr;
 
@@ -123,22 +121,15 @@ int main(int argc, char** argv)
             ("help,h", "Help message")
             ("version,v", "Print version")
             ("res", bpo::value<string>(&resources), "Resource description in JSON format. E.g. {\"zone\":\"online\",\"n\":1}")
-            ("logdir", bpo::value<string>(&logConfig.mLogDir)->default_value(defaultLogDir), "Log files directory")
-            ("severity", bpo::value<ESeverity>(&logConfig.mSeverity)->default_value(ESeverity::info), "Log severity level")
-            ("infologger", bpo::bool_switch(&logConfig.mInfologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
+            ("logdir", bpo::value<string>(), "[DEPRECATED] Does nothing")
+            ("severity", bpo::value<string>(), "[DEPRECATED] Does nothing")
+            ("infologger", bpo::value<bool>(), "[DEPRECATED] Does nothing")
             ("id", bpo::value<string>(&partitionID)->default_value(""), "ECS partition ID")
             ("zones", bpo::value<vector<string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath>:<envCfgPath> format");
 
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(opts).run(), vm);
         bpo::notify(vm);
-
-        try {
-            Logger::instance().init(logConfig);
-        } catch (exception& e) {
-            cerr << "Can't initialize log: " << e.what() << endl;
-            return EXIT_FAILURE;
-        }
 
         if (vm.count("help")) {
             cout << opts;
@@ -149,8 +140,6 @@ int main(int argc, char** argv)
             cout << ODC_VERSION << endl;
             return EXIT_SUCCESS;
         }
-
-        OLOG(info, partitionID, 0) << "Starting epn slurm plugin";
 
         Resources res(resources);
         map<string, ZoneConfig> zones{getZoneConfig(zonesStr)};
@@ -175,11 +164,8 @@ int main(int argc, char** argv)
                << "<slots>" << zone.numSlots << "</slots>" // number of slots per agent
                << "</submit>";
 
-            OLOG(info, partitionID, 0) << ss.str();
             cout << ss.str() << endl;
         }
-
-        OLOG(info, partitionID, 0) << "Finishing epn slurm plugin";
     } catch (exception& e) {
         cerr << e.what();
         return EXIT_FAILURE;

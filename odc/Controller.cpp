@@ -83,7 +83,7 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
     vector<DDSSubmit::Params> ddsParams;
     if (!error.mCode) {
         try {
-            ddsParams = mSubmit.makeParams(plugin, res, common.mPartitionID, common.mRunNr, session.mZoneInfos, requestTimeout(common));
+            ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfos, requestTimeout(common));
         } catch (exception& e) {
             fillAndLogError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
             return;

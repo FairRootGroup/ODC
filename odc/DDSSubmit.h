@@ -11,6 +11,7 @@
 
 #include <odc/BuildConstants.h>
 #include <odc/Logger.h>
+#include <odc/Params.h>
 #include <odc/PluginManager.h>
 
 #include <boost/filesystem.hpp>
@@ -99,13 +100,14 @@ class DDSSubmit : public PluginManager
 
     std::vector<Params> makeParams(const std::string& plugin,
                                    const std::string& resources,
-                                   const std::string& partitionID,
-                                   uint64_t runNr,
+                                   const CommonParams& common,
                                    const std::map<std::string, std::vector<ZoneGroup>>& zoneInfos,
                                    std::chrono::seconds timeout)
     {
         std::vector<Params> params;
-        std::stringstream ss{ execPlugin(plugin, resources, partitionID, runNr, timeout) };
+        OLOG(info, common) << "Starting " << plugin << " plugin...";
+        std::stringstream ss{ execPlugin(plugin, resources, common.mPartitionID, common.mRunNr, timeout) };
+        OLOG(info, common) << "Finishing " << plugin << " plugin. Plugin output:\n" << ss.str();
         boost::property_tree::ptree pt;
         boost::property_tree::read_xml(ss, pt, boost::property_tree::xml_parser::no_comments);
         // check if parameters are children of <submit> tag(s), or flat
