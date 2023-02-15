@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <unordered_set>
 
 using namespace odc;
 using namespace odc::core;
@@ -131,11 +132,14 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
         }
 
         try {
+            unordered_set<string> hosts;
             auto agentInfo = getAgentInfo(common, session);
             OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
+            hosts.reserve(agentInfo.size());
             for (const auto& ai : agentInfo) {
                 agentCounts[ai.m_groupName]++;
                 session.mAgentSlots[ai.m_agentID] = ai.m_nSlots;
+                hosts.emplace(ai.m_host);
                 OLOG(info, common) << "  Agent ID: " << ai.m_agentID
                                 // << ", pid: " << ai.m_agentPid
                                 << ", host: " << ai.m_host
@@ -144,7 +148,9 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
                                 // << ", index: " << ai.m_index
                                 // << ", username: " << ai.m_username
                                 << ", startup time: " << ai.m_startUpTime.count() << " ms"
-                                << ", slots: " << ai.m_nSlots << " (idle: " << ai.m_nIdleSlots << ", executing: " << ai.m_nExecutingSlots << ").";
+                                << ", slots: " << ai.m_nSlots
+                                << " (idle: " << ai.m_nIdleSlots
+                                << ", executing: " << ai.m_nExecutingSlots << ").";
             }
             OLOG(info, common) << "Launched " << agentCounts.size() << " DDS agent groups:";
             for (const auto& [groupName, count] : agentCounts) {
