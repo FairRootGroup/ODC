@@ -1513,14 +1513,13 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
 
     // Execute topology script if needed
     if (!topologyScript.empty()) {
-        stringstream ssCmd;
-        ssCmd << boost::process::search_path("bash").string() << " -c " << quoted(topologyScript);
         string out;
         string err;
         int exitCode = EXIT_SUCCESS;
-        string cmd{ ssCmd.str() };
-        OLOG(info, common) << "Executing topology generation script: " << cmd;
-        execute(cmd, requestTimeout(common), &out, &err, &exitCode);
+        OLOG(info, common) << "Executing topology generation script: " << topologyScript;
+        std::vector<std::pair<std::string, std::string>> extraEnv;
+        extraEnv.emplace_back(std::make_pair("ODC_TOPO_GEN_CMD", topologyScript));
+        execute(topologyScript, requestTimeout(common), &out, &err, &exitCode, extraEnv);
 
         const size_t shortSize = 75;
         string shortSuffix;

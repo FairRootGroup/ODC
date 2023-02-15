@@ -18,6 +18,8 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
+#include <vector>
+#include <utility> // pair
 
 namespace bp = boost::process;
 namespace ba = boost::asio;
@@ -36,7 +38,8 @@ inline pid_t execute(const std::string& cmd,
                      const std::chrono::seconds& timeout,
                      std::string* stdOut = nullptr,
                      std::string* errOut = nullptr,
-                     int* exitCode = nullptr)
+                     int* exitCode = nullptr,
+                     const std::vector<std::pair<std::string, std::string>>& extraEnv = {})
 {
     try {
         ba::io_service ios;
@@ -47,7 +50,15 @@ inline pid_t execute(const std::string& cmd,
 
         ba::deadline_timer watchdog{ ios, boost::posix_time::seconds(timeout.count()) };
 
-        bp::child c(cmd,
+        auto env = boost::this_process::environment();
+        for (const auto& e : extraEnv) {
+            env[e.first] = e.second;
+        }
+
+        bp::child c("/bin/bash",
+                    "-c",
+                    cmd,
+                    env,
                     bp::std_in.close(),
                     bp::std_out > outPipe,
                     bp::std_err > errPipe,
