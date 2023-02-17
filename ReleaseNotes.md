@@ -1,5 +1,15 @@
 # ODC Release Notes
 
+## 0.77.0 (2023-02-17)
+
+- Improvement: Fail early on ressource plugin failures.
+- Improvement: Include agent startup time in the agent info output.
+- Bugfix: Fix incorrect slot count on submission failures.
+- Bugfix: Fix some CLI tools/commands not stopping execution after --help.
+- Remove async mode of the gRPC controller. The `--sync` CLI parameter now does nothing and is **deprecated**.
+- Remove logger from the odc-rp-epn-slurm plugin. `--logdir`, `--severity` and `--infologger` parameters now do nothing and are **deprecated**.
+- Include list of hosts in the Run/Submit result.
+
 ## 0.76.0 (2022-11-19)
 
 - Cleanup output of topology generation failure: remove cmd (duplicate), shorten stdout, focus stderr.
