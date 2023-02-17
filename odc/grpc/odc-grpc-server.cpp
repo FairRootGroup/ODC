@@ -43,7 +43,7 @@ int main(int argc, char** argv)
         options.add_options()
             ("help,h", "Print help")
             ("version,v", "Print version")
-            ("sync", boost::program_options::value<bool>(), "Use sync implementation of the gRPC server")
+            ("sync", boost::program_options::bool_switch()->default_value(false), "[DEPRECATED] Use sync implementation of the gRPC server")
             ("timeout", boost::program_options::value<size_t>(&timeout)->default_value(30), "Timeout of requests in sec")
             ("host", boost::program_options::value<std::string>(&host)->default_value("localhost:50051"), "Server address")
             ("rp", boost::program_options::value<std::vector<std::string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )")
@@ -68,7 +68,9 @@ int main(int argc, char** argv)
         }
 
         if (vm.count("sync")) {
-            std::cout << "[warning] --sync option is no longer used and will be removed in future version." << std::endl;
+            if (!vm.at("sync").defaulted()) {
+                std::cout << "[warning] --sync option is no longer used and will be removed in future version." << std::endl;
+            }
         }
 
         try {
