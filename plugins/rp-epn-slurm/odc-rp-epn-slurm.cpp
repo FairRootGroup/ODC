@@ -123,7 +123,7 @@ int main(int argc, char** argv)
             ("res", bpo::value<string>(&resources), "Resource description in JSON format. E.g. {\"zone\":\"online\",\"n\":1}")
             ("logdir", bpo::value<string>(), "[DEPRECATED] Does nothing")
             ("severity", bpo::value<string>(), "[DEPRECATED] Does nothing")
-            ("infologger", bpo::value<bool>(), "[DEPRECATED] Does nothing")
+            ("infologger", bpo::bool_switch()->default_value(false), "[DEPRECATED] Does nothing")
             ("id", bpo::value<string>(&partitionID)->default_value(""), "ECS partition ID")
             ("zones", bpo::value<vector<string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath>:<envCfgPath> format");
 
