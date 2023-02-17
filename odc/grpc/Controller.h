@@ -358,6 +358,9 @@ class GrpcController final : public odc::ODC::Service
         rep->set_sessionid(res.mDDSSessionID);
         rep->set_exectime(res.mExecTime);
         rep->set_state(GetAggregatedStateName(res.mAggregatedState));
+        for (const auto& host : res.mHosts) {
+            rep->add_hosts(host);
+        }
     }
 
     void setupStateReply(odc::StateReply* rep, const core::RequestResult& res)
@@ -424,6 +427,12 @@ class GrpcController final : public odc::ODC::Service
            << ", state: "     << rep.state()
            << ", msg: "       << rep.msg()
            << ", exectime: "  << rep.exectime() << "ms";
+        if (!rep.hosts().empty()) {
+            ss << ", hosts: ";
+            for (int i = 0; i < rep.hosts().size(); ++i) {
+                ss << rep.hosts().at(i) << (i == (rep.hosts().size() - 1) ? "" : ", ");
+            }
+        }
 
         if (rep.status() == odc::ReplyStatus::ERROR) {
             ss << ", ERROR: " << rep.error().msg() << " (" << rep.error().code() << ") ";

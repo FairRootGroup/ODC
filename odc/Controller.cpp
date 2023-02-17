@@ -22,7 +22,6 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <unordered_set>
 
 using namespace odc;
 using namespace odc::core;
@@ -65,19 +64,22 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 
     auto& session = getOrCreateSession(common);
 
-    submit(common, session, error, params.mPlugin, params.mResources);
+    auto hosts = submit(common, session, error, params.mPlugin, params.mResources);
 
     execRequestTrigger("Submit", common);
-    return createRequestResult(common, error, "Submit done", common.mTimer.duration(), AggregatedState::Undefined);
+    string sidStr{ to_string(session.mDDSSession.getSessionID()) };
+    StatusCode status{ error.mCode ? StatusCode::error : StatusCode::ok };
+    return RequestResult(status, "Submit done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sidStr, AggregatedState::Undefined, hosts);
 }
 
-void Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res)
+unordered_set<string> Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res)
 {
+    unordered_set<string> hosts;
     OLOG(info, common) << "Attempting submission with resources: " << res;
 
     if (!session.mDDSSession.IsRunning()) {
         fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
-        return;
+        return hosts;
     }
 
     // Get DDS submit parameters from ODC resource plugin
@@ -87,7 +89,7 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
             ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfos, requestTimeout(common));
         } catch (exception& e) {
             fillAndLogError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
-            return;
+            return hosts;
         }
     }
 
@@ -132,7 +134,6 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
         }
 
         try {
-            unordered_set<string> hosts;
             auto agentInfo = getAgentInfo(common, session);
             OLOG(info, common) << "Launched " << agentInfo.size() << " DDS agents:";
             hosts.reserve(agentInfo.size());
@@ -163,7 +164,9 @@ void Controller::submit(const CommonParams& common, Session& session, Error& err
         if (error.mCode) {
             attemptSubmitRecovery(common, session, error, ddsParams, agentCounts);
         }
+
     }
+    return hosts;
 }
 
 void Controller::attemptSubmitRecovery(const CommonParams& common,
@@ -289,6 +292,7 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
     Error error;
 
     auto& session = getOrCreateSession(common);
+    std::unordered_set<std::string> hosts;
 
     if (!session.mRunAttempted) {
         session.mRunAttempted = true;
@@ -315,7 +319,7 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
                     fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
                 }
 
-                submit(common, session, error, params.mPlugin, params.mResources);
+                hosts = submit(common, session, error, params.mPlugin, params.mResources);
 
                 if (!session.mDDSSession.IsRunning()) {
                     fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
@@ -332,7 +336,10 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
 
     AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
     execRequestTrigger("Run", common);
-    return createRequestResult(common, error, "Run done", common.mTimer.duration(), state);
+
+    string sidStr{ to_string(session.mDDSSession.getSessionID()) };
+    StatusCode status{ error.mCode ? StatusCode::error : StatusCode::ok };
+    return RequestResult(status, "Run done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sidStr, state, hosts);
 }
 
 RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
@@ -380,7 +387,7 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     execRequestTrigger("Shutdown", common);
 
     StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
-    return RequestResult(status, "Shutdown done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, ddsSessionId, AggregatedState::Undefined, nullptr);
+    return RequestResult(status, "Shutdown done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, ddsSessionId, AggregatedState::Undefined, {}, nullptr);
 }
 
 RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
@@ -586,7 +593,7 @@ RequestResult Controller::createRequestResult(const CommonParams& common, const 
     auto& session = getOrCreateSession(common);
     string sidStr{ to_string(session.mDDSSession.getSessionID()) };
     StatusCode status{ error.mCode ? StatusCode::error : StatusCode::ok };
-    return RequestResult(status, msg, execTime, error, common.mPartitionID, common.mRunNr, sidStr, aggrState, move(detailedState));
+    return RequestResult(status, msg, execTime, error, common.mPartitionID, common.mRunNr, sidStr, aggrState, {}, move(detailedState));
 }
 
 bool Controller::createDDSSession(const CommonParams& common, Error& error)

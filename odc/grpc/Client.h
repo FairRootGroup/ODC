@@ -194,6 +194,12 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
                << ", DDS Session ID: " << rep.sessionid()
                << ", topology state: " << rep.state()
                << ", execution time: " << rep.exectime() << "ms";
+            if (!rep.hosts().empty()) {
+                ss << "\n  Hosts:\n    ";
+                for (int i = 0; i < rep.hosts().size(); ++i) {
+                    ss << rep.hosts().at(i) << (i == (rep.hosts().size() - 1) ? "" : ", ");
+                }
+            }
 
             if (rep.status() == odc::ReplyStatus::ERROR) {
                 ss << ", ERROR: " << rep.error().msg() << " (" << rep.error().code() << ")\n";

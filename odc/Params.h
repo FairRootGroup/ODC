@@ -15,6 +15,8 @@
 #include <memory>
 #include <string>
 #include <system_error>
+#include <unordered_set>
+#include <vector>
 
 namespace odc::core
 {
@@ -90,12 +92,14 @@ struct RequestResult : public BaseRequestResult
                   uint64_t runNr,
                   const std::string& sessionID,
                   AggregatedState aggregatedState,
+                  std::unordered_set<std::string> hosts,
                   std::unique_ptr<DetailedState> detailedState = nullptr)
         : BaseRequestResult(statusCode, msg, execTime, error)
         , mPartitionID(partitionID)
         , mRunNr(runNr)
         , mDDSSessionID(sessionID)
         , mAggregatedState(aggregatedState)
+        , mHosts(std::move(hosts))
         , mDetailedState(std::move(detailedState))
     {}
 
@@ -105,6 +109,7 @@ struct RequestResult : public BaseRequestResult
     AggregatedState mAggregatedState = AggregatedState::Undefined; ///< Aggregated state of the affected divices
 
     // Optional parameters
+    std::unordered_set<std::string> mHosts;                        ///< List of used hosts
     std::unique_ptr<DetailedState> mDetailedState = nullptr;
 };
 

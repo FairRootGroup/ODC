@@ -52,32 +52,40 @@ class CliController : public odc::core::CliControllerHelper<CliController>
         std::stringstream ss;
 
         if (result.mStatusCode == core::StatusCode::ok) {
-            ss << "  Status code: SUCCESS\n  Message: " << result.mMsg << std::endl;
+            ss << "  Status code: SUCCESS\n  Message: " << result.mMsg << "\n";
         } else {
             ss << "  Status code: ERROR\n  Error code: " << result.mError.mCode.value()
                << "\n  Error message: " << result.mError.mCode.message() << " ("
-               << result.mError.mDetails << ")" << std::endl;
+               << result.mError.mDetails << ")\n";
         }
 
-        ss << "  Aggregated state: " << result.mAggregatedState << std::endl;
-        ss << "  Partition ID: " << result.mPartitionID << std::endl;
-        ss << "  Run Nr: " << result.mRunNr << std::endl;
-        ss << "  Session ID: " << result.mDDSSessionID << std::endl;
+        ss << "  Aggregated state: " << result.mAggregatedState << "\n";
+        ss << "  Partition ID: "     << result.mPartitionID << "\n";
+        ss << "  Run Nr: "           << result.mRunNr << "\n";
+        ss << "  Session ID: "       << result.mDDSSessionID << "\n";
+        if (!result.mHosts.empty()) {
+            ss << "  Hosts:\n    ";
+            size_t i = 0;
+            for (const auto& host : result.mHosts) {
+                ss << host << (i == (result.mHosts.size() - 1) ? "\n" : ", ");
+                ++i;
+            }
+        }
 
         if (result.mDetailedState != nullptr) {
-            ss << std::endl << "  Devices: " << std::endl;
+            ss << "\n  Devices:\n";
             for (const auto& state : *(result.mDetailedState)) {
-                ss << "    { id: " << state.mStatus.taskId
-                       << ", path: " << state.mPath
-                       << ", state: " << state.mStatus.state
-                       << ", ignored: " <<  state.mStatus.ignored
-                       << ", host: " <<  state.mHost
-                       << " }" << std::endl;
+                ss << "    ID: "    << state.mStatus.taskId
+                   << "; path: "    << state.mPath
+                   << "; state: "   << state.mStatus.state
+                   << "; ignored: " << state.mStatus.ignored
+                   << "; host: "    << state.mHost
+                   << "\n";
             }
-            ss << std::endl;
+            ss << "\n";
         }
 
-        ss << "  Execution time: " << result.mExecTime << " msec" << std::endl;
+        ss << "  Execution time: " << result.mExecTime << " msec\n";
 
         return ss.str();
     }
@@ -86,18 +94,20 @@ class CliController : public odc::core::CliControllerHelper<CliController>
     {
         std::stringstream ss;
         if (result.mStatusCode == core::StatusCode::ok) {
-            ss << "  Status code: SUCCESS\n  Message: " << result.mMsg << std::endl;
+            ss << "  Status code: SUCCESS\n  Message: " << result.mMsg << "\n";
         } else {
-            ss << "  Status code: ERROR\n  Error code: " << result.mError.mCode.value() << "\n  Error message: " << result.mError.mCode.message() << " ("
-               << result.mError.mDetails << ")" << std::endl;
+            ss << "  Status code: ERROR\n  Error code: " << result.mError.mCode.value()
+               << "\n  Error message: " << result.mError.mCode.message() << " ("
+               << result.mError.mDetails << ")\n";
         }
-        ss << "  Partitions: " << std::endl;
+        ss << "  Partitions:\n";
         for (const auto& p : result.mPartitions) {
-            ss << "    { partition ID: " << p.mPartitionID << "; session ID: " << p.mDDSSessionID
+            ss << "    ID: " << p.mPartitionID
+               << "; session ID: " << p.mDDSSessionID
                << "; status: " << ((p.mDDSSessionStatus == core::DDSSessionStatus::running) ? "RUNNING" : "STOPPED")
-               << "; state: " << core::GetAggregatedStateName(p.mAggregatedState) << " }" << std::endl;
+               << "; state: " << core::GetAggregatedStateName(p.mAggregatedState) << "\n";
         }
-        ss << "  Execution time: " << result.mExecTime << " msec" << std::endl;
+        ss << "  Execution time: " << result.mExecTime << " msec\n";
         return ss.str();
     }
 
