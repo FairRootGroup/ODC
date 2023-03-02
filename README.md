@@ -1,5 +1,7 @@
 # Online Device Control
 
+[![license](https://alfa-ci.gsi.de/shields/badge/license-LGPL--3.0-orange.svg)](COPYRIGHT)
+
 ## Introduction
 The Online Device Control project control/communicate with a graph (topology) of [FairMQ](https://github.com/FairRootGroup/FairMQ) devices using [DDS](http://dds.gsi.de) or PMIx (under development)
 
