@@ -25,7 +25,6 @@ add_library(${target} STATIC
   "Controller.cpp"
   "Controller.h"
   "DDSSubmit.h"
-  "Error.cpp"
   "Error.h"
   "InfoLogger.h"
   "Logger.h"

@@ -57,11 +57,45 @@ enum class ErrorCode
 
 struct ErrorCategory : std::error_category
 {
-    const char* name() const noexcept override;
-    std::string message(int condition) const override;
+    const char* name() const noexcept override { return "odc"; }
+    std::string message(int condition) const override
+    {
+        switch (static_cast<ErrorCode>(condition)) {
+            // clang-format off
+            case ErrorCode::RequestNotSupported:                return "Request not supported";
+            case ErrorCode::RequestTimeout:                     return "Request timeout";
+            case ErrorCode::ResourcePluginFailed:               return "Resource plugin failed";
+            case ErrorCode::OperationInProgress:                return "async operation already in progress";
+            case ErrorCode::OperationTimeout:                   return "async operation timed out";
+            case ErrorCode::OperationCanceled:                  return "async operation canceled";
+            case ErrorCode::DeviceChangeStateFailed:            return "Failed to change state of a FairMQ device";
+            case ErrorCode::DeviceChangeStateInvalidTransition: return "Requested transition is not valid from the current state";
+            case ErrorCode::DeviceGetPropertiesFailed:          return "Failed to get FairMQ device properties";
+            case ErrorCode::DeviceSetPropertiesFailed:          return "Failed to set FairMQ device properties";
+            case ErrorCode::TopologyFailed:                     return "Failed topology";
+
+            case ErrorCode::DDSCreateSessionFailed:             return "Failed to create a DDS session";
+            case ErrorCode::DDSShutdownSessionFailed:           return "Failed to shutdown a DDS session";
+            case ErrorCode::DDSAttachToSessionFailed:           return "Failed to attach to a DDS session";
+            case ErrorCode::DDSCreateTopologyFailed:            return "Failed to create DDS topology";
+            case ErrorCode::DDSCommanderInfoFailed:             return "Failed to receive DDS commander info";
+            case ErrorCode::DDSSubmitAgentsFailed:              return "Failed to submit DDS agents";
+            case ErrorCode::DDSActivateTopologyFailed:          return "Failed to activate DDS topology";
+
+            case ErrorCode::FairMQCreateTopologyFailed:         return "Failed to create FairMQ topology";
+            case ErrorCode::FairMQChangeStateFailed:            return "Failed to change FairMQ device state";
+            case ErrorCode::FairMQGetStateFailed:               return "Failed to get FairMQ device state";
+            case ErrorCode::FairMQSetPropertiesFailed:          return "Failed to set FairMQ device properties";
+            default:                                            return "Unknown error";
+            // clang-format on
+        }
+    }
 };
 
-std::error_code MakeErrorCode(ErrorCode);
+static ErrorCategory errorCategory;
+
+inline std::error_code MakeErrorCode(ErrorCode ec) { return { static_cast<int>(ec), errorCategory }; }
+
 } // namespace odc::core
 
 namespace std
