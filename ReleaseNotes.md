@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## 0.77.1 (2023-03-07)
+
+- Bugfix: handle return value of FairMQ's ChangeState
+
 ## 0.77.0 (2023-02-20)
 
 - Improvement: Fail early on ressource plugin failures.
