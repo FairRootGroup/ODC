@@ -15,9 +15,9 @@ def jobMatrix(String type, List specs) {
       ver = spec.ver
     } else { // == 'check'
       job = "${spec.name}"
-      selector = 'fedora-34-x86_64'
+      selector = 'fedora-36-x86_64'
       os = 'fedora'
-      ver = '34'
+      ver = '36'
     }
 
     def label = "${job}"
@@ -71,7 +71,7 @@ pipeline{
       steps{
         script {
           def builds = jobMatrix('build', [
-            [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11'],
+            [os: 'fedora', ver: '36',    arch: 'x86_64', compiler: 'gcc-11'],
             // [os: 'centos', ver: '8stream.alice', arch: 'x86_64', compiler: 'gcc-10'],
           ])
 
