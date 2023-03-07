@@ -72,7 +72,7 @@ pipeline{
         script {
           def builds = jobMatrix('build', [
             [os: 'fedora', ver: '34',    arch: 'x86_64', compiler: 'gcc-11'],
-            [os: 'centos', ver: '8stream.alice', arch: 'x86_64', compiler: 'gcc-10'],
+            // [os: 'centos', ver: '8stream.alice', arch: 'x86_64', compiler: 'gcc-10'],
           ])
 
           def checks = jobMatrix('check', [
