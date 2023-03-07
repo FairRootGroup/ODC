@@ -42,8 +42,12 @@ struct Processor : fair::mq::Device
                 std::regex pathRegex(pathRegexStr);
                 if (std::regex_match(ddsTaskPath, pathRegex)) {
                     LOG(info) << "<<< task path " << std::quoted(ddsTaskPath) << " matches " << std::quoted(pathRegexStr) << ", aborting >>>";
-                    ChangeState(fair::mq::Transition::ErrorFound);
-                    break;
+                    bool ret = ChangeState(fair::mq::Transition::ErrorFound);
+                    if (ret) {
+                        break;
+                    } else {
+                        LOG(info) << "could not change state to error, breaking anyway";
+                    }
                 } else {
                     LOG(info) << "task path " << std::quoted(ddsTaskPath) << " does not match: " << std::quoted(pathRegexStr) << ".";
                 }
