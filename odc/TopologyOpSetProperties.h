@@ -41,26 +41,26 @@ struct SetPropertiesOp
                     Executor const& ex,
                     Allocator const& alloc,
                     Handler&& handler)
-        : fId(id)
-        , fOp(ex, alloc, std::move(handler))
-        , fTimer(ex)
-        , fCount(0)
-        , fTasks(std::move(tasks))
-        , fMtx(mutex)
+        : mId(id)
+        , mOp(ex, alloc, std::move(handler))
+        , mTimer(ex)
+        , mCount(0)
+        , mTasks(std::move(tasks))
+        , mMtx(mutex)
     {
         if (timeout > std::chrono::milliseconds(0)) {
-            fTimer.expires_after(timeout);
-            fTimer.async_wait([&](std::error_code ec) {
+            mTimer.expires_after(timeout);
+            mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
-                    std::lock_guard<std::mutex> lk(fMtx);
-                    fOp.Timeout(fOutstandingDevices);
+                    std::lock_guard<std::mutex> lk(mMtx);
+                    mOp.Timeout(mOutstandingDevices);
                 }
             });
         }
-        if (fTasks.empty()) {
+        if (mTasks.empty()) {
             OLOG(warning) << "SetProperties initiated on an empty set of tasks, check the path argument.";
         }
-        // OLOG(debug) << "SetProperties " << fId << " with expected count of " << fTasks.size() << " started.";
+        // OLOG(debug) << "SetProperties " << mId << " with expected count of " << mTasks.size() << " started.";
     }
     SetPropertiesOp() = delete;
     SetPropertiesOp(const SetPropertiesOp&) = delete;
@@ -69,60 +69,60 @@ struct SetPropertiesOp
     SetPropertiesOp& operator=(SetPropertiesOp&&) = default;
     ~SetPropertiesOp() = default;
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
     {
-        fOutstandingDevices.reserve(fTasks.size());
-        for (const auto& task : fTasks) {
+        mOutstandingDevices.reserve(mTasks.size());
+        for (const auto& task : mTasks) {
             const DeviceStatus& ds = stateData.at(stateIndex.at(task.GetId()));
             // Do not wait for an errored/exited device that is not yet ignored
             if (ds.state == DeviceState::Error || ds.state == DeviceState::Exiting) {
-                ++fCount;
+                ++mCount;
             }
             // but always list at as failed/outstanding
-            fOutstandingDevices.emplace(task.GetId());
+            mOutstandingDevices.emplace(task.GetId());
         }
     }
 
     void Update(const DDSTask::Id taskId, cc::Result result)
     {
-        std::lock_guard<std::mutex> lk(fMtx);
+        std::lock_guard<std::mutex> lk(mMtx);
         if (result == cc::Result::Ok) {
-            fOutstandingDevices.erase(taskId);
+            mOutstandingDevices.erase(taskId);
         }
-        ++fCount;
+        ++mCount;
         TryCompletion();
     }
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void TryCompletion()
     {
-        if (!fOp.IsCompleted() && fCount == fTasks.size()) {
-            fTimer.cancel();
-            if (!fOutstandingDevices.empty()) {
-                fOp.Complete(MakeErrorCode(ErrorCode::DeviceSetPropertiesFailed), fOutstandingDevices);
+        if (!mOp.IsCompleted() && mCount == mTasks.size()) {
+            mTimer.cancel();
+            if (!mOutstandingDevices.empty()) {
+                mOp.Complete(MakeErrorCode(ErrorCode::DeviceSetPropertiesFailed), mOutstandingDevices);
             } else {
-                fOp.Complete(fOutstandingDevices);
+                mOp.Complete(mOutstandingDevices);
             }
         }
     }
 
-    bool IsCompleted() { return fOp.IsCompleted(); }
+    bool IsCompleted() { return mOp.IsCompleted(); }
 
   private:
-    uint64_t const fId;
-    AsioAsyncOp<Executor, Allocator, SetPropertiesCompletionSignature> fOp;
-    boost::asio::steady_timer fTimer;
-    unsigned int fCount;
-    std::vector<DDSTask> fTasks;
-    FailedDevices fOutstandingDevices;
-    std::mutex& fMtx;
+    uint64_t const mId;
+    AsioAsyncOp<Executor, Allocator, SetPropertiesCompletionSignature> mOp;
+    boost::asio::steady_timer mTimer;
+    unsigned int mCount;
+    std::vector<DDSTask> mTasks;
+    FailedDevices mOutstandingDevices;
+    std::mutex& mMtx;
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     bool ContainsTask(DDSTask::Id id)
     {
-        auto it = std::find_if(fTasks.begin(), fTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
-        return it != fTasks.end();
+        auto it = std::find_if(mTasks.begin(), mTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
+        return it != mTasks.end();
     }
 };
 

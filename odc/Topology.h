@@ -80,20 +80,20 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                   bool blockUntilConnected = false,
                   Allocator alloc = DefaultAllocator())
         : AsioBase<Executor, Allocator>(ex, std::move(alloc))
-        , fDDSSession(ddsSession)
-        , fDDSCustomCmd(fDDSService)
-        , fDDSTopo(topo)
-        , fMtx(std::make_unique<std::mutex>())
-        , fStateChangeSubscriptionsCV(std::make_unique<std::condition_variable>())
-        , fNumStateChangePublishers(0)
-        , fHeartbeatsTimer(boost::asio::system_executor())
-        , fHeartbeatInterval(600000)
+        , mDDSSession(ddsSession)
+        , mDDSCustomCmd(mDDSService)
+        , mDDSTopo(topo)
+        , mMtx(std::make_unique<std::mutex>())
+        , mStateChangeSubscriptionsCV(std::make_unique<std::condition_variable>())
+        , mNumStateChangePublishers(0)
+        , mHeartbeatsTimer(boost::asio::system_executor())
+        , mHeartbeatInterval(600000)
     {
         makeTopologyState();
 
         // We assume from here the given CSession has an active topo that matches the given topo file!
-        // std::string activeTopo(fDDSSession.RequestCommanderInfo().activeTopologyName);
-        // std::string givenTopo(fDDSTopo.GetName());
+        // std::string activeTopo(mDDSSession.RequestCommanderInfo().activeTopologyName);
+        // std::string givenTopo(mDDSTopo.GetName());
         // if (activeTopo != givenTopo) {
         // throw RuntimeError("Given topology ", givenTopo, " is not activated (active: ", activeTopo, ")");
         // }
@@ -101,10 +101,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         SubscribeToCommands();
         SubscribeToTaskDoneEvents();
 
-        fDDSService.start(to_string(fDDSSession.getSessionID()));
+        mDDSService.start(to_string(mDDSSession.getSessionID()));
         SubscribeToStateChanges();
         if (blockUntilConnected) {
-            WaitForPublisherCount(fStateIndex.size());
+            WaitForPublisherCount(mStateIndex.size());
         }
     }
 
@@ -120,27 +120,27 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         UnsubscribeFromStateChanges();
 
-        fDDSCustomCmd.unsubscribe();
+        mDDSCustomCmd.unsubscribe();
         try {
-            std::lock_guard<std::mutex> lk(*fMtx);
-            for (auto& op : fChangeStateOps) {
+            std::lock_guard<std::mutex> lk(*mMtx);
+            for (auto& op : mChangeStateOps) {
                 op.second.Complete(MakeErrorCode(ErrorCode::OperationCanceled));
             }
         } catch (...) {
         }
-        fDDSOnTaskDoneRequest->unsubscribeResponseCallback();
+        mDDSOnTaskDoneRequest->unsubscribeResponseCallback();
     }
 
-    // precondition: fMtx is locked.
+    // precondition: mMtx is locked.
     std::vector<DDSTask> GetTasks(const std::string& path = "", bool firstRun = false) const
     {
         std::vector<DDSTask> list;
 
         dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t itPair;
         if (path.empty()) {
-            itPair = fDDSTopo.getRuntimeTaskIterator(nullptr); // passing nullptr will get all tasks
+            itPair = mDDSTopo.getRuntimeTaskIterator(nullptr); // passing nullptr will get all tasks
         } else {
-            itPair = fDDSTopo.getRuntimeTaskIteratorMatchingPath(path);
+            itPair = mDDSTopo.getRuntimeTaskIteratorMatchingPath(path);
         }
         auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
 
@@ -153,7 +153,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             //            << "Collection id: " << task.second.m_taskCollectionId << ", "
             //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex << std::endl;
             if (!firstRun) {
-                const DeviceStatus& ds = fStateData.at(fStateIndex.at(task.first));
+                const DeviceStatus& ds = mStateData.at(mStateIndex.at(task.first));
                 if (ds.ignored) {
                     // std::cout << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping" << std::endl;
                     continue;
@@ -167,25 +167,25 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     void IgnoreFailedTask(uint64_t id)
     {
-        std::lock_guard<std::mutex> lk(*fMtx);
-        DeviceStatus& device = fStateData.at(fStateIndex.at(id));
+        std::lock_guard<std::mutex> lk(*mMtx);
+        DeviceStatus& device = mStateData.at(mStateIndex.at(id));
         if (device.subscribedToStateChanges) {
             device.subscribedToStateChanges = false;
-            --fNumStateChangePublishers;
+            --mNumStateChangePublishers;
         }
         device.ignored = true;
     }
 
     void IgnoreFailedCollections(const std::vector<CollectionDetails*>& collections)
     {
-        std::lock_guard<std::mutex> lk(*fMtx);
-        for (auto& device : fStateData) {
+        std::lock_guard<std::mutex> lk(*mMtx);
+        for (auto& device : mStateData) {
             for (const auto& collection : collections) {
                 if (device.collectionId == collection->mCollectionID) {
                     // std::cout << "Ignoring device " << device.taskId << " from collection " << collection->mCollectionID << std::endl;
                     if (device.subscribedToStateChanges) {
                         device.subscribedToStateChanges = false;
-                        --fNumStateChangePublishers;
+                        --mNumStateChangePublishers;
                     }
                     device.ignored = true;
                 }
@@ -196,24 +196,24 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     void SubscribeToStateChanges()
     {
         // FAIR_LOG(debug) << "Subscribing to state change";
-        cc::Cmds cmds(cc::make<cc::SubscribeToStateChange>(fHeartbeatInterval.count()));
-        fDDSCustomCmd.send(cmds.Serialize(), "");
+        cc::Cmds cmds(cc::make<cc::SubscribeToStateChange>(mHeartbeatInterval.count()));
+        mDDSCustomCmd.send(cmds.Serialize(), "");
 
-        fHeartbeatsTimer.expires_after(fHeartbeatInterval);
-        fHeartbeatsTimer.async_wait(std::bind(&BasicTopology::SendSubscriptionHeartbeats, this, std::placeholders::_1));
+        mHeartbeatsTimer.expires_after(mHeartbeatInterval);
+        mHeartbeatsTimer.async_wait(std::bind(&BasicTopology::SendSubscriptionHeartbeats, this, std::placeholders::_1));
     }
 
     void SubscribeToTaskDoneEvents()
     {
         using namespace dds::tools_api;
         SOnTaskDoneRequest::request_t request;
-        fDDSOnTaskDoneRequest = SOnTaskDoneRequest::makeRequest(request);
-        fDDSOnTaskDoneRequest->setResponseCallback([&](const SOnTaskDoneResponseData& info) {
-            std::unique_lock<std::mutex> lk(*fMtx);
-            DeviceStatus& task = fStateData.at(fStateIndex.at(info.m_taskID));
+        mDDSOnTaskDoneRequest = SOnTaskDoneRequest::makeRequest(request);
+        mDDSOnTaskDoneRequest->setResponseCallback([&](const SOnTaskDoneResponseData& info) {
+            std::unique_lock<std::mutex> lk(*mMtx);
+            DeviceStatus& task = mStateData.at(mStateIndex.at(info.m_taskID));
             if (task.subscribedToStateChanges) {
                 task.subscribedToStateChanges = false;
-                --fNumStateChangePublishers;
+                --mNumStateChangePublishers;
             }
             task.exitCode = info.m_exitCode;
             task.signal = info.m_signal;
@@ -224,28 +224,28 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 task.state = DeviceState::Exiting;
             }
 
-            for (auto& op : fChangeStateOps) {
+            for (auto& op : mChangeStateOps) {
                 op.second.Update(task.taskId, task.state);
             }
-            for (auto& op : fWaitForStateOps) {
+            for (auto& op : mWaitForStateOps) {
                 op.second.Update(task.taskId, task.lastState, task.state);
             }
             // std::cout << "task " << task.taskId << " exited" << std::endl;
             // TODO: include set/get property ops
         });
-        fDDSSession.sendRequest<SOnTaskDoneRequest>(fDDSOnTaskDoneRequest);
+        mDDSSession.sendRequest<SOnTaskDoneRequest>(mDDSOnTaskDoneRequest);
     }
 
     void WaitForPublisherCount(unsigned int number)
     {
         using namespace std::chrono_literals;
-        std::unique_lock<std::mutex> lk(*fMtx);
-        auto publisherCountReached = [&]() { return fNumStateChangePublishers == number; };
+        std::unique_lock<std::mutex> lk(*mMtx);
+        auto publisherCountReached = [&]() { return mNumStateChangePublishers == number; };
         auto count = 0;
         constexpr auto checkInterval(50ms);
         constexpr auto maxCount(30s / checkInterval);
-        while (!publisherCountReached() && fDDSSession.IsRunning() && count < maxCount) {
-            fStateChangeSubscriptionsCV->wait_for(lk, checkInterval, publisherCountReached);
+        while (!publisherCountReached() && mDDSSession.IsRunning() && count < maxCount) {
+            mStateChangeSubscriptionsCV->wait_for(lk, checkInterval, publisherCountReached);
             ++count;
         }
     }
@@ -254,10 +254,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         if (!ec) {
             // Timer expired.
-            fDDSCustomCmd.send(cc::Cmds(cc::make<cc::SubscriptionHeartbeat>(fHeartbeatInterval.count())).Serialize(), "");
+            mDDSCustomCmd.send(cc::Cmds(cc::make<cc::SubscriptionHeartbeat>(mHeartbeatInterval.count())).Serialize(), "");
             // schedule again
-            fHeartbeatsTimer.expires_after(fHeartbeatInterval);
-            fHeartbeatsTimer.async_wait(std::bind(&BasicTopology::SendSubscriptionHeartbeats, this, std::placeholders::_1));
+            mHeartbeatsTimer.expires_after(mHeartbeatInterval);
+            mHeartbeatsTimer.async_wait(std::bind(&BasicTopology::SendSubscriptionHeartbeats, this, std::placeholders::_1));
         } else if (ec == boost::asio::error::operation_aborted) {
             // OLOG(debug) << "Heartbeats timer canceled";
         } else {
@@ -268,16 +268,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     void UnsubscribeFromStateChanges()
     {
         // stop sending heartbeats
-        fHeartbeatsTimer.cancel();
+        mHeartbeatsTimer.cancel();
         // unsubscribe from state changes
-        fDDSCustomCmd.send(cc::Cmds(cc::make<cc::UnsubscribeFromStateChange>()).Serialize(), "");
+        mDDSCustomCmd.send(cc::Cmds(cc::make<cc::UnsubscribeFromStateChange>()).Serialize(), "");
         // wait for all tasks to confirm unsubscription
         WaitForPublisherCount(0);
     }
 
     void SubscribeToCommands()
     {
-        fDDSCustomCmd.subscribe([&](const std::string& msg, const std::string& /* condition */, uint64_t ddsSenderChannelId) {
+        mDDSCustomCmd.subscribe([&](const std::string& msg, const std::string& /* condition */, uint64_t ddsSenderChannelId) {
             cc::Cmds inCmds;
             inCmds.Deserialize(msg);
             // OLOG(debug) << "Received " << inCmds.Size() << " command(s) with total size of " <<
@@ -319,16 +319,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             DDSTask::Id taskId(cmd.GetTaskId());
 
             try {
-                std::unique_lock<std::mutex> lk(*fMtx);
-                DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
+                std::unique_lock<std::mutex> lk(*mMtx);
+                DeviceStatus& task = mStateData.at(mStateIndex.at(taskId));
                 if (!task.subscribedToStateChanges) {
                     task.subscribedToStateChanges = true;
-                    ++fNumStateChangePublishers;
+                    ++mNumStateChangePublishers;
                 } else {
                     OLOG(warning) << "Task '" << task.taskId << "' sent subscription confirmation more than once";
                 }
                 lk.unlock();
-                fStateChangeSubscriptionsCV->notify_one();
+                mStateChangeSubscriptionsCV->notify_one();
             } catch (const std::exception& e) {
                 OLOG(error) << "Exception in HandleCmd(cc::StateChangeSubscription const&): " << e.what();
                 OLOG(error) << "Possibly no task with id '" << taskId << "'?";
@@ -344,16 +344,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             DDSTask::Id taskId(cmd.GetTaskId());
 
             try {
-                std::unique_lock<std::mutex> lk(*fMtx);
-                DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
+                std::unique_lock<std::mutex> lk(*mMtx);
+                DeviceStatus& task = mStateData.at(mStateIndex.at(taskId));
                 if (task.subscribedToStateChanges) {
                     task.subscribedToStateChanges = false;
-                    --fNumStateChangePublishers;
+                    --mNumStateChangePublishers;
                 } else {
                     // OLOG(debug) << "Task '" << task.taskId << "' sent unsubscription confirmation more than once";
                 }
                 lk.unlock();
-                fStateChangeSubscriptionsCV->notify_one();
+                mStateChangeSubscriptionsCV->notify_one();
             } catch (const std::exception& e) {
                 OLOG(error) << "Exception in HandleCmd(cc::StateChangeUnsubscription const&): " << e.what();
             }
@@ -367,16 +367,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         DDSTask::Id taskId(cmd.GetTaskId());
 
         try {
-            std::lock_guard<std::mutex> lk(*fMtx);
-            DeviceStatus& task = fStateData.at(fStateIndex.at(taskId));
+            std::lock_guard<std::mutex> lk(*mMtx);
+            DeviceStatus& task = mStateData.at(mStateIndex.at(taskId));
             task.lastState = cmd.GetLastState();
             task.state = cmd.GetCurrentState();
             // std::cout << "Updated state entry: taskId=" << taskId << ", state=" << task.state << std::endl;
 
-            for (auto& op : fChangeStateOps) {
+            for (auto& op : mChangeStateOps) {
                 op.second.Update(taskId, cmd.GetCurrentState());
             }
-            for (auto& op : fWaitForStateOps) {
+            for (auto& op : mWaitForStateOps) {
                 op.second.Update(taskId, cmd.GetLastState(), cmd.GetCurrentState());
             }
         } catch (const std::exception& e) {
@@ -389,10 +389,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         if (cmd.GetResult() != cc::Result::Ok) {
             DDSTask::Id taskId(cmd.GetTaskId());
-            std::lock_guard<std::mutex> lk(*fMtx);
-            for (auto& op : fChangeStateOps) {
+            std::lock_guard<std::mutex> lk(*mMtx);
+            for (auto& op : mChangeStateOps) {
                 if (!op.second.IsCompleted() && op.second.ContainsTask(taskId)) {
-                    if (fStateData.at(fStateIndex.at(taskId)).state != op.second.GetTargetState()) {
+                    if (mStateData.at(mStateIndex.at(taskId)).state != op.second.GetTargetState()) {
                         OLOG(error) << cmd.GetTransition() << " transition failed for " << cmd.GetDeviceId() << ", device is in " << cmd.GetCurrentState() << " state.";
                         op.second.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateInvalidTransition));
                     } else {
@@ -405,9 +405,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     void HandleCmd(cc::Properties const& cmd)
     {
-        std::unique_lock<std::mutex> lk(*fMtx);
+        std::unique_lock<std::mutex> lk(*mMtx);
         try {
-            auto& op(fGetPropertiesOps.at(cmd.GetRequestId()));
+            auto& op(mGetPropertiesOps.at(cmd.GetRequestId()));
             lk.unlock();
             op.Update(cmd.GetTaskId(), cmd.GetResult(), cmd.GetProps());
         } catch (std::out_of_range& e) {
@@ -418,9 +418,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     void HandleCmd(cc::PropertiesSet const& cmd)
     {
-        std::unique_lock<std::mutex> lk(*fMtx);
+        std::unique_lock<std::mutex> lk(*mMtx);
         try {
-            auto& op(fSetPropertiesOps.at(cmd.GetRequestId()));
+            auto& op(mSetPropertiesOps.at(cmd.GetRequestId()));
             lk.unlock();
             op.Update(cmd.GetTaskId(), cmd.GetResult());
         } catch (std::out_of_range& e) {
@@ -443,32 +443,32 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             [&](auto handler) {
                 const uint64_t id = uuidHash();
 
-                std::lock_guard<std::mutex> lk(*fMtx);
+                std::lock_guard<std::mutex> lk(*mMtx);
 
-                for (auto it = begin(fChangeStateOps); it != end(fChangeStateOps);) {
+                for (auto it = begin(mChangeStateOps); it != end(mChangeStateOps);) {
                     if (it->second.IsCompleted()) {
-                        it = fChangeStateOps.erase(it);
+                        it = mChangeStateOps.erase(it);
                     } else {
                         ++it;
                     }
                 }
 
-                auto [it, inserted] = fChangeStateOps.try_emplace(id,
+                auto [it, inserted] = mChangeStateOps.try_emplace(id,
                                                                   id,
                                                                   transition,
                                                                   GetTasks(path),
-                                                                  fStateData,
+                                                                  mStateData,
                                                                   timeout,
-                                                                  *fMtx,
+                                                                  *mMtx,
                                                                   AsioBase<Executor, Allocator>::GetExecutor(),
                                                                   AsioBase<Executor, Allocator>::GetAllocator(),
                                                                   std::move(handler)
                 );
 
                 cc::Cmds cmds(cc::make<cc::ChangeState>(transition));
-                fDDSCustomCmd.send(cmds.Serialize(), path);
+                mDDSCustomCmd.send(cmds.Serialize(), path);
 
-                it->second.ResetCount(fStateIndex, fStateData);
+                it->second.ResetCount(mStateIndex, mStateData);
                 // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
                 it->second.TryCompletion();
             },
@@ -539,8 +539,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @return map of id : DeviceStatus
     TopoState GetCurrentState() const
     {
-        std::lock_guard<std::mutex> lk(*fMtx);
-        return fStateData;
+        std::lock_guard<std::mutex> lk(*mMtx);
+        return mStateData;
     }
 
     DeviceState AggregateState() const { return AggregateState(GetCurrentState()); }
@@ -562,29 +562,29 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             [&](auto handler) {
                 const uint64_t id = uuidHash();
 
-                std::lock_guard<std::mutex> lk(*fMtx);
+                std::lock_guard<std::mutex> lk(*mMtx);
 
-                for (auto it = begin(fWaitForStateOps); it != end(fWaitForStateOps);) {
+                for (auto it = begin(mWaitForStateOps); it != end(mWaitForStateOps);) {
                     if (it->second.IsCompleted()) {
-                        it = fWaitForStateOps.erase(it);
+                        it = mWaitForStateOps.erase(it);
                     } else {
                         ++it;
                     }
                 }
 
-                auto [it, inserted] = fWaitForStateOps.try_emplace(id,
+                auto [it, inserted] = mWaitForStateOps.try_emplace(id,
                                                                    id,
                                                                    targetLastState,
                                                                    targetCurrentState,
                                                                    GetTasks(path),
                                                                    timeout,
-                                                                   *fMtx,
+                                                                   *mMtx,
                                                                    AsioBase<Executor, Allocator>::GetExecutor(),
                                                                    AsioBase<Executor, Allocator>::GetAllocator(),
                                                                    std::move(handler)
                 );
 
-                it->second.ResetCount(fStateIndex, fStateData);
+                it->second.ResetCount(mStateIndex, mStateData);
                 // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
                 it->second.TryCompletion();
             },
@@ -656,28 +656,28 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             [&](auto handler) {
                 const uint64_t id = uuidHash();
 
-                std::lock_guard<std::mutex> lk(*fMtx);
+                std::lock_guard<std::mutex> lk(*mMtx);
 
-                for (auto it = begin(fGetPropertiesOps); it != end(fGetPropertiesOps);) {
+                for (auto it = begin(mGetPropertiesOps); it != end(mGetPropertiesOps);) {
                     if (it->second.IsCompleted()) {
-                        it = fGetPropertiesOps.erase(it);
+                        it = mGetPropertiesOps.erase(it);
                     } else {
                         ++it;
                     }
                 }
 
-                fGetPropertiesOps.try_emplace(id,
+                mGetPropertiesOps.try_emplace(id,
                                               id,
                                               GetTasks(path),
                                               timeout,
-                                              *fMtx,
+                                              *mMtx,
                                               AsioBase<Executor, Allocator>::GetExecutor(),
                                               AsioBase<Executor, Allocator>::GetAllocator(),
                                               std::move(handler)
                 );
 
                 cc::Cmds const cmds(cc::make<cc::GetProperties>(id, query));
-                fDDSCustomCmd.send(cmds.Serialize(), path);
+                mDDSCustomCmd.send(cmds.Serialize(), path);
             },
             token);
     }
@@ -726,30 +726,30 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             [&](auto handler) {
                 const uint64_t id = uuidHash();
 
-                std::lock_guard<std::mutex> lk(*fMtx);
+                std::lock_guard<std::mutex> lk(*mMtx);
 
-                for (auto it = begin(fGetPropertiesOps); it != end(fGetPropertiesOps);) {
+                for (auto it = begin(mGetPropertiesOps); it != end(mGetPropertiesOps);) {
                     if (it->second.IsCompleted()) {
-                        it = fGetPropertiesOps.erase(it);
+                        it = mGetPropertiesOps.erase(it);
                     } else {
                         ++it;
                     }
                 }
 
-                auto [it, inserted] = fSetPropertiesOps.try_emplace(id,
+                auto [it, inserted] = mSetPropertiesOps.try_emplace(id,
                                                                     id,
                                                                     GetTasks(path),
                                                                     timeout,
-                                                                    *fMtx,
+                                                                    *mMtx,
                                                                     AsioBase<Executor, Allocator>::GetExecutor(),
                                                                     AsioBase<Executor, Allocator>::GetAllocator(),
                                                                     std::move(handler)
                 );
 
                 cc::Cmds const cmds(cc::make<cc::SetProperties>(id, props));
-                fDDSCustomCmd.send(cmds.Serialize(), path);
+                mDDSCustomCmd.send(cmds.Serialize(), path);
 
-                it->second.ResetCount(fStateIndex, fStateData);
+                it->second.ResetCount(mStateIndex, mStateData);
                 // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
                 it->second.TryCompletion();
             },
@@ -786,46 +786,46 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         return { ec, failed };
     }
 
-    std::chrono::milliseconds GetHeartbeatInterval() const { return fHeartbeatInterval; }
-    void SetHeartbeatInterval(std::chrono::milliseconds duration) { fHeartbeatInterval = duration; }
+    std::chrono::milliseconds GetHeartbeatInterval() const { return mHeartbeatInterval; }
+    void SetHeartbeatInterval(std::chrono::milliseconds duration) { mHeartbeatInterval = duration; }
 
   private:
-    dds::tools_api::CSession& fDDSSession;
-    dds::intercom_api::CIntercomService fDDSService;
-    dds::intercom_api::CCustomCmd fDDSCustomCmd;
-    dds::topology_api::CTopology& fDDSTopo;
-    dds::tools_api::SOnTaskDoneRequest::ptr_t fDDSOnTaskDoneRequest;
-    TopoState fStateData;
-    TopoStateIndex fStateIndex;
+    dds::tools_api::CSession& mDDSSession;
+    dds::intercom_api::CIntercomService mDDSService;
+    dds::intercom_api::CCustomCmd mDDSCustomCmd;
+    dds::topology_api::CTopology& mDDSTopo;
+    dds::tools_api::SOnTaskDoneRequest::ptr_t mDDSOnTaskDoneRequest;
+    TopoState mStateData;
+    TopoStateIndex mStateIndex;
 
-    mutable std::unique_ptr<std::mutex> fMtx;
+    mutable std::unique_ptr<std::mutex> mMtx;
 
-    std::unique_ptr<std::condition_variable> fStateChangeSubscriptionsCV;
-    unsigned int fNumStateChangePublishers;
-    boost::asio::steady_timer fHeartbeatsTimer;
-    std::chrono::milliseconds fHeartbeatInterval;
+    std::unique_ptr<std::condition_variable> mStateChangeSubscriptionsCV;
+    unsigned int mNumStateChangePublishers;
+    boost::asio::steady_timer mHeartbeatsTimer;
+    std::chrono::milliseconds mHeartbeatInterval;
 
-    std::unordered_map<uint64_t, ChangeStateOp<Executor, Allocator>> fChangeStateOps;
-    std::unordered_map<uint64_t, WaitForStateOp<Executor, Allocator>> fWaitForStateOps;
-    std::unordered_map<uint64_t, SetPropertiesOp<Executor, Allocator>> fSetPropertiesOps;
-    std::unordered_map<uint64_t, GetPropertiesOp<Executor, Allocator>> fGetPropertiesOps;
+    std::unordered_map<uint64_t, ChangeStateOp<Executor, Allocator>> mChangeStateOps;
+    std::unordered_map<uint64_t, WaitForStateOp<Executor, Allocator>> mWaitForStateOps;
+    std::unordered_map<uint64_t, SetPropertiesOp<Executor, Allocator>> mSetPropertiesOps;
+    std::unordered_map<uint64_t, GetPropertiesOp<Executor, Allocator>> mGetPropertiesOps;
 
     void makeTopologyState()
     {
         const auto tasks = GetTasks("", true);
-        fStateData.reserve(tasks.size());
+        mStateData.reserve(tasks.size());
 
         int index = 0;
 
         for (const auto& task : tasks) {
-            fStateData.push_back(DeviceStatus{ false, false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId(), -1, -1 });
-            fStateIndex.emplace(task.GetId(), index);
+            mStateData.push_back(DeviceStatus{ false, false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId(), -1, -1 });
+            mStateIndex.emplace(task.GetId(), index);
             index++;
         }
     }
 
-    /// precodition: fMtx is locked.
-    TopoState GetCurrentStateUnsafe() const { return fStateData; }
+    /// precodition: mMtx is locked.
+    TopoState GetCurrentStateUnsafe() const { return mStateData; }
 };
 
 using Topology = BasicTopology<DefaultExecutor, DefaultAllocator>;

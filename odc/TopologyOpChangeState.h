@@ -43,26 +43,26 @@ struct ChangeStateOp
                   Executor const& ex,
                   Allocator const& alloc,
                   Handler&& handler)
-        : fId(id)
-        , fOp(ex, alloc, std::move(handler))
-        , fStateData(stateData)
-        , fTimer(ex)
-        , fCount(0)
-        , fTasks(std::move(tasks))
-        , fTargetState(gExpectedState.at(transition))
+        : mId(id)
+        , mOp(ex, alloc, std::move(handler))
+        , mStateData(stateData)
+        , mTimer(ex)
+        , mCount(0)
+        , mTasks(std::move(tasks))
+        , mTargetState(gExpectedState.at(transition))
         , fMtx(mutex)
-        , fErrored(false)
+        , mErrored(false)
     {
         if (timeout > std::chrono::milliseconds(0)) {
-            fTimer.expires_after(timeout);
-            fTimer.async_wait([&](std::error_code ec) {
+            mTimer.expires_after(timeout);
+            mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
                     std::lock_guard<std::mutex> lk(fMtx);
-                    fOp.Timeout(fStateData);
+                    mOp.Timeout(mStateData);
                 }
             });
         }
-        if (fTasks.empty()) {
+        if (mTasks.empty()) {
             OLOG(warning) << "ChangeState initiated on an empty set of tasks, check the path argument.";
         }
     }
@@ -76,15 +76,15 @@ struct ChangeStateOp
     /// precondition: fMtx is locked.
     void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
     {
-        fCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
+        mCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
             const auto& task = stateData.at(s.second);
             if (ContainsTask(task.taskId)) {
                 // Do not wait for an errored device that is not yet ignored
                 if (task.state == DeviceState::Error) {
-                    fErrored = true;
+                    mErrored = true;
                     return true;
                 }
-                return task.state == fTargetState;
+                return task.state == mTargetState;
             } else {
                 return false;
             }
@@ -94,14 +94,14 @@ struct ChangeStateOp
     /// precondition: fMtx is locked.
     void Update(const DDSTask::Id taskId, const DeviceState currentState)
     {
-        if (!fOp.IsCompleted() && ContainsTask(taskId)) {
-            if (currentState == fTargetState) {
-                ++fCount;
+        if (!mOp.IsCompleted() && ContainsTask(taskId)) {
+            if (currentState == mTargetState) {
+                ++mCount;
             } else if (currentState == DeviceState::Error) {
-                if (failed.count(taskId) == 0) {
-                    fErrored = true;
-                    ++fCount;
-                    failed.emplace(taskId);
+                if (mFailed.count(taskId) == 0) {
+                    mErrored = true;
+                    ++mCount;
+                    mFailed.emplace(taskId);
                 } else {
                     // OLOG(debug) << "Task " << taskId << " is already in the set of failed devices";
                 }
@@ -113,8 +113,8 @@ struct ChangeStateOp
     /// precondition: fMtx is locked.
     void TryCompletion()
     {
-        if (!fOp.IsCompleted() && fCount == fTasks.size()) {
-            if (fErrored) {
+        if (!mOp.IsCompleted() && mCount == mTasks.size()) {
+            if (mErrored) {
                 Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
             } else {
                 Complete(std::error_code());
@@ -125,32 +125,32 @@ struct ChangeStateOp
     /// precondition: fMtx is locked.
     void Complete(std::error_code ec)
     {
-        fTimer.cancel();
-        fOp.Complete(ec, fStateData);
+        mTimer.cancel();
+        mOp.Complete(ec, mStateData);
     }
 
     /// precondition: fMtx is locked.
     bool ContainsTask(DDSTask::Id id)
     {
-        auto it = std::find_if(fTasks.begin(), fTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
-        return it != fTasks.end();
+        auto it = std::find_if(mTasks.begin(), mTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
+        return it != mTasks.end();
     }
 
-    bool IsCompleted() { return fOp.IsCompleted(); }
+    bool IsCompleted() { return mOp.IsCompleted(); }
 
-    DeviceState GetTargetState() const { return fTargetState; }
+    DeviceState GetTargetState() const { return mTargetState; }
 
   private:
-    const uint64_t fId;
-    AsioAsyncOp<Executor, Allocator, ChangeStateCompletionSignature> fOp;
-    TopoState& fStateData;
-    boost::asio::steady_timer fTimer;
-    unsigned int fCount;
-    std::vector<DDSTask> fTasks;
-    FailedDevices failed;
-    DeviceState fTargetState;
+    const uint64_t mId;
+    AsioAsyncOp<Executor, Allocator, ChangeStateCompletionSignature> mOp;
+    TopoState& mStateData;
+    boost::asio::steady_timer mTimer;
+    unsigned int mCount;
+    std::vector<DDSTask> mTasks;
+    FailedDevices mFailed;
+    DeviceState mTargetState;
     std::mutex& fMtx;
-    bool fErrored;
+    bool mErrored;
 };
 
 } // namespace odc::core

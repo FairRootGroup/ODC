@@ -43,26 +43,26 @@ struct WaitForStateOp
                    Executor const& ex,
                    Allocator const& alloc,
                    Handler&& handler)
-        : fId(id)
-        , fOp(ex, alloc, std::move(handler))
-        , fTimer(ex)
-        , fCount(0)
-        , fTasks(std::move(tasks))
-        , fTargetLastState(targetLastState)
-        , fTargetCurrentState(targetCurrentState)
-        , fMtx(mutex)
-        , fErrored(false)
+        : mId(id)
+        , mOp(ex, alloc, std::move(handler))
+        , mTimer(ex)
+        , mCount(0)
+        , mTasks(std::move(tasks))
+        , mTargetLastState(targetLastState)
+        , mTargetCurrentState(targetCurrentState)
+        , mMtx(mutex)
+        , mErrored(false)
     {
         if (timeout > std::chrono::milliseconds(0)) {
-            fTimer.expires_after(timeout);
-            fTimer.async_wait([&](std::error_code ec) {
+            mTimer.expires_after(timeout);
+            mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
-                    std::lock_guard<std::mutex> lk(fMtx);
-                    fOp.Timeout();
+                    std::lock_guard<std::mutex> lk(mMtx);
+                    mOp.Timeout();
                 }
             });
         }
-        if (fTasks.empty()) {
+        if (mTasks.empty()) {
             OLOG(warning) << "WaitForState initiated on an empty set of tasks, check the path argument.";
         }
     }
@@ -73,35 +73,35 @@ struct WaitForStateOp
     WaitForStateOp& operator=(WaitForStateOp&&) = default;
     ~WaitForStateOp() = default;
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
     {
-        fCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
+        mCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
             const auto& task = stateData.at(s.second);
             if (ContainsTask(task.taskId)) {
                 // Do not wait for an errored device that is not yet ignored
                 if (task.state == DeviceState::Error) {
-                    fErrored = true;
+                    mErrored = true;
                     return true;
                 }
-                return task.state == fTargetCurrentState && (task.lastState == fTargetLastState || fTargetLastState == DeviceState::Undefined);
+                return task.state == mTargetCurrentState && (task.lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined);
             } else {
                 return false;
             }
         });
     }
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void Update(const DDSTask::Id taskId, const DeviceState lastState, const DeviceState currentState)
     {
-        if (!fOp.IsCompleted() && ContainsTask(taskId)) {
-            if (currentState == fTargetCurrentState && (lastState == fTargetLastState || fTargetLastState == DeviceState::Undefined)) {
-                ++fCount;
+        if (!mOp.IsCompleted() && ContainsTask(taskId)) {
+            if (currentState == mTargetCurrentState && (lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined)) {
+                ++mCount;
             } else if (currentState == DeviceState::Error) {
-                if (failed.count(taskId) == 0) {
-                    fErrored = true;
-                    ++fCount;
-                    failed.emplace(taskId);
+                if (mFailed.count(taskId) == 0) {
+                    mErrored = true;
+                    ++mCount;
+                    mFailed.emplace(taskId);
                 } else {
                     // OLOG(debug) << "Task " << taskId << " is already in the set of failed devices. Called twice from StateChange & onTaskDone?";
                 }
@@ -110,38 +110,38 @@ struct WaitForStateOp
         }
     }
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void TryCompletion()
     {
-        if (!fOp.IsCompleted() && fCount == fTasks.size()) {
-            fTimer.cancel();
-            if (fErrored) {
-                fOp.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
+        if (!mOp.IsCompleted() && mCount == mTasks.size()) {
+            mTimer.cancel();
+            if (mErrored) {
+                mOp.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
             } else {
-                fOp.Complete();
+                mOp.Complete();
             }
         }
     }
 
-    bool IsCompleted() { return fOp.IsCompleted(); }
+    bool IsCompleted() { return mOp.IsCompleted(); }
 
   private:
-    const uint64_t fId;
-    AsioAsyncOp<Executor, Allocator, WaitForStateCompletionSignature> fOp;
-    boost::asio::steady_timer fTimer;
-    unsigned int fCount;
-    std::vector<DDSTask> fTasks;
-    FailedDevices failed;
-    DeviceState fTargetLastState;
-    DeviceState fTargetCurrentState;
-    std::mutex& fMtx;
-    bool fErrored;
+    const uint64_t mId;
+    AsioAsyncOp<Executor, Allocator, WaitForStateCompletionSignature> mOp;
+    boost::asio::steady_timer mTimer;
+    unsigned int mCount;
+    std::vector<DDSTask> mTasks;
+    FailedDevices mFailed;
+    DeviceState mTargetLastState;
+    DeviceState mTargetCurrentState;
+    std::mutex& mMtx;
+    bool mErrored;
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     bool ContainsTask(DDSTask::Id id)
     {
-        auto it = std::find_if(fTasks.begin(), fTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
-        return it != fTasks.end();
+        auto it = std::find_if(mTasks.begin(), mTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
+        return it != mTasks.end();
     }
 };
 

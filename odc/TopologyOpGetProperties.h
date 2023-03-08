@@ -41,32 +41,32 @@ struct GetPropertiesOp
                     Executor const& ex,
                     Allocator const& alloc,
                     Handler&& handler)
-        : fId(id)
-        , fOp(ex, alloc, std::move(handler))
-        , fTimer(ex)
-        , fCount(0)
-        , fTasks(std::move(tasks))
-        , fMtx(mutex)
+        : mId(id)
+        , mOp(ex, alloc, std::move(handler))
+        , mTimer(ex)
+        , mCount(0)
+        , mTasks(std::move(tasks))
+        , mMtx(mutex)
     {
         if (timeout > std::chrono::milliseconds(0)) {
-            fTimer.expires_after(timeout);
-            fTimer.async_wait([&](std::error_code ec) {
+            mTimer.expires_after(timeout);
+            mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
-                    std::lock_guard<std::mutex> lk(fMtx);
-                    fOp.Timeout(fResult);
+                    std::lock_guard<std::mutex> lk(mMtx);
+                    mOp.Timeout(mResult);
                 }
             });
         }
-        if (fTasks.empty()) {
+        if (mTasks.empty()) {
             OLOG(warning) << "GetProperties initiated on an empty set of tasks, check the path argument.";
         }
 
-        fResult.failed.reserve(fTasks.size());
-        for (const auto& task : fTasks) {
-            fResult.failed.emplace(task.GetId());
+        mResult.failed.reserve(mTasks.size());
+        for (const auto& task : mTasks) {
+            mResult.failed.emplace(task.GetId());
         }
 
-        // OLOG(debug) << "GetProperties " << fId << " with expected count of " << fTasks.size() << " started.";
+        // OLOG(debug) << "GetProperties " << mId << " with expected count of " << mTasks.size() << " started.";
     }
     GetPropertiesOp() = delete;
     GetPropertiesOp(const GetPropertiesOp&) = delete;
@@ -77,35 +77,35 @@ struct GetPropertiesOp
 
     void Update(const DDSTask::Id taskId, cc::Result result, DeviceProperties props)
     {
-        std::lock_guard<std::mutex> lk(fMtx);
+        std::lock_guard<std::mutex> lk(mMtx);
         if (result == cc::Result::Ok) {
-            fResult.failed.erase(taskId);
-            fResult.devices.insert({ taskId, { std::move(props) } });
+            mResult.failed.erase(taskId);
+            mResult.devices.insert({ taskId, { std::move(props) } });
         }
-        ++fCount;
+        ++mCount;
         TryCompletion();
     }
 
-    bool IsCompleted() { return fOp.IsCompleted(); }
+    bool IsCompleted() { return mOp.IsCompleted(); }
 
   private:
-    const uint64_t fId;
-    AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> fOp;
-    boost::asio::steady_timer fTimer;
-    unsigned int fCount;
-    std::vector<DDSTask> fTasks;
-    GetPropertiesResult fResult;
-    std::mutex& fMtx;
+    const uint64_t mId;
+    AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> mOp;
+    boost::asio::steady_timer mTimer;
+    unsigned int mCount;
+    std::vector<DDSTask> mTasks;
+    GetPropertiesResult mResult;
+    std::mutex& mMtx;
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void TryCompletion()
     {
-        if (!fOp.IsCompleted() && fCount == fTasks.size()) {
-            fTimer.cancel();
-            if (!fResult.failed.empty()) {
-                fOp.Complete(MakeErrorCode(ErrorCode::DeviceGetPropertiesFailed), std::move(fResult));
+        if (!mOp.IsCompleted() && mCount == mTasks.size()) {
+            mTimer.cancel();
+            if (!mResult.failed.empty()) {
+                mOp.Complete(MakeErrorCode(ErrorCode::DeviceGetPropertiesFailed), std::move(mResult));
             } else {
-                fOp.Complete(std::move(fResult));
+                mOp.Complete(std::move(mResult));
             }
         }
     }
