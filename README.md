@@ -1,6 +1,7 @@
 # Online Device Control
 
 [![license](https://alfa-ci.gsi.de/shields/badge/license-LGPL--3.0-orange.svg)](COPYRIGHT)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7707968.svg)](https://doi.org/10.5281/zenodo.7707968)
 [![OpenSSF Best Practices](https://bestpractices.coreinfrastructure.org/projects/7097/badge)](https://bestpractices.coreinfrastructure.org/projects/7097)
 [![fair-software.eu](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B%20%20%E2%97%8B%20%20%E2%97%8F-orange)](https://github.com/FairRootGroup/ODC/actions/workflows/fair-software.yml)
 
