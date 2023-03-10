@@ -145,7 +145,9 @@ struct Session
     std::string mPartitionID; ///< External partition ID of this DDS session
     std::string mTopoFilePath;
     std::map<std::string, CollectionNInfo> mNinfo; ///< Holds information on minimum number of collections, by collection name
-    std::map<std::string, std::vector<ZoneGroup>> mZoneInfos; ///< Zones info zoneName:vector<ZoneGroup>
+    std::map<std::string, std::vector<ZoneGroup>> mZoneInfo; ///< Zones info zoneName:vector<ZoneGroup>
+    std::vector<TaskInfo> mStandaloneTasks;
+    std::vector<CollectionInfo> mCollections;
     size_t mTotalSlots = 0; ///< total number of DDS slots
     std::unordered_map<uint64_t, uint32_t> mAgentSlots;
     bool mRunAttempted = false;

@@ -56,10 +56,10 @@ class DDSSubmit : public PluginManager
             }
             mRMSPlugin = pt.get<std::string>("rms", "");
             mZone = pt.get<std::string>("zone", "");
+            // set agent group to the zone name initially
             mAgentGroup = pt.get<std::string>("zone", "");
             mConfigFile = pt.get<std::string>("configFile", "");
             mEnvFile = pt.get<std::string>("envFile", "");
-            // set agent group to the zone name initially
             mNumAgents = pt.get<int32_t>("agents", -1);
             mMinAgents = 0;
             mNumSlots = pt.get<size_t>("slots", 0);
@@ -101,7 +101,7 @@ class DDSSubmit : public PluginManager
     std::vector<Params> makeParams(const std::string& plugin,
                                    const std::string& resources,
                                    const CommonParams& common,
-                                   const std::map<std::string, std::vector<ZoneGroup>>& zoneInfos,
+                                   const std::map<std::string, std::vector<ZoneGroup>>& zoneInfo,
                                    std::chrono::seconds timeout)
     {
         std::vector<Params> params;
@@ -124,7 +124,7 @@ class DDSSubmit : public PluginManager
         }
 
         // extend parameters, if ncores is provided
-        for (const auto& [zoneNameSB, zoneGroups] : zoneInfos) {
+        for (const auto& [zoneNameSB, zoneGroups] : zoneInfo) {
             std::string zoneName(zoneNameSB);
             auto result = find_if(params.begin(), params.end(), [&zoneName](const auto& p){ return p.mZone == zoneName; });
             if (result == params.end()) {
@@ -149,7 +149,7 @@ class DDSSubmit : public PluginManager
 
         // if no 'n' was provided, and the selected zone did not get any core scheduling, remove it
         params.erase(
-            std::remove_if(params.begin(), params.end(), [](const auto& p){
+            std::remove_if(params.begin(), params.end(), [](const auto& p) {
                 return p.mNumAgents == -1; }),
             params.end()
         );

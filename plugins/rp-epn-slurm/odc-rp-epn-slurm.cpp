@@ -118,14 +118,14 @@ int main(int argc, char** argv)
 
         bpo::options_description opts("odc-rp-epn-slurm options");
         opts.add_options()
-            ("help,h", "Help message")
-            ("version,v", "Print version")
+            ("id", bpo::value<string>(&partitionID)->default_value(""), "Partition ID")
             ("res", bpo::value<string>(&resources), "Resource description in JSON format. E.g. {\"zone\":\"online\",\"n\":1}")
             ("logdir", bpo::value<string>(), "[DEPRECATED] Does nothing")
             ("severity", bpo::value<string>(), "[DEPRECATED] Does nothing")
             ("infologger", bpo::bool_switch()->default_value(false), "[DEPRECATED] Does nothing")
-            ("id", bpo::value<string>(&partitionID)->default_value(""), "ECS partition ID")
-            ("zones", bpo::value<vector<string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath>:<envCfgPath> format");
+            ("zones", bpo::value<vector<string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<numSlots>:<slurmCfgPath>:<envCfgPath> format")
+            ("version,v", "Print version")
+            ("help,h", "Help message");
 
         bpo::variables_map vm;
         bpo::store(bpo::command_line_parser(argc, argv).options(opts).run(), vm);

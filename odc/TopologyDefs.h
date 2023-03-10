@@ -303,6 +303,54 @@ struct CollectionNInfo
     std::string agentGroup;
 };
 
+struct CollectionInfo
+{
+    std::string name;
+    std::string zone;
+    std::string agentGroup;
+    std::string topoParent;
+    std::string topoPath;
+    int32_t nOriginal;
+    int32_t nCurrent;
+    int32_t nMin;
+    int ncores;
+    int32_t numTasks;
+    int32_t totalTasks;
+
+    friend std::ostream& operator<<(std::ostream& os, const CollectionInfo& ci)
+    {
+        return os << "name: "           << std::quoted(ci.name)
+                  << "; zone: "         << std::quoted(ci.zone)
+                  << "; agent group: "  << std::quoted(ci.agentGroup)
+                  << "; topo parent: "  << std::quoted(ci.topoParent)
+                  << "; topo path: "    << std::quoted(ci.topoPath)
+                  << "; n (original): " << ci.nOriginal
+                  << "; n (current): "  << ci.nCurrent
+                  << "; n (min): "      << ci.nMin
+                  << "; ncores: "       << ci.ncores
+                  << "; numTasks: "     << ci.numTasks
+                  << "; totalTasks: "   << ci.totalTasks;
+    }
+};
+
+struct TaskInfo
+{
+    std::string name;
+    std::string zone;
+    std::string agentGroup;
+    std::string topoParent;
+    int32_t n;
+
+    friend std::ostream& operator<<(std::ostream& os, const TaskInfo& ti)
+    {
+        return os << "name: "          << std::quoted(ti.name)
+                  << "; zone: "        << std::quoted(ti.zone)
+                  << "; agent group: " << std::quoted(ti.agentGroup)
+                  << "; topo parent: " << std::quoted(ti.topoParent)
+                  << "; n: "           << ti.n;
+    }
+};
+
 struct FailedTasksCollections
 {
     bool recoverable = true;

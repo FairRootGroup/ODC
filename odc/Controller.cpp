@@ -86,7 +86,7 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
     vector<DDSSubmit::Params> ddsParams;
     if (!error.mCode) {
         try {
-            ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfos, requestTimeout(common));
+            ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfo, requestTimeout(common));
         } catch (exception& e) {
             fillAndLogError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
             return hosts;
@@ -787,7 +787,9 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         session.mTopology.reset();
         session.mDDSTopo.reset();
         session.mNinfo.clear();
-        session.mZoneInfos.clear();
+        session.mZoneInfo.clear();
+        session.mStandaloneTasks.clear();
+        session.mCollections.clear();
         session.mTopoFilePath.clear();
         session.clearExpendableTasks();
 
@@ -818,7 +820,12 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
 
     CTopology ddsTopo(session.mTopoFilePath);
 
-    OLOG(info, common) << "Extracting requirements:";
+    session.mNinfo.clear();
+    session.mZoneInfo.clear();
+    session.mStandaloneTasks.clear();
+    session.mCollections.clear();
+
+    OLOG(info, common) << "Extracting requirements from " << std::quoted(session.mTopoFilePath) << "...";
 
     auto taskIt = ddsTopo.getRuntimeTaskIterator();
 
@@ -843,17 +850,54 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
     });
 
+    auto tasks = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::TASK);
+    for (const auto& task : tasks) {
+        CTopoTask::Ptr_t t = dynamic_pointer_cast<CTopoTask>(task);
+        auto parent = t->getParent();
+
+        // currently we are only interested in tasks which are inside a DDS collection or a DDS group
+        if (parent->getName() == "main") {
+            continue;
+        }
+
+        auto taskReqs = t->getRequirements();
+
+        string zone;
+        string agentGroup;
+        string topoParent = parent->getName();
+        int32_t n = t->getTotalCounter();
+
+        for (const auto& tr : taskReqs) {
+            if (tr->getRequirementType() == CTopoRequirement::EType::GroupName) {
+                agentGroup = tr->getValue();
+            } else if (tr->getRequirementType() == CTopoRequirement::EType::Custom) {
+                if (strStartsWith(tr->getName(), "odc_zone_")) {
+                    zone = tr->getValue();
+                } else {
+                    OLOG(debug, common) << "Unknown custom requirement found. name: " << quoted(tr->getName()) << ", value: " << quoted(tr->getValue());
+                }
+            }
+        }
+
+        session.mStandaloneTasks.emplace_back(TaskInfo{ t->getName(), zone, agentGroup, topoParent, n });
+    }
+
     auto collections = ddsTopo.getMainGroup()->getElementsByType(CTopoBase::EType::COLLECTION);
 
     for (const auto& collection : collections) {
         CTopoCollection::Ptr_t c = dynamic_pointer_cast<CTopoCollection>(collection);
         auto colReqs = c->getRequirements();
+        auto parent = c->getParent();
 
-        string agentGroup;
         string zone;
+        string agentGroup;
+        string topoParent = parent->getName();
+        string topoPath = parent->getPath();
         int ncores = 0;
         int32_t n = c->getTotalCounter();
         int32_t nmin = -1;
+        int32_t numTasks = c->getNofTasks();
+        int32_t numTasksTotal = numTasks * n;
 
         for (const auto& cr : colReqs) {
             stringstream ss;
@@ -875,7 +919,6 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
                     zone = cr->getValue();
                 } else if (strStartsWith(cr->getName(), "odc_nmin_")) {
                     // nMin is only relevant for collections that are in a group (which is not the main group)
-                    auto parent = c->getParent();
                     if (parent->getType() == CTopoBase::EType::GROUP && parent->getName() != "main") {
                         nmin = stoull(cr->getValue());
                     } else {
@@ -890,6 +933,13 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
             OLOG(info, common) << ss.str();
         }
 
+        if (zone.empty()) {
+            zone = agentGroup;
+        }
+
+        // TODO: should n_current be set to 0 and increased as collections are launched instead?
+        session.mCollections.emplace_back(CollectionInfo{ c->getName(), zone, agentGroup, topoParent, topoPath, n, n, nmin, ncores, numTasks, numTasksTotal});
+
         if (!agentGroup.empty() && nmin >= 0) {
             auto it = session.mNinfo.find(c->getName());
             if (it == session.mNinfo.end()) {
@@ -900,18 +950,18 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
 
         if (!agentGroup.empty() && !zone.empty()) {
-            auto it = session.mZoneInfos.find(zone);
-            if (it == session.mZoneInfos.end()) {
-                session.mZoneInfos.try_emplace(zone, std::vector<ZoneGroup>{ ZoneGroup{n, ncores, agentGroup} });
+            auto it = session.mZoneInfo.find(zone);
+            if (it == session.mZoneInfo.end()) {
+                session.mZoneInfo.try_emplace(zone, std::vector<ZoneGroup>{ ZoneGroup{n, ncores, agentGroup} });
             } else {
                 it->second.emplace_back(ZoneGroup{n, ncores, agentGroup});
             }
         }
     }
 
-    if (!session.mZoneInfos.empty()) {
+    if (!session.mZoneInfo.empty()) {
         OLOG(info, common) << "Zones from the topology:";
-        for (const auto& z : session.mZoneInfos) {
+        for (const auto& z : session.mZoneInfo) {
             OLOG(info, common) << "  " << quoted(z.first) << ":";
             for (const auto& zi : z.second) {
                 OLOG(info, common) << "    n: " << zi.n << ", ncores: " << zi.ncores << ", agentGroup: " << zi.agentGroup;
@@ -919,13 +969,29 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
     }
 
-    OLOG(info, common) << "N info:";
-    for (const auto& [collection, nmin] : session.mNinfo) {
-        OLOG(info, common) << "  name: " << collection
-                           << ", n (original): " << nmin.nOriginal
-                           << ", n (current): " << nmin.nCurrent
-                           << ", n (minimum): " << nmin.nMin
-                           << ", agent group: " << nmin.agentGroup;
+    if (!session.mNinfo.empty()) {
+        OLOG(info, common) << "N info:";
+        for (const auto& [collection, nmin] : session.mNinfo) {
+            OLOG(info, common) << "  name: " << collection
+                            << ", n (original): " << nmin.nOriginal
+                            << ", n (current): " << nmin.nCurrent
+                            << ", n (minimum): " << nmin.nMin
+                            << ", agent group: " << nmin.agentGroup;
+        }
+    }
+
+    if (!session.mCollections.empty()) {
+        OLOG(info, common) << "Collections:";
+        for (const auto& col : session.mCollections) {
+            OLOG(info, common) << "  " << col;
+        }
+    }
+
+    if (!session.mStandaloneTasks.empty()) {
+        OLOG(info, common) << "Tasks (outside of collections):";
+        for (const auto& task : session.mStandaloneTasks) {
+            OLOG(info, common) << "  " << task;
+        }
     }
 }
 

@@ -25,9 +25,9 @@ int main(int argc, char** argv)
 
         bpo::options_description options("odc-rp-same options");
         options.add_options()
-            ("version,v", "Print version")
-            ("id", boost::program_options::value<std::string>(&partitionID)->default_value(""), "Partition ID")
+            ("id", bpo::value<std::string>(&partitionID)->default_value(""), "Partition ID")
             ("res", bpo::value<string>(&res)->default_value(""), "Resource description")
+            ("version,v", "Print version")
             ("help,h", "Print help");
 
         bpo::variables_map vm;
