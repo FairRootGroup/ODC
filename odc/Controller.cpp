@@ -790,6 +790,7 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Error& error)
         session.mZoneInfo.clear();
         session.mStandaloneTasks.clear();
         session.mCollections.clear();
+        session.mAgentGroupInfo.clear();
         session.mTopoFilePath.clear();
         session.clearExpendableTasks();
 
@@ -824,6 +825,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
     session.mZoneInfo.clear();
     session.mStandaloneTasks.clear();
     session.mCollections.clear();
+    session.mAgentGroupInfo.clear();
 
     OLOG(info, common) << "Extracting requirements from " << std::quoted(session.mTopoFilePath) << "...";
 
@@ -940,6 +942,17 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         // TODO: should n_current be set to 0 and increased as collections are launched instead?
         session.mCollections.emplace_back(CollectionInfo{ c->getName(), zone, agentGroup, topoParent, topoPath, n, n, nmin, nCores, numTasks, numTasksTotal});
 
+        auto agiIt = session.mAgentGroupInfo.find(agentGroup);
+        if (agiIt == session.mAgentGroupInfo.end()) {
+            session.mAgentGroupInfo.emplace(agentGroup, AgentGroupInfo{ agentGroup, zone, n, nmin, numTasks, nCores });
+        } else {
+            agiIt->second.numAgents += n;
+            agiIt->second.numSlots += numTasks;
+            agiIt->second.zone = zone;
+            agiIt->second.minAgents = nmin;
+            agiIt->second.numCores = nCores;
+        }
+
         if (!agentGroup.empty() && nmin >= 0) {
             auto nIt = session.mNinfo.find(c->getName());
             if (nIt == session.mNinfo.end()) {
@@ -992,6 +1005,11 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         for (const auto& task : session.mStandaloneTasks) {
             OLOG(info, common) << "  " << task;
         }
+    }
+
+    OLOG(info, common) << "Agent group(s):";
+    for (const auto& [groupName, agi] : session.mAgentGroupInfo) {
+        OLOG(info, common) << "  " << agi;
     }
 }
 

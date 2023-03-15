@@ -351,6 +351,26 @@ struct TaskInfo
     }
 };
 
+struct AgentGroupInfo
+{
+    std::string name;
+    std::string zone;
+    int32_t numAgents;
+    int32_t minAgents;
+    int32_t numSlots;
+    int32_t numCores;
+
+    friend std::ostream& operator<<(std::ostream& os, const AgentGroupInfo& agi)
+    {
+        return os << "name: "        << std::quoted(agi.name)
+                  << "; zone: "      << std::quoted(agi.zone)
+                  << "; numAgents: " << agi.numAgents
+                  << "; minAgents: " << agi.minAgents
+                  << "; numSlots: "  << agi.numSlots
+                  << "; numCores: "  << agi.numCores;
+    }
+};
+
 struct FailedTasksCollections
 {
     bool recoverable = true;
