@@ -29,7 +29,7 @@ namespace odc::core {
 struct ZoneGroup
 {
     int32_t n;
-    int ncores;
+    int nCores;
     std::string agentGroup;
 };
 
@@ -123,25 +123,25 @@ class DDSSubmit : public PluginManager
             }
         }
 
-        // extend parameters, if ncores is provided
+        // extend parameters, if nCores is provided
         for (const auto& [zoneNameSB, zoneGroups] : zoneInfo) {
             std::string zoneName(zoneNameSB);
-            auto result = find_if(params.begin(), params.end(), [&zoneName](const auto& p){ return p.mZone == zoneName; });
-            if (result == params.end()) {
+            auto parameterSet = find_if(params.begin(), params.end(), [&zoneName](const auto& p){ return p.mZone == zoneName; });
+            if (parameterSet == params.end()) {
                 throw std::runtime_error(toString("Zone '", zoneName, "' not found. Check --zones setting of the resource plugin."));
             } else {
                 // overwrite the core number for the found parameter set
-                result->mNumCores = zoneGroups.at(0).ncores;
-                result->mAgentGroup = zoneGroups.at(0).agentGroup;
+                parameterSet->mNumCores = zoneGroups.at(0).nCores;
+                parameterSet->mAgentGroup = zoneGroups.at(0).agentGroup;
                 // for core-based scheduling, set number of agents to 1
-                if (result->mNumCores != 0) {
-                    result->mNumAgents = 1;
+                if (parameterSet->mNumCores != 0) {
+                    parameterSet->mNumAgents = 1;
                 }
-                Params tempParams = *result;
+                Params tempParams = *parameterSet;
                 // for the rest of agent groups (if present), add them as new parameter sets
                 for (size_t i = 1; i < zoneGroups.size(); ++i) {
                     params.push_back(tempParams);
-                    params.back().mNumCores = zoneGroups.at(i).ncores;
+                    params.back().mNumCores = zoneGroups.at(i).nCores;
                     params.back().mAgentGroup = zoneGroups.at(i).agentGroup;
                 }
             }

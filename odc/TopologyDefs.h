@@ -313,7 +313,7 @@ struct CollectionInfo
     int32_t nOriginal;
     int32_t nCurrent;
     int32_t nMin;
-    int ncores;
+    int nCores;
     int32_t numTasks;
     int32_t totalTasks;
 
@@ -327,7 +327,7 @@ struct CollectionInfo
                   << "; n (original): " << ci.nOriginal
                   << "; n (current): "  << ci.nCurrent
                   << "; n (min): "      << ci.nMin
-                  << "; ncores: "       << ci.ncores
+                  << "; nCores: "       << ci.nCores
                   << "; numTasks: "     << ci.numTasks
                   << "; totalTasks: "   << ci.totalTasks;
     }

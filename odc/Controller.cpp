@@ -153,9 +153,9 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
                                 << " (idle: " << ai.m_nIdleSlots
                                 << ", executing: " << ai.m_nExecutingSlots << ").";
             }
-            OLOG(info, common) << "Launched " << agentCounts.size() << " DDS agent groups:";
+            OLOG(info, common) << "Launched " << agentCounts.size() << " DDS agent group(s):";
             for (const auto& [groupName, count] : agentCounts) {
-                OLOG(info, common) << "  " << groupName << ": " << count << " agents";
+                OLOG(info, common) << "  " << std::quoted(groupName) << ": " << count << " agents";
             }
         } catch (const exception& e) {
             fillAndLogError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Failed getting agent info: ", e.what()));
@@ -893,7 +893,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         string agentGroup;
         string topoParent = parent->getName();
         string topoPath = parent->getPath();
-        int ncores = 0;
+        int nCores = 0;
         int32_t n = c->getTotalCounter();
         int32_t nmin = -1;
         int32_t numTasks = c->getNofTasks();
@@ -914,7 +914,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
             } else if (cr->getRequirementType() == CTopoRequirement::EType::Custom) {
                 ss << "Custom";
                 if (strStartsWith(cr->getName(), "odc_ncores_")) {
-                    ncores = stoi(cr->getValue());
+                    nCores = stoi(cr->getValue());
                 } else if (strStartsWith(cr->getName(), "odc_zone_")) {
                     zone = cr->getValue();
                 } else if (strStartsWith(cr->getName(), "odc_nmin_")) {
@@ -938,11 +938,11 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
 
         // TODO: should n_current be set to 0 and increased as collections are launched instead?
-        session.mCollections.emplace_back(CollectionInfo{ c->getName(), zone, agentGroup, topoParent, topoPath, n, n, nmin, ncores, numTasks, numTasksTotal});
+        session.mCollections.emplace_back(CollectionInfo{ c->getName(), zone, agentGroup, topoParent, topoPath, n, n, nmin, nCores, numTasks, numTasksTotal});
 
         if (!agentGroup.empty() && nmin >= 0) {
-            auto it = session.mNinfo.find(c->getName());
-            if (it == session.mNinfo.end()) {
+            auto nIt = session.mNinfo.find(c->getName());
+            if (nIt == session.mNinfo.end()) {
                 session.mNinfo.try_emplace(c->getName(), CollectionNInfo{ n, n, nmin, agentGroup });
             } else {
                 // OLOG(info, common) << "collection " << c->getName() << " is already in the mNinfo";
@@ -950,11 +950,11 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
 
         if (!agentGroup.empty() && !zone.empty()) {
-            auto it = session.mZoneInfo.find(zone);
-            if (it == session.mZoneInfo.end()) {
-                session.mZoneInfo.try_emplace(zone, std::vector<ZoneGroup>{ ZoneGroup{n, ncores, agentGroup} });
+            auto ziIt = session.mZoneInfo.find(zone);
+            if (ziIt == session.mZoneInfo.end()) {
+                session.mZoneInfo.try_emplace(zone, std::vector<ZoneGroup>{ ZoneGroup{n, nCores, agentGroup} });
             } else {
-                it->second.emplace_back(ZoneGroup{n, ncores, agentGroup});
+                ziIt->second.emplace_back(ZoneGroup{n, nCores, agentGroup});
             }
         }
     }
@@ -964,7 +964,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         for (const auto& z : session.mZoneInfo) {
             OLOG(info, common) << "  " << quoted(z.first) << ":";
             for (const auto& zi : z.second) {
-                OLOG(info, common) << "    n: " << zi.n << ", ncores: " << zi.ncores << ", agentGroup: " << zi.agentGroup;
+                OLOG(info, common) << "    n: " << zi.n << ", nCores: " << zi.nCores << ", agentGroup: " << zi.agentGroup;
             }
         }
     }
