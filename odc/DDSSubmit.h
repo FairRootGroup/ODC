@@ -56,7 +56,7 @@ class DDSSubmit : public PluginManager
             }
             mRMSPlugin = pt.get<std::string>("rms", "");
             mZone = pt.get<std::string>("zone", "");
-            // set agent group to the zone name initially
+            // by default agent group equals the zone name (but can be overwritten via the topology)
             mAgentGroup = pt.get<std::string>("zone", "");
             mConfigFile = pt.get<std::string>("configFile", "");
             mEnvFile = pt.get<std::string>("envFile", "");
@@ -126,11 +126,13 @@ class DDSSubmit : public PluginManager
         // extend parameters, if nCores is provided
         for (const auto& [zoneNameSB, zoneGroups] : zoneInfo) {
             std::string zoneName(zoneNameSB);
+            // check if the zone defined in the topology was provided to the plugin...
             auto parameterSet = find_if(params.begin(), params.end(), [&zoneName](const auto& p){ return p.mZone == zoneName; });
             if (parameterSet == params.end()) {
                 throw std::runtime_error(toString("Zone '", zoneName, "' not found. Check --zones setting of the resource plugin."));
             } else {
-                // overwrite the core number for the found parameter set
+                // ...if yes, it means numCores was provided, so we overwrite
+                // the core number and agent group for the found parameter set
                 parameterSet->mNumCores = zoneGroups.at(0).nCores;
                 parameterSet->mAgentGroup = zoneGroups.at(0).agentGroup;
                 // for core-based scheduling, set number of agents to 1

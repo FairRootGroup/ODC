@@ -143,17 +143,17 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
                 hosts.emplace(ai.m_host);
                 OLOG(info, common) << "  Agent ID: " << ai.m_agentID
                                 // << ", pid: " << ai.m_agentPid
-                                << ", host: " << ai.m_host
-                                << ", path: " << ai.m_DDSPath
-                                << ", group: " << ai.m_groupName
-                                // << ", index: " << ai.m_index
-                                // << ", username: " << ai.m_username
-                                << ", startup time: " << ai.m_startUpTime.count() << " ms"
-                                << ", slots: " << ai.m_nSlots
-                                << " (idle: " << ai.m_nIdleSlots
-                                << ", executing: " << ai.m_nExecutingSlots << ").";
+                                << "; host: " << ai.m_host
+                                << "; path: " << ai.m_DDSPath
+                                << "; group: " << ai.m_groupName
+                                // << "; index: " << ai.m_index
+                                // << "; username: " << ai.m_username
+                                << "; startup time: " << ai.m_startUpTime.count() << " ms"
+                                << "; slots: " << ai.m_nSlots;
+                                // << " (idle: " << ai.m_nIdleSlots
+                                // << ", executing: " << ai.m_nExecutingSlots << ").";
             }
-            OLOG(info, common) << "Launched " << agentCounts.size() << " DDS agent group(s):";
+            OLOG(info, common) << "Launched " << agentCounts.size() << " DDS agent groups:";
             for (const auto& [groupName, count] : agentCounts) {
                 OLOG(info, common) << "  " << std::quoted(groupName) << ": " << count << " agents";
             }
@@ -1007,7 +1007,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
     }
 
-    OLOG(info, common) << "Agent group(s):";
+    OLOG(info, common) << "Agent groups:";
     for (const auto& [groupName, agi] : session.mAgentGroupInfo) {
         OLOG(info, common) << "  " << agi;
     }
