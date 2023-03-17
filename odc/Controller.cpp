@@ -83,7 +83,7 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
     }
 
     // Get DDS submit parameters from ODC resource plugin
-    vector<DDSSubmit::Params> ddsParams;
+    vector<DDSSubmitParams> ddsParams;
     if (!error.mCode) {
         try {
             ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfo, requestTimeout(common));
@@ -172,7 +172,7 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
 void Controller::attemptSubmitRecovery(const CommonParams& common,
                                        Session& session,
                                        Error& error,
-                                       const vector<DDSSubmit::Params>& ddsParams,
+                                       const vector<DDSSubmitParams>& ddsParams,
                                        const map<string, uint32_t>& agentCounts)
 {
     error = Error();
@@ -623,14 +623,14 @@ bool Controller::attachToDDSSession(const CommonParams& common, Error& error, co
     return true;
 }
 
-bool Controller::submitDDSAgents(const CommonParams& common, Session& session, Error& error, const DDSSubmit::Params& params)
+bool Controller::submitDDSAgents(const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params)
 {
     bool success = true;
     using namespace dds::tools_api;
 
     SSubmitRequest::request_t requestInfo;
     requestInfo.m_submissionTag = common.mPartitionID;
-    requestInfo.m_rms = params.mRMSPlugin;
+    requestInfo.m_rms = params.mRMS;
     requestInfo.m_instances = params.mNumAgents;
     requestInfo.m_minInstances = params.mMinAgents;
     requestInfo.m_slots = params.mNumSlots;
@@ -639,7 +639,7 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
     requestInfo.m_groupName = params.mAgentGroup;
 
     // DDS does not support ncores parameter directly, set it here through additional config in case of Slurm
-    if (params.mRMSPlugin == "slurm" && params.mNumCores > 0) {
+    if (params.mRMS == "slurm" && params.mNumCores > 0) {
         // the following disables `#SBATCH --cpus-per-task=%DDS_NSLOTS%` of DDS for Slurm
         requestInfo.setFlag(SSubmitRequestData::ESubmitRequestFlags::enable_overbooking, true);
 

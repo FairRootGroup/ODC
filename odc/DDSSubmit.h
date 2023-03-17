@@ -33,78 +33,77 @@ struct ZoneGroup
     std::string agentGroup;
 };
 
+struct DDSSubmitParams
+{
+    DDSSubmitParams() {}
+    DDSSubmitParams(const DDSSubmitParams&) = default;
+    DDSSubmitParams(DDSSubmitParams&&) = default;
+    DDSSubmitParams& operator=(const DDSSubmitParams&) = default;
+    DDSSubmitParams& operator=(DDSSubmitParams&&) = default;
+
+    DDSSubmitParams(const boost::property_tree::ptree& pt)
+    {
+        // Only valid tags are allowed.
+        std::set<std::string> validTags{ "rms", "configFile", "envFile", "agents", "slots", "zone" };
+        for (const auto& v : pt) {
+            if (validTags.count(v.first.data()) == 0) {
+                throw std::runtime_error(toString("Failed to init from property tree. Unknown key ", std::quoted(v.first.data())));
+            }
+        }
+        mRMS = pt.get<std::string>("rms", "");
+        mZone = pt.get<std::string>("zone", "");
+        // by default agent group equals the zone name (but can be overwritten via the topology)
+        mAgentGroup = pt.get<std::string>("zone", "");
+        mConfigFile = pt.get<std::string>("configFile", "");
+        mEnvFile = pt.get<std::string>("envFile", "");
+        mNumAgents = pt.get<int32_t>("agents", -1);
+        mMinAgents = 0;
+        mNumSlots = pt.get<size_t>("slots", 0);
+        // number of cores is set dynamically from the topology (if provided), not from the initial resource definition
+        mNumCores = 0;
+    }
+
+    std::string mRMS;        ///< RMS plugin of DDS
+    std::string mZone;       ///< Zone name
+    std::string mAgentGroup; ///< Agent group name
+    std::string mConfigFile; ///< Path to the configuration file of the RMS plugin
+    std::string mEnvFile;    ///< Path to the environment file
+    int32_t mNumAgents = 0;  ///< Number of DDS agents
+    size_t mMinAgents = 0;   ///< Minimum number of DDS agents
+    size_t mNumSlots = 0;    ///< Number of slots per DDS agent
+    size_t mNumCores = 0;    ///< Number of cores
+
+    // \brief ostream operator.
+    friend std::ostream& operator<<(std::ostream& os, const DDSSubmitParams& params)
+    {
+        return os << "DDSSubmitParams:"
+            << " rms: "         << params.mRMS
+            << ", zone: "       << params.mZone
+            << ", agentGroup: " << params.mAgentGroup
+            << ", numAgents: "  << params.mNumAgents
+            << ", minAgents: "  << params.mMinAgents
+            << ", numSlots: "   << params.mNumSlots
+            << ", numCores: "   << params.mNumCores
+            << ", configFile: " << std::quoted(params.mConfigFile)
+            << ", envFile: "    << std::quoted(params.mEnvFile);
+    }
+};
+
 class DDSSubmit : public PluginManager
 {
   public:
-    /// \brief DDS submit parameters
-    struct Params
-    {
-        Params() {}
-        Params(const Params&) = default;
-        Params(Params&&) = default;
-        Params& operator=(const Params&) = default;
-        Params& operator=(Params&&) = default;
-
-        Params(const boost::property_tree::ptree& pt)
-        {
-            // Only valid tags are allowed.
-            std::set<std::string> validTags{ "rms", "configFile", "envFile", "agents", "slots", "zone" };
-            for (const auto& v : pt) {
-                if (validTags.count(v.first.data()) == 0) {
-                    throw std::runtime_error(toString("Failed to init from property tree. Unknown key ", std::quoted(v.first.data())));
-                }
-            }
-            mRMSPlugin = pt.get<std::string>("rms", "");
-            mZone = pt.get<std::string>("zone", "");
-            // by default agent group equals the zone name (but can be overwritten via the topology)
-            mAgentGroup = pt.get<std::string>("zone", "");
-            mConfigFile = pt.get<std::string>("configFile", "");
-            mEnvFile = pt.get<std::string>("envFile", "");
-            mNumAgents = pt.get<int32_t>("agents", -1);
-            mMinAgents = 0;
-            mNumSlots = pt.get<size_t>("slots", 0);
-            // number of cores is set dynamically from the topology (if provided), not from the initial resource definition
-            mNumCores = 0;
-        }
-
-        std::string mRMSPlugin;  ///< RMS plugin of DDS
-        std::string mZone;       ///< Zone name
-        std::string mAgentGroup; ///< Agent group name
-        std::string mConfigFile; ///< Path to the configuration file of the RMS plugin
-        std::string mEnvFile;    ///< Path to the environment file
-        int32_t mNumAgents = 0;   ///< Number of DDS agents
-        size_t mMinAgents = 0;   ///< Minimum number of DDS agents
-        size_t mNumSlots = 0;    ///< Number of slots per DDS agent
-        size_t mNumCores = 0;    ///< Number of cores
-
-        // \brief ostream operator.
-        friend std::ostream& operator<<(std::ostream& os, const Params& params)
-        {
-            return os << "Params: "
-                      << "rmsPlugin: "    << params.mRMSPlugin
-                      << ", zone: "       << params.mZone
-                      << ", agentGroup: " << params.mAgentGroup
-                      << ", numAgents: "  << params.mNumAgents
-                      << ", minAgents: "  << params.mMinAgents
-                      << ", numSlots: "   << params.mNumSlots
-                      << ", numCores: "   << params.mNumCores
-                      << ", configFile: " << std::quoted(params.mConfigFile)
-                      << ", envFile: "    << std::quoted(params.mEnvFile);
-        }
-    };
-
     DDSSubmit()
     {
         registerDefaultPlugin("odc-rp-same");
     }
 
-    std::vector<Params> makeParams(const std::string& plugin,
+    std::vector<DDSSubmitParams> makeParams(const std::string& plugin,
                                    const std::string& resources,
                                    const CommonParams& common,
                                    const std::map<std::string, std::vector<ZoneGroup>>& zoneInfo,
                                    std::chrono::seconds timeout)
     {
-        std::vector<Params> params;
+        std::vector<DDSSubmitParams> params;
         OLOG(info, common) << "Starting " << plugin << " plugin...";
         std::stringstream ss{ execPlugin(plugin, resources, common.mPartitionID, common.mRunNr, timeout) };
         OLOG(info, common) << "Finishing " << plugin << " plugin. Plugin output:\n" << ss.str();
@@ -139,7 +138,7 @@ class DDSSubmit : public PluginManager
                 if (parameterSet->mNumCores != 0) {
                     parameterSet->mNumAgents = 1;
                 }
-                Params tempParams = *parameterSet;
+                DDSSubmitParams tempParams = *parameterSet;
                 // for the rest of agent groups (if present), add them as new parameter sets
                 for (size_t i = 1; i < zoneGroups.size(); ++i) {
                     params.push_back(tempParams);
