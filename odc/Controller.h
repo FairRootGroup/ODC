@@ -162,7 +162,7 @@ class Controller
 
     uint32_t getNumSlots(const CommonParams& common, Session& session) const;
     dds::tools_api::SAgentInfoRequest::responseVector_t getAgentInfo(const CommonParams& common, Session& session) const;
-    void extractRequirements(const CommonParams& common, Session& session);
+    static void extractRequirements(const CommonParams& common, Session& session);
 
     void printStateStats(const CommonParams& common, const TopoState& topoState);
 };

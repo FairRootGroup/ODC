@@ -86,7 +86,7 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
     vector<DDSSubmitParams> ddsParams;
     if (!error.mCode) {
         try {
-            ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfo, requestTimeout(common));
+            ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfo, session.mNinfo, requestTimeout(common));
         } catch (exception& e) {
             fillAndLogError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
             return hosts;
@@ -102,14 +102,7 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
         }
 
         for (unsigned int i = 0; i < ddsParams.size(); ++i) {
-            auto it = find_if(session.mNinfo.cbegin(), session.mNinfo.cend(), [&](const auto& tgi) {
-                return tgi.second.agentGroup == ddsParams.at(i).mAgentGroup;
-            });
-            if (it != session.mNinfo.cend()) {
-                ddsParams.at(i).mMinAgents = it->second.nMin;
-            }
             OLOG(info, common) << "Submitting [" << i + 1 << "/" << ddsParams.size() << "]: " << ddsParams.at(i);
-
             if (submitDDSAgents(common, session, error, ddsParams.at(i))) {
                 expectedNumSlots += ddsParams.at(i).mNumAgents * ddsParams.at(i).mNumSlots;
             } else {

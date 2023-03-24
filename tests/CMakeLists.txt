@@ -147,6 +147,7 @@ odc_add_boost_tests(SUITE odc
   EXTRA_ARGS -- --topo-file ${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}/odc-tests-topo.xml
   PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}"
 )
+
 odc_add_boost_tests(SUITE cc
   TESTS
   format/construction
@@ -154,6 +155,18 @@ odc_add_boost_tests(SUITE cc
   format/serialization_json
 
   DEPS ODC::cc
+
+  PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}"
+)
+
+odc_add_boost_tests(SUITE parameters
+  TESTS
+  creation/odc_rp_same_simple
+  creation/odc_rp_same_zones
+  creation/odc_rp_epn_slurm_zones
+  creation/odc_rp_epn_slurm_ncores
+
+  DEPS ODC::odc
 
   PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}"
 )

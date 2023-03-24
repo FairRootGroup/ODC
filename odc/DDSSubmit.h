@@ -78,14 +78,14 @@ struct DDSSubmitParams
     {
         return os << "DDSSubmitParams:"
             << " rms: "         << params.mRMS
-            << ", zone: "       << params.mZone
-            << ", agentGroup: " << params.mAgentGroup
-            << ", numAgents: "  << params.mNumAgents
-            << ", minAgents: "  << params.mMinAgents
-            << ", numSlots: "   << params.mNumSlots
-            << ", numCores: "   << params.mNumCores
-            << ", configFile: " << std::quoted(params.mConfigFile)
-            << ", envFile: "    << std::quoted(params.mEnvFile);
+            << "; zone: "       << params.mZone
+            << "; agentGroup: " << params.mAgentGroup
+            << "; numAgents: "  << params.mNumAgents
+            << "; minAgents: "  << params.mMinAgents
+            << "; numSlots: "   << params.mNumSlots
+            << "; numCores: "   << params.mNumCores
+            << "; configFile: " << std::quoted(params.mConfigFile)
+            << "; envFile: "    << std::quoted(params.mEnvFile);
     }
 };
 
@@ -101,6 +101,7 @@ class DDSSubmit : public PluginManager
                                    const std::string& resources,
                                    const CommonParams& common,
                                    const std::map<std::string, std::vector<ZoneGroup>>& zoneInfo,
+                                   const std::map<std::string, CollectionNInfo>& nInfo,
                                    std::chrono::seconds timeout)
     {
         std::vector<DDSSubmitParams> params;
@@ -154,6 +155,18 @@ class DDSSubmit : public PluginManager
                 return p.mNumAgents == -1; }),
             params.end()
         );
+
+        // extend minAgents where necessary
+        if (!nInfo.empty()) {
+            for (unsigned int i = 0; i < params.size(); ++i) {
+                auto it = find_if(nInfo.cbegin(), nInfo.cend(), [&](const auto& tgi) {
+                    return tgi.second.agentGroup == params.at(i).mAgentGroup;
+                });
+                if (it != nInfo.cend()) {
+                    params.at(i).mMinAgents = it->second.nMin;
+                }
+            }
+        }
 
         return params;
     }
