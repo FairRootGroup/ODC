@@ -31,6 +31,14 @@ using std::map;
 using std::string;
 using std::vector;
 
+void printParams(const vector<DDSSubmitParams>& ddsParams)
+{
+    OLOG(info) << "Parameter container with " << ddsParams.size() << " parameter set(s):";
+    for (const auto& p : ddsParams) {
+        OLOG(info) << "  " << p;
+    }
+}
+
 void testParameterSet(
     DDSSubmitParams& set,
     const string& rms,
@@ -52,14 +60,6 @@ void testParameterSet(
     BOOST_TEST(set.mNumCores == numCores);
     BOOST_TEST(set.mConfigFile == configFile);
     BOOST_TEST(set.mEnvFile == envFile);
-}
-
-void printParams(const vector<DDSSubmitParams>& ddsParams)
-{
-    OLOG(info) << "Parameter container with " << ddsParams.size() << " parameter set(s):";
-    for (const auto& p : ddsParams) {
-        OLOG(info) << "  " << p;
-    }
 }
 
 BOOST_AUTO_TEST_SUITE(creation)

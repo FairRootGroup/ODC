@@ -94,6 +94,8 @@ class Controller
     /// \brief Status request
     StatusRequestResult execStatus(const StatusParams& params);
 
+    static void extractRequirements(const CommonParams& common, Session& session);
+
   private:
     std::map<std::string, std::unique_ptr<Session>> mSessions; ///< Map of partition ID to session info
     std::mutex mSessionsMtx;                                   ///< Mutex of sessions map
@@ -162,7 +164,6 @@ class Controller
 
     uint32_t getNumSlots(const CommonParams& common, Session& session) const;
     dds::tools_api::SAgentInfoRequest::responseVector_t getAgentInfo(const CommonParams& common, Session& session) const;
-    static void extractRequirements(const CommonParams& common, Session& session);
 
     void printStateStats(const CommonParams& common, const TopoState& topoState);
 };

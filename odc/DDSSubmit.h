@@ -29,7 +29,7 @@ namespace odc::core {
 struct ZoneGroup
 {
     int32_t n;
-    int nCores;
+    int32_t nCores;
     std::string agentGroup;
 };
 

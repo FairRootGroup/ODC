@@ -170,3 +170,15 @@ odc_add_boost_tests(SUITE parameters
 
   PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}"
 )
+
+odc_add_boost_tests(SUITE requirements
+  TESTS
+  extraction/simple
+  extraction/zones_from_agent_groupnames
+  extraction/zones_with_ncores
+  extraction/nmin
+
+  DEPS ODC::odc
+
+  PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}"
+)

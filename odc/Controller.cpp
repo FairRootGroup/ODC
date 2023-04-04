@@ -978,11 +978,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
     if (!session.mNinfo.empty()) {
         OLOG(info, common) << "N info:";
         for (const auto& [collection, nmin] : session.mNinfo) {
-            OLOG(info, common) << "  name: " << collection
-                            << ", n (original): " << nmin.nOriginal
-                            << ", n (current): " << nmin.nCurrent
-                            << ", n (minimum): " << nmin.nMin
-                            << ", agent group: " << nmin.agentGroup;
+            OLOG(info, common) << "  name: " << collection << ", " << nmin;
         }
     }
 

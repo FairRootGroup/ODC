@@ -301,6 +301,14 @@ struct CollectionNInfo
     int32_t nCurrent;
     int32_t nMin;
     std::string agentGroup;
+
+    friend std::ostream& operator<<(std::ostream& os, const CollectionNInfo& cni)
+    {
+        return os << "n (original): "  << cni.nOriginal
+                  << ", n (current): " << cni.nCurrent
+                  << ", n (min): "     << cni.nMin
+                  << ", agentGroup: "  << cni.agentGroup;
+    }
 };
 
 struct CollectionInfo
