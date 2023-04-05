@@ -45,6 +45,7 @@ macro(odcConfigExampleTopo N FILE_IN FILE_OUT)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${FILE_OUT} DESTINATION ${PROJECT_INSTALL_DATADIR})
 endmacro()
 
+odcConfigExampleTopo(0 ex-epn.xml                                        ex-epn.xml)
 odcConfigExampleTopo(4 ex-topo-groupname-crashing-expendable-task.xml.in ex-topo-groupname-crashing-expendable-task.xml)
 odcConfigExampleTopo(4 ex-topo-groupname-crashing.xml.in                 ex-topo-groupname-crashing.xml)
 odcConfigExampleTopo(4 ex-topo-groupname-ncores.xml.in                   ex-topo-groupname-ncores.xml)
