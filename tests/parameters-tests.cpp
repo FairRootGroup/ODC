@@ -219,6 +219,32 @@ BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_ncores)
     compareParameterSets(ddsParams.at(2), ddsParams2.at(1));
 }
 
+BOOST_AUTO_TEST_CASE(odc_extract_epn)
+{
+    string rms = "slurm";
+    map<string, ZoneConfig> zones = {
+        { "calib", { "/home/user/slurm-calib.cfg", "" } },
+        { "online", { "/home/user/slurm-online.cfg", "" } }
+    };
+    string partitionId = "test_partition_" + uuid();
+    CommonParams common(partitionId, 0, 10);
+
+    Session session;
+    session.mPartitionID = partitionId;
+    session.mTopoFilePath = kODCDataDir + "/ex-epn.xml";
+    Controller::extractRequirements(common, session);
+
+    DDSSubmit ddsSubmit;
+    vector<DDSSubmitParams> ddsParams;
+    ddsParams = ddsSubmit.makeParams(rms, zones, session.mAgentGroupInfo);
+
+    printParams(ddsParams);
+
+    BOOST_TEST(ddsParams.size() == 2);
+    testParameterSet(ddsParams.at(0), "slurm", "online", "online", 50, 50, 223, 0, "/home/user/slurm-online.cfg", "");
+    testParameterSet(ddsParams.at(1), "slurm", "calib", "calib1", 1, 0, 17, 128, "/home/user/slurm-calib.cfg", "");
+}
+
 BOOST_AUTO_TEST_SUITE_END()
 
 int main(int argc, char* argv[]) { return boost::unit_test::unit_test_main(init_unit_test, argc, argv); }
