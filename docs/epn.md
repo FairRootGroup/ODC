@@ -53,8 +53,7 @@ export O2_INFOLOGGER_OPTIONS="floodProtection=0"
 export DDS_LOCATION=$(dirname $(dirname $(which dds-session)))
 dyn="$(which odc-rp-epn) --host epn000:50001 --logdir /home/epn/odc/log --severity dbg --bash \"module load DDS\" --slots 256 --wrkdir \"/tmp/wn_dds\""
 rpdyn="epn:${dyn}"
-rt="Shutdown:${dyn} --release"
-nohup odc-grpc-server --sync --timeout 60 --rp "${rpdyn}" --rt "${rt}" --host "*:22334" --logdir /home/epn/odc/log --severity dbg --infologger --restore epn &
+nohup odc-grpc-server --sync --timeout 60 --rp "${rpdyn}" --host "*:22334" --logdir /home/epn/odc/log --severity dbg --infologger --restore epn &
 
 # If script is started via systemd, this file stores the PID of the main process (`PIDFile` in systemd config).
 # We want `odc-grpc-server` to be the main process and not `bash`.

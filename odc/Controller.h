@@ -44,10 +44,6 @@ class Controller
     /// \param [in] pluginMap Map of plugin name to path
     void registerResourcePlugins(const PluginManager::PluginMap& pluginMap);
 
-    /// \brief Register request triggers
-    /// \param [in] triggerMap Map of plugin name to path
-    void registerRequestTriggers(const PluginManager::PluginMap& triggerMap);
-
     /// \brief Restore sessions for the specified ID
     ///  The function has to be called before the service start accepting request.
     /// \param [in] id ID of the restore file
@@ -109,14 +105,12 @@ class Controller
     std::mutex mSessionsMtx;                                   ///< Mutex of sessions map
     std::chrono::seconds mTimeout{ 30 };                       ///< Request timeout in sec
     DDSSubmit mSubmit;                                         ///< ODC to DDS submit resource converter
-    PluginManager mTriggers;                                   ///< Request triggers
     std::string mRestoreId;                                    ///< Restore ID
     std::string mRestoreDir;                                   ///< Restore file directory
     std::string mHistoryDir;                                   ///< History file directory
     std::map<std::string, ZoneConfig> mZoneCfgs;               ///< stores zones configuration (cfgFilePath/envFilePath) by zone name
     std::string mRMS{ "localhost" };                           ///< resource management system to be used by DDS
 
-    void execRequestTrigger(const std::string& plugin, const CommonParams& common);
     void updateRestore();
     void updateHistory(const CommonParams& common, const std::string& sessionId);
 

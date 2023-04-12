@@ -36,7 +36,6 @@ int main(int argc, char** argv)
         CliHelper::BatchOptions batchOptions;
         bool batch;
         PluginManager::PluginMap plugins;
-        PluginManager::PluginMap triggers;
         vector<string> zonesStr;
         string rms;
         string restoreId;
@@ -49,7 +48,6 @@ int main(int argc, char** argv)
             ("version,v", "Print version")
             ("timeout", bpo::value<size_t>(&timeout)->default_value(30), "Timeout of requests in sec")
             ("rp", bpo::value<std::vector<std::string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )")
-            ("rt", bpo::value<std::vector<std::string>>()->multitoken(), "Register request triggers ( name1:cmd1 name2:cmd2 )")
             ("zones", bpo::value<vector<string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<cfgFilePath>:<envFilePath> format")
             ("rms", bpo::value<string>(&rms)->default_value("localhost"), "Resource management system to be used by DDS  (localhost/ssh/slurm)")
             ("restore", bpo::value<std::string>(&restoreId)->default_value(""), "If set ODC will restore the sessions from file with specified ID")
@@ -81,7 +79,6 @@ int main(int argc, char** argv)
 
         CliHelper::batchCmds(vm, batch, batchOptions);
         CliHelper::parsePluginMapOptions(vm, plugins, "rp");
-        CliHelper::parsePluginMapOptions(vm, triggers, "rt");
 
         odc::CliController controller;
         controller.setTimeout(chrono::seconds(timeout));
@@ -89,7 +86,6 @@ int main(int argc, char** argv)
         controller.setZoneCfgs(zonesStr);
         controller.setRMS(rms);
         controller.registerResourcePlugins(plugins);
-        controller.registerRequestTriggers(triggers);
         if (!restoreId.empty()) {
             controller.restore(restoreId, restoreDir);
         }

@@ -29,7 +29,6 @@ class CliController : public odc::core::CliControllerHelper<CliController>
     void setRMS(const std::string& rms) { mCtrl.setRMS(rms); }
 
     void registerResourcePlugins(const core::PluginManager::PluginMap& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
-    void registerRequestTriggers(const core::PluginManager::PluginMap& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId, const std::string& restoreDir) { mCtrl.restore(restoreId, restoreDir); }
 
     std::string requestInitialize(   const core::CommonParams& common, const core::InitializeParams& params)    { return generalReply(mCtrl.execInitialize(common, params)); }

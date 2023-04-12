@@ -53,7 +53,6 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
                 && createTopology(common, error);
         }
     }
-    execRequestTrigger("Initialize", common);
     updateRestore();
     return createRequestResult(common, error, "Initialize done", common.mTimer.duration(), AggregatedState::Undefined);
 }
@@ -66,7 +65,6 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 
     auto hosts = submit(common, session, error, params.mPlugin, params.mResources, false);
 
-    execRequestTrigger("Submit", common);
     string sidStr{ to_string(session.mDDSSession.getSessionID()) };
     StatusCode status{ error.mCode ? StatusCode::error : StatusCode::ok };
     return RequestResult(status, "Submit done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sidStr, AggregatedState::Undefined, hosts);
@@ -276,7 +274,6 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     }
 
     AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
-    execRequestTrigger("Activate", common);
     return createRequestResult(common, error, "Activate done", common.mTimer.duration(), state);
 }
 
@@ -304,7 +301,6 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
             && createDDSSession(common, error)
             && subscribeToDDSSession(common, error);
 
-        execRequestTrigger("Initialize", common);
         updateRestore();
 
         if (!error.mCode) {
@@ -336,7 +332,6 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
     }
 
     AggregatedState state{ !error.mCode ? AggregatedState::Idle : AggregatedState::Undefined };
-    execRequestTrigger("Run", common);
 
     string sidStr{ to_string(session.mDDSSession.getSessionID()) };
     StatusCode status{ error.mCode ? StatusCode::error : StatusCode::ok };
@@ -367,7 +362,6 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
             && waitForState(common, session, error, DeviceState::Idle, "")
             && changeStateConfigure(common, session, error, "", state);
     }
-    execRequestTrigger("Update", common);
     return createRequestResult(common, error, "Update done", common.mTimer.duration(), state);
 }
 
@@ -385,7 +379,6 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     shutdownDDSSession(common, error);
     removeSession(common);
     updateRestore();
-    execRequestTrigger("Shutdown", common);
 
     StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
     return RequestResult(status, "Shutdown done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, ddsSessionId, AggregatedState::Undefined, {}, nullptr);
@@ -397,7 +390,6 @@ RequestResult Controller::execSetProperties(const CommonParams& common, const Se
 
     AggregatedState state{ AggregatedState::Undefined };
     setProperties(common, error, params, state);
-    execRequestTrigger("SetProperties", common);
     return createRequestResult(common, error, "SetProperties done", common.mTimer.duration(), state);
 }
 
@@ -408,7 +400,6 @@ RequestResult Controller::execGetState(const CommonParams& common, const DeviceP
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     getState(common, error, params.mPath, state, detailedState.get());
-    execRequestTrigger("GetState", common);
     return createRequestResult(common, error, "GetState done", common.mTimer.duration(), state, move(detailedState));
 }
 
@@ -421,7 +412,6 @@ RequestResult Controller::execConfigure(const CommonParams& common, const Device
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeStateConfigure(common, session, error, params.mPath, state, detailedState.get());
-    execRequestTrigger("Configure", common);
     return createRequestResult(common, error, "Configure done", common.mTimer.duration(), state, move(detailedState));
 }
 
@@ -436,7 +426,6 @@ RequestResult Controller::execStart(const CommonParams& common, const DevicePara
     AggregatedState state = AggregatedState::Undefined;
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeState(common, session, error, TopoTransition::Run, params.mPath, state, detailedState.get());
-    execRequestTrigger("Start", common);
     return createRequestResult(common, error, "Start done", common.mTimer.duration(), state, move(detailedState));
 }
 
@@ -453,7 +442,6 @@ RequestResult Controller::execStop(const CommonParams& common, const DeviceParam
     // reset the run number, which is valid only for the running state
     session.mLastRunNr.store(0);
 
-    execRequestTrigger("Stop", common);
     return createRequestResult(common, error, "Stop done", common.mTimer.duration(), state, move(detailedState));
 }
 
@@ -466,7 +454,6 @@ RequestResult Controller::execReset(const CommonParams& common, const DevicePara
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeStateReset(common, session, error, params.mPath, state, detailedState.get());
-    execRequestTrigger("Reset", common);
     return createRequestResult(common, error, "Reset done", common.mTimer.duration(), state, move(detailedState));
 }
 
@@ -479,7 +466,6 @@ RequestResult Controller::execTerminate(const CommonParams& common, const Device
     AggregatedState state{ AggregatedState::Undefined };
     unique_ptr<DetailedState> detailedState = params.mDetailed ? make_unique<DetailedState>() : nullptr;
     changeState(common, session, error, TopoTransition::End, params.mPath, state, detailedState.get());
-    execRequestTrigger("Terminate", common);
     return createRequestResult(common, error, "Terminate done", common.mTimer.duration(), state, move(detailedState));
 }
 
@@ -516,23 +502,7 @@ StatusRequestResult Controller::execStatus(const StatusParams& params)
     result.mStatusCode = StatusCode::ok;
     result.mMsg = "Status done";
     result.mExecTime = params.mTimer.duration();
-    execRequestTrigger("Status", CommonParams());
     return result;
-}
-
-void Controller::execRequestTrigger(const string& plugin, const CommonParams& common)
-{
-    if (mTriggers.isPluginRegistered(plugin)) {
-        try {
-            OLOG(debug, common) << "Executing request trigger " << quoted(plugin);
-            string out{ mTriggers.execPlugin(plugin, "", common.mPartitionID, common.mRunNr, requestTimeout(common)) };
-            OLOG(debug, common) << "Request trigger " << quoted(plugin) << " done: " << out;
-        } catch (exception& e) {
-            OLOG(error, common) << "Request trigger " << quoted(plugin) << " failed: " << e.what();
-        }
-    } else {
-        // OLOG(debug, common) << "No plugins registered for " << quoted(plugin);
-    }
 }
 
 void Controller::updateRestore()
@@ -1647,17 +1617,6 @@ void Controller::registerResourcePlugins(const DDSSubmit::PluginMap& pluginMap)
     }
 }
 
-void Controller::registerRequestTriggers(const PluginManager::PluginMap& triggerMap)
-{
-    const set<string> avail{ "Initialize", "Submit", "Activate", "Run", "Update", "Configure", "SetProperties", "GetState", "Start", "Stop", "Reset", "Terminate", "Shutdown", "Status" };
-    for (const auto& v : triggerMap) {
-        if (avail.count(v.first) == 0) {
-            throw runtime_error(toString("Failed to add request trigger ", quoted(v.first), ". Invalid request name. Valid names are: ", quoted(boost::algorithm::join(avail, ", "))));
-        }
-        mTriggers.registerPlugin(v.first, v.second);
-    }
-}
-
 void Controller::restore(const string& id, const string& dir)
 {
     mRestoreId = id;
@@ -1669,8 +1628,7 @@ void Controller::restore(const string& id, const string& dir)
         OLOG(info, v.mPartitionID, 0) << "Restoring (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
         auto result{ execInitialize(CommonParams(v.mPartitionID, 0, 0), InitializeParams(v.mDDSSessionId)) };
         if (result.mError.mCode) {
-            OLOG(info, v.mPartitionID, 0) << "Failed to attach to the session. Executing Shutdown trigger for (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
-            execRequestTrigger("Shutdown", CommonParams(v.mPartitionID, 0, 0));
+            OLOG(info, v.mPartitionID, 0) << "Failed to attach to the session for partition " << quoted(v.mPartitionID) << ", session " << quoted(v.mDDSSessionId);
         } else {
             OLOG(info, v.mPartitionID, 0) << "Successfully attached to the session (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
         }

@@ -48,7 +48,6 @@ class GrpcController final : public odc::ODC::Service
     void setRMS(const std::string& rms) { mController.setRMS(rms); }
 
     void registerResourcePlugins(const core::PluginManager::PluginMap& pluginMap) { mController.registerResourcePlugins(pluginMap); }
-    void registerRequestTriggers(const core::PluginManager::PluginMap& triggerMap) { mController.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId, const std::string& restoreDir) { mController.restore(restoreId, restoreDir); }
 
   private:
