@@ -1454,7 +1454,7 @@ bool Controller::attemptStateRecovery(const CommonParams& common, Session& sessi
     map<string, int32_t> failedCollectionsCount;
     for (const auto& c : failed.collections) {
         string collectionName = session.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getName();
-        OLOG(info, common) << "Checking collection '" << c->mPath << "' with agend id " << c->mAgentID << ", name in the topology: " << collectionName;
+        OLOG(info, common) << "Checking collection '" << c->mPath << "' with agent id " << c->mAgentID << ", name in the topology: " << collectionName;
         auto it = session.mNinfo.find(collectionName);
         if (it != session.mNinfo.end()) {
             if (failedCollectionsCount.find(collectionName) == failedCollectionsCount.end()) {
