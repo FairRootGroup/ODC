@@ -139,7 +139,9 @@ struct CommonParams
 
     friend std::ostream& operator<<(std::ostream& os, const CommonParams& p)
     {
-        return os << "CommonParams: partitionID: " << quoted(p.mPartitionID) << ", runNr: " << p.mRunNr << ", timeout: " << p.mTimeout;
+        return os << "CommonParams: partitionID: " << quoted(p.mPartitionID)
+                  << "; runNr: "                   << p.mRunNr
+                  << "; timeout: "                 << p.mTimeout;
     }
 };
 
@@ -152,7 +154,10 @@ struct InitializeParams
 
     std::string mDDSSessionID; ///< DDS session ID
 
-    friend std::ostream& operator<<(std::ostream& os, const InitializeParams& p) { return os << "InitilizeParams: sid: " << quoted(p.mDDSSessionID); }
+    friend std::ostream& operator<<(std::ostream& os, const InitializeParams& p)
+    {
+        return os << "InitilizeParams: sid: " << quoted(p.mDDSSessionID);
+    }
 };
 
 struct SubmitParams
@@ -168,7 +173,8 @@ struct SubmitParams
 
     friend std::ostream& operator<<(std::ostream& os, const SubmitParams& p)
     {
-        return os << "SubmitParams: plugin: " << quoted(p.mPlugin) << ", resources: " << quoted(p.mResources);
+        return os << "SubmitParams: plugin: " << quoted(p.mPlugin)
+                  << "; resources: "          << quoted(p.mResources);
     }
 };
 
@@ -189,8 +195,8 @@ struct ActivateParams
     {
         return os << "ActivateParams"
                   << ": topologyFile: "    << quoted(p.mTopoFile)
-                  << ", topologyContent: " << quoted(p.mTopoContent)
-                  << ", topologyScript: "  << quoted(p.mTopoScript);
+                  << "; topologyContent: " << quoted(p.mTopoContent)
+                  << "; topologyScript: "  << quoted(p.mTopoScript);
     }
 };
 
@@ -211,22 +217,22 @@ struct RunParams
         , mExtractTopoResources(extractTopoResources)
     {}
 
-    std::string mPlugin;      ///< ODC resource plugin name. Plugin has to be registered in ODC server.
-    std::string mResources;   ///< Parsable description of the requested resources.
-    std::string mTopoFile;    ///< Path to the topology file
-    std::string mTopoContent; ///< Content of the XML topology
-    std::string mTopoScript;  ///< Script that generates topology content
+    std::string mPlugin;                ///< ODC resource plugin name. Plugin has to be registered in ODC server.
+    std::string mResources;             ///< Parsable description of the requested resources.
+    std::string mTopoFile;              ///< Path to the topology file
+    std::string mTopoContent;           ///< Content of the XML topology
+    std::string mTopoScript;            ///< Script that generates topology content
     bool mExtractTopoResources = false; ///< Submit resource request based on topology content
 
     friend std::ostream& operator<<(std::ostream& os, const RunParams& p)
     {
         return os << "RunParams"
                   << ": plugin: "               << quoted(p.mPlugin)
-                  << ", resource: "             << quoted(p.mResources)
-                  << ", topologyFile: "         << quoted(p.mTopoFile)
-                  << ", topologyContent: "      << quoted(p.mTopoContent)
-                  << ", topologyScript: "       << quoted(p.mTopoScript)
-                  << ", extractTopoResources: " << p.mExtractTopoResources;
+                  << "; resource: "             << quoted(p.mResources)
+                  << "; topologyFile: "         << quoted(p.mTopoFile)
+                  << "; topologyContent: "      << quoted(p.mTopoContent)
+                  << "; topologyScript: "       << quoted(p.mTopoScript)
+                  << "; extractTopoResources: " << p.mExtractTopoResources;
     }
 };
 
@@ -246,8 +252,8 @@ struct UpdateParams
     friend std::ostream& operator<<(std::ostream& os, const UpdateParams& p)
     {
         return os << "UpdateParams: topologyFile: " << quoted(p.mTopoFile)
-                  << ", topologyContent: " << quoted(p.mTopoContent)
-                  << ", topologyScript: " << quoted(p.mTopoScript);
+                  << "; topologyContent: " << quoted(p.mTopoContent)
+                  << "; topologyScript: " << quoted(p.mTopoScript);
     }
 };
 
@@ -267,7 +273,7 @@ struct SetPropertiesParams
 
     friend std::ostream& operator<<(std::ostream& os, const SetPropertiesParams& p)
     {
-        os << "SetPropertiesParams: path: " << quoted(p.mPath) << ", properties: {";
+        os << "SetPropertiesParams: path: " << quoted(p.mPath) << "; properties: {";
         for (const auto& v : p.mProperties) {
             os << " (" << v.first << ":" << v.second << ") ";
         }
@@ -288,7 +294,8 @@ struct DeviceParams
 
     friend std::ostream& operator<<(std::ostream& os, const DeviceParams& p)
     {
-        return os << "DeviceParams: path: " << quoted(p.mPath) << ", detailed: " << p.mDetailed;
+        return os << "DeviceParams: path: " << quoted(p.mPath)
+                  << "; detailed: " << p.mDetailed;
     }
 };
 
@@ -302,7 +309,10 @@ struct StatusParams
     bool mRunning = false; ///< Select only running DDS sessions
     Timer mTimer; // TODO: put this into a wrapper "Request" class that encompases Params + timer
 
-    friend std::ostream& operator<<(std::ostream& os, const StatusParams& p) { return os << "StatusParams: running: " << p.mRunning; }
+    friend std::ostream& operator<<(std::ostream& os, const StatusParams& p)
+    {
+        return os << "StatusParams: running: " << p.mRunning;
+    }
 };
 
 struct ZoneConfig

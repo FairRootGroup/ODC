@@ -80,7 +80,7 @@ class GrpcController final : public odc::ODC::Service
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         logCommonRequest("Submit", client, common, req);
-        OLOG(info, common) << "Submit request plugin: " << req->plugin() << ", resources: " << req->resources();
+        OLOG(info, common) << "Submit request plugin: " << req->plugin() << "; resources: " << req->resources();
 
         const core::SubmitParams submitParams{ req->plugin(), req->resources() };
         const core::RequestResult res{ mController.execSubmit(common, submitParams) };
@@ -131,8 +131,8 @@ class GrpcController final : public odc::ODC::Service
 
         logCommonRequest("Run", client, common, req);
         OLOG(info, common) << "Run request plugin: " << req->plugin()
-                           << ", resources: " << req->resources()
-                           << ", extractTopoResources: " << req->extracttoporesources();
+                           << "; resources: " << req->resources()
+                           << "; extractTopoResources: " << req->extracttoporesources();
         OLOG(info, common) << "Run request topology file: " << req->topology();
         OLOG(info, common) << "Run request topology content: "  << req->content();
         if (req->script().empty()) {
@@ -183,7 +183,7 @@ class GrpcController final : public odc::ODC::Service
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
 
         logCommonRequest("GetState", client, common, req);
-        OLOG(info, common) << "GetState request detailed: " << req->detailed() << ", path: "   << req->path();
+        OLOG(info, common) << "GetState request detailed: " << req->detailed() << "; path: "   << req->path();
 
         const core::DeviceParams deviceParams{ req->path(), req->detailed() };
         const core::RequestResult res{ mController.execGetState(common, deviceParams) };
@@ -209,7 +209,7 @@ class GrpcController final : public odc::ODC::Service
         core::SetPropertiesParams::Props props;
         for (int i = 0; i < req->properties_size(); i++) {
             auto prop{ req->properties(i) };
-            OLOG(info, common) << "  key: " << prop.key() << ", value: " << prop.value();
+            OLOG(info, common) << "  key: " << prop.key() << "; value: " << prop.value();
             props.push_back(core::SetPropertiesParams::Prop(prop.key(), prop.value()));
         }
 
@@ -418,8 +418,8 @@ class GrpcController final : public odc::ODC::Service
     {
         OLOG(info, common) << label << " request from " << client << ": "
             << "partitionId: " << req->partitionid()
-            << ", runnr: "     << req->runnr()
-            << ", timeout: "   << req->timeout();
+            << "; runnr: "     << req->runnr()
+            << "; timeout: "   << req->timeout();
     }
 
     void logGeneralReply(const std::string& label, const core::CommonParams& common, const GeneralReply& rep)
@@ -427,20 +427,20 @@ class GrpcController final : public odc::ODC::Service
         std::stringstream ss;
         ss << label << " reply: "
            << "partitionId: " << rep.partitionid()
-           << ", runnr: "     << rep.runnr()
-           << ", sessionid: " << rep.sessionid()
-           << ", state: "     << rep.state()
-           << ", msg: "       << rep.msg()
-           << ", exectime: "  << rep.exectime() << "ms";
+           << "; runnr: "     << rep.runnr()
+           << "; sessionid: " << rep.sessionid()
+           << "; state: "     << rep.state()
+           << "; msg: "       << rep.msg()
+           << "; exectime: "  << rep.exectime() << "ms";
         if (!rep.hosts().empty()) {
-            ss << ", hosts: ";
+            ss << "; hosts: ";
             for (int i = 0; i < rep.hosts().size(); ++i) {
                 ss << rep.hosts().at(i) << (i == (rep.hosts().size() - 1) ? "" : ", ");
             }
         }
 
         if (rep.status() == odc::ReplyStatus::ERROR) {
-            ss << ", ERROR: " << rep.error().msg() << " (" << rep.error().code() << ") ";
+            ss << "; ERROR: " << rep.error().msg() << " (" << rep.error().code() << ") ";
             OLOG(error, common) << ss.str();
         } else if (rep.status() == odc::ReplyStatus::SUCCESS) {
             OLOG(info, common) << ss.str();
@@ -456,10 +456,10 @@ class GrpcController final : public odc::ODC::Service
             OLOG(info, common) << "Detailed list of devices:";
             for (const auto& d : rep.devices()) {
                 OLOG(info, common) << "id: "        << d.id()
-                                   << ", state: "   << d.state()
-                                   << ", path: "    << d.path()
-                                   << ", ignored: " << d.ignored()
-                                   << ", host: "    << d.host();
+                                   << "; state: "   << d.state()
+                                   << "; path: "    << d.path()
+                                   << "; ignored: " << d.ignored()
+                                   << "; host: "    << d.host();
             }
         }
     }
@@ -470,10 +470,10 @@ class GrpcController final : public odc::ODC::Service
             OLOG(info) << "Status: found " << rep.partitions().size() << " partition(s)" << (rep.partitions().size() > 0 ? ":" : "");
             for (const auto& p : rep.partitions()) {
                 OLOG(info) << "  partitionId: " << p.partitionid()
-                           << ", DDS session: " << odc::SessionStatus_Name(p.status())
-                           << ", DDS session ID: " << p.sessionid()
-                           << ", Run Nr.: " << p.runnr()
-                           << ", topology state: " << p.state();
+                           << "; DDS session: " << odc::SessionStatus_Name(p.status())
+                           << "; DDS session ID: " << p.sessionid()
+                           << "; Run Nr.: " << p.runnr()
+                           << "; topology state: " << p.state();
             }
         } else {
             OLOG(error) << "Status: " << rep.DebugString();

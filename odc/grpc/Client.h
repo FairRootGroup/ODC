@@ -190,11 +190,11 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         std::stringstream ss;
         if (status.ok()) {
             ss << "  msg: "            << rep.msg()
-               << ", Partition ID: "   << rep.partitionid()
-               << ", Run Nr.: "        << rep.runnr()
-               << ", DDS Session ID: " << rep.sessionid()
-               << ", topology state: " << rep.state()
-               << ", execution time: " << rep.exectime() << "ms";
+               << "; Partition ID: "   << rep.partitionid()
+               << "; Run Nr.: "        << rep.runnr()
+               << "; DDS Session ID: " << rep.sessionid()
+               << "; topology state: " << rep.state()
+               << "; execution time: " << rep.exectime() << "ms";
             if (!rep.hosts().empty()) {
                 ss << "\n  Hosts:\n    ";
                 for (int i = 0; i < rep.hosts().size(); ++i) {
@@ -203,7 +203,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
             }
 
             if (rep.status() == odc::ReplyStatus::ERROR) {
-                ss << ", ERROR: " << rep.error().msg() << " (" << rep.error().code() << ")\n";
+                ss << "; ERROR: " << rep.error().msg() << " (" << rep.error().code() << ")\n";
                 return ss.str();
             } else if (rep.status() == odc::ReplyStatus::SUCCESS) {
                 ss << "\n";
@@ -226,10 +226,10 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
                 ss << "  Devices:\n";
                 for (const auto& d : rep.devices()) {
                     ss << "    id: " << d.id()
-                    << ", state: "   << d.state()
-                    << ", ignored: " << d.ignored()
-                    << ", host: "    << d.host()
-                    << ", path: "    << d.path() << "\n";
+                    << "; state: "   << d.state()
+                    << "; ignored: " << d.ignored()
+                    << "; host: "    << d.host()
+                    << "; path: "    << d.path() << "\n";
                 }
             }
             return ss.str();
@@ -248,10 +248,10 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
                 ss << "  found " << rep.partitions().size() << " partition(s)" << (rep.partitions().size() > 0 ? ":" : "") << "\n";
                 for (const auto& p : rep.partitions()) {
                     ss << "    Partition ID: " << p.partitionid()
-                       << ", DDS session: " << odc::SessionStatus_Name(p.status())
-                       << ", DDS session ID: " << p.sessionid()
-                       << ", Run Nr.: " << p.runnr()
-                       << ", topology state: " << p.state() << "\n";
+                       << "; DDS session: " << odc::SessionStatus_Name(p.status())
+                       << "; DDS session ID: " << p.sessionid()
+                       << "; Run Nr.: " << p.runnr()
+                       << "; topology state: " << p.state() << "\n";
                 }
                 ss << "  execution time: " << rep.exectime() << "ms\n";
             } else {

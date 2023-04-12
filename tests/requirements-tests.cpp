@@ -38,13 +38,13 @@ void printSessionDetails(const Session& session)
     for (const auto& z : session.mZoneInfo) {
         std::cout << "  " << quoted(z.first) << ":" << std::endl;
         for (const auto& zi : z.second) {
-            std::cout << "    n: " << zi.n << ", nCores: " << zi.nCores << ", agentGroup: " << zi.agentGroup << std::endl;
+            std::cout << "    n: " << zi.n << "; nCores: " << zi.nCores << "; agentGroup: " << zi.agentGroup << std::endl;
         }
     }
 
     std::cout << session.mNinfo.size() << " N info(s):" << std::endl;
     for (const auto& [collection, nmin] : session.mNinfo) {
-        std::cout << "  name: " << collection << ", "<< nmin << std::endl;
+        std::cout << "  name: " << collection << "; "<< nmin << std::endl;
     }
 
     std::cout << session.mCollections.size() << " Collection(s):" << std::endl;

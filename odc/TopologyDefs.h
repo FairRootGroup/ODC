@@ -246,12 +246,12 @@ struct TaskDetails
     friend std::ostream& operator<<(std::ostream& os, const TaskDetails& td)
     {
         return os << "taskID: "         << td.mTaskID
-                  << ", agentID: "      << td.mAgentID
-                  << ", slotID: "       << td.mSlotID
-                  << ", collectionID: " << td.mCollectionID
-                  << ", path: "         << td.mPath
-                  << ", host: "         << td.mHost
-                  << ", wrkDir: "       << td.mWrkDir;
+                  << "; agentID: "      << td.mAgentID
+                  << "; slotID: "       << td.mSlotID
+                  << "; collectionID: " << td.mCollectionID
+                  << "; path: "         << td.mPath
+                  << "; host: "         << td.mHost
+                  << "; wrkDir: "       << td.mWrkDir;
     }
 };
 
@@ -267,11 +267,11 @@ struct CollectionDetails
     friend std::ostream& operator<<(std::ostream& os, const CollectionDetails& cd)
     {
         return os << "collectionID: " << cd.mCollectionID
-                  << ", agentID: "    << cd.mAgentID
-                  << ", slotID: "     << cd.mSlotID
-                  << ", path: "       << cd.mPath
-                  << ", host: "       << cd.mHost
-                  << ", wrkDir: "     << cd.mWrkDir;
+                  << "; agentID: "    << cd.mAgentID
+                  << "; slotID: "     << cd.mSlotID
+                  << "; path: "       << cd.mPath
+                  << "; host: "       << cd.mHost
+                  << "; wrkDir: "     << cd.mWrkDir;
     }
 };
 
@@ -287,11 +287,11 @@ struct AgentDetails
     friend std::ostream& operator<<(std::ostream& os, const AgentDetails& ad)
     {
         return os << "agentID: "    << ad.mID
-                  << ", zone: "     << ad.mZone
-                  << ", group: "    << ad.mGroup
-                  << ", host: "     << ad.mHost
-                  << ", path: "     << ad.mPath
-                  << ", numSlots: " << ad.mNumSlots;
+                  << "; zone: "     << ad.mZone
+                  << "; group: "    << ad.mGroup
+                  << "; host: "     << ad.mHost
+                  << "; path: "     << ad.mPath
+                  << "; numSlots: " << ad.mNumSlots;
     }
 };
 
@@ -305,9 +305,9 @@ struct CollectionNInfo
     friend std::ostream& operator<<(std::ostream& os, const CollectionNInfo& cni)
     {
         return os << "n (original): "  << cni.nOriginal
-                  << ", n (current): " << cni.nCurrent
-                  << ", n (min): "     << cni.nMin
-                  << ", agentGroup: "  << cni.agentGroup;
+                  << "; n (current): " << cni.nCurrent
+                  << "; n (min): "     << cni.nMin
+                  << "; agentGroup: "  << cni.agentGroup;
     }
 };
 
