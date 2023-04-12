@@ -171,7 +171,8 @@ class CliHelper
             ("resources,r", value<std::string>(&params.mResources), "A resource description for a corresponding ODC resource plugin.")
             ("topo", value<std::string>(&params.mTopoFile)->implicit_value(""), "Topology filepath")
             ("content", value<std::string>(&params.mTopoContent)->implicit_value(""), "Topology content")
-            ("script", value<std::string>(&params.mTopoScript)->implicit_value(""), "Topology script");
+            ("script", value<std::string>(&params.mTopoScript)->implicit_value(""), "Topology script")
+            ("extract-topo-resources", bool_switch(&params.mExtractTopoResources)->default_value(false), "Extract required resources from the topology file (plugin & resources fields are ignored)");
     }
 
     static void addOptions(boost::program_options::options_description& options, DeviceParams& params)

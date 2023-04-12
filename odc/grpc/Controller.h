@@ -44,6 +44,9 @@ class GrpcController final : public odc::ODC::Service
 
     void setTimeout(const std::chrono::seconds& timeout) { mController.setTimeout(timeout); }
     void setHistoryDir(const std::string& dir) { mController.setHistoryDir(dir); }
+    void setZoneCfgs(const std::vector<std::string>& zonesStr) { mController.setZoneCfgs(zonesStr); }
+    void setRMS(const std::string& rms) { mController.setRMS(rms); }
+
     void registerResourcePlugins(const core::PluginManager::PluginMap& pluginMap) { mController.registerResourcePlugins(pluginMap); }
     void registerRequestTriggers(const core::PluginManager::PluginMap& triggerMap) { mController.registerRequestTriggers(triggerMap); }
     void restore(const std::string& restoreId, const std::string& restoreDir) { mController.restore(restoreId, restoreDir); }
@@ -127,7 +130,9 @@ class GrpcController final : public odc::ODC::Service
         std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         logCommonRequest("Run", client, common, req);
-        OLOG(info, common) << "Run request plugin: "   << req->plugin() << ", resources: "   << req->resources();
+        OLOG(info, common) << "Run request plugin: " << req->plugin()
+                           << ", resources: " << req->resources()
+                           << ", extractTopoResources: " << req->extracttoporesources();
         OLOG(info, common) << "Run request topology file: " << req->topology();
         OLOG(info, common) << "Run request topology content: "  << req->content();
         if (req->script().empty()) {
@@ -142,7 +147,7 @@ class GrpcController final : public odc::ODC::Service
             OLOG(info, common) << "Run request END OF TOPOLOGY SCRIPT";
         }
 
-        const core::RunParams runParams{ req->plugin(), req->resources(), req->topology(), req->content(), req->script() };
+        const core::RunParams runParams{ req->plugin(), req->resources(), req->topology(), req->content(), req->script(), req->extracttoporesources() };
         const core::RequestResult res{ mController.execRun(common, runParams) };
 
         setupGeneralReply(rep, res);

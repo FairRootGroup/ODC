@@ -25,6 +25,8 @@ class CliController : public odc::core::CliControllerHelper<CliController>
 
     void setTimeout(const std::chrono::seconds& timeout) { mCtrl.setTimeout(timeout); }
     void setHistoryDir(const std::string& dir) { mCtrl.setHistoryDir(dir); }
+    void setZoneCfgs(const std::vector<std::string>& zonesStr) { mCtrl.setZoneCfgs(zonesStr); }
+    void setRMS(const std::string& rms) { mCtrl.setRMS(rms); }
 
     void registerResourcePlugins(const core::PluginManager::PluginMap& pluginMap) { mCtrl.registerResourcePlugins(pluginMap); }
     void registerRequestTriggers(const core::PluginManager::PluginMap& triggerMap) { mCtrl.registerRequestTriggers(triggerMap); }

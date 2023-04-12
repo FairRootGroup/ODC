@@ -64,7 +64,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 
     auto& session = getOrCreateSession(common);
 
-    auto hosts = submit(common, session, error, params.mPlugin, params.mResources);
+    auto hosts = submit(common, session, error, params.mPlugin, params.mResources, false);
 
     execRequestTrigger("Submit", common);
     string sidStr{ to_string(session.mDDSSession.getSessionID()) };
@@ -72,10 +72,14 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
     return RequestResult(status, "Submit done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sidStr, AggregatedState::Undefined, hosts);
 }
 
-unordered_set<string> Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res)
+unordered_set<string> Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res, bool extractResources)
 {
     unordered_set<string> hosts;
-    OLOG(info, common) << "Attempting submission with resources: " << res;
+    if (extractResources) {
+        OLOG(info, common) << "Attempting submission with resources extracted from topology.";
+    } else {
+        OLOG(info, common) << "Attempting submission with resources: " << res;
+    }
 
     if (!session.mDDSSession.IsRunning()) {
         fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
@@ -86,7 +90,11 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
     vector<DDSSubmitParams> ddsParams;
     if (!error.mCode) {
         try {
-            ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfo, session.mNinfo, requestTimeout(common));
+            if (extractResources) {
+                ddsParams = mSubmit.makeParams(mRMS, mZoneCfgs, session.mAgentGroupInfo);
+            } else {
+                ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfo, session.mNinfo, requestTimeout(common));
+            }
         } catch (exception& e) {
             fillAndLogError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
             return hosts;
@@ -312,7 +320,7 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
                     fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
                 }
 
-                hosts = submit(common, session, error, params.mPlugin, params.mResources);
+                hosts = submit(common, session, error, params.mPlugin, params.mResources, params.mExtractTopoResources);
 
                 if (!session.mDDSSession.IsRunning()) {
                     fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
@@ -928,6 +936,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
             OLOG(info, common) << ss.str();
         }
 
+        // if the zone was not given explicitly, set it to the agent group
         if (zone.empty()) {
             zone = agentGroup;
         }
@@ -1665,6 +1674,18 @@ void Controller::restore(const string& id, const string& dir)
         } else {
             OLOG(info, v.mPartitionID, 0) << "Successfully attached to the session (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
         }
+    }
+}
+
+void Controller::setZoneCfgs(const std::vector<std::string>& zonesStr)
+{
+    for (const auto& z : zonesStr) {
+        std::vector<std::string> zoneCfg;
+        boost::algorithm::split(zoneCfg, z, boost::algorithm::is_any_of(":"));
+        if (zoneCfg.size() != 3) {
+            throw std::runtime_error(odc::core::toString("Provided zones configuration has incorrect format. Expected <name>:<cfgFilePath>:<cfgFilePath>. Received: ", z));
+        }
+        mZoneCfgs[zoneCfg.at(0)] = ZoneConfig{ zoneCfg.at(1), zoneCfg.at(2) };
     }
 }
 

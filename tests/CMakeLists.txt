@@ -55,6 +55,15 @@ set(test ${target}::cmd_set_3_with_script)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_3_with_script.cfg)
 set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
+string(RANDOM LENGTH 8 TEST_SESSION)
+
+# Test --extract-topo-resources option of odc-cli-server
+configure_file(cmd_set_4_extract.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_4_extract.cfg @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_4_extract.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
+set(test ${target}::cmd_set_4_extract)
+add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_4_extract.cfg)
+set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
+
 # Test options from the provided example
 set(test ${target}::cmd_set_example)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_BINARY_DIR}/examples/ex-cmds.cfg)
@@ -177,6 +186,7 @@ odc_add_boost_tests(SUITE requirements
   extraction/zones_from_agent_groupnames
   extraction/zones_with_ncores
   extraction/nmin
+  extraction/epn
 
   DEPS ODC::odc
 

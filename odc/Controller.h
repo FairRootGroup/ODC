@@ -58,6 +58,14 @@ class Controller
     /// \param [in] dir directory path
     void setHistoryDir(const std::string& dir) { mHistoryDir = dir; }
 
+    /// \brief Set zone configs
+    /// \param [in] zonesStr string representations of zone configs: "<name>:<cfgFilePath>:<envFilePath>"
+    void setZoneCfgs(const std::vector<std::string>& zonesStr);
+
+    /// \brief Set resource management system to be used by DDS
+    /// \param [in] rms name of the RMS
+    void setRMS(const std::string& rms) { mRMS = rms; }
+
     // DDS topology and session requests
 
     /// \brief Initialize DDS session
@@ -105,6 +113,8 @@ class Controller
     std::string mRestoreId;                                    ///< Restore ID
     std::string mRestoreDir;                                   ///< Restore file directory
     std::string mHistoryDir;                                   ///< History file directory
+    std::map<std::string, ZoneConfig> mZoneCfgs;               ///< stores zones configuration (cfgFilePath/envFilePath) by zone name
+    std::string mRMS{ "localhost" };                           ///< resource management system to be used by DDS
 
     void execRequestTrigger(const std::string& plugin, const CommonParams& common);
     void updateRestore();
@@ -113,7 +123,7 @@ class Controller
     RequestResult createRequestResult(const CommonParams& common, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
     bool createDDSSession(const CommonParams& common, Error& error);
     bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
-    std::unordered_set<std::string> submit(const CommonParams& common, Session& session, Error& error, const std::string& plugin, const std::string& res);
+    std::unordered_set<std::string> submit(const CommonParams& common, Session& session, Error& error, const std::string& plugin, const std::string& res, bool extractResources);
     bool submitDDSAgents(const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params);
     void activate(const CommonParams& common, Session& session, Error& error);
     bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);

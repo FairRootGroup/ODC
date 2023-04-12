@@ -97,6 +97,56 @@ class DDSSubmit : public PluginManager
         registerDefaultPlugin("odc-rp-same");
     }
 
+    std::vector<DDSSubmitParams> makeParams(
+        const std::string& rms,
+        const std::map<std::string, ZoneConfig>& zoneCfgs,
+        const std::unordered_map<std::string, AgentGroupInfo>& agentGroupInfo)
+    {
+        std::vector<DDSSubmitParams> params;
+
+        for (const auto& [groupName, groupInfo] : agentGroupInfo) {
+            DDSSubmitParams par;
+            par.mRMS = rms;
+            par.mAgentGroup = groupName;
+            par.mZone = groupInfo.zone;
+
+            // if config for the given zone exists, add it
+            auto zoneCfg = zoneCfgs.find(groupInfo.zone);
+            if (zoneCfg != zoneCfgs.end()) {
+                par.mEnvFile = zoneCfg->second.envPath;
+                par.mConfigFile = zoneCfg->second.cfgPath;
+            }
+
+            par.mNumAgents = groupInfo.numAgents;
+            // this should probably be simplified by making value of 0 do nothing. Right now 0 will allow ChangeState to proceed with empty collection, which is not very useful
+            if (groupInfo.minAgents < 0) {
+                par.mMinAgents = 0;
+            } else {
+                par.mMinAgents = groupInfo.minAgents;
+            }
+            par.mNumSlots = groupInfo.numSlots;
+            par.mNumCores = groupInfo.numCores;
+
+            // for localhost only submissions for 1 agent are allowed by DDS, therefore we create multiple parameter sets for multiple submissions
+            if (rms == "localhost" && groupInfo.numAgents > 1) {
+                par.mNumAgents = 1;
+                for (int i = 0; i < groupInfo.numAgents - 1; ++i) {
+                    DDSSubmitParams par2 = par;
+                    params.emplace_back(par2);
+                }
+            }
+
+            // for localhost only submissions for 1 agents are allowed by DDS, therefore we submit 1 agent, but multiplied by number of slots
+            // if (rms == "localhost" && par.mNumAgents > 1) {
+            //     par.mNumAgents = 1;
+            //     par.mNumSlots *= groupInfo.numAgents;
+            // }
+            params.emplace_back(par);
+        }
+
+        return params;
+    }
+
     std::vector<DDSSubmitParams> makeParams(const std::string& plugin,
                                    const std::string& resources,
                                    const CommonParams& common,

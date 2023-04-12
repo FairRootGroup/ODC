@@ -201,12 +201,14 @@ struct RunParams
               const std::string& resources,
               const std::string& topoFile,
               const std::string& topoContent,
-              const std::string& topoScript)
+              const std::string& topoScript,
+              bool extractTopoResources)
         : mPlugin(plugin)
         , mResources(resources)
         , mTopoFile(topoFile)
         , mTopoContent(topoContent)
         , mTopoScript(topoScript)
+        , mExtractTopoResources(extractTopoResources)
     {}
 
     std::string mPlugin;      ///< ODC resource plugin name. Plugin has to be registered in ODC server.
@@ -214,15 +216,17 @@ struct RunParams
     std::string mTopoFile;    ///< Path to the topology file
     std::string mTopoContent; ///< Content of the XML topology
     std::string mTopoScript;  ///< Script that generates topology content
+    bool mExtractTopoResources = false; ///< Submit resource request based on topology content
 
     friend std::ostream& operator<<(std::ostream& os, const RunParams& p)
     {
         return os << "RunParams"
-                  << ": plugin: "          << quoted(p.mPlugin)
-                  << ", resource: "        << quoted(p.mResources)
-                  << ", topologyFile: "    << quoted(p.mTopoFile)
-                  << ", topologyContent: " << quoted(p.mTopoContent)
-                  << ", topologyScript: "  << quoted(p.mTopoScript);
+                  << ": plugin: "               << quoted(p.mPlugin)
+                  << ", resource: "             << quoted(p.mResources)
+                  << ", topologyFile: "         << quoted(p.mTopoFile)
+                  << ", topologyContent: "      << quoted(p.mTopoContent)
+                  << ", topologyScript: "       << quoted(p.mTopoScript)
+                  << ", extractTopoResources: " << p.mExtractTopoResources;
     }
 };
 
@@ -299,6 +303,12 @@ struct StatusParams
     Timer mTimer; // TODO: put this into a wrapper "Request" class that encompases Params + timer
 
     friend std::ostream& operator<<(std::ostream& os, const StatusParams& p) { return os << "StatusParams: running: " << p.mRunning; }
+};
+
+struct ZoneConfig
+{
+    std::string cfgPath;
+    std::string envPath;
 };
 
 } // namespace odc::core

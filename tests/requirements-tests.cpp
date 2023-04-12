@@ -32,6 +32,7 @@ using std::string;
 void printSessionDetails(const Session& session)
 {
     std::cout << "##### Session for partition: " << session.mPartitionID << std::endl;
+    std::cout << "Topology file: " << session.mTopoFilePath << std::endl;
 
     std::cout << session.mZoneInfo.size() << " Zone(s):" << std::endl;
     for (const auto& z : session.mZoneInfo) {
@@ -63,6 +64,20 @@ void printSessionDetails(const Session& session)
     std::cout << "###########" << std::endl;
 }
 
+void testZoneGroup(const ZoneGroup& zg, int32_t n, int32_t nCores, const std::string& agentGroup)
+{
+    BOOST_TEST(zg.n == n);
+    BOOST_TEST(zg.nCores == nCores);
+    BOOST_TEST(zg.agentGroup == agentGroup);
+}
+
+void testNinfo(const CollectionNInfo& cni, int32_t nOriginal, int32_t nMin, const std::string& agentGroup)
+{
+    BOOST_TEST(cni.nOriginal == nOriginal);
+    BOOST_TEST(cni.nMin == nMin);
+    BOOST_TEST(cni.agentGroup == agentGroup);
+}
+
 void testCollection(
     const CollectionInfo& colInfo,
     const string& name,
@@ -71,7 +86,8 @@ void testCollection(
     int32_t nOriginal,
     size_t nMin,
     size_t nCores,
-    size_t numTasks)
+    size_t numTasks,
+    size_t totalTasks)
 {
     BOOST_TEST(colInfo.name == name);
     BOOST_TEST(colInfo.zone == zone);
@@ -80,6 +96,7 @@ void testCollection(
     BOOST_TEST(colInfo.nMin == nMin);
     BOOST_TEST(colInfo.nCores == nCores);
     BOOST_TEST(colInfo.numTasks == numTasks);
+    BOOST_TEST(colInfo.totalTasks == totalTasks);
 }
 
 void testAgentGroupInfo(
@@ -99,20 +116,6 @@ void testAgentGroupInfo(
     BOOST_TEST(agi.numCores == numCores);
 }
 
-void testZoneGroup(const ZoneGroup& zg, int32_t n, int32_t nCores, const std::string& agentGroup)
-{
-    BOOST_TEST(zg.n == n);
-    BOOST_TEST(zg.nCores == nCores);
-    BOOST_TEST(zg.agentGroup == agentGroup);
-}
-
-void testNinfo(const CollectionNInfo& cni, int32_t nOriginal, int32_t nMin, const std::string& agentGroup)
-{
-    BOOST_TEST(cni.nOriginal == nOriginal);
-    BOOST_TEST(cni.nMin == nMin);
-    BOOST_TEST(cni.agentGroup == agentGroup);
-}
-
 BOOST_AUTO_TEST_SUITE(extraction)
 
 BOOST_AUTO_TEST_CASE(simple)
@@ -129,7 +132,7 @@ BOOST_AUTO_TEST_CASE(simple)
     BOOST_TEST(session.mZoneInfo.size() == 0);
     BOOST_TEST(session.mNinfo.size() == 0);
     BOOST_TEST(session.mCollections.size() == 1);
-    testCollection(session.mCollections.at(0), "EPNCollection", "", "", 1, -1, 0, 12);
+    testCollection(session.mCollections.at(0), "EPNCollection", "", "", 1, -1, 0, 12, 12);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 1);
     testAgentGroupInfo(session.mAgentGroupInfo.at(""), "", "", 1, -1, 12, 0);
@@ -154,8 +157,8 @@ BOOST_AUTO_TEST_CASE(zones_from_agent_groupnames)
     testZoneGroup(session.mZoneInfo.at("online").at(0), 4, 0, "online");
 
     BOOST_TEST(session.mCollections.size() == 2);
-    testCollection(session.mCollections.at(0), "SamplersSinks", "calib", "calib", 1, -1, 0, 2);
-    testCollection(session.mCollections.at(1), "Processors", "online", "online", 4, -1, 0, 1);
+    testCollection(session.mCollections.at(0), "SamplersSinks", "calib", "calib", 1, -1, 0, 2, 2);
+    testCollection(session.mCollections.at(1), "Processors", "online", "online", 4, -1, 0, 1, 4);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, -1, 1, 0);
@@ -182,9 +185,9 @@ BOOST_AUTO_TEST_CASE(zones_with_ncores)
     testZoneGroup(session.mZoneInfo.at("online").at(0), 4, 0, "online");
 
     BOOST_TEST(session.mCollections.size() == 3);
-    testCollection(session.mCollections.at(0), "Samplers", "calib", "calib1", 1, -1, 2, 1);
-    testCollection(session.mCollections.at(1), "Sinks", "calib", "calib2", 1, -1, 1, 1);
-    testCollection(session.mCollections.at(2), "Processors", "online", "online", 4, -1, 0, 1);
+    testCollection(session.mCollections.at(0), "Samplers", "calib", "calib1", 1, -1, 2, 1, 1);
+    testCollection(session.mCollections.at(1), "Sinks", "calib", "calib2", 1, -1, 1, 1, 1);
+    testCollection(session.mCollections.at(2), "Processors", "online", "online", 4, -1, 0, 1, 4);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 3);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, -1, 1, 0);
@@ -214,14 +217,43 @@ BOOST_AUTO_TEST_CASE(nmin)
     testNinfo(session.mNinfo.at("Processors"), 4, 2, "online");
 
     BOOST_TEST(session.mCollections.size() == 2);
-    testCollection(session.mCollections.at(0), "SamplersSinks", "calib", "calib", 1, -1, 0, 2);
-    testCollection(session.mCollections.at(1), "Processors", "online", "online", 4, 2, 0, 2);
+    testCollection(session.mCollections.at(0), "SamplersSinks", "calib", "calib", 1, -1, 0, 2, 2);
+    testCollection(session.mCollections.at(1), "Processors", "online", "online", 4, 2, 0, 2, 8);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, 2, 2, 0);
     testAgentGroupInfo(session.mAgentGroupInfo.at("calib"), "calib", "calib", 1, -1, 2, 0);
 }
 
+BOOST_AUTO_TEST_CASE(epn)
+{
+    string partitionId = "test_partition_" + uuid();
+    CommonParams common(partitionId, 0, 10);
+    Session session;
+    session.mPartitionID = partitionId;
+    // Here the zones are not explicitly defined, and derived from the agent groups
+    session.mTopoFilePath = kODCDataDir + "/ex-epn.xml";
+    Controller::extractRequirements(common, session);
+
+    printSessionDetails(session);
+
+    BOOST_TEST(session.mZoneInfo.size() == 2);
+    BOOST_TEST(session.mZoneInfo.at("calib").size() == 1);
+    testZoneGroup(session.mZoneInfo.at("calib").at(0), 1, 128, "calib1");
+    BOOST_TEST(session.mZoneInfo.at("online").size() == 1);
+    testZoneGroup(session.mZoneInfo.at("online").at(0), 50, 0, "online");
+
+    BOOST_TEST(session.mNinfo.size() == 1);
+    testNinfo(session.mNinfo.at("RecoCollection"), 50, 50, "online");
+
+    BOOST_TEST(session.mCollections.size() == 2);
+    testCollection(session.mCollections.at(0), "wf11.dds", "calib", "calib1", 1, -1, 128, 17, 17);
+    testCollection(session.mCollections.at(1), "RecoCollection", "online", "online", 50, 50, 0, 223, 11150);
+
+    BOOST_TEST(session.mAgentGroupInfo.size() == 2);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 50, 50, 223, 0);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, -1, 17, 128);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

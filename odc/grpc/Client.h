@@ -71,6 +71,7 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
         request.set_topology(runParams.mTopoFile);
         request.set_content(runParams.mTopoContent);
         request.set_script(runParams.mTopoScript);
+        request.set_extracttoporesources(runParams.mExtractTopoResources);
         odc::GeneralReply reply;
         grpc::ClientContext context;
         grpc::Status status = mStub->Run(&context, request, &reply);
