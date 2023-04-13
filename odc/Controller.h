@@ -114,43 +114,47 @@ class Controller
     void updateRestore();
     void updateHistory(const CommonParams& common, const std::string& sessionId);
 
-    RequestResult createRequestResult(const CommonParams& common, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
-    bool createDDSSession(const CommonParams& common, Error& error);
-    bool attachToDDSSession(const CommonParams& common, Error& error, const std::string& sessionID);
     std::unordered_set<std::string> submit(const CommonParams& common, Session& session, Error& error, const std::string& plugin, const std::string& res, bool extractResources);
-    bool submitDDSAgents(const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params);
     void activate(const CommonParams& common, Session& session, Error& error);
-    bool activateDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
-    bool waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots);
-    bool requestCommanderInfo(const CommonParams& common, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
-    bool shutdownDDSSession(const CommonParams& common, Error& error);
-    bool resetTopology(Session& session);
-    bool createDDSTopology(const CommonParams& common, Error& error, const std::string& topologyFile);
-    bool createTopology(const CommonParams& common, Error& error);
-    bool setProperties(const CommonParams& common, Error& error, const SetPropertiesParams& params, AggregatedState& aggrState);
-    bool changeState(const CommonParams& common, Session& session, Error& error, TopoTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
-    bool changeStateConfigure(const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
-    bool changeStateReset(const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
-    bool waitForState(const CommonParams& common, Session& session, Error& error, DeviceState expState, const std::string& path);
 
-    bool getState(const CommonParams& common, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool createDDSSession(       const CommonParams& common, Session& session, Error& error);
+    bool attachToDDSSession(     const CommonParams& common, Session& session, Error& error, const std::string& sessionID);
+    bool subscribeToDDSSession(  const CommonParams& common, Session& session, Error& error);
+    bool shutdownDDSSession(     const CommonParams& common, Session& session, Error& error);
+    bool requestDDSCommanderInfo(const CommonParams& common, Session& session, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
+
+    bool submitDDSAgents(      const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params);
+    bool waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots);
+
+    bool activateDDSTopology(const CommonParams& common, Session& session, Error& error, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
+    bool createDDSTopology(  const CommonParams& common, Session& session, Error& error);
+
+    bool createTopology(const CommonParams& common, Session& session, Error& error);
+    bool resetTopology(Session& session);
+
+    bool changeState(         const CommonParams& common, Session& session, Error& error, TopoTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool changeStateConfigure(const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool changeStateReset(    const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool waitForState(        const CommonParams& common, Session& session, Error& error, DeviceState expState, const std::string& path);
+    bool setProperties(       const CommonParams& common, Session& session, Error& error, const SetPropertiesParams& params, AggregatedState& aggrState);
+    bool getState(            const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+
 
     void fillAndLogError(               const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void fillAndLogFatalError(          const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void fillAndLogFatalErrorLineByLine(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void logFatalLineByLine(            const CommonParams& common, const std::string& msg);
 
+    RequestResult createRequestResult(const CommonParams& common, const Session& session, const Error& error, const std::string& msg, size_t execTime, AggregatedState aggrState, std::unique_ptr<DetailedState> detailedState = nullptr);
     AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopoState& topoState, const std::string& path);
 
-    Session& getOrCreateSession(const CommonParams& common);
+    Session& acquireSession(const CommonParams& common);
     void removeSession(const CommonParams& common);
 
     FailedTasksCollections stateSummaryOnFailure(const CommonParams& common, Session& session, const TopoState& topoState, DeviceState expectedState);
     bool attemptStateRecovery(const CommonParams& common, Session& session, FailedTasksCollections& failed);
     void attemptSubmitRecovery(const CommonParams& common, Session& session, Error& error, const std::vector<DDSSubmitParams>& ddsParams, const std::map<std::string, uint32_t>& agentCounts);
     void updateTopology(const CommonParams& common, Session& session);
-
-    bool subscribeToDDSSession(const CommonParams& common, Error& error);
 
     std::string topoFilepath(const CommonParams& common, const std::string& topologyFile, const std::string& topologyContent, const std::string& topologyScript);
 

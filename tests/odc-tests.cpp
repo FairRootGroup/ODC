@@ -349,6 +349,7 @@ BOOST_AUTO_TEST_CASE(wait_for_state_full_device_lifecycle)
     Topology topo(f.mDDSTopo, f.mDDSSession);
     topo.AsyncWaitForState(DeviceState::ResettingDevice, [](std::error_code ec) { BOOST_REQUIRE_EQUAL(ec, std::error_code()); });
     full_device_lifecycle([&](TopoTransition transition) {
+        std::cout << "transition: " << transition << std::endl;
         topo.ChangeState(transition);
         BOOST_REQUIRE_EQUAL(topo.WaitForState(gExpectedState.at(transition)), std::error_code());
     });
