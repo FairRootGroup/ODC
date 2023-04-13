@@ -79,12 +79,17 @@ struct WaitForStateOp
         mCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
             const auto& task = stateData.at(s.second);
             if (ContainsTask(task.taskId)) {
-                // Do not wait for an errored/exited device that is not yet ignored
-                if (task.state == DeviceState::Error || task.state == DeviceState::Exiting) {
-                    mErrored = true;
+                if (task.state == mTargetCurrentState && (task.lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined)) {
                     return true;
+                } else {
+                    // Do not wait for an errored/exited device that is not yet ignored
+                    if (task.state == DeviceState::Error || task.state == DeviceState::Exiting) {
+                        mErrored = true;
+                        return true;
+                    } else {
+                        return false;
+                    }
                 }
-                return task.state == mTargetCurrentState && (task.lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined);
             } else {
                 return false;
             }
