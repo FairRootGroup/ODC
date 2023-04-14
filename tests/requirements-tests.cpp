@@ -49,7 +49,7 @@ void printSessionDetails(const Session& session)
 
     std::cout << session.mCollections.size() << " Collection(s):" << std::endl;
     for (const auto& col : session.mCollections) {
-        std::cout << "  " << col << std::endl;
+        std::cout << "  " << col.second << std::endl;
     }
 
     std::cout << session.mStandaloneTasks.size() << " Task(s) (outside of collections):" << std::endl;
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(simple)
     BOOST_TEST(session.mZoneInfo.size() == 0);
     BOOST_TEST(session.mNinfo.size() == 0);
     BOOST_TEST(session.mCollections.size() == 1);
-    testCollection(session.mCollections.at(0), "EPNCollection", "", "", 1, -1, 0, 12, 12);
+    testCollection(session.mCollections.at("EPNCollection"), "EPNCollection", "", "", 1, -1, 0, 12, 12);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 1);
     testAgentGroupInfo(session.mAgentGroupInfo.at(""), "", "", 1, -1, 12, 0);
@@ -157,8 +157,8 @@ BOOST_AUTO_TEST_CASE(zones_from_agent_groupnames)
     testZoneGroup(session.mZoneInfo.at("online").at(0), 4, 0, "online");
 
     BOOST_TEST(session.mCollections.size() == 2);
-    testCollection(session.mCollections.at(0), "SamplersSinks", "calib", "calib", 1, -1, 0, 2, 2);
-    testCollection(session.mCollections.at(1), "Processors", "online", "online", 4, -1, 0, 1, 4);
+    testCollection(session.mCollections.at("SamplersSinks"), "SamplersSinks", "calib", "calib", 1, -1, 0, 2, 2);
+    testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, -1, 0, 1, 4);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, -1, 1, 0);
@@ -185,9 +185,9 @@ BOOST_AUTO_TEST_CASE(zones_with_ncores)
     testZoneGroup(session.mZoneInfo.at("online").at(0), 4, 0, "online");
 
     BOOST_TEST(session.mCollections.size() == 3);
-    testCollection(session.mCollections.at(0), "Samplers", "calib", "calib1", 1, -1, 2, 1, 1);
-    testCollection(session.mCollections.at(1), "Sinks", "calib", "calib2", 1, -1, 1, 1, 1);
-    testCollection(session.mCollections.at(2), "Processors", "online", "online", 4, -1, 0, 1, 4);
+    testCollection(session.mCollections.at("Samplers"), "Samplers", "calib", "calib1", 1, -1, 2, 1, 1);
+    testCollection(session.mCollections.at("Sinks"), "Sinks", "calib", "calib2", 1, -1, 1, 1, 1);
+    testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, -1, 0, 1, 4);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 3);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, -1, 1, 0);
@@ -217,8 +217,8 @@ BOOST_AUTO_TEST_CASE(nmin)
     testNinfo(session.mNinfo.at("Processors"), 4, 2, "online");
 
     BOOST_TEST(session.mCollections.size() == 2);
-    testCollection(session.mCollections.at(0), "SamplersSinks", "calib", "calib", 1, -1, 0, 2, 2);
-    testCollection(session.mCollections.at(1), "Processors", "online", "online", 4, 2, 0, 2, 8);
+    testCollection(session.mCollections.at("SamplersSinks"), "SamplersSinks", "calib", "calib", 1, -1, 0, 2, 2);
+    testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, 2, 0, 2, 8);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, 2, 2, 0);
@@ -247,8 +247,8 @@ BOOST_AUTO_TEST_CASE(epn)
     testNinfo(session.mNinfo.at("RecoCollection"), 50, 50, "online");
 
     BOOST_TEST(session.mCollections.size() == 2);
-    testCollection(session.mCollections.at(0), "wf11.dds", "calib", "calib1", 1, -1, 128, 17, 17);
-    testCollection(session.mCollections.at(1), "RecoCollection", "online", "online", 50, 50, 0, 223, 11150);
+    testCollection(session.mCollections.at("wf11.dds"), "wf11.dds", "calib", "calib1", 1, -1, 128, 17, 17);
+    testCollection(session.mCollections.at("RecoCollection"), "RecoCollection", "online", "online", 50, 50, 0, 223, 11150);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 50, 50, 223, 0);

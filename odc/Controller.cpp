@@ -939,7 +939,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
 
         // TODO: should n_current be set to 0 and increased as collections are launched instead?
-        session.mCollections.emplace_back(CollectionInfo{ c->getName(), zone, agentGroup, topoParent, topoPath, n, n, nmin, nCores, numTasks, numTasksTotal});
+        session.mCollections[c->getName()] = CollectionInfo{c->getName(), zone, agentGroup, topoParent, topoPath, n, n, nmin, nCores, numTasks, numTasksTotal};
 
         auto agiIt = session.mAgentGroupInfo.find(agentGroup);
         if (agiIt == session.mAgentGroupInfo.end()) {
@@ -991,7 +991,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
     if (!session.mCollections.empty()) {
         OLOG(info, common) << "Collections:";
         for (const auto& col : session.mCollections) {
-            OLOG(info, common) << "  " << col;
+            OLOG(info, common) << "  " << col.second;
         }
     }
 

@@ -209,8 +209,8 @@ class DDSSubmit : public PluginManager
         // extend minAgents where necessary
         if (!nInfo.empty()) {
             for (unsigned int i = 0; i < params.size(); ++i) {
-                auto it = find_if(nInfo.cbegin(), nInfo.cend(), [&](const auto& tgi) {
-                    return tgi.second.agentGroup == params.at(i).mAgentGroup;
+                auto it = find_if(nInfo.cbegin(), nInfo.cend(), [&](const auto& ninfo) {
+                    return ninfo.second.agentGroup == params.at(i).mAgentGroup;
                 });
                 if (it != nInfo.cend()) {
                     params.at(i).mMinAgents = it->second.nMin;

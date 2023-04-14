@@ -146,9 +146,9 @@ struct Session
     std::string mTopoFilePath;
     std::map<std::string, CollectionNInfo> mNinfo; ///< Holds information on minimum number of collections, by collection name
     std::map<std::string, std::vector<ZoneGroup>> mZoneInfo; ///< Zones info zoneName:vector<ZoneGroup>
-    std::unordered_map<std::string, AgentGroupInfo> mAgentGroupInfo;
-    std::vector<TaskInfo> mStandaloneTasks;
-    std::vector<CollectionInfo> mCollections;
+    std::unordered_map<std::string, AgentGroupInfo> mAgentGroupInfo; ///< Agent group info groupName:AgentGroupInfo
+    std::vector<TaskInfo> mStandaloneTasks; ///< Standalone tasks (not belonging to any collection)
+    std::map<std::string, CollectionInfo> mCollections; ///< Collection info collectionName:CollectionInfo
     size_t mTotalSlots = 0; ///< total number of DDS slots
     std::unordered_map<uint64_t, uint32_t> mAgentSlots;
     bool mRunAttempted = false;
