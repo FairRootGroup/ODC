@@ -201,12 +201,12 @@ void Controller::attemptSubmitRecovery(const CommonParams& common,
         if (!error.mCode) {
             try {
                 session.mTotalSlots = getNumSlots(common, session);
-                for (auto& tgi : session.mNinfo) {
+                for (auto& ni : session.mNinfo) {
                     auto it = find_if(agentCounts.cbegin(), agentCounts.cend(), [&](const auto& ac) {
-                        return ac.first == tgi.second.agentGroup;
+                        return ac.first == ni.second.agentGroup;
                     });
                     if (it != agentCounts.cend()) {
-                        tgi.second.nCurrent = it->second;
+                        ni.second.nCurrent = it->second;
                     }
                 }
                 updateTopology(common, session);
@@ -895,7 +895,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         string topoPath = parent->getPath();
         int nCores = 0;
         int32_t n = c->getTotalCounter();
-        int32_t nmin = -1;
+        int32_t nmin = 0;
         int32_t numTasks = c->getNofTasks();
         int32_t numTasksTotal = numTasks * n;
 
@@ -920,7 +920,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
                 } else if (strStartsWith(cr->getName(), "odc_nmin_")) {
                     // nMin is only relevant for collections that are in a group (which is not the main group)
                     if (parent->getType() == CTopoBase::EType::GROUP && parent->getName() != "main") {
-                        nmin = stoull(cr->getValue());
+                        nmin = stoll(cr->getValue());
                     } else {
                         // OLOG(info, common) << "collection " << c->getName() << " is not in a group, skipping nMin requirement";
                     }
@@ -952,7 +952,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
             agiIt->second.numCores = nCores;
         }
 
-        if (!agentGroup.empty() && nmin >= 0) {
+        if (!agentGroup.empty()) {
             auto nIt = session.mNinfo.find(c->getName());
             if (nIt == session.mNinfo.end()) {
                 session.mNinfo.try_emplace(c->getName(), CollectionNInfo{ n, n, nmin, agentGroup });
@@ -1044,6 +1044,8 @@ bool Controller::changeState(const CommonParams& common, Session& session, Error
         fillAndLogError(common, error, ErrorCode::FairMQChangeStateFailed, "FairMQ topology is not initialized");
         return false;
     }
+
+    OLOG(info, common) << "Requesting transition " << toString(transition) << " for path " << quoted(path);
 
     auto it = gExpectedState.find(transition);
     DeviceState expState{ it != gExpectedState.end() ? it->second : DeviceState::Undefined };
@@ -1446,14 +1448,14 @@ bool Controller::attemptStateRecovery(const CommonParams& common, Session& sessi
     //   - is the nMin parameter satisfied?
     map<string, int32_t> failedCollectionsCount;
     for (const auto& c : failed.collections) {
-        string collectionName = session.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getName();
-        OLOG(info, common) << "Checking collection '" << c->mPath << "' with agent id " << c->mAgentID << ", name in the topology: " << collectionName;
-        auto it = session.mNinfo.find(collectionName);
+        string colName = session.mDDSTopo->getRuntimeCollectionById(c->mCollectionID).m_collection->getName();
+        OLOG(info, common) << "Checking collection '" << c->mPath << "' with agent id " << c->mAgentID << ", name in the topology: " << colName;
+        auto it = session.mNinfo.find(colName);
         if (it != session.mNinfo.end()) {
-            if (failedCollectionsCount.find(collectionName) == failedCollectionsCount.end()) {
-                failedCollectionsCount.emplace(collectionName, 1);
+            if (failedCollectionsCount.find(colName) == failedCollectionsCount.end()) {
+                failedCollectionsCount.emplace(colName, 1);
             } else {
-                failedCollectionsCount[collectionName]++;
+                failedCollectionsCount[colName]++;
             }
         } else {
             OLOG(error, common) << "Failed collection '" << c->mPath << "' is not in a group that has the nmin parameter specified";
@@ -1461,16 +1463,24 @@ bool Controller::attemptStateRecovery(const CommonParams& common, Session& sessi
         }
     }
 
-    // proceed only if remaining collections > nmin.
+    // proceed only if nmin > 0 and remaining collections > nmin.
     for (auto& [colName, nInfo] : session.mNinfo) {
-        int32_t failedCount = failedCollectionsCount.at(colName);
-        int32_t remainingCount = nInfo.nCurrent - failedCount;
-        OLOG(info, common) << "Collection '" << colName << "' with n (original): " << nInfo.nOriginal << ", n (current): " << nInfo.nCurrent << ", nmin: " << nInfo.nMin << ". Failed count: " << failedCount;
-        if (remainingCount < nInfo.nMin) {
-            OLOG(error, common) << "Number of remaining '" << colName << "' collections (" << remainingCount << ") is below nmin (" << nInfo.nMin << ")";
-            return false;
+        auto it = failedCollectionsCount.find(colName);
+        if (it != failedCollectionsCount.end()) {
+            int32_t failedCount = it->second;
+            int32_t remainingCount = nInfo.nCurrent - failedCount;
+            OLOG(info, common) << "Collection '" << colName << "' with n (original): " << nInfo.nOriginal << ", n (current): " << nInfo.nCurrent << ", nmin: " << nInfo.nMin << ". Failed count: " << failedCount;
+            if (nInfo.nMin == 0) {
+                OLOG(error, common) << "Collection '" << colName << "' has failed, but nmin is 0. Recovery failed";
+                return false;
+            } else if (remainingCount < nInfo.nMin) {
+                OLOG(error, common) << "Number of remaining '" << colName << "' collections (" << remainingCount << ") is below nmin (" << nInfo.nMin << ")";
+                return false;
+            } else {
+                nInfo.nCurrent = remainingCount;
+            }
         } else {
-            nInfo.nCurrent = remainingCount;
+            OLOG(debug, common) << "Nothing from the " << colName << " collection failed, skipping";
         }
     }
 
@@ -1478,6 +1488,7 @@ bool Controller::attemptStateRecovery(const CommonParams& common, Session& sessi
     session.mTopology->IgnoreFailedCollections(failed.collections);
 
     // shutdown agents responsible for failed collections
+    OLOG(info, common) << "Shutting down agents responsible for failed collections...";;
 
     using namespace dds::tools_api;
 

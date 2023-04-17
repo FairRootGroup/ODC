@@ -56,9 +56,9 @@ struct DDSSubmitParams
         mAgentGroup = pt.get<std::string>("zone", "");
         mConfigFile = pt.get<std::string>("configFile", "");
         mEnvFile = pt.get<std::string>("envFile", "");
-        mNumAgents = pt.get<int32_t>("agents", -1);
+        mNumAgents = pt.get<uint32_t>("agents", 0);
         mMinAgents = 0;
-        mNumSlots = pt.get<size_t>("slots", 0);
+        mNumSlots = pt.get<uint32_t>("slots", 0);
         // number of cores is set dynamically from the topology (if provided), not from the initial resource definition
         mNumCores = 0;
     }
@@ -68,10 +68,10 @@ struct DDSSubmitParams
     std::string mAgentGroup; ///< Agent group name
     std::string mConfigFile; ///< Path to the configuration file of the RMS plugin
     std::string mEnvFile;    ///< Path to the environment file
-    int32_t mNumAgents = 0;  ///< Number of DDS agents
-    size_t mMinAgents = 0;   ///< Minimum number of DDS agents
-    size_t mNumSlots = 0;    ///< Number of slots per DDS agent
-    size_t mNumCores = 0;    ///< Number of cores
+    uint32_t mNumAgents = 0;  ///< Number of DDS agents
+    uint32_t mMinAgents = 0;   ///< Minimum number of DDS agents
+    uint32_t mNumSlots = 0;    ///< Number of slots per DDS agent
+    uint32_t mNumCores = 0;    ///< Number of cores
 
     // \brief ostream operator.
     friend std::ostream& operator<<(std::ostream& os, const DDSSubmitParams& params)
@@ -118,12 +118,7 @@ class DDSSubmit : public PluginManager
             }
 
             par.mNumAgents = groupInfo.numAgents;
-            // this should probably be simplified by making value of 0 do nothing. Right now 0 will allow ChangeState to proceed with empty collection, which is not very useful
-            if (groupInfo.minAgents < 0) {
-                par.mMinAgents = 0;
-            } else {
-                par.mMinAgents = groupInfo.minAgents;
-            }
+            par.mMinAgents = groupInfo.minAgents;
             par.mNumSlots = groupInfo.numSlots;
             par.mNumCores = groupInfo.numCores;
 
@@ -202,7 +197,7 @@ class DDSSubmit : public PluginManager
         // if no 'n' was provided, and the selected zone did not get any core scheduling, remove it
         params.erase(
             std::remove_if(params.begin(), params.end(), [](const auto& p) {
-                return p.mNumAgents == -1; }),
+                return p.mNumAgents == 0; }),
             params.end()
         );
 
