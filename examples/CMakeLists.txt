@@ -46,6 +46,7 @@ macro(odcConfigExampleTopo N FILE_IN FILE_OUT)
 endmacro()
 
 odcConfigExampleTopo(0 ex-epn.xml                                        ex-epn.xml)
+odcConfigExampleTopo(0 ex-epn-2.xml                                      ex-epn-2.xml)
 odcConfigExampleTopo(4 ex-topo-groupname-crashing-expendable-task.xml.in ex-topo-groupname-crashing-expendable-task.xml)
 odcConfigExampleTopo(4 ex-topo-groupname-crashing.xml.in                 ex-topo-groupname-crashing.xml)
 odcConfigExampleTopo(4 ex-topo-groupname-ncores.xml.in                   ex-topo-groupname-ncores.xml)

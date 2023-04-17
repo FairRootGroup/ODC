@@ -87,8 +87,8 @@ macro(add_nmin_test TITLE PASS FAIL)
   set_tests_properties(${TITLE} PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "${PASS}" FAIL_REGULAR_EXPRESSION "${FAIL}" ENVIRONMENT "${TEST_ENV}")
 endmacro()
 
-# nmin is 0 - group can have no collections left
-add_nmin_test(nmin_0 "" "Status code: ERROR")
+# nmin is 0 - is the same as when it is not defined.
+add_nmin_test(nmin_0 "Status code: ERROR" "")
 
 # nmin: a collection outside of group should fail
 add_nmin_test(nmin_col_outside_group "Status code: ERROR" "")
@@ -188,6 +188,7 @@ odc_add_boost_tests(SUITE requirements
   extraction/zones_with_ncores
   extraction/nmin
   extraction/epn
+  extraction/epn_2
 
   DEPS ODC::odc
 
