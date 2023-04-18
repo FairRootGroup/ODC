@@ -117,11 +117,11 @@ class Controller
     std::unordered_set<std::string> submit(const CommonParams& common, Session& session, Error& error, const std::string& plugin, const std::string& res, bool extractResources);
     void activate(const CommonParams& common, Session& session, Error& error);
 
-    bool createDDSSession(       const CommonParams& common, Session& session, Error& error);
-    bool attachToDDSSession(     const CommonParams& common, Session& session, Error& error, const std::string& sessionID);
-    bool subscribeToDDSSession(  const CommonParams& common, Session& session, Error& error);
-    bool shutdownDDSSession(     const CommonParams& common, Session& session, Error& error);
-    bool requestDDSCommanderInfo(const CommonParams& common, Session& session, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo);
+    bool createDDSSession(           const CommonParams& common, Session& session, Error& error);
+    bool attachToDDSSession(         const CommonParams& common, Session& session, Error& error, const std::string& sessionID);
+    bool subscribeToDDSSession(      const CommonParams& common, Session& session, Error& error);
+    bool shutdownDDSSession(         const CommonParams& common, Session& session, Error& error);
+    std::string getActiveDDSTopology(const CommonParams& common, Session& session, Error& error);
 
     bool submitDDSAgents(      const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params);
     bool waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots);

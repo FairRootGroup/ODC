@@ -44,14 +44,11 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
         bool success = attachToDDSSession(common, session, error, params.mDDSSessionID)
             && subscribeToDDSSession(common, session, error);
 
-        // Request current active topology, if any
-        // If topology is active, create DDS and FairMQ topology
         if (success) {
-            dds::tools_api::SCommanderInfoRequest::response_t commanderInfo;
-            success = requestDDSCommanderInfo(common, session, error, commanderInfo)
-                && !commanderInfo.m_activeTopologyPath.empty();
-            if (success) {
-                session.mTopoFilePath = commanderInfo.m_activeTopologyPath;
+            // Request current active topology, if any
+            session.mTopoFilePath = getActiveDDSTopology(common, session, error);
+            // If a topology is active, create DDS and FairMQ topology objects
+            if (!session.mTopoFilePath.empty()) {
                 createDDSTopology(common, session, error)
                     && createTopology(common, session, error);
             }
@@ -652,10 +649,11 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Session& session
     return true;
 }
 
-bool Controller::requestDDSCommanderInfo(const CommonParams& common, Session& session, Error& error, dds::tools_api::SCommanderInfoRequest::response_t& commanderInfo)
+std::string Controller::getActiveDDSTopology(const CommonParams& common, Session& session, Error& error)
 {
     using namespace dds::tools_api;
     try {
+        dds::tools_api::SCommanderInfoRequest::response_t commanderInfo;
         stringstream ss;
         session.mDDSSession.syncSendRequest<SCommanderInfoRequest>(SCommanderInfoRequest::request_t(),
                                                                     commanderInfo,
@@ -663,10 +661,10 @@ bool Controller::requestDDSCommanderInfo(const CommonParams& common, Session& se
                                                                     &ss);
         OLOG(info, common) << ss.str();
         OLOG(debug, common) << "Commander info: " << commanderInfo;
-        return true;
+        return commanderInfo.m_activeTopologyPath;
     } catch (exception& e) {
         fillAndLogError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Error getting DDS commander info: ", e.what()));
-        return false;
+        return "";
     }
 }
 
