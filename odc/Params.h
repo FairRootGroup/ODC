@@ -91,26 +91,23 @@ struct RequestResult : public BaseRequestResult
                   const std::string& partitionID,
                   uint64_t runNr,
                   const std::string& sessionID,
-                  AggregatedState aggregatedState,
-                  std::unordered_set<std::string> hosts,
-                  std::unique_ptr<DetailedState> detailedState = nullptr)
+                  TopologyState topologyState,
+                  std::unordered_set<std::string> hosts)
         : BaseRequestResult(statusCode, msg, execTime, error)
         , mPartitionID(partitionID)
         , mRunNr(runNr)
         , mDDSSessionID(sessionID)
-        , mAggregatedState(aggregatedState)
+        , mTopologyState(std::move(topologyState))
         , mHosts(std::move(hosts))
-        , mDetailedState(std::move(detailedState))
     {}
 
-    std::string mPartitionID;                                      ///< Partition ID
-    uint64_t mRunNr = 0;                                           ///< Run number
-    std::string mDDSSessionID;                                     ///< Session ID of DDS
-    AggregatedState mAggregatedState = AggregatedState::Undefined; ///< Aggregated state of the affected divices
+    std::string mPartitionID;               ///< Partition ID
+    uint64_t mRunNr = 0;                    ///< Run number
+    std::string mDDSSessionID;              ///< Session ID of DDS
+    TopologyState mTopologyState;           ///< Topology state (aggregated + optional detailed)
 
     // Optional parameters
-    std::unordered_set<std::string> mHosts;                        ///< List of used hosts
-    std::unique_ptr<DetailedState> mDetailedState = nullptr;
+    std::unordered_set<std::string> mHosts; ///< List of used hosts
 };
 
 struct StatusRequestResult : public BaseRequestResult

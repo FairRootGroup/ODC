@@ -65,23 +65,19 @@ struct Session
         return it->second;
     }
 
-    void fillDetailedState(const TopoState& topoState, DetailedState* detailedState)
+    void fillDetailedState(const TopoState& topoState, DetailedState& detailedState)
     {
-        if (detailedState == nullptr) {
-            return;
-        }
-
-        detailedState->clear();
-        detailedState->reserve(topoState.size());
+        detailedState.clear();
+        detailedState.reserve(topoState.size());
 
         std::lock_guard<std::mutex> lock(mDetailsMtx);
 
         for (const auto& state : topoState) {
             auto it = mTaskDetails.find(state.taskId);
             if (it != mTaskDetails.end()) {
-                detailedState->emplace_back(DetailedTaskStatus(state, it->second.mPath, it->second.mHost));
+                detailedState.emplace_back(DetailedTaskStatus(state, it->second.mPath, it->second.mHost));
             } else {
-                detailedState->emplace_back(DetailedTaskStatus(state, "unknown", "unknown"));
+                detailedState.emplace_back(DetailedTaskStatus(state, "unknown", "unknown"));
             }
         }
     }

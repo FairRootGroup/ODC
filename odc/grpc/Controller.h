@@ -361,7 +361,7 @@ class GrpcController final : public odc::ODC::Service
         rep->set_runnr(res.mRunNr);
         rep->set_sessionid(res.mDDSSessionID);
         rep->set_exectime(res.mExecTime);
-        rep->set_state(GetAggregatedStateName(res.mAggregatedState));
+        rep->set_state(GetAggregatedStateName(res.mTopologyState.aggregated));
         for (const auto& host : res.mHosts) {
             rep->add_hosts(host);
         }
@@ -374,8 +374,8 @@ class GrpcController final : public odc::ODC::Service
         setupGeneralReply(generalResponse, res);
         rep->set_allocated_reply(generalResponse);
 
-        if (res.mDetailedState != nullptr) {
-            for (const auto& state : *(res.mDetailedState)) {
+        if (res.mTopologyState.detailed.has_value()) {
+            for (const auto& state : res.mTopologyState.detailed.value()) {
                 auto device{ rep->add_devices() };
                 device->set_id(state.mStatus.taskId);
                 device->set_state(fair::mq::GetStateName(state.mStatus.state));

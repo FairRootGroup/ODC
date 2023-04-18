@@ -60,7 +60,7 @@ class CliController : public odc::core::CliControllerHelper<CliController>
                << result.mError.mDetails << ")\n";
         }
 
-        ss << "  Aggregated state: " << result.mAggregatedState << "\n";
+        ss << "  Aggregated state: " << result.mTopologyState.aggregated << "\n";
         ss << "  Partition ID: "     << result.mPartitionID << "\n";
         ss << "  Run Nr: "           << result.mRunNr << "\n";
         ss << "  Session ID: "       << result.mDDSSessionID << "\n";
@@ -73,9 +73,9 @@ class CliController : public odc::core::CliControllerHelper<CliController>
             }
         }
 
-        if (result.mDetailedState != nullptr) {
+        if (result.mTopologyState.detailed.has_value()) {
             ss << "\n  Devices:\n";
-            for (const auto& state : *(result.mDetailedState)) {
+            for (const auto& state : result.mTopologyState.detailed.value()) {
                 ss << "    ID: "    << state.mStatus.taskId
                    << "; path: "    << state.mPath
                    << "; state: "   << state.mStatus.state

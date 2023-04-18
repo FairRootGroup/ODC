@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <chrono>
 #include <map>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <unordered_map>
@@ -163,6 +164,23 @@ struct DetailedTaskStatus
 };
 
 using DetailedState = std::vector<DetailedTaskStatus>;
+
+struct TopologyState
+{
+    TopologyState()
+        : aggregated(AggregatedState::Undefined)
+    {}
+    TopologyState(AggregatedState _aggregated)
+        : aggregated(_aggregated)
+    {}
+    TopologyState(AggregatedState _aggregated, std::optional<DetailedState> _detailed)
+        : aggregated(_aggregated)
+        , detailed(_detailed)
+    {}
+
+    AggregatedState aggregated;
+    std::optional<DetailedState> detailed;
+};
 
 using DeviceProperty = std::pair<std::string, std::string>; /// pair := (key, value)
 using DeviceProperties = std::vector<DeviceProperty>;
