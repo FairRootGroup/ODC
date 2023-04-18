@@ -132,13 +132,12 @@ class Controller
     bool createTopology(const CommonParams& common, Session& session, Error& error);
     bool resetTopology(Session& session);
 
-    bool changeState(         const CommonParams& common, Session& session, Error& error, TopoTransition transition, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
+    bool changeState(         const CommonParams& common, Session& session, Error& error, const std::string& path, TopoTransition transition, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool changeStateConfigure(const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
     bool changeStateReset(    const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
-    bool waitForState(        const CommonParams& common, Session& session, Error& error, DeviceState expState, const std::string& path);
-    bool setProperties(       const CommonParams& common, Session& session, Error& error, const SetPropertiesParams& params, AggregatedState& aggrState);
+    bool waitForState(        const CommonParams& common, Session& session, Error& error, const std::string& path, DeviceState expState);
+    bool setProperties(       const CommonParams& common, Session& session, Error& error, const std::string& path, const SetPropertiesParams::Props& props, AggregatedState& aggrState);
     bool getState(            const CommonParams& common, Session& session, Error& error, const std::string& path, AggregatedState& aggrState, DetailedState* detailedState = nullptr);
-
 
     void fillAndLogError(               const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void fillAndLogFatalError(          const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
