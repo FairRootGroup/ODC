@@ -50,14 +50,14 @@ struct ChangeStateOp
         , mCount(0)
         , mTasks(std::move(tasks))
         , mTargetState(gExpectedState.at(transition))
-        , fMtx(mutex)
+        , mMtx(mutex)
         , mErrored(false)
     {
         if (timeout > std::chrono::milliseconds(0)) {
             mTimer.expires_after(timeout);
             mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
-                    std::lock_guard<std::mutex> lk(fMtx);
+                    std::lock_guard<std::mutex> lk(mMtx);
                     mOp.Timeout(mStateData);
                 }
             });
@@ -73,7 +73,7 @@ struct ChangeStateOp
     ChangeStateOp& operator=(ChangeStateOp&&) = default;
     ~ChangeStateOp() = default;
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
     {
         mCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
@@ -96,7 +96,7 @@ struct ChangeStateOp
         });
     }
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void Update(const DDSTask::Id taskId, const DeviceState currentState)
     {
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
@@ -115,7 +115,7 @@ struct ChangeStateOp
         }
     }
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void TryCompletion()
     {
         if (!mOp.IsCompleted() && mCount == mTasks.size()) {
@@ -127,14 +127,14 @@ struct ChangeStateOp
         }
     }
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     void Complete(std::error_code ec)
     {
         mTimer.cancel();
         mOp.Complete(ec, mStateData);
     }
 
-    /// precondition: fMtx is locked.
+    /// precondition: mMtx is locked.
     bool ContainsTask(DDSTask::Id id)
     {
         auto it = std::find_if(mTasks.begin(), mTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
@@ -154,7 +154,7 @@ struct ChangeStateOp
     std::vector<DDSTask> mTasks;
     FailedDevices mFailed;
     DeviceState mTargetState;
-    std::mutex& fMtx;
+    std::mutex& mMtx;
     bool mErrored;
 };
 
