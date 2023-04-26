@@ -89,14 +89,19 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         , mHeartbeatsTimer(boost::asio::system_executor())
         , mHeartbeatInterval(600000)
     {
-        makeTopologyState();
+        // prepare topology state
+        const auto tasks = GetTasks("", true);
+        mStateData.reserve(tasks.size());
 
-        // We assume from here the given CSession has an active topo that matches the given topo file!
-        // std::string activeTopo(mDDSSession.RequestCommanderInfo().activeTopologyName);
-        // std::string givenTopo(mDDSTopo.GetName());
-        // if (activeTopo != givenTopo) {
-        // throw RuntimeError("Given topology ", givenTopo, " is not activated (active: ", activeTopo, ")");
-        // }
+        int index = 0;
+
+        for (const auto& task : tasks) {
+            bool expendable = expendableTasks.find(task.GetId()) != expendableTasks.end();
+
+            mStateData.push_back(DeviceStatus(expendable, task.GetId(), task.GetCollectionId()));
+            mStateIndex.emplace(task.GetId(), index);
+            index++;
+        }
 
         SubscribeToCommands();
         SubscribeToTaskDoneEvents();
@@ -809,20 +814,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     std::unordered_map<uint64_t, WaitForStateOp<Executor, Allocator>> mWaitForStateOps;
     std::unordered_map<uint64_t, SetPropertiesOp<Executor, Allocator>> mSetPropertiesOps;
     std::unordered_map<uint64_t, GetPropertiesOp<Executor, Allocator>> mGetPropertiesOps;
-
-    void makeTopologyState()
-    {
-        const auto tasks = GetTasks("", true);
-        mStateData.reserve(tasks.size());
-
-        int index = 0;
-
-        for (const auto& task : tasks) {
-            mStateData.push_back(DeviceStatus{ false, false, DeviceState::Undefined, DeviceState::Undefined, task.GetId(), task.GetCollectionId(), -1, -1 });
-            mStateIndex.emplace(task.GetId(), index);
-            index++;
-        }
-    }
 
     /// precodition: mMtx is locked.
     TopoState GetCurrentStateUnsafe() const { return mStateData; }

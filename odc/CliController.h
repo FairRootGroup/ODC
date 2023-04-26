@@ -76,11 +76,12 @@ class CliController : public odc::core::CliControllerHelper<CliController>
         if (result.mTopologyState.detailed.has_value()) {
             ss << "\n  Devices:\n";
             for (const auto& state : result.mTopologyState.detailed.value()) {
-                ss << "    ID: "    << state.mStatus.taskId
-                   << "; path: "    << state.mPath
-                   << "; state: "   << state.mStatus.state
-                   << "; ignored: " << state.mStatus.ignored
-                   << "; host: "    << state.mHost
+                ss << "    ID: "       << state.mStatus.taskId
+                   << "; path: "       << state.mPath
+                   << "; state: "      << state.mStatus.state
+                   << "; ignored: "    << state.mStatus.ignored
+                   << "; expendable: " << state.mStatus.expendable
+                   << "; host: "       << state.mHost
                    << "\n";
             }
             ss << "\n";

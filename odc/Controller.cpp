@@ -428,7 +428,6 @@ RequestResult Controller::execStop(const CommonParams& common, const DeviceParam
     Error error;
     auto& session = acquireSession(common);
 
-
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeState(common, session, error, params.mPath, TopoTransition::Stop, topologyState);
 
@@ -442,7 +441,6 @@ RequestResult Controller::execReset(const CommonParams& common, const DevicePara
 {
     Error error;
     auto& session = acquireSession(common);
-
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeStateReset(common, session, error, params.mPath, topologyState);
@@ -1385,7 +1383,8 @@ FailedTasksCollections Controller::stateSummaryOnFailure(const CommonParams& com
                                 << ", state: " << status.state
                                 << ", previous state: " << status.lastState
                                 << ", subscribed: " << boolalpha << status.subscribedToStateChanges
-                                << ", ignored: " << boolalpha << status.ignored;
+                                << ", ignored: " << boolalpha << status.ignored
+                                << ", expendable: " << boolalpha << status.expendable;
 
             // if expendable tasks fail - simply ignore them in the Topology
             if (session.isTaskExpendable(status.taskId)) {

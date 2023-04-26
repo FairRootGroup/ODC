@@ -106,6 +106,12 @@ struct Session
         return mExpendableTasks.clear();
     }
 
+    std::unordered_set<uint64_t> getExpendableTasks()
+    {
+        std::lock_guard<std::mutex> lock(mDetailsMtx);
+        return mExpendableTasks;
+    }
+
     void debug()
     {
         OLOG(info) << "tasks:";
