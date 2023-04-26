@@ -119,13 +119,26 @@ struct WaitForStateOp
     void TryCompletion()
     {
         if (!mOp.IsCompleted() && mCount == mTasks.size()) {
-            mTimer.cancel();
             if (mErrored) {
-                mOp.Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
+                Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
             } else {
-                mOp.Complete();
+                Complete(std::error_code());
             }
         }
+    }
+
+    /// precondition: mMtx is locked.
+    void Complete(std::error_code ec)
+    {
+        mTimer.cancel();
+        mOp.Complete(ec);
+    }
+
+    /// precondition: mMtx is locked.
+    bool ContainsTask(DDSTask::Id id)
+    {
+        auto it = std::find_if(mTasks.begin(), mTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
+        return it != mTasks.end();
     }
 
     bool IsCompleted() { return mOp.IsCompleted(); }
@@ -141,13 +154,6 @@ struct WaitForStateOp
     DeviceState mTargetCurrentState;
     std::mutex& mMtx;
     bool mErrored;
-
-    /// precondition: mMtx is locked.
-    bool ContainsTask(DDSTask::Id id)
-    {
-        auto it = std::find_if(mTasks.begin(), mTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
-        return it != mTasks.end();
-    }
 };
 
 } // namespace odc::core
