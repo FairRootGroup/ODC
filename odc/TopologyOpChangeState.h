@@ -102,7 +102,7 @@ struct ChangeStateOp
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
             if (currentState == mTargetState) {
                 ++mCount;
-            } else if (currentState == DeviceState::Error) { // TODO: should this also handle the Exiting state
+            } else if (currentState == DeviceState::Error || currentState == DeviceState::Exiting) {
                 if (mFailed.count(taskId) == 0) {
                     mErrored = true;
                     ++mCount;

@@ -102,7 +102,7 @@ struct WaitForStateOp
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
             if (currentState == mTargetCurrentState && (lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined)) {
                 ++mCount;
-            } else if (currentState == DeviceState::Error) {
+            } else if (currentState == DeviceState::Error || currentState == DeviceState::Exiting) {
                 if (mFailed.count(taskId) == 0) {
                     mErrored = true;
                     ++mCount;
