@@ -1,5 +1,33 @@
 # ODC Release Notes
 
+## 0.78.0-beta (2023-04-28)
+
+- New Feature: Async handling for nMin and expendable tasks. Async GetState requests report proper state, taking expendable tasks & nMin into account.
+- New Feature: Allow resource extraction from the topology file.
+
+  Derives number of agents, agent slots and other requirements from the given topology file.
+
+  To use this:
+    1. Launch the server (grpc or cli) with `--rms <slurm/ssh/localhost>` and `--zones <name>:<cfgFilePath>:<envFilePath>` (latter is the same as --zones for the Slurm plugin, but without the number of slots).
+    2. Set `extractTopoResources` to `true` in the Run request (or --extract-topo-resources true for CLI clients). Off by default.
+    3. The Run request will not use the `plugin` and `resources` parameters. These can be left empty.
+    4. For the server, `--rp` is not used. It doesn't have to be set.
+
+  This is completely optional - previous approach works as before.
+
+- **Breaking Change**: Remove request triggers (unused).
+- **Breaking Change**: nMin of 0 does nothing in the main Controller. Previously empty group would be allowed to be executed. In practice this was unused because topology creation tools did not allow for this case.
+- Bugfix: Change-/WaitForState Operation: handle unexpected exiting state
+- Bugfix: WaitForState Operation: fix timer cancellation
+- Bugfix: Topology: Include exited tasks when resetting op count
+- Tests: Extend unit tests
+- Tests: Add parameter test for epn topo
+- Tests: Add testsuite for requirements tests
+- Tests: Add testsuite for parameter tests
+
+Known Issues:
+- DDS agents are not shut down if their tasks/collections fail, but the session is still ongoing.
+
 ## 0.77.1 (2023-03-07)
 
 - Bugfix: handle return value of FairMQ's ChangeState
