@@ -162,7 +162,6 @@ struct DeviceStatus
     bool ignored = false;
     bool expendable = false;
     bool subscribedToStateChanges = false;
-    bool finished = false;
     DeviceState lastState = DeviceState::Undefined;
     DeviceState state = DeviceState::Undefined;
     DDSTask::Id taskId;
@@ -227,21 +226,26 @@ using TopoTransition = fair::mq::Transition;
 inline AggregatedState AggregateState(const TopoState& topoState)
 {
     AggregatedState state = AggregatedState::Mixed;
+    bool homogeneous = true;
     // get the state of a first not-ignored device
-    for (const auto& device : topoState) {
-        if (!device.ignored) {
-            state = static_cast<AggregatedState>(device.state);
-            break;
+    for (const auto& ds : topoState) {
+        if (!ds.ignored) {
+            if (state == AggregatedState::Mixed) {
+                // first assignment
+                state = static_cast<AggregatedState>(ds.state);
+            } else {
+                if (ds.state == DeviceState::Error) {
+                    // if any device is in error state and it is not ignored, the whole topology is in the error state
+                    return AggregatedState::Error;
+                } else if (static_cast<AggregatedState>(ds.state) != state) {
+                    homogeneous = false;
+                }
+            }
         }
     }
 
-    bool homogeneous = std::all_of(topoState.cbegin(), topoState.cend(), [&](DeviceStatus ds) {
-        // if device is ignored, count it as homogeneous regardless of its actual state
-        return ds.ignored ? true : (ds.state == state);
-    });
-
     if (homogeneous) {
-        return static_cast<AggregatedState>(state);
+        return state;
     }
 
     return AggregatedState::Mixed;
@@ -417,13 +421,6 @@ struct AgentGroupInfo
                   << "; numSlots: "  << agi.numSlots
                   << "; numCores: "  << agi.numCores;
     }
-};
-
-struct FailedTasksCollections
-{
-    bool recoverable = true;
-    std::vector<TaskDetails*> tasks;
-    std::vector<CollectionDetails*> collections;
 };
 
 } // namespace odc::core

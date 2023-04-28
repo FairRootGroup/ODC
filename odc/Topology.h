@@ -38,8 +38,10 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <sstream>
 #include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -64,8 +66,14 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param topo CTopology
     /// @param session CSession
     /// @param blockUntilConnected if true, ctor will wait for all tasks to confirm subscriptions
-    BasicTopology(dds::topology_api::CTopology& topo, dds::tools_api::CSession& session, bool blockUntilConnected = false)
-        : BasicTopology<Executor, Allocator>(boost::asio::system_executor(), topo, session, blockUntilConnected)
+    BasicTopology(dds::topology_api::CTopology& topo,
+                  dds::tools_api::CSession& session,
+                  const std::unordered_set<uint64_t>& expendableTasks,
+                  std::map<std::string, odc::core::CollectionInfo>& collectionInfo,
+                  const std::string& partitionId,
+                  std::atomic<uint64_t>& lastRunNr,
+                  bool blockUntilConnected = false)
+        : BasicTopology<Executor, Allocator>(boost::asio::system_executor(), topo, session, expendableTasks, collectionInfo, partitionId, lastRunNr, blockUntilConnected)
     {}
 
     /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
@@ -73,10 +81,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param topo CTopology
     /// @param session CSession
     /// @param blockUntilConnected if true, ctor will wait for all tasks to confirm subscriptions
+    /// @param expendableTasks list of expendable tasks
+    /// @param collectionInfo collections information
     /// @throws RuntimeError
     BasicTopology(const Executor& ex,
                   dds::topology_api::CTopology& topo,
                   dds::tools_api::CSession& ddsSession,
+                  const std::unordered_set<uint64_t>& expendableTasks,
+                  std::map<std::string, odc::core::CollectionInfo>& collectionInfo,
+                  const std::string& partitionId,
+                  std::atomic<uint64_t>& lastRunNr,
                   bool blockUntilConnected = false,
                   Allocator alloc = DefaultAllocator())
         : AsioBase<Executor, Allocator>(ex, std::move(alloc))
@@ -88,19 +102,22 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         , mNumStateChangePublishers(0)
         , mHeartbeatsTimer(boost::asio::system_executor())
         , mHeartbeatInterval(600000)
+        , mCollectionInfo(collectionInfo)
+        , mPartitionID(partitionId)
+        , mLastRunNr(lastRunNr)
     {
+        // TODO: resources should be extracted from the topology file here, not in the Controller
+
         // prepare topology state
-        const auto tasks = GetTasks("", true);
-        mStateData.reserve(tasks.size());
-
+        dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t itPair;
+        itPair = mDDSTopo.getRuntimeTaskIterator(nullptr);
+        auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
+        mStateData.reserve(boost::size(tasks));
         int index = 0;
-
-        for (const auto& task : tasks) {
-            bool expendable = expendableTasks.find(task.GetId()) != expendableTasks.end();
-
-            mStateData.push_back(DeviceStatus(expendable, task.GetId(), task.GetCollectionId()));
-            mStateIndex.emplace(task.GetId(), index);
-            index++;
+        for (const auto& [id, task] : tasks) {
+            bool expendable = expendableTasks.find(id) != expendableTasks.end();
+            mStateData.push_back(DeviceStatus(expendable, id, task.m_taskCollectionId));
+            mStateIndex.emplace(id, index++);
         }
 
         SubscribeToCommands();
@@ -137,7 +154,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
     // precondition: mMtx is locked.
-    std::vector<DDSTask> GetTasks(const std::string& path = "", bool firstRun = false) const
+    std::vector<DDSTask> GetTasks(const std::string& path = "") const
     {
         std::vector<DDSTask> list;
 
@@ -151,18 +168,16 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
         list.reserve(boost::size(tasks));
 
-        // std::cout << "GetTasks(): Num of tasks: " << boost::size(tasks) << std::endl;
+        // OLOG(debug, mPartitionID, mLastRunNr.load()) << "GetTasks(): Num of tasks: " << boost::size(tasks);
         for (const auto& task : tasks) {
-            // std::cout << "GetTasks(): Found task with id: " << task.first << ", "
+            // OLOG(debug, mPartitionID, mLastRunNr.load()) << "GetTasks(): Found task with id: " << task.first << ", "
             //            << "Path: " << task.second.m_taskPath << ", "
             //            << "Collection id: " << task.second.m_taskCollectionId << ", "
-            //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex << std::endl;
-            if (!firstRun) {
-                const DeviceStatus& ds = mStateData.at(mStateIndex.at(task.first));
-                if (ds.ignored) {
-                    // std::cout << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping" << std::endl;
-                    continue;
-                }
+            //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
+            const DeviceStatus& ds = mStateData.at(mStateIndex.at(task.first));
+            if (ds.ignored) {
+                // OLOG(debug, mPartitionID, mLastRunNr.load()) << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping";
+                continue;
             }
             list.emplace_back(task.first, task.second.m_taskCollectionId);
         }
@@ -187,7 +202,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         for (auto& device : mStateData) {
             for (const auto& collection : collections) {
                 if (device.collectionId == collection->mCollectionID) {
-                    // std::cout << "Ignoring device " << device.taskId << " from collection " << collection->mCollectionID << std::endl;
+                    // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Ignoring device " << device.taskId << " from collection " << collection->mCollectionID;
                     if (device.subscribedToStateChanges) {
                         device.subscribedToStateChanges = false;
                         --mNumStateChangePublishers;
@@ -213,32 +228,124 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         using namespace dds::tools_api;
         SOnTaskDoneRequest::request_t request;
         mDDSOnTaskDoneRequest = SOnTaskDoneRequest::makeRequest(request);
-        mDDSOnTaskDoneRequest->setResponseCallback([&](const SOnTaskDoneResponseData& info) {
-            std::unique_lock<std::mutex> lk(*mMtx);
-            DeviceStatus& task = mStateData.at(mStateIndex.at(info.m_taskID));
-            if (task.subscribedToStateChanges) {
-                task.subscribedToStateChanges = false;
-                --mNumStateChangePublishers;
-            }
-            task.exitCode = info.m_exitCode;
-            task.signal = info.m_signal;
-            task.lastState = task.state;
-            if (task.exitCode > 0) {
-                task.state = DeviceState::Error;
-            } else {
-                task.state = DeviceState::Exiting;
+        mDDSOnTaskDoneRequest->setResponseCallback([&](const SOnTaskDoneResponseData& task) {
+            odc::core::DeviceState lastKnownState = odc::core::DeviceState::Undefined;
+            bool unexpected = false;
+
+            {
+                std::unique_lock<std::mutex> lk(*mMtx);
+                DeviceStatus& device = mStateData.at(mStateIndex.at(task.m_taskID));
+                if (device.subscribedToStateChanges) {
+                    device.subscribedToStateChanges = false;
+                    --mNumStateChangePublishers;
+                }
+                device.exitCode = task.m_exitCode;
+                device.signal = task.m_signal;
+                device.lastState = device.state;
+                lastKnownState = device.state;
+
+                bool expendable = false;
+                // check if we have an unexpected exit
+                // only exit from Idle or Exiting are expected
+                if ((device.lastState != DeviceState::Idle && device.lastState != DeviceState::Exiting) || device.exitCode > 0) {
+                    unexpected = true;
+                    device.state = DeviceState::Error;
+                    // check if the device is expendable
+                    expendable = IsExpendable(device);
+                    // Update SetProperties OPs only if unexpected exit
+                    for (auto& op : mSetPropertiesOps) {
+                        op.second.Update(device.taskId, cc::Result::Failure, expendable);
+                    }
+                    // TODO: include GetProperties OPs
+                } else {
+                    device.state = DeviceState::Exiting;
+                }
+
+                for (auto& op : mChangeStateOps) {
+                    op.second.Update(device.taskId, device.state, expendable);
+                }
+                for (auto& op : mWaitForStateOps) {
+                    op.second.Update(device.taskId, device.lastState, device.state, expendable);
+                }
             }
 
-            for (auto& op : mChangeStateOps) {
-                op.second.Update(task.taskId, task.state);
+            std::stringstream ss;
+            ss << "Task "                 << task.m_taskID << " exited."
+               << " Last known state: "   << lastKnownState
+               << "; path: "              << quoted(task.m_taskPath)
+               << "; exit code: "         << task.m_exitCode
+               << "; signal: "            << task.m_signal
+               << "; host: "              << task.m_host
+               << "; working directory: " << quoted(task.m_wrkDir);
+            if (unexpected) {
+                OLOG(error, mPartitionID, mLastRunNr.load()) << ss.str();
+            } else {
+                OLOG(debug, mPartitionID, mLastRunNr.load()) << ss.str();
             }
-            for (auto& op : mWaitForStateOps) {
-                op.second.Update(task.taskId, task.lastState, task.state);
-            }
-            // std::cout << "task " << task.taskId << " exited" << std::endl;
-            // TODO: include set/get property ops
         });
         mDDSSession.sendRequest<SOnTaskDoneRequest>(mDDSOnTaskDoneRequest);
+    }
+
+    // precondition: mMtx is locked
+    bool IsExpendable(odc::core::DeviceStatus& device)
+    {
+        if (device.ignored) {
+            OLOG(debug, mPartitionID, mLastRunNr.load()) << "Failed Device " << device.taskId << " is already ignored.";
+            // TODO: check if and when this can happen
+            return true;
+        }
+
+        if (device.expendable) {
+            OLOG(debug, mPartitionID, mLastRunNr.load()) << "Failed Device " << device.taskId << " is expendable. ignoring.";
+            device.ignored = true;
+            return true;
+        }
+
+        // if task is not expendable, but is in a collection, check nMin condition
+        if (device.collectionId != 0) {
+            auto runtimeCollection = mDDSTopo.getRuntimeCollectionById(device.collectionId);
+            auto col = runtimeCollection.m_collection;
+            auto it = mCollectionInfo.find(col->getName());
+            if (it != mCollectionInfo.end()) {
+                // one collection failed
+                it->second.nCurrent--;
+                // check nMin condition
+                if (it->second.nMin == 0) {
+                    // no nMin defined, failure cannot be ignored
+                    OLOG(error, mPartitionID, mLastRunNr.load()) << "Failed collection '" << runtimeCollection.m_collectionPath << "' has no nMin defined. Cannot be ignored.";
+                    return false;
+                }
+                if (it->second.nCurrent < it->second.nMin) {
+                    // if nMin is not satisfied, the failure cannot be ignored
+                    OLOG(error, mPartitionID, mLastRunNr.load()) << "Collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
+                        << " has failed and current number of '" << col->getPath() << "' collections (" << it->second.nCurrent
+                        << ") is less than nMin (" << it->second.nMin << "). failure cannot be ignored.";
+                    return false;
+                } else {
+                    // if nMin is satisfied, ignore the entire collection
+                    OLOG(info, mPartitionID, mLastRunNr.load()) << "Ignoring failed collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
+                        << " as the remaining number of '" << col->getPath() << "' collections (" << it->second.nCurrent
+                        << ") is greater than or equal to nMin (" << it->second.nMin << ").";
+                    for (auto& d : mStateData) {
+                        if (d.collectionId == device.collectionId) {
+                            // OLOG(info) << "Ignoring device " << d.taskId << " from collection " << device.collectionId;
+                            if (d.subscribedToStateChanges) {
+                                d.subscribedToStateChanges = false;
+                                --mNumStateChangePublishers;
+                            }
+                            d.ignored = true;
+                        }
+                    }
+
+                    // TODO: shutdown agent if it has no tasks left (should be done outside of the lock though)
+
+                    return true;
+                }
+            }
+        }
+
+        // otherwise it is not expendable
+        return false;
     }
 
     void WaitForPublisherCount(unsigned int number)
@@ -373,16 +480,29 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
         try {
             std::lock_guard<std::mutex> lk(*mMtx);
-            DeviceStatus& task = mStateData.at(mStateIndex.at(taskId));
-            task.lastState = cmd.GetLastState();
-            task.state = cmd.GetCurrentState();
-            // std::cout << "Updated state entry: taskId=" << taskId << ", state=" << task.state << std::endl;
+            DeviceStatus& device = mStateData.at(mStateIndex.at(taskId));
+            DeviceState lastState = device.state;
+            device.lastState = cmd.GetLastState();
+            device.state = cmd.GetCurrentState();
+            // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Updated state entry: taskId=" << taskId << ", state=" << device.state;
+
+            bool expendable = false;
+            // check if we have an unexpected exit
+            if (device.state == DeviceState::Error || (device.state == DeviceState::Exiting && lastState != DeviceState::Idle)) {
+                OLOG(error, mPartitionID, mLastRunNr.load()) << "Device " << device.taskId << " unexpectedly reached " << device.state << " state";
+                // check if the device is expendable
+                expendable = IsExpendable(device);
+                // Update SetProperties OPs only if unexpected exit
+                for (auto& op : mSetPropertiesOps) {
+                    op.second.Update(device.taskId, cc::Result::Failure, expendable);
+                }
+            }
 
             for (auto& op : mChangeStateOps) {
-                op.second.Update(taskId, cmd.GetCurrentState());
+                op.second.Update(taskId, cmd.GetCurrentState(), expendable);
             }
             for (auto& op : mWaitForStateOps) {
-                op.second.Update(taskId, cmd.GetLastState(), cmd.GetCurrentState());
+                op.second.Update(taskId, cmd.GetLastState(), cmd.GetCurrentState(), expendable);
             }
         } catch (const std::exception& e) {
             OLOG(error) << "Exception in HandleCmd(cmd::StateChange const&): " << e.what();
@@ -410,10 +530,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     void HandleCmd(cc::Properties const& cmd)
     {
-        std::unique_lock<std::mutex> lk(*mMtx);
         try {
+            std::unique_lock<std::mutex> lk(*mMtx);
             auto& op(mGetPropertiesOps.at(cmd.GetRequestId()));
-            lk.unlock();
             op.Update(cmd.GetTaskId(), cmd.GetResult(), cmd.GetProps());
         } catch (std::out_of_range& e) {
             OLOG(debug) << "GetProperties operation (request id: " << cmd.GetRequestId() << ") not found (probably completed or timed out), "
@@ -423,11 +542,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     void HandleCmd(cc::PropertiesSet const& cmd)
     {
-        std::unique_lock<std::mutex> lk(*mMtx);
         try {
+            std::unique_lock<std::mutex> lk(*mMtx);
             auto& op(mSetPropertiesOps.at(cmd.GetRequestId()));
-            lk.unlock();
-            op.Update(cmd.GetTaskId(), cmd.GetResult());
+            op.Update(cmd.GetTaskId(), cmd.GetResult(), false);
         } catch (std::out_of_range& e) {
             OLOG(debug) << "SetProperties operation (request id: " << cmd.GetRequestId() << ") not found (probably completed or timed out), "
                         << "discarding reply of device " << cmd.GetDeviceId() << ", task id: " << cmd.GetTaskId();
@@ -815,7 +933,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     std::unordered_map<uint64_t, SetPropertiesOp<Executor, Allocator>> mSetPropertiesOps;
     std::unordered_map<uint64_t, GetPropertiesOp<Executor, Allocator>> mGetPropertiesOps;
 
-    /// precodition: mMtx is locked.
+    std::map<std::string, odc::core::CollectionInfo>& mCollectionInfo;
+    std::string mPartitionID;
+    std::atomic<uint64_t>& mLastRunNr;
+
+    // precodition: mMtx is locked.
     TopoState GetCurrentStateUnsafe() const { return mStateData; }
 };
 

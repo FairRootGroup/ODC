@@ -51,7 +51,6 @@ struct ChangeStateOp
         , mTasks(std::move(tasks))
         , mTargetState(gExpectedState.at(transition))
         , mMtx(mutex)
-        , mErrored(false)
     {
         if (timeout > std::chrono::milliseconds(0)) {
             mTimer.expires_after(timeout);
@@ -65,6 +64,7 @@ struct ChangeStateOp
         if (mTasks.empty()) {
             OLOG(warning) << "ChangeState initiated on an empty set of tasks, check the path argument.";
         }
+        // OLOG(debug) << "SetProperties " << mId << " with expected count of " << mTasks.size() << " started.";
     }
     ChangeStateOp() = delete;
     ChangeStateOp(const ChangeStateOp&) = delete;
@@ -97,14 +97,14 @@ struct ChangeStateOp
     }
 
     /// precondition: mMtx is locked.
-    void Update(const DDSTask::Id taskId, const DeviceState currentState)
+    void Update(const DDSTask::Id taskId, const DeviceState currentState, bool expendable)
     {
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
             if (currentState == mTargetState) {
                 ++mCount;
             } else if (currentState == DeviceState::Error || currentState == DeviceState::Exiting) {
                 if (mFailed.count(taskId) == 0) {
-                    mErrored = true;
+                    mErrored = expendable ? false : true;
                     ++mCount;
                     mFailed.emplace(taskId);
                 } else {
@@ -155,7 +155,7 @@ struct ChangeStateOp
     FailedDevices mFailed;
     DeviceState mTargetState;
     std::mutex& mMtx;
-    bool mErrored;
+    bool mErrored = false;
 };
 
 } // namespace odc::core

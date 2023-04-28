@@ -84,14 +84,27 @@ struct SetPropertiesOp
         }
     }
 
-    void Update(const DDSTask::Id taskId, cc::Result result)
+    /// precondition: mMtx is locked.
+    void Update(const DDSTask::Id taskId, cc::Result result, bool expendable)
     {
-        std::lock_guard<std::mutex> lk(mMtx);
-        if (result == cc::Result::Ok) {
-            mOutstandingDevices.erase(taskId);
+        if (!mOp.IsCompleted() && ContainsTask(taskId)) {
+            if (result == cc::Result::Ok) {
+                mOutstandingDevices.erase(taskId);
+                ++mCount;
+            } else {
+                if (mOutstandingDevices.count(taskId) > 0) {
+                    // if expendable - ignore it, by not returning an error
+                    // TODO: should the failed device still be returned, but with a success condition?
+                    if (expendable) {
+                        mOutstandingDevices.erase(taskId);
+                    }
+                    ++mCount;
+                } else {
+                    // OLOG(debug) << "Task " << taskId << " is already updated";
+                }
+            }
+            TryCompletion();
         }
-        ++mCount;
-        TryCompletion();
     }
 
     /// precondition: mMtx is locked.
@@ -110,7 +123,7 @@ struct SetPropertiesOp
     bool IsCompleted() { return mOp.IsCompleted(); }
 
   private:
-    uint64_t const mId;
+    const uint64_t mId;
     AsioAsyncOp<Executor, Allocator, SetPropertiesCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
     unsigned int mCount;

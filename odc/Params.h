@@ -101,10 +101,10 @@ struct RequestResult : public BaseRequestResult
         , mHosts(std::move(hosts))
     {}
 
-    std::string mPartitionID;               ///< Partition ID
-    uint64_t mRunNr = 0;                    ///< Run number
-    std::string mDDSSessionID;              ///< Session ID of DDS
-    TopologyState mTopologyState;           ///< Topology state (aggregated + optional detailed)
+    std::string mPartitionID;     ///< Partition ID
+    uint64_t mRunNr = 0;          ///< Run number
+    std::string mDDSSessionID;    ///< Session ID of DDS
+    TopologyState mTopologyState; ///< Topology state (aggregated + optional detailed)
 
     // Optional parameters
     std::unordered_set<std::string> mHosts; ///< List of used hosts

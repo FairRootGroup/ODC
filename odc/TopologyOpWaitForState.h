@@ -51,7 +51,6 @@ struct WaitForStateOp
         , mTargetLastState(targetLastState)
         , mTargetCurrentState(targetCurrentState)
         , mMtx(mutex)
-        , mErrored(false)
     {
         if (timeout > std::chrono::milliseconds(0)) {
             mTimer.expires_after(timeout);
@@ -97,14 +96,14 @@ struct WaitForStateOp
     }
 
     /// precondition: mMtx is locked.
-    void Update(const DDSTask::Id taskId, const DeviceState lastState, const DeviceState currentState)
+    void Update(const DDSTask::Id taskId, const DeviceState lastState, const DeviceState currentState, bool expendable)
     {
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
             if (currentState == mTargetCurrentState && (lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined)) {
                 ++mCount;
             } else if (currentState == DeviceState::Error || currentState == DeviceState::Exiting) {
                 if (mFailed.count(taskId) == 0) {
-                    mErrored = true;
+                    mErrored = expendable ? false : true;
                     ++mCount;
                     mFailed.emplace(taskId);
                 } else {
@@ -153,7 +152,7 @@ struct WaitForStateOp
     DeviceState mTargetLastState;
     DeviceState mTargetCurrentState;
     std::mutex& mMtx;
-    bool mErrored;
+    bool mErrored = false;
 };
 
 } // namespace odc::core

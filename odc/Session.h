@@ -88,30 +88,6 @@ struct Session
         mAgentDetails = agentDetails;
     }
 
-    void addExpendableTask(uint64_t taskId)
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        mExpendableTasks.emplace(taskId);
-    }
-
-    bool isTaskExpendable(uint64_t taskId)
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        return mExpendableTasks.count(taskId);
-    }
-
-    void clearExpendableTasks()
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        return mExpendableTasks.clear();
-    }
-
-    std::unordered_set<uint64_t> getExpendableTasks()
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        return mExpendableTasks;
-    }
-
     void debug()
     {
         OLOG(info) << "tasks:";
@@ -151,6 +127,7 @@ struct Session
     std::unordered_map<std::string, AgentGroupInfo> mAgentGroupInfo; ///< Agent group info groupName:AgentGroupInfo
     std::vector<TaskInfo> mStandaloneTasks; ///< Standalone tasks (not belonging to any collection)
     std::map<std::string, CollectionInfo> mCollections; ///< Collection info collectionName:CollectionInfo
+    std::unordered_set<uint64_t> mExpendableTasks; ///< List of expandable task IDs
     size_t mTotalSlots = 0; ///< total number of DDS slots
     std::unordered_map<uint64_t, uint32_t> mAgentSlots;
     bool mRunAttempted = false;
@@ -162,7 +139,6 @@ struct Session
     std::unordered_map<uint64_t, TaskDetails> mTaskDetails; ///< Additional information about task
     std::unordered_map<uint64_t, CollectionDetails> mCollectionDetails; ///< Additional information about collection
     std::unordered_map<uint64_t, AgentDetails> mAgentDetails; ///< Additional information about agent
-    std::unordered_set<uint64_t> mExpendableTasks; ///< List of expandable task IDs
 };
 
 } // namespace odc::core

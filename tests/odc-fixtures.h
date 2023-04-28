@@ -12,6 +12,7 @@
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/Semaphore.h>
+#include <odc/TopologyDefs.h>
 
 #include <dds/Tools.h>
 #include <dds/Topology.h>
@@ -20,9 +21,11 @@
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test_log.hpp>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <thread>
+#include <unordered_set>
 
 struct AsyncOpFixture
 {
@@ -107,6 +110,9 @@ struct TopologyFixture
     dds::tools_api::CSession mDDSSession;
     dds::topology_api::CTopology mDDSTopo;
     boost::asio::io_context mIoContext;
+    std::unordered_set<uint64_t> mExpendableTasks = {};
+    std::map<std::string, odc::core::CollectionInfo> mCollectionInfo = {};
+    std::atomic<uint64_t> mLastRunNr = 0;
 };
 
 #endif

@@ -75,9 +75,9 @@ struct GetPropertiesOp
     GetPropertiesOp& operator=(GetPropertiesOp&&) = default;
     ~GetPropertiesOp() = default;
 
+    /// precondition: mMtx is locked.
     void Update(const DDSTask::Id taskId, cc::Result result, DeviceProperties props)
     {
-        std::lock_guard<std::mutex> lk(mMtx);
         if (result == cc::Result::Ok) {
             mResult.failed.erase(taskId);
             mResult.devices.insert({ taskId, { std::move(props) } });
