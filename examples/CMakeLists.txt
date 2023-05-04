@@ -57,6 +57,8 @@ odcConfigExampleTopo(3 ex-topo-infinite.xml.in                           ex-topo
 odcConfigExampleTopo(2 ex-topo-infinite.xml.in                           ex-topo-infinite-down.xml)
 
 configure_file(ex-env.sh.in ${CMAKE_CURRENT_BINARY_DIR}/odc-ex-env.sh)
+configure_file(ex-slurm-calib.cfg ${CMAKE_CURRENT_BINARY_DIR}/odc-ex-slurm-calib.cfg COPYONLY)
+configure_file(ex-slurm-online.cfg ${CMAKE_CURRENT_BINARY_DIR}/odc-ex-slurm-online.cfg COPYONLY)
 
 # Configure and install commands configuration example
 set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
