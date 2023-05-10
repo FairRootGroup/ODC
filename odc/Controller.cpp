@@ -733,19 +733,20 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
 
         // We are not interested in stopped tasks
         if (res.m_activated) {
-            TaskDetails task{res.m_agentID, res.m_slotID, res.m_taskID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir};
-            session.addTaskDetails(move(task));
+            // response callbacks can be called in parallel - protect session access with a lock
+            lock_guard<mutex> lock(mtx);
+            session.mTaskDetails.emplace(res.m_taskID, TaskDetails{res.m_agentID, res.m_slotID, res.m_taskID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir});
 
             if (res.m_collectionID > 0) {
-                CollectionDetails collection{res.m_agentID, res.m_slotID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir};
-                auto pos = collection.mPath.rfind('/');
-                if (pos != string::npos) {
-                    collection.mPath.erase(pos);
+                if (session.mCollectionDetails.find(res.m_collectionID) == session.mCollectionDetails.end()) {
+                    string path = res.m_path;
+                    auto pos = path.rfind('/');
+                    if (pos != string::npos) {
+                        path.erase(pos);
+                    }
+                    session.mCollectionDetails.emplace(res.m_collectionID, CollectionDetails{res.m_agentID, res.m_collectionID, path, res.m_host, res.m_wrkDir});
+                    session.mRuntimeCollectionIndex.at(res.m_collectionID)->mRuntimeCollectionAgents[res.m_collectionID] = res.m_agentID;
                 }
-                session.addCollectionDetails(move(collection));
-
-                unique_lock<mutex> lock(mtx);
-                session.mRuntimeCollectionIndex.at(res.m_collectionID)->mRuntimeCollectionAgents[res.m_collectionID] = res.m_agentID;
             }
         }
     });
@@ -1345,11 +1346,11 @@ void Controller::stateSummaryOnFailure(const CommonParams& common, Session& sess
             }
         }
 
-        size_t numOkTasks = session.numTasks() - numFailedTasks;
-        size_t numOkCollections = session.numCollections() - failedCollections.size();
+        size_t numOkTasks = session.mTaskDetails.size() - numFailedTasks;
+        size_t numOkCollections = session.mCollectionDetails.size() - failedCollections.size();
         OLOG(error, common) << "Summary after transitioning to " << expectedState << " state:";
-        OLOG(error, common) << "  [tasks] total: " << session.numTasks() << ", successful: " << numOkTasks << ", failed: " << numFailedTasks;
-        OLOG(error, common) << "  [collections] total: " << session.numCollections() << ", successful: " << numOkCollections << ", failed: " << failedCollections.size();
+        OLOG(error, common) << "  [tasks] total: " << session.mTaskDetails.size() << ", successful: " << numOkTasks << ", failed: " << numFailedTasks;
+        OLOG(error, common) << "  [collections] total: " << session.mCollectionDetails.size() << ", successful: " << numOkCollections << ", failed: " << failedCollections.size();
     } catch (const exception& e) {
         OLOG(error, common) << "State summary error: " << e.what();
     }

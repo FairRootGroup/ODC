@@ -27,27 +27,8 @@ namespace odc::core
 
 struct Session
 {
-    void addTaskDetails(TaskDetails&& taskDetails)
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        mTaskDetails.emplace(taskDetails.mTaskID, taskDetails);
-    }
-
-    void addCollectionDetails(CollectionDetails&& collectionDetails)
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        mCollectionDetails.emplace(collectionDetails.mCollectionID, collectionDetails);
-    }
-
-    void addAgentDetails(AgentDetails&& agentDetails)
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        mAgentDetails.emplace(agentDetails.mID, agentDetails);
-    }
-
     TaskDetails& getTaskDetails(uint64_t taskID)
     {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
         auto it = mTaskDetails.find(taskID);
         if (it == mTaskDetails.end()) {
             throw std::runtime_error(toString("Failed to get additional task info for ID (", taskID, ")"));
@@ -57,7 +38,6 @@ struct Session
 
     CollectionDetails& getCollectionDetails(uint64_t collectionID)
     {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
         auto it = mCollectionDetails.find(collectionID);
         if (it == mCollectionDetails.end()) {
             throw std::runtime_error(toString("Failed to get additional collection info for ID (", collectionID, ")"));
@@ -70,8 +50,6 @@ struct Session
         detailedState.clear();
         detailedState.reserve(topoState.size());
 
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-
         for (const auto& state : topoState) {
             auto it = mTaskDetails.find(state.taskId);
             if (it != mTaskDetails.end()) {
@@ -82,16 +60,9 @@ struct Session
         }
     }
 
-    void fillAgentDetails(const std::unordered_map<uint64_t, AgentDetails>& agentDetails)
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        mAgentDetails = agentDetails;
-    }
-
     void debug()
     {
         OLOG(info) << "tasks:";
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
         for (const auto& t : mTaskDetails) {
             OLOG(info) << t.second;
         }
@@ -99,22 +70,6 @@ struct Session
         for (const auto& c : mCollectionDetails) {
             OLOG(info) << c.second;
         }
-        OLOG(info) << "agents:";
-        for (const auto& a : mAgentDetails) {
-            OLOG(info) << a.second;
-        }
-    }
-
-    size_t numTasks()
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        return mTaskDetails.size();
-    }
-
-    size_t numCollections()
-    {
-        std::lock_guard<std::mutex> lock(mDetailsMtx);
-        return mCollectionDetails.size();
     }
 
     std::unique_ptr<dds::topology_api::CTopology> mDDSTopo = nullptr; ///< DDS topology
@@ -134,12 +89,8 @@ struct Session
     bool mRunAttempted = false;
     dds::tools_api::SOnTaskDoneRequest::ptr_t mDDSOnTaskDoneRequest;
     std::atomic<uint64_t> mLastRunNr = 0;
-
-    private:
-    std::mutex mDetailsMtx; ///< Mutex for the tasks/collections container
     std::unordered_map<uint64_t, TaskDetails> mTaskDetails; ///< Additional information about task
     std::unordered_map<uint64_t, CollectionDetails> mCollectionDetails; ///< Additional information about collection
-    std::unordered_map<uint64_t, AgentDetails> mAgentDetails; ///< Additional information about agent
 };
 
 } // namespace odc::core

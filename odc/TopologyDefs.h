@@ -302,7 +302,6 @@ struct TaskDetails
 struct CollectionDetails
 {
     uint64_t mAgentID = 0;       ///< Agent ID
-    uint64_t mSlotID = 0;        ///< Slot ID
     uint64_t mCollectionID = 0;  ///< Collection ID
     std::string mPath;           ///< Path in the topology
     std::string mHost;           ///< Hostname
@@ -312,30 +311,9 @@ struct CollectionDetails
     {
         return os << "collectionID: " << cd.mCollectionID
                   << "; agentID: "    << cd.mAgentID
-                  << "; slotID: "     << cd.mSlotID
                   << "; path: "       << cd.mPath
                   << "; host: "       << cd.mHost
                   << "; wrkDir: "     << cd.mWrkDir;
-    }
-};
-
-struct AgentDetails
-{
-    uint64_t mID = 0;
-    std::string mZone;
-    std::string mGroup;
-    std::string mHost;
-    std::string mPath;
-    uint32_t mNumSlots = 0;
-
-    friend std::ostream& operator<<(std::ostream& os, const AgentDetails& ad)
-    {
-        return os << "agentID: "    << ad.mID
-                  << "; zone: "     << ad.mZone
-                  << "; group: "    << ad.mGroup
-                  << "; host: "     << ad.mHost
-                  << "; path: "     << ad.mPath
-                  << "; numSlots: " << ad.mNumSlots;
     }
 };
 
