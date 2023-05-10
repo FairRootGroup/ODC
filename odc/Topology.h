@@ -185,10 +185,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         return list;
     }
 
-    void IgnoreFailedTask(uint64_t id)
+    // precondition: mMtx is locked.
+    void IgnoreDevice(DeviceStatus& device)
     {
-        std::lock_guard<std::mutex> lk(*mMtx);
-        DeviceStatus& device = mStateData.at(mStateIndex.at(id));
         if (device.subscribedToStateChanges) {
             device.subscribedToStateChanges = false;
             --mNumStateChangePublishers;
@@ -196,19 +195,17 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         device.ignored = true;
     }
 
-    void IgnoreFailedCollections(const std::vector<CollectionDetails*>& collections)
+    // precondition: mMtx is locked.
+    void IgnoreCollection(odc::core::DDSCollection::Id id)
     {
-        std::lock_guard<std::mutex> lk(*mMtx);
         for (auto& device : mStateData) {
-            for (const auto& collection : collections) {
-                if (device.collectionId == collection->mCollectionID) {
-                    // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Ignoring device " << device.taskId << " from collection " << collection->mCollectionID;
-                    if (device.subscribedToStateChanges) {
-                        device.subscribedToStateChanges = false;
-                        --mNumStateChangePublishers;
-                    }
-                    device.ignored = true;
+            if (device.collectionId == id) {
+                // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Ignoring device " << device.taskId << " from collection " << id;
+                if (device.subscribedToStateChanges) {
+                    device.subscribedToStateChanges = false;
+                    --mNumStateChangePublishers;
                 }
+                device.ignored = true;
             }
         }
     }
@@ -297,7 +294,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
         if (device.expendable) {
             OLOG(debug, mPartitionID, mLastRunNr.load()) << "Failed Device " << device.taskId << " is expendable. ignoring.";
-            device.ignored = true;
+            IgnoreDevice(device);
             return true;
         }
 
@@ -326,16 +323,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     OLOG(info, mPartitionID, mLastRunNr.load()) << "Ignoring failed collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
                         << " as the remaining number of '" << col->getPath() << "' collections (" << it->second.nCurrent
                         << ") is greater than or equal to nMin (" << it->second.nMin << ").";
-                    for (auto& d : mStateData) {
-                        if (d.collectionId == device.collectionId) {
-                            // OLOG(info) << "Ignoring device " << d.taskId << " from collection " << device.collectionId;
-                            if (d.subscribedToStateChanges) {
-                                d.subscribedToStateChanges = false;
-                                --mNumStateChangePublishers;
-                            }
-                            d.ignored = true;
-                        }
-                    }
+                    IgnoreCollection(device.collectionId);
 
                     // TODO: shutdown agent only if it has no tasks left
                     uint64_t agentId = it->second.mRuntimeCollectionAgents.at(device.collectionId);
