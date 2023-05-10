@@ -251,7 +251,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                     unexpected = true;
                     device.state = DeviceState::Error;
                     // check if the device is expendable
-                    expendable = IsExpendable(device);
+                    expendable = IgnoreExpendable(device);
                     // Update SetProperties OPs only if unexpected exit
                     for (auto& op : mSetPropertiesOps) {
                         op.second.Update(device.taskId, cc::Result::Failure, expendable);
@@ -287,7 +287,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
     // precondition: mMtx is locked
-    bool IsExpendable(odc::core::DeviceStatus& device)
+    bool IgnoreExpendable(odc::core::DeviceStatus& device)
     {
         if (device.ignored) {
             OLOG(debug, mPartitionID, mLastRunNr.load()) << "Failed Device " << device.taskId << " is already ignored.";
@@ -337,7 +337,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                         }
                     }
 
-                    // TODO: shutdown agent if it has no tasks left (should be done outside of the lock though)
+                    // TODO: shutdown agent only if it has no tasks left
+                    uint64_t agentId = it->second.mRuntimeCollectionAgents.at(device.collectionId);
+                    ShutdownDDSAgent(agentId);
 
                     return true;
                 }
@@ -491,7 +493,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             if (device.state == DeviceState::Error || (device.state == DeviceState::Exiting && lastState != DeviceState::Idle)) {
                 OLOG(error, mPartitionID, mLastRunNr.load()) << "Device " << device.taskId << " unexpectedly reached " << device.state << " state";
                 // check if the device is expendable
-                expendable = IsExpendable(device);
+                expendable = IgnoreExpendable(device);
                 // Update SetProperties OPs only if unexpected exit
                 for (auto& op : mSetPropertiesOps) {
                     op.second.Update(device.taskId, cc::Result::Failure, expendable);
@@ -911,6 +913,21 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     std::chrono::milliseconds GetHeartbeatInterval() const { return mHeartbeatInterval; }
     void SetHeartbeatInterval(std::chrono::milliseconds duration) { mHeartbeatInterval = duration; }
+
+    void ShutdownDDSAgent(uint64_t agentID)
+    {
+        try {
+            using namespace dds::tools_api;
+            OLOG(info, mPartitionID, mLastRunNr.load()) << "Sending shutdown signal to agent " << agentID;;
+            SAgentCommandRequest::request_t agentCmd;
+            agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
+            agentCmd.m_arg1 = agentID;
+            SAgentCommandRequest::ptr_t requestPtr{ SAgentCommandRequest::makeRequest(agentCmd) };
+            mDDSSession.sendRequest<SAgentCommandRequest>(requestPtr);
+        } catch (std::exception& e) {
+            OLOG(error, mPartitionID, mLastRunNr.load()) << "Failed sending shutdown signal to agent with id " << agentID << ": " << e.what();
+        }
+    }
 
   private:
     dds::tools_api::CSession& mDDSSession;

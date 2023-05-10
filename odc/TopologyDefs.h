@@ -368,6 +368,7 @@ struct CollectionInfo
     int nCores;
     int32_t numTasks;
     int32_t totalTasks;
+    std::unordered_map<uint64_t, uint64_t> mRuntimeCollectionAgents; ///< runtime collection ID -> agent ID
 
     friend std::ostream& operator<<(std::ostream& os, const CollectionInfo& ci)
     {

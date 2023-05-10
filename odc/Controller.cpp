@@ -137,17 +137,18 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
                 agentCounts[ai.m_groupName]++;
                 session.mAgentSlots[ai.m_agentID] = ai.m_nSlots;
                 hosts.emplace(ai.m_host);
-                OLOG(info, common) << "  Agent ID: " << ai.m_agentID
-                                // << ", pid: " << ai.m_agentPid
-                                << "; host: " << ai.m_host
-                                << "; path: " << ai.m_DDSPath
-                                << "; group: " << ai.m_groupName
-                                // << "; index: " << ai.m_index
-                                // << "; username: " << ai.m_username
-                                << "; startup time: " << ai.m_startUpTime.count() << " ms"
-                                << "; slots: " << ai.m_nSlots;
-                                // << " (idle: " << ai.m_nIdleSlots
-                                // << ", executing: " << ai.m_nExecutingSlots << ").";
+                OLOG(info, common)
+                    << "  Agent ID: " << ai.m_agentID
+                    // << ", pid: " << ai.m_agentPid
+                    << "; host: " << ai.m_host
+                    << "; path: " << ai.m_DDSPath
+                    << "; group: " << ai.m_groupName
+                    // << "; index: " << ai.m_index
+                    // << "; username: " << ai.m_username
+                    << "; startup time: " << ai.m_startUpTime.count() << " ms"
+                    << "; slots: " << ai.m_nSlots;
+                    // << " (idle: " << ai.m_nIdleSlots
+                    // << ", executing: " << ai.m_nExecutingSlots << ").";
             }
             OLOG(info, common) << "Launched " << agentCounts.size() << " DDS agent groups:";
             for (const auto& [groupName, count] : agentCounts) {
@@ -706,6 +707,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
     topoInfo.m_disableValidation = true;
     topoInfo.m_updateType = updateType;
 
+    mutex mtx;
     condition_variable cv;
 
     dds::tools_api::STopologyRequest::ptr_t requestPtr = dds::tools_api::STopologyRequest::makeRequest(topoInfo);
@@ -726,7 +728,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
         }
     });
 
-    requestPtr->setResponseCallback([&common, &session](const dds::tools_api::STopologyResponseData& res) {
+    requestPtr->setResponseCallback([&common, &session, &mtx](const dds::tools_api::STopologyResponseData& res) {
         OLOG(debug, common) << "DDS Activate Response: " << res;
 
         // We are not interested in stopped tasks
@@ -741,6 +743,9 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
                     collection.mPath.erase(pos);
                 }
                 session.addCollectionDetails(move(collection));
+
+                unique_lock<mutex> lock(mtx);
+                session.mRuntimeCollectionIndex.at(res.m_collectionID)->mRuntimeCollectionAgents[res.m_collectionID] = res.m_agentID;
             }
         }
     });
@@ -749,7 +754,6 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
 
     session.mDDSSession.sendRequest<dds::tools_api::STopologyRequest>(requestPtr);
 
-    mutex mtx;
     unique_lock<mutex> lock(mtx);
     cv_status waitStatus = cv.wait_for(lock, requestTimeout(common));
 
@@ -757,6 +761,20 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
         success = false;
         fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for topology activation");
         OLOG(error, common) << error;
+    } else {
+        // try {
+        //     if (!session.mCollections.empty()) {
+        //         OLOG(info, common) << "Collections:";
+        //         for (const auto& [id, colInfo] : session.mCollections) {
+        //             OLOG(info, common) << "  " << colInfo;
+        //             for (const auto& [colId, agentId] : colInfo.mRuntimeCollectionAgents) {
+        //                 OLOG(info, common) << "    runtime collection: id: " << colId << ", agent id: " << agentId;
+        //             }
+        //         }
+        //     }
+        // } catch (const exception& e) {
+        //     fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, toString("Failed getting slot info: ", e.what()));
+        // }
     }
 
     // session.debug();
@@ -892,7 +910,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
 
         // TODO: should n_current be set to 0 and increased as collections are launched instead?
-        session.mCollections[c->getName()] = CollectionInfo{c->getName(), zone, agentGroup, topoParent, topoPath, n, n, nmin, nCores, numTasks, numTasksTotal};
+        session.mCollections[c->getName()] = CollectionInfo{c->getName(), zone, agentGroup, topoParent, topoPath, n, n, nmin, nCores, numTasks, numTasksTotal, std::unordered_map<uint64_t, uint64_t>()};
 
         auto agiIt = session.mAgentGroupInfo.find(agentGroup);
         if (agiIt == session.mAgentGroupInfo.end()) {
@@ -924,6 +942,16 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
     }
 
+    auto colIt = ddsTopo.getRuntimeCollectionIterator();
+
+    std::for_each(colIt.first, colIt.second, [&](const dds::topology_api::STopoRuntimeCollection::FilterIterator_t::value_type& v) {
+        auto& col = v.second;
+        auto& topoCol = *(col.m_collection);
+        // OLOG(info, common) << "Runtime collection ID: " << col.m_collectionId << " is " << quoted(col.m_collectionPath) << " from " << topoCol.getName();
+        session.mCollections.at(topoCol.getName()).mRuntimeCollectionAgents.emplace(col.m_collectionId, 0);
+        session.mRuntimeCollectionIndex.emplace(col.m_collectionId, &(session.mCollections.at(topoCol.getName())));
+    });
+
     if (!session.mZoneInfo.empty()) {
         OLOG(info, common) << "Zones from the topology:";
         for (const auto& z : session.mZoneInfo) {
@@ -945,6 +973,9 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         OLOG(info, common) << "Collections:";
         for (const auto& col : session.mCollections) {
             OLOG(info, common) << "  " << col.second;
+            for (const auto& rc : col.second.mRuntimeCollectionAgents) {
+                OLOG(info, common) << "    runtime collection: id: " << rc.first << " agent id: " << rc.second << " (0 if not yet known)";
+            }
         }
     }
 

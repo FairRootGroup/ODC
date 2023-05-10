@@ -127,6 +127,7 @@ struct Session
     std::unordered_map<std::string, AgentGroupInfo> mAgentGroupInfo; ///< Agent group info groupName:AgentGroupInfo
     std::vector<TaskInfo> mStandaloneTasks; ///< Standalone tasks (not belonging to any collection)
     std::map<std::string, CollectionInfo> mCollections; ///< Collection info collectionName:CollectionInfo
+    std::unordered_map<uint64_t, CollectionInfo*> mRuntimeCollectionIndex; ///< Collection index by collection ID
     std::unordered_set<uint64_t> mExpendableTasks; ///< List of expandable task IDs
     size_t mTotalSlots = 0; ///< total number of DDS slots
     std::unordered_map<uint64_t, uint32_t> mAgentSlots;
