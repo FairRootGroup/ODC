@@ -9,6 +9,7 @@
 #ifndef ODC_CORE_DEFS
 #define ODC_CORE_DEFS
 
+#include <odc/Error.h>
 #include <odc/Timer.h>
 #include <odc/TopologyDefs.h>
 
@@ -26,20 +27,6 @@ enum StatusCode
     unknown = 0,
     ok,
     error
-};
-
-struct Error
-{
-    Error() {}
-    Error(std::error_code code, const std::string& details)
-        : mCode(code)
-        , mDetails(details)
-    {}
-
-    std::error_code mCode; ///< Error code
-    std::string mDetails;  ///< Details of the error
-
-    friend std::ostream& operator<<(std::ostream& os, const Error& error) { return os << error.mCode << " (" << error.mDetails << ")"; }
 };
 
 enum class DDSSessionStatus

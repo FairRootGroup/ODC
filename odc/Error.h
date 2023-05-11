@@ -25,6 +25,20 @@ struct RuntimeError : std::runtime_error
     {}
 };
 
+struct Error
+{
+    Error() {}
+    Error(std::error_code code, const std::string& details)
+        : mCode(code)
+        , mDetails(details)
+    {}
+
+    std::error_code mCode; ///< Error code
+    std::string mDetails;  ///< Details of the error
+
+    friend std::ostream& operator<<(std::ostream& os, const Error& error) { return os << error.mCode << " (" << error.mDetails << ")"; }
+};
+
 enum class ErrorCode
 {
     RequestNotSupported = 100,
@@ -52,7 +66,9 @@ enum class ErrorCode
     FairMQChangeStateFailed,
     FairMQGetStateFailed,
     FairMQSetPropertiesFailed,
-    FairMQWaitForStateFailed
+    FairMQWaitForStateFailed,
+
+    RuntimeError = 400
 };
 
 struct ErrorCategory : std::error_category
@@ -86,6 +102,9 @@ struct ErrorCategory : std::error_category
             case ErrorCode::FairMQChangeStateFailed:            return "Failed to change FairMQ device state";
             case ErrorCode::FairMQGetStateFailed:               return "Failed to get FairMQ device state";
             case ErrorCode::FairMQSetPropertiesFailed:          return "Failed to set FairMQ device properties";
+            case ErrorCode::FairMQWaitForStateFailed:           return "Failed waiting for FairMQ device state";
+
+            case ErrorCode::RuntimeError:                       return "Runtime error";
             default:                                            return "Unknown error";
             // clang-format on
         }
