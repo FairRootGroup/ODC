@@ -44,7 +44,7 @@ configure_file(cmd_set_2.cfg.in ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_2.cfg @
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_2.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
 set(test ${target}::cmd_set_2)
 add_test(NAME ${test} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/test_cmd_set_2.cfg)
-set_tests_properties(${test} PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "Sleeping 100 ms" ENVIRONMENT "${TEST_ENV}")
+set_tests_properties(${test} PROPERTIES TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Status code: ERROR" ENVIRONMENT "${TEST_ENV}")
 
 string(RANDOM LENGTH 8 TEST_SESSION)
 

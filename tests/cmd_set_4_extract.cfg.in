@@ -10,4 +10,3 @@
 .status
 .init --id @TEST_SESSION@
 .down --id @TEST_SESSION@
-.sleep --ms 100
