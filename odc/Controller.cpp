@@ -52,7 +52,7 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
         }
     }
     updateRestore();
-    return createRequestResult(common, session, error, "Initialize done", common.mTimer.duration(), TopologyState());
+    return createRequestResult(common, session, error, "Initialize done", TopologyState(), {});
 }
 
 RequestResult Controller::execSubmit(const CommonParams& common, const SubmitParams& params)
@@ -62,9 +62,7 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
 
     auto hosts = submit(common, session, error, params.mPlugin, params.mResources, false);
 
-    string sidStr{ to_string(session.mDDSSession.getSessionID()) };
-    StatusCode status{ error.mCode ? StatusCode::error : StatusCode::ok };
-    return RequestResult(status, "Submit done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sidStr, AggregatedState::Undefined, hosts);
+    return createRequestResult(common, session, error, "Submit done", TopologyState(), hosts);
 }
 
 unordered_set<string> Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res, bool extractResources)
@@ -271,7 +269,7 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     }
 
     TopologyState topologyState(error.mCode ? AggregatedState::Undefined : AggregatedState::Idle);
-    return createRequestResult(common, session, error, "Activate done", common.mTimer.duration(), std::move(topologyState));
+    return createRequestResult(common, session, error, "Activate done", std::move(topologyState), {});
 }
 
 void Controller::activate(const CommonParams& common, Session& session, Error& error)
@@ -327,9 +325,7 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
     }
 
     TopologyState topologyState(error.mCode ? AggregatedState::Undefined : AggregatedState::Idle);
-    string sidStr{ to_string(session.mDDSSession.getSessionID()) };
-    StatusCode status{ error.mCode ? StatusCode::error : StatusCode::ok };
-    return RequestResult(status, "Run done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sidStr, topologyState, hosts);
+    return createRequestResult(common, session, error, "Run done", std::move(topologyState), hosts);
 }
 
 RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
@@ -355,7 +351,7 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
             && waitForState(common, session, error, "", DeviceState::Idle)
             && changeStateConfigure(common, session, error, "", topologyState);
     }
-    return createRequestResult(common, session, error, "Update done", common.mTimer.duration(), std::move(topologyState));
+    return createRequestResult(common, session, error, "Update done", std::move(topologyState), {});
 }
 
 RequestResult Controller::execShutdown(const CommonParams& common)
@@ -373,8 +369,7 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     removeSession(common);
     updateRestore();
 
-    StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
-    return RequestResult(status, "Shutdown done", common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, ddsSessionId, TopologyState(), {});
+    return createRequestResult(common, ddsSessionId, error, "Shutdown done", TopologyState(), {});
 }
 
 RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
@@ -384,7 +379,7 @@ RequestResult Controller::execSetProperties(const CommonParams& common, const Se
 
     TopologyState topologyState;
     setProperties(common, session, error, params.mPath, params.mProperties, topologyState);
-    return createRequestResult(common, session, error, "SetProperties done", common.mTimer.duration(), std::move(topologyState));
+    return createRequestResult(common, session, error, "SetProperties done", std::move(topologyState), {});
 }
 
 RequestResult Controller::execGetState(const CommonParams& common, const DeviceParams& params)
@@ -394,7 +389,7 @@ RequestResult Controller::execGetState(const CommonParams& common, const DeviceP
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     getState(common, session, error, params.mPath, topologyState);
-    return createRequestResult(common, session, error, "GetState done", common.mTimer.duration(), std::move(topologyState));
+    return createRequestResult(common, session, error, "GetState done", std::move(topologyState), {});
 }
 
 RequestResult Controller::execConfigure(const CommonParams& common, const DeviceParams& params)
@@ -404,7 +399,7 @@ RequestResult Controller::execConfigure(const CommonParams& common, const Device
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeStateConfigure(common, session, error, params.mPath, topologyState);
-    return createRequestResult(common, session, error, "Configure done", common.mTimer.duration(), std::move(topologyState));
+    return createRequestResult(common, session, error, "Configure done", std::move(topologyState), {});
 }
 
 RequestResult Controller::execStart(const CommonParams& common, const DeviceParams& params)
@@ -417,7 +412,7 @@ RequestResult Controller::execStart(const CommonParams& common, const DevicePara
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeState(common, session, error, params.mPath, TopoTransition::Run, topologyState);
-    return createRequestResult(common, session, error, "Start done", common.mTimer.duration(), std::move(topologyState));
+    return createRequestResult(common, session, error, "Start done", std::move(topologyState), {});
 }
 
 RequestResult Controller::execStop(const CommonParams& common, const DeviceParams& params)
@@ -431,7 +426,7 @@ RequestResult Controller::execStop(const CommonParams& common, const DeviceParam
     // reset the run number, which is valid only for the running state
     session.mLastRunNr.store(0);
 
-    return createRequestResult(common, session, error, "Stop done", common.mTimer.duration(), std::move(topologyState));
+    return createRequestResult(common, session, error, "Stop done", std::move(topologyState), {});
 }
 
 RequestResult Controller::execReset(const CommonParams& common, const DeviceParams& params)
@@ -441,7 +436,7 @@ RequestResult Controller::execReset(const CommonParams& common, const DevicePara
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeStateReset(common, session, error, params.mPath, topologyState);
-    return createRequestResult(common, session, error, "Reset done", common.mTimer.duration(), std::move(topologyState));
+    return createRequestResult(common, session, error, "Reset done", std::move(topologyState), {});
 }
 
 RequestResult Controller::execTerminate(const CommonParams& common, const DeviceParams& params)
@@ -451,7 +446,7 @@ RequestResult Controller::execTerminate(const CommonParams& common, const Device
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeState(common, session, error, params.mPath, TopoTransition::End, topologyState);
-    return createRequestResult(common, session, error, "Terminate done", common.mTimer.duration(), std::move(topologyState));
+    return createRequestResult(common, session, error, "Terminate done", std::move(topologyState), {});
 }
 
 StatusRequestResult Controller::execStatus(const StatusParams& params)
@@ -544,11 +539,17 @@ void Controller::updateHistory(const CommonParams& common, const std::string& se
     }
 }
 
-RequestResult Controller::createRequestResult(const CommonParams& common, const Session& session, const Error& error, const string& msg, size_t execTime, TopologyState&& topologyState)
+RequestResult Controller::createRequestResult(const CommonParams& common, const Session& session, const Error& error, const string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts)
 {
-    string sidStr{ to_string(session.mDDSSession.getSessionID()) };
-    StatusCode status{ error.mCode ? StatusCode::error : StatusCode::ok };
-    return RequestResult(status, msg, execTime, error, common.mPartitionID, common.mRunNr, sidStr, std::move(topologyState), {});
+    string sidStr = to_string(session.mDDSSession.getSessionID());
+    StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
+    return RequestResult(status, msg, common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sidStr, std::move(topologyState), hosts);
+}
+
+RequestResult Controller::createRequestResult(const CommonParams& common, const string& sessionId, const Error& error, const string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts)
+{
+    StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
+    return RequestResult(status, msg, common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sessionId, std::move(topologyState), hosts);
 }
 
 bool Controller::createDDSSession(const CommonParams& common, Session& session, Error& error)

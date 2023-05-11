@@ -100,6 +100,11 @@ class Controller
 
     static void extractRequirements(const CommonParams& common, Session& session);
 
+    struct Partition {
+      std::unique_ptr<Session> session;
+      std::unique_ptr<Topology> topology;
+    };
+
   private:
     std::map<std::string, std::unique_ptr<Session>> mSessions; ///< Map of partition ID to session info
     std::mutex mSessionsMtx;                                   ///< Mutex of sessions map
@@ -144,7 +149,8 @@ class Controller
     void fillAndLogFatalErrorLineByLine(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void logFatalLineByLine(            const CommonParams& common, const std::string& msg);
 
-    RequestResult createRequestResult(const CommonParams& common, const Session& session, const Error& error, const std::string& msg, size_t execTime, TopologyState&& topologyState);
+    RequestResult createRequestResult(const CommonParams& common, const Session& session, const Error& error, const std::string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts);
+    RequestResult createRequestResult(const CommonParams& common, const std::string& sessionId, const Error& error, const std::string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts);
     AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopoState& topoState, const std::string& path);
 
     Session& acquireSession(const CommonParams& common);
