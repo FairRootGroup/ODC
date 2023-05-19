@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## 0.78.0-beta.2 (2023-05-19)
+
+- InfoLogger: Set message levels (same translation as in AliceO2)
+
 ## 0.78.0-beta (2023-04-28)
 
 - New Feature: Async handling for nMin and expendable tasks. Async GetState requests report proper state, taking expendable tasks & nMin into account.
