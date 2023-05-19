@@ -188,6 +188,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     // precondition: mMtx is locked.
     void IgnoreDevice(DeviceStatus& device)
     {
+        // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Ignoring device " << device.taskId << " from collection " << device.collectionId;
         if (device.subscribedToStateChanges) {
             device.subscribedToStateChanges = false;
             --mNumStateChangePublishers;
@@ -200,12 +201,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         for (auto& device : mStateData) {
             if (device.collectionId == id) {
-                // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Ignoring device " << device.taskId << " from collection " << id;
-                if (device.subscribedToStateChanges) {
-                    device.subscribedToStateChanges = false;
-                    --mNumStateChangePublishers;
-                }
-                device.ignored = true;
+                IgnoreDevice(device);
             }
         }
     }
