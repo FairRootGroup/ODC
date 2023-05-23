@@ -29,45 +29,14 @@ using DeviceId = std::string;
 using DeviceState = fair::mq::State;
 using DeviceTransition = fair::mq::Transition;
 
-/**
- * @brief Represents a DDS collection
- */
-class DDSCollection
+struct DDSCollection
 {
-  public:
     using Id = std::uint64_t;
-
-    explicit DDSCollection(Id id) : fId(id) {}
-
-    Id GetId() const { return fId; }
-
-    friend std::ostream& operator<<(std::ostream& os, const DDSCollection& collection) { return os << "DDSCollection id: " << collection.fId; }
-
-  private:
-    Id fId;
 };
 
-/**
- * @brief Represents a DDS task
- */
-class DDSTask
+struct DDSTask
 {
-  public:
     using Id = std::uint64_t;
-
-    explicit DDSTask(Id id, Id collectionId)
-        : fId(id)
-        , fCollectionId(collectionId)
-    {}
-
-    Id GetId() const { return fId; }
-    DDSCollection::Id GetCollectionId() const { return fCollectionId; }
-
-    friend std::ostream& operator<<(std::ostream& os, const DDSTask& task) { return os << "DDSTask id: " << task.fId << ", collection id: " << task.fCollectionId; }
-
-  private:
-    Id fId;
-    DDSCollection::Id fCollectionId;
 };
 
 static const std::map<DeviceTransition, DeviceState> gExpectedState = {

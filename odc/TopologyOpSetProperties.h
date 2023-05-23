@@ -23,7 +23,7 @@
 #include <functional>
 #include <mutex>
 #include <utility>
-#include <vector>
+#include <unordered_set>
 
 namespace odc::core
 {
@@ -35,7 +35,7 @@ struct SetPropertiesOp
 {
     template<typename Handler>
     SetPropertiesOp(uint64_t id,
-                    std::vector<DDSTask> tasks,
+                    std::unordered_set<DDSTask::Id> tasks,
                     Duration timeout,
                     std::mutex& mutex,
                     Executor const& ex,
@@ -73,14 +73,14 @@ struct SetPropertiesOp
     void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
     {
         mOutstandingDevices.reserve(mTasks.size());
-        for (const auto& task : mTasks) {
-            const DeviceStatus& ds = stateData.at(stateIndex.at(task.GetId()));
+        for (const auto& taskId : mTasks) {
+            const DeviceStatus& ds = stateData.at(stateIndex.at(taskId));
             // Do not wait for an errored/exited device that is not yet ignored
             if (ds.state == DeviceState::Error || ds.state == DeviceState::Exiting) {
                 ++mCount;
             }
             // but always list at as failed/outstanding
-            mOutstandingDevices.emplace(task.GetId());
+            mOutstandingDevices.emplace(taskId);
         }
     }
 
@@ -127,16 +127,12 @@ struct SetPropertiesOp
     AsioAsyncOp<Executor, Allocator, SetPropertiesCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
     unsigned int mCount;
-    std::vector<DDSTask> mTasks;
+    std::unordered_set<DDSTask::Id> mTasks;
     FailedDevices mOutstandingDevices;
     std::mutex& mMtx;
 
     /// precondition: mMtx is locked.
-    bool ContainsTask(DDSTask::Id id)
-    {
-        auto it = std::find_if(mTasks.begin(), mTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
-        return it != mTasks.end();
-    }
+    bool ContainsTask(DDSTask::Id id) { return mTasks.count(id) > 0; }
 };
 
 } // namespace odc::core

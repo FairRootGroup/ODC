@@ -23,7 +23,7 @@
 #include <functional>
 #include <mutex>
 #include <utility>
-#include <vector>
+#include <unordered_set>
 
 namespace odc::core
 {
@@ -37,7 +37,7 @@ struct WaitForStateOp
     WaitForStateOp(uint64_t id,
                    DeviceState targetLastState,
                    DeviceState targetCurrentState,
-                   std::vector<DDSTask> tasks,
+                   std::unordered_set<DDSTask::Id> tasks,
                    Duration timeout,
                    std::mutex& mutex,
                    Executor const& ex,
@@ -134,11 +134,7 @@ struct WaitForStateOp
     }
 
     /// precondition: mMtx is locked.
-    bool ContainsTask(DDSTask::Id id)
-    {
-        auto it = std::find_if(mTasks.begin(), mTasks.end(), [id](const DDSTask& t) { return t.GetId() == id; });
-        return it != mTasks.end();
-    }
+    bool ContainsTask(DDSTask::Id id) { return mTasks.count(id) > 0; }
 
     bool IsCompleted() { return mOp.IsCompleted(); }
 
@@ -147,7 +143,7 @@ struct WaitForStateOp
     AsioAsyncOp<Executor, Allocator, WaitForStateCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
     unsigned int mCount;
-    std::vector<DDSTask> mTasks;
+    std::unordered_set<DDSTask::Id> mTasks;
     FailedDevices mFailed;
     DeviceState mTargetLastState;
     DeviceState mTargetCurrentState;

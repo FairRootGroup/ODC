@@ -43,7 +43,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
-#include <vector>
 
 namespace odc::core
 {
@@ -154,9 +153,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
     // precondition: mMtx is locked.
-    std::vector<DDSTask> GetTasks(const std::string& path = "") const
+    std::unordered_set<DDSTask::Id> GetTasks(const std::string& path) const
     {
-        std::vector<DDSTask> list;
+        std::unordered_set<DDSTask::Id> set;
 
         dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t itPair;
         if (path.empty()) {
@@ -166,7 +165,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         }
         auto tasks = boost::make_iterator_range(itPair.first, itPair.second);
 
-        list.reserve(boost::size(tasks));
+        set.reserve(boost::size(tasks));
 
         // OLOG(debug, mPartitionID, mLastRunNr.load()) << "GetTasks(): Num of tasks: " << boost::size(tasks);
         for (const auto& task : tasks) {
@@ -179,10 +178,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 // OLOG(debug, mPartitionID, mLastRunNr.load()) << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping";
                 continue;
             }
-            list.emplace_back(task.first, task.second.m_taskCollectionId);
+            set.emplace(task.first);
         }
 
-        return list;
+        return set;
     }
 
     // precondition: mMtx is locked.

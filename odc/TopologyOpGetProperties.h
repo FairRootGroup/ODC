@@ -23,7 +23,7 @@
 #include <functional>
 #include <mutex>
 #include <utility>
-#include <vector>
+#include <unordered_set>
 
 namespace odc::core
 {
@@ -35,7 +35,7 @@ struct GetPropertiesOp
 {
     template<typename Handler>
     GetPropertiesOp(uint64_t id,
-                    std::vector<DDSTask> tasks,
+                    std::unordered_set<DDSTask::Id> tasks,
                     Duration timeout,
                     std::mutex& mutex,
                     Executor const& ex,
@@ -62,8 +62,8 @@ struct GetPropertiesOp
         }
 
         mResult.failed.reserve(mTasks.size());
-        for (const auto& task : mTasks) {
-            mResult.failed.emplace(task.GetId());
+        for (const auto& taskId : mTasks) {
+            mResult.failed.emplace(taskId);
         }
 
         // OLOG(debug) << "GetProperties " << mId << " with expected count of " << mTasks.size() << " started.";
@@ -93,7 +93,7 @@ struct GetPropertiesOp
     AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
     unsigned int mCount;
-    std::vector<DDSTask> mTasks;
+    std::unordered_set<DDSTask::Id> mTasks;
     GetPropertiesResult mResult;
     std::mutex& mMtx;
 
