@@ -500,6 +500,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         if (cmd.GetResult() != cc::Result::Ok) {
             DDSTask::Id taskId(cmd.GetTaskId());
             std::lock_guard<std::mutex> lk(*mMtx);
+            // TODO: check if this can be done from within the OP
             for (auto& op : mChangeStateOps) {
                 if (!op.second.IsCompleted() && op.second.ContainsTask(taskId)) {
                     if (mStateData.at(mStateIndex.at(taskId)).state != op.second.GetTargetState()) {

@@ -51,6 +51,7 @@ enum class ErrorCode
     DeviceChangeStateInvalidTransition,
     DeviceGetPropertiesFailed,
     DeviceSetPropertiesFailed,
+    DeviceWaitForStateFailed,
     TopologyFailed,
 
     DDSCreateSessionFailed = 200,

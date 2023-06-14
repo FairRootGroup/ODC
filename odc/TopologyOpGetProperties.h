@@ -44,7 +44,6 @@ struct GetPropertiesOp
         : mId(id)
         , mOp(ex, alloc, std::move(handler))
         , mTimer(ex)
-        , mCount(0)
         , mTasks(std::move(tasks))
         , mMtx(mutex)
     {
@@ -53,6 +52,9 @@ struct GetPropertiesOp
             mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
                     std::lock_guard<std::mutex> lk(mMtx);
+                    for (const auto& taskId : mTasks) {
+                        mResult.failed.emplace(taskId);
+                    }
                     mOp.Timeout(mResult);
                 }
             });
@@ -60,13 +62,6 @@ struct GetPropertiesOp
         if (mTasks.empty()) {
             OLOG(warning) << "GetProperties initiated on an empty set of tasks, check the path argument.";
         }
-
-        mResult.failed.reserve(mTasks.size());
-        for (const auto& taskId : mTasks) {
-            mResult.failed.emplace(taskId);
-        }
-
-        // OLOG(debug) << "GetProperties " << mId << " with expected count of " << mTasks.size() << " started.";
     }
     GetPropertiesOp() = delete;
     GetPropertiesOp(const GetPropertiesOp&) = delete;
@@ -78,13 +73,47 @@ struct GetPropertiesOp
     /// precondition: mMtx is locked.
     void Update(const DDSTask::Id taskId, cc::Result result, DeviceProperties props)
     {
-        if (result == cc::Result::Ok) {
-            mResult.failed.erase(taskId);
-            mResult.devices.insert({ taskId, { std::move(props) } });
+        if (!mOp.IsCompleted() && ContainsTask(taskId)) {
+            if (result == cc::Result::Ok) {
+                mResult.devices.insert({ taskId, { std::move(props) } });
+            } else {
+                mResult.failed.emplace(taskId);
+            }
+            mTasks.erase(taskId);
+            TryCompletion();
         }
-        ++mCount;
-        TryCompletion();
     }
+
+    void Ignore(const DDSTask::Id taskId)
+    {
+        if (!mOp.IsCompleted() && ContainsTask(taskId)) {
+            mTasks.erase(taskId);
+            TryCompletion();
+        }
+    }
+
+    /// precondition: mMtx is locked.
+    void TryCompletion()
+    {
+        if (!mOp.IsCompleted() && mTasks.empty()) {
+            mTimer.cancel();
+            if (!mResult.failed.empty()) {
+                Complete(MakeErrorCode(ErrorCode::DeviceGetPropertiesFailed));
+            } else {
+                Complete(std::error_code());
+            }
+        }
+    }
+
+    /// precondition: mMtx is locked.
+    void Complete(std::error_code ec)
+    {
+        mTimer.cancel();
+        mOp.Complete(ec, std::move(mResult));
+    }
+
+    /// precondition: mMtx is locked.
+    bool ContainsTask(DDSTask::Id id) { return mTasks.count(id) > 0; }
 
     bool IsCompleted() { return mOp.IsCompleted(); }
 
@@ -92,23 +121,9 @@ struct GetPropertiesOp
     const uint64_t mId;
     AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
-    unsigned int mCount;
     std::unordered_set<DDSTask::Id> mTasks;
     GetPropertiesResult mResult;
     std::mutex& mMtx;
-
-    /// precondition: mMtx is locked.
-    void TryCompletion()
-    {
-        if (!mOp.IsCompleted() && mCount == mTasks.size()) {
-            mTimer.cancel();
-            if (!mResult.failed.empty()) {
-                mOp.Complete(MakeErrorCode(ErrorCode::DeviceGetPropertiesFailed), std::move(mResult));
-            } else {
-                mOp.Complete(std::move(mResult));
-            }
-        }
-    }
 };
 
 } // namespace odc::core

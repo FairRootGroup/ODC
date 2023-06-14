@@ -46,7 +46,6 @@ struct WaitForStateOp
         : mId(id)
         , mOp(ex, alloc, std::move(handler))
         , mTimer(ex)
-        , mCount(0)
         , mTasks(std::move(tasks))
         , mTargetLastState(targetLastState)
         , mTargetCurrentState(targetCurrentState)
@@ -73,26 +72,21 @@ struct WaitForStateOp
     ~WaitForStateOp() = default;
 
     /// precondition: mMtx is locked.
+    // TODO: rename this - there is no count anymore
     void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
     {
-        mCount = std::count_if(stateIndex.cbegin(), stateIndex.cend(), [=](const auto& s) {
-            const auto& task = stateData.at(s.second);
-            if (ContainsTask(task.taskId)) {
-                if (task.state == mTargetCurrentState && (task.lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined)) {
-                    return true;
-                } else {
-                    // Do not wait for an errored/exited device that is not yet ignored
-                    if (task.state == DeviceState::Error || task.state == DeviceState::Exiting) {
-                        mErrored = true;
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
+        for (auto it = mTasks.begin(); it != mTasks.end();) {
+            const DeviceStatus& ds = stateData.at(stateIndex.at(*it));
+            if (ds.state == mTargetCurrentState && (ds.lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined)) {
+                it = mTasks.erase(it);
+            } else if (ds.state == DeviceState::Error || ds.state == DeviceState::Exiting) {
+                // Do not wait for an errored/exited device that is not yet ignored (op is started without ignored devices)
+                mErrored = true;
+                it = mTasks.erase(it);
             } else {
-                return false;
+                ++it;
             }
-        });
+        }
     }
 
     /// precondition: mMtx is locked.
@@ -100,16 +94,21 @@ struct WaitForStateOp
     {
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
             if (currentState == mTargetCurrentState && (lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined)) {
-                ++mCount;
+                mTasks.erase(taskId);
             } else if (currentState == DeviceState::Error || currentState == DeviceState::Exiting) {
-                if (mFailed.count(taskId) == 0) {
-                    mErrored = expendable ? false : true;
-                    ++mCount;
-                    mFailed.emplace(taskId);
-                } else {
-                    // OLOG(debug) << "Task " << taskId << " is already in the set of failed devices. Called twice from StateChange & onTaskDone?";
-                }
+                // if expendable - ignore it, by not returning an error
+                mErrored = expendable ? false : true;
+                mTasks.erase(taskId);
             }
+            TryCompletion();
+        }
+    }
+
+    /// precondition: mMtx is locked.
+    void Ignore(const DDSTask::Id taskId)
+    {
+        if (!mOp.IsCompleted() && ContainsTask(taskId)) {
+            mTasks.erase(taskId);
             TryCompletion();
         }
     }
@@ -117,9 +116,9 @@ struct WaitForStateOp
     /// precondition: mMtx is locked.
     void TryCompletion()
     {
-        if (!mOp.IsCompleted() && mCount == mTasks.size()) {
+        if (!mOp.IsCompleted() && mTasks.empty()) {
             if (mErrored) {
-                Complete(MakeErrorCode(ErrorCode::DeviceChangeStateFailed));
+                Complete(MakeErrorCode(ErrorCode::DeviceWaitForStateFailed));
             } else {
                 Complete(std::error_code());
             }
@@ -142,9 +141,7 @@ struct WaitForStateOp
     const uint64_t mId;
     AsioAsyncOp<Executor, Allocator, WaitForStateCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
-    unsigned int mCount;
     std::unordered_set<DDSTask::Id> mTasks;
-    FailedDevices mFailed;
     DeviceState mTargetLastState;
     DeviceState mTargetCurrentState;
     std::mutex& mMtx;

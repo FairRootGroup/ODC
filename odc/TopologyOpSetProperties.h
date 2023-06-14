@@ -44,7 +44,6 @@ struct SetPropertiesOp
         : mId(id)
         , mOp(ex, alloc, std::move(handler))
         , mTimer(ex)
-        , mCount(0)
         , mTasks(std::move(tasks))
         , mMtx(mutex)
     {
@@ -53,14 +52,16 @@ struct SetPropertiesOp
             mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
                     std::lock_guard<std::mutex> lk(mMtx);
-                    mOp.Timeout(mOutstandingDevices);
+                    for (const auto& t : mTasks) {
+                        mFailed.emplace(t);
+                    }
+                    mOp.Timeout(mFailed);
                 }
             });
         }
         if (mTasks.empty()) {
             OLOG(warning) << "SetProperties initiated on an empty set of tasks, check the path argument.";
         }
-        // OLOG(debug) << "SetProperties " << mId << " with expected count of " << mTasks.size() << " started.";
     }
     SetPropertiesOp() = delete;
     SetPropertiesOp(const SetPropertiesOp&) = delete;
@@ -70,17 +71,19 @@ struct SetPropertiesOp
     ~SetPropertiesOp() = default;
 
     /// precondition: mMtx is locked.
+    // TODO: rename this - there is no count anymore
     void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
     {
-        mOutstandingDevices.reserve(mTasks.size());
-        for (const auto& taskId : mTasks) {
-            const DeviceStatus& ds = stateData.at(stateIndex.at(taskId));
-            // Do not wait for an errored/exited device that is not yet ignored
+        for (auto it = mTasks.begin(); it != mTasks.end();) {
+            const DeviceStatus& ds = stateData.at(stateIndex.at(*it));
             if (ds.state == DeviceState::Error || ds.state == DeviceState::Exiting) {
-                ++mCount;
+                // Do not wait for an errored/exited device that is not yet ignored (op is started without ignored devices)
+                mErrored = true;
+                mFailed.emplace(ds.taskId);
+                it = mTasks.erase(it);
+            } else {
+                ++it;
             }
-            // but always list at as failed/outstanding
-            mOutstandingDevices.emplace(taskId);
         }
     }
 
@@ -88,21 +91,21 @@ struct SetPropertiesOp
     void Update(const DDSTask::Id taskId, cc::Result result, bool expendable)
     {
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
-            if (result == cc::Result::Ok) {
-                mOutstandingDevices.erase(taskId);
-                ++mCount;
-            } else {
-                if (mOutstandingDevices.count(taskId) > 0) {
-                    // if expendable - ignore it, by not returning an error
-                    // TODO: should the failed device still be returned, but with a success condition?
-                    if (expendable) {
-                        mOutstandingDevices.erase(taskId);
-                    }
-                    ++mCount;
-                } else {
-                    // OLOG(debug) << "Task " << taskId << " is already updated";
-                }
+            if (result != cc::Result::Ok) {
+                // if expendable - ignore it, by not returning an error
+                mErrored = expendable ? false : true;
+                mFailed.emplace(taskId);
             }
+            mTasks.erase(taskId);
+            TryCompletion();
+        }
+    }
+
+    /// precondition: mMtx is locked.
+    void Ignore(const DDSTask::Id taskId)
+    {
+        if (!mOp.IsCompleted() && ContainsTask(taskId)) {
+            mTasks.erase(taskId);
             TryCompletion();
         }
     }
@@ -110,15 +113,24 @@ struct SetPropertiesOp
     /// precondition: mMtx is locked.
     void TryCompletion()
     {
-        if (!mOp.IsCompleted() && mCount == mTasks.size()) {
-            mTimer.cancel();
-            if (!mOutstandingDevices.empty()) {
-                mOp.Complete(MakeErrorCode(ErrorCode::DeviceSetPropertiesFailed), mOutstandingDevices);
+        if (!mOp.IsCompleted() && mTasks.empty()) {
+            if (mErrored) {
+                Complete(MakeErrorCode(ErrorCode::DeviceSetPropertiesFailed));
             } else {
-                mOp.Complete(mOutstandingDevices);
+                Complete(std::error_code());
             }
         }
     }
+
+    /// precondition: mMtx is locked.
+    void Complete(std::error_code ec)
+    {
+        mTimer.cancel();
+        mOp.Complete(ec, mFailed);
+    }
+
+    /// precondition: mMtx is locked.
+    bool ContainsTask(DDSTask::Id id) { return mTasks.count(id) > 0; }
 
     bool IsCompleted() { return mOp.IsCompleted(); }
 
@@ -126,13 +138,10 @@ struct SetPropertiesOp
     const uint64_t mId;
     AsioAsyncOp<Executor, Allocator, SetPropertiesCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
-    unsigned int mCount;
     std::unordered_set<DDSTask::Id> mTasks;
-    FailedDevices mOutstandingDevices;
+    FailedDevices mFailed;
     std::mutex& mMtx;
-
-    /// precondition: mMtx is locked.
-    bool ContainsTask(DDSTask::Id id) { return mTasks.count(id) > 0; }
+    bool mErrored = false;
 };
 
 } // namespace odc::core
