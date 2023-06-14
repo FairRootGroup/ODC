@@ -184,27 +184,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         return set;
     }
 
-    // precondition: mMtx is locked.
-    void IgnoreDevice(DeviceStatus& device)
-    {
-        // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Ignoring device " << device.taskId << " from collection " << device.collectionId;
-        if (device.subscribedToStateChanges) {
-            device.subscribedToStateChanges = false;
-            --mNumStateChangePublishers;
-        }
-        device.ignored = true;
-    }
-
-    // precondition: mMtx is locked.
-    void IgnoreCollection(odc::core::DDSCollection::Id id)
-    {
-        for (auto& device : mStateData) {
-            if (device.collectionId == id) {
-                IgnoreDevice(device);
-            }
-        }
-    }
-
     void SubscribeToStateChanges()
     {
         // FAIR_LOG(debug) << "Subscribing to state change";
@@ -331,6 +310,44 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
         // otherwise it is not expendable
         return false;
+    }
+
+    // precondition: mMtx is locked.
+    void IgnoreDevice(DeviceStatus& device)
+    {
+        // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Ignoring device " << device.taskId << " from collection " << device.collectionId;
+        if (device.subscribedToStateChanges) {
+            device.subscribedToStateChanges = false;
+            --mNumStateChangePublishers;
+        }
+        device.ignored = true;
+        IgnoreTaskForAllOps(device.taskId);
+    }
+
+    // precondition: mMtx is locked.
+    void IgnoreCollection(odc::core::DDSCollection::Id id)
+    {
+        for (auto& device : mStateData) {
+            if (device.collectionId == id) {
+                IgnoreDevice(device);
+            }
+        }
+    }
+
+    void IgnoreTaskForAllOps(odc::core::DDSTask::Id id)
+    {
+        for (auto& op : mChangeStateOps) {
+            op.second.Ignore(id);
+        }
+        for (auto& op : mWaitForStateOps) {
+            op.second.Ignore(id);
+        }
+        for (auto& op : mGetPropertiesOps) {
+            op.second.Ignore(id);
+        }
+        for (auto& op : mSetPropertiesOps) {
+            op.second.Ignore(id);
+        }
     }
 
     void WaitForPublisherCount(unsigned int number)
