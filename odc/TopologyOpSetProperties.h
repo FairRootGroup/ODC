@@ -36,6 +36,8 @@ struct SetPropertiesOp
     template<typename Handler>
     SetPropertiesOp(uint64_t id,
                     std::unordered_set<DDSTask::Id> tasks,
+                    const TopoStateIndex& stateIndex,
+                    TopoState& stateData,
                     Duration timeout,
                     std::mutex& mutex,
                     Executor const& ex,
@@ -62,18 +64,6 @@ struct SetPropertiesOp
         if (mTasks.empty()) {
             OLOG(warning) << "SetProperties initiated on an empty set of tasks, check the path argument.";
         }
-    }
-    SetPropertiesOp() = delete;
-    SetPropertiesOp(const SetPropertiesOp&) = delete;
-    SetPropertiesOp& operator=(const SetPropertiesOp&) = delete;
-    SetPropertiesOp(SetPropertiesOp&&) = default;
-    SetPropertiesOp& operator=(SetPropertiesOp&&) = default;
-    ~SetPropertiesOp() = default;
-
-    /// precondition: mMtx is locked.
-    // TODO: rename this - there is no count anymore
-    void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
-    {
         for (auto it = mTasks.begin(); it != mTasks.end();) {
             const DeviceStatus& ds = stateData.at(stateIndex.at(*it));
             if (ds.state == DeviceState::Error || ds.state == DeviceState::Exiting) {
@@ -86,6 +76,12 @@ struct SetPropertiesOp
             }
         }
     }
+    SetPropertiesOp() = delete;
+    SetPropertiesOp(const SetPropertiesOp&) = delete;
+    SetPropertiesOp& operator=(const SetPropertiesOp&) = delete;
+    SetPropertiesOp(SetPropertiesOp&&) = default;
+    SetPropertiesOp& operator=(SetPropertiesOp&&) = default;
+    ~SetPropertiesOp() = default;
 
     /// precondition: mMtx is locked.
     void Update(const DDSTask::Id taskId, cc::Result result, bool expendable)

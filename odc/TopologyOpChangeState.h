@@ -37,6 +37,7 @@ struct ChangeStateOp
     ChangeStateOp(uint64_t id,
                   TopoTransition transition,
                   std::unordered_set<DDSTask::Id> tasks,
+                  const TopoStateIndex& stateIndex,
                   TopoState& stateData,
                   Duration timeout,
                   std::mutex& mutex,
@@ -63,18 +64,7 @@ struct ChangeStateOp
         if (mTasks.empty()) {
             OLOG(warning) << "ChangeState initiated on an empty set of tasks, check the path argument.";
         }
-    }
-    ChangeStateOp() = delete;
-    ChangeStateOp(const ChangeStateOp&) = delete;
-    ChangeStateOp& operator=(const ChangeStateOp&) = delete;
-    ChangeStateOp(ChangeStateOp&&) = default;
-    ChangeStateOp& operator=(ChangeStateOp&&) = default;
-    ~ChangeStateOp() = default;
 
-    /// precondition: mMtx is locked.
-    // TODO: rename this - there is no count anymore
-    void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
-    {
         for (auto it = mTasks.begin(); it != mTasks.end();) {
             const DeviceStatus& ds = stateData.at(stateIndex.at(*it));
             if (ds.state == mTargetState) {
@@ -88,6 +78,12 @@ struct ChangeStateOp
             }
         }
     }
+    ChangeStateOp() = delete;
+    ChangeStateOp(const ChangeStateOp&) = delete;
+    ChangeStateOp& operator=(const ChangeStateOp&) = delete;
+    ChangeStateOp(ChangeStateOp&&) = default;
+    ChangeStateOp& operator=(ChangeStateOp&&) = default;
+    ~ChangeStateOp() = default;
 
     /// precondition: mMtx is locked.
     void Update(const DDSTask::Id taskId, const DeviceState currentState, bool expendable)

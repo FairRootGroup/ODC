@@ -38,6 +38,8 @@ struct WaitForStateOp
                    DeviceState targetLastState,
                    DeviceState targetCurrentState,
                    std::unordered_set<DDSTask::Id> tasks,
+                   const TopoStateIndex& stateIndex,
+                   TopoState& stateData,
                    Duration timeout,
                    std::mutex& mutex,
                    Executor const& ex,
@@ -63,18 +65,6 @@ struct WaitForStateOp
         if (mTasks.empty()) {
             OLOG(warning) << "WaitForState initiated on an empty set of tasks, check the path argument.";
         }
-    }
-    WaitForStateOp() = delete;
-    WaitForStateOp(const WaitForStateOp&) = delete;
-    WaitForStateOp& operator=(const WaitForStateOp&) = delete;
-    WaitForStateOp(WaitForStateOp&&) = default;
-    WaitForStateOp& operator=(WaitForStateOp&&) = default;
-    ~WaitForStateOp() = default;
-
-    /// precondition: mMtx is locked.
-    // TODO: rename this - there is no count anymore
-    void ResetCount(const TopoStateIndex& stateIndex, const TopoState& stateData)
-    {
         for (auto it = mTasks.begin(); it != mTasks.end();) {
             const DeviceStatus& ds = stateData.at(stateIndex.at(*it));
             if (ds.state == mTargetCurrentState && (ds.lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined)) {
@@ -88,6 +78,12 @@ struct WaitForStateOp
             }
         }
     }
+    WaitForStateOp() = delete;
+    WaitForStateOp(const WaitForStateOp&) = delete;
+    WaitForStateOp& operator=(const WaitForStateOp&) = delete;
+    WaitForStateOp(WaitForStateOp&&) = default;
+    WaitForStateOp& operator=(WaitForStateOp&&) = default;
+    ~WaitForStateOp() = default;
 
     /// precondition: mMtx is locked.
     void Update(const DDSTask::Id taskId, const DeviceState lastState, const DeviceState currentState, bool expendable)

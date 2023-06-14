@@ -566,6 +566,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                                                   id,
                                                                   transition,
                                                                   GetTasks(path),
+                                                                  mStateIndex,
                                                                   mStateData,
                                                                   timeout,
                                                                   *mMtx,
@@ -577,7 +578,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 cc::Cmds cmds(cc::make<cc::ChangeState>(transition));
                 mDDSCustomCmd.send(cmds.Serialize(), path);
 
-                it->second.ResetCount(mStateIndex, mStateData);
                 // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
                 it->second.TryCompletion();
             },
@@ -686,6 +686,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                                                    targetLastState,
                                                                    targetCurrentState,
                                                                    GetTasks(path),
+                                                                   mStateIndex,
+                                                                   mStateData,
                                                                    timeout,
                                                                    *mMtx,
                                                                    AsioBase<Executor, Allocator>::GetExecutor(),
@@ -693,7 +695,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                                                    std::move(handler)
                 );
 
-                it->second.ResetCount(mStateIndex, mStateData);
                 // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
                 it->second.TryCompletion();
             },
@@ -848,6 +849,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 auto [it, inserted] = mSetPropertiesOps.try_emplace(id,
                                                                     id,
                                                                     GetTasks(path),
+                                                                    mStateIndex,
+                                                                    mStateData,
                                                                     timeout,
                                                                     *mMtx,
                                                                     AsioBase<Executor, Allocator>::GetExecutor(),
@@ -858,7 +861,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 cc::Cmds const cmds(cc::make<cc::SetProperties>(id, props));
                 mDDSCustomCmd.send(cmds.Serialize(), path);
 
-                it->second.ResetCount(mStateIndex, mStateData);
                 // TODO: make sure following operation properly queues the completion and not doing it directly out of initiation call.
                 it->second.TryCompletion();
             },
