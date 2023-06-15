@@ -1,5 +1,10 @@
 # ODC Release Notes
 
+## 0.78.0 (2023-06-15)
+
+- Fixed known issue from 0.78.0-beta: agents are now shut down failed tasks/collections from expendable/nMin triggers.
+- Bugfix: updated Topology Ops to allow ignoring of tasks. Used during ignore events in Topology, to avoid command races.
+
 ## 0.78.0-beta.2 (2023-05-19)
 
 - InfoLogger: Set message levels (same translation as in AliceO2)
