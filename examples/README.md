@@ -195,4 +195,5 @@ We create a "EPNGroup" group and add it into the main group of the topology. Set
 | `ex-topo-groupname.xml`                          | agent groups                              | calib: 1[2], online: 4[2]                |
 | `ex-topo-groupname-crashing.xml`                 | nMin test - some tasks fail purposefully. | calib: 1[2], online: 4[2]                |
 | `ex-topo-groupname-crashing-expendable-task.xml` | expendable tasks are allowed to fail      | calib: 1[2], online: 4[2]                |
+| `ex-topo-groupname-crashing-no-calib.xml`        | failing tasks in a single agent group     | online: 4[2]                             |
 | `ex-topo-groupname-ncores.xml`                   | test core-based scheduling with Slurm     | calib1: 1[1], calib2: 1[1], online: 4[1] |

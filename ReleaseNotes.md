@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## 0.78.1 (2023-06-16)
+
+- Fix regression in resource parameter extraction and add tests for the breaking case
+
 ## 0.78.0 (2023-06-15)
 
 - Fixed known issue from 0.78.0-beta: agents are now shut down failed tasks/collections from expendable/nMin triggers.
@@ -43,7 +47,7 @@ Known Issues:
 
 ## 0.77.0 (2023-02-20)
 
-- Improvement: Fail early on ressource plugin failures.
+- Improvement: Fail early on resource plugin failures.
 - Improvement: Include agent startup time in the agent info output.
 - Bugfix: Fix incorrect slot count on submission failures.
 - Bugfix: Fix some CLI tools/commands not stopping execution after --help.

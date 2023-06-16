@@ -173,7 +173,10 @@ odc_add_boost_tests(SUITE parameters
   creation/odc_rp_same_simple
   creation/odc_rp_same_zones
   creation/odc_rp_epn_slurm_zones
+  creation/odc_rp_epn_slurm_zones_group_without_n_with_tasks
+  creation/odc_rp_epn_slurm_zones_group_without_n_without_tasks
   creation/odc_rp_epn_slurm_ncores
+  creation/odc_rp_epn_slurm_ncores_without_n
   creation/odc_extract_epn
 
   DEPS ODC::odc

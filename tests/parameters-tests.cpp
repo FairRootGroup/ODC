@@ -182,6 +182,111 @@ BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_zones)
     compareParameterSets(ddsParams.at(1), ddsParams2.at(1));
 }
 
+BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_zones_group_without_n_with_tasks)
+{
+    string rms = "slurm";
+    map<string, ZoneConfig> zones = {
+        { "calib", { "/home/user/slurm-calib.cfg", "" } },
+        { "online", { "/home/user/slurm-online.cfg", "" } }
+    };
+    string plugin = "epn";
+    string resources = "[{ \"zone\":\"online\", \"n\":4 }, { \"zone\":\"calib\" }]";
+    string partitionId = "test_partition_" + uuid();
+    CommonParams common(partitionId, 0, 10);
+
+    Session session;
+    session.mPartitionID = partitionId;
+    session.mTopoFilePath = kODCDataDir + "/ex-topo-groupname-crashing.xml";
+    Controller::extractRequirements(common, session);
+
+    DDSSubmit ddsSubmit;
+    vector<DDSSubmitParams> ddsParams;
+    ddsSubmit.registerPlugin("epn", kODCBinDir + "/odc-rp-epn-slurm --zones online:2:/home/user/slurm-online.cfg: calib:2:/home/user/slurm-calib.cfg:");
+    ddsParams = ddsSubmit.makeParams(plugin, resources, common, session.mZoneInfo, session.mNinfo, seconds(10));
+    vector<DDSSubmitParams> ddsParams2;
+    ddsParams2 = ddsSubmit.makeParams(rms, zones, session.mAgentGroupInfo);
+
+    printParams(ddsParams);
+    printParams(ddsParams2);
+
+    // old resource approach is not able to extract requirement for agent group without 'n', when no core requirements are specified
+    BOOST_TEST(ddsParams.size() == 1);
+    BOOST_TEST(ddsParams2.size() == 2);
+    testParameterSet(ddsParams.at(0), "slurm", "online", "online", 4, 2, 2, 0, "/home/user/slurm-online.cfg", "");
+    testParameterSet(ddsParams2.at(1), "slurm", "calib", "calib", 1, 0, 2, 0, "/home/user/slurm-calib.cfg", "");
+    testParameterSet(ddsParams2.at(0), "slurm", "online", "online", 4, 2, 2, 0, "/home/user/slurm-online.cfg", "");
+}
+
+BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_zones_group_without_n_without_tasks)
+{
+    string rms = "slurm";
+    map<string, ZoneConfig> zones = {
+        { "calib", { "/home/user/slurm-calib.cfg", "" } },
+        { "online", { "/home/user/slurm-online.cfg", "" } }
+    };
+    string plugin = "epn";
+    string resources = "[{ \"zone\":\"online\", \"n\":4 }, { \"zone\":\"calib\" }]";
+    string partitionId = "test_partition_" + uuid();
+    CommonParams common(partitionId, 0, 10);
+
+    Session session;
+    session.mPartitionID = partitionId;
+    session.mTopoFilePath = kODCDataDir + "/ex-topo-groupname-crashing-no-calib.xml";
+    Controller::extractRequirements(common, session);
+
+    DDSSubmit ddsSubmit;
+    vector<DDSSubmitParams> ddsParams;
+    ddsSubmit.registerPlugin("epn", kODCBinDir + "/odc-rp-epn-slurm --zones online:2:/home/user/slurm-online.cfg: calib:2:/home/user/slurm-calib.cfg:");
+    ddsParams = ddsSubmit.makeParams(plugin, resources, common, session.mZoneInfo, session.mNinfo, seconds(10));
+    vector<DDSSubmitParams> ddsParams2;
+    ddsParams2 = ddsSubmit.makeParams(rms, zones, session.mAgentGroupInfo);
+
+    printParams(ddsParams);
+    printParams(ddsParams2);
+
+    BOOST_TEST(ddsParams.size() == 1);
+    BOOST_TEST(ddsParams2.size() == 1);
+    testParameterSet(ddsParams.at(0), "slurm", "online", "online", 4, 2, 2, 0, "/home/user/slurm-online.cfg", "");
+    compareParameterSets(ddsParams.at(0), ddsParams2.at(0));
+}
+
+BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_ncores_without_n)
+{
+    string rms = "slurm";
+    map<string, ZoneConfig> zones = {
+        { "calib", { "/home/user/slurm-calib.cfg", "" } },
+        { "online", { "/home/user/slurm-online.cfg", "" } }
+    };
+    string plugin = "epn";
+    string resources = "[{ \"zone\":\"calib\" }, { \"zone\":\"online\", \"n\":4 }]";
+    string partitionId = "test_partition_" + uuid();
+    CommonParams common(partitionId, 0, 10);
+
+    Session session;
+    session.mPartitionID = partitionId;
+    session.mTopoFilePath = kODCDataDir + "/ex-topo-groupname-ncores.xml";
+    Controller::extractRequirements(common, session);
+
+    DDSSubmit ddsSubmit;
+    ddsSubmit.registerPlugin("epn", kODCBinDir + "/odc-rp-epn-slurm --zones online:1:/home/user/slurm-online.cfg: calib:1:/home/user/slurm-calib.cfg:");
+    vector<DDSSubmitParams> ddsParams;
+    ddsParams = ddsSubmit.makeParams(plugin, resources, common, session.mZoneInfo, session.mNinfo, seconds(10));
+    vector<DDSSubmitParams> ddsParams2;
+    ddsParams2 = ddsSubmit.makeParams(rms, zones, session.mAgentGroupInfo);
+
+    printParams(ddsParams);
+    printParams(ddsParams2);
+
+    BOOST_TEST(ddsParams.size() == 3);
+    BOOST_TEST(ddsParams2.size() == 3);
+    testParameterSet(ddsParams.at(0), "slurm", "calib", "calib1", 1, 0, 1, 2, "/home/user/slurm-calib.cfg", "");
+    testParameterSet(ddsParams.at(1), "slurm", "online", "online", 4, 0, 1, 0, "/home/user/slurm-online.cfg", "");
+    testParameterSet(ddsParams.at(2), "slurm", "calib", "calib2", 1, 0, 1, 1, "/home/user/slurm-calib.cfg", "");
+    compareParameterSets(ddsParams.at(0), ddsParams2.at(2));
+    compareParameterSets(ddsParams.at(1), ddsParams2.at(0));
+    compareParameterSets(ddsParams.at(2), ddsParams2.at(1));
+}
+
 BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_ncores)
 {
     string rms = "slurm";
