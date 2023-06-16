@@ -730,7 +730,15 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
     });
 
     requestPtr->setResponseCallback([&common, &session, &mtx](const dds::tools_api::STopologyResponseData& res) {
-        OLOG(debug, common) << "DDS Activate Response: " << res;
+        OLOG(debug, common) << "DDS Activate Response: "
+            << "agentID: " << res.m_agentID
+            << "; slotID: " << res.m_slotID
+            << "; taskID: " << res.m_taskID
+            << "; collectionID: " << res.m_collectionID
+            << "; host: " << res.m_host
+            << "; path: " << res.m_path
+            << "; workDir: " << res.m_wrkDir
+            << "; activated: " << res.m_activated;
 
         // We are not interested in stopped tasks
         if (res.m_activated) {
