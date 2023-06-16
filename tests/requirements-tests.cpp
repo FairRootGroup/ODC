@@ -158,11 +158,11 @@ BOOST_AUTO_TEST_CASE(zones_from_agent_groupnames)
 
     BOOST_TEST(session.mCollections.size() == 2);
     testCollection(session.mCollections.at("SamplersSinks"), "SamplersSinks", "calib", "calib", 1, 0, 0, 2, 2);
-    testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, 0, 0, 1, 4);
+    testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, 2, 0, 2, 8);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, 0, 1, 0);
     testAgentGroupInfo(session.mAgentGroupInfo.at("calib"), "calib", "calib", 1, 0, 2, 0);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, 2, 2, 0);
 }
 
 BOOST_AUTO_TEST_CASE(zones_with_ncores)

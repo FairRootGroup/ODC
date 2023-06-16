@@ -118,10 +118,10 @@ BOOST_AUTO_TEST_CASE(odc_rp_same_zones)
     string plugin = "odc-rp-same";
     // DDS localhost rms requires multiple submissions if the number of agents must be larger than 1
     string resources = "<submit><rms>localhost</rms><agents>1</agents><zone>calib</zone><slots>2</slots></submit>"
-                       "<submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>1</slots></submit>"
-                       "<submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>1</slots></submit>"
-                       "<submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>1</slots></submit>"
-                       "<submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>1</slots></submit>";
+                       "<submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>2</slots></submit>"
+                       "<submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>2</slots></submit>"
+                       "<submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>2</slots></submit>"
+                       "<submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>2</slots></submit>";
     string partitionId = "test_partition_" + uuid();
     CommonParams common(partitionId, 0, 10);
 
@@ -141,10 +141,10 @@ BOOST_AUTO_TEST_CASE(odc_rp_same_zones)
 
     BOOST_TEST(ddsParams.size() == 5);
     testParameterSet(ddsParams.at(0), "localhost", "calib", "calib", 1, 0, 2, 0, "", "");
-    testParameterSet(ddsParams.at(1), "localhost", "online", "online", 1, 0, 1, 0, "", "");
-    testParameterSet(ddsParams.at(2), "localhost", "online", "online", 1, 0, 1, 0, "", "");
-    testParameterSet(ddsParams.at(3), "localhost", "online", "online", 1, 0, 1, 0, "", "");
-    testParameterSet(ddsParams.at(4), "localhost", "online", "online", 1, 0, 1, 0, "", "");
+    testParameterSet(ddsParams.at(1), "localhost", "online", "online", 1, 2, 2, 0, "", "");
+    testParameterSet(ddsParams.at(2), "localhost", "online", "online", 1, 2, 2, 0, "", "");
+    testParameterSet(ddsParams.at(3), "localhost", "online", "online", 1, 2, 2, 0, "", "");
+    testParameterSet(ddsParams.at(4), "localhost", "online", "online", 1, 2, 2, 0, "", "");
 }
 
 BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_zones)
