@@ -14,6 +14,7 @@
 #include <odc/Version.h>
 
 #include <dds/Tools.h>
+#include <dds/Version.h>
 
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -76,6 +77,8 @@ int main(int argc, char** argv)
             cerr << "Can't initialize log: " << _e.what() << endl;
             return EXIT_FAILURE;
         }
+
+        OLOG(info) << "Starting odc-cli-server " << ODC_VERSION << " (DDS " << DDS_VERSION_STRING << "). Logging severity '" << logConfig.mSeverity << "'";
 
         CliHelper::batchCmds(vm, batch, batchOptions);
         CliHelper::parsePluginMapOptions(vm, plugins, "rp");

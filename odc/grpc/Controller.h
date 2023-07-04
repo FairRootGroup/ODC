@@ -15,6 +15,9 @@
 #include <odc/MiscUtils.h>
 #include <odc/PluginManager.h>
 #include <odc/Topology.h>
+#include <odc/Version.h>
+
+#include <dds/Version.h>
 
 #include <grpcpp/grpcpp.h>
 #include <odc/grpc/odc.grpc.pb.h>
@@ -331,7 +334,7 @@ class GrpcController final : public odc::ODC::Service
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
 
-        OLOG(info) << "Status request from " << client << ": runnning: " << req->running();
+        OLOG(info) << "Status request for ODC " << ODC_VERSION << " (DDS " << DDS_VERSION_STRING << ") from " << client << ": runnning: " << req->running();
 
         const core::StatusRequestResult res{ mController.execStatus(core::StatusParams(req->running())) };
         setupStatusReply(rep, res);
@@ -415,7 +418,7 @@ class GrpcController final : public odc::ODC::Service
     template<typename Request>
     void logCommonRequest(const std::string& label, const std::string& client, const core::CommonParams& common, const Request* req)
     {
-        OLOG(info, common) << label << " request from " << client << ": "
+        OLOG(info, common) << label << " request for ODC " << ODC_VERSION << " (DDS " << DDS_VERSION_STRING << ") from " << client << ": "
             << "partitionId: " << req->partitionid()
             << "; runnr: "     << req->runnr()
             << "; timeout: "   << req->timeout();

@@ -97,7 +97,7 @@ class Logger
         boost::log::add_common_attributes();
         boost::log::core::get()->add_global_attribute("Process", boost::log::attributes::current_process_name());
 
-        OLOG(info) << "Log engine is initialized with severety \"" << cfg.mSeverity << "\"";
+        // OLOG(info) << "Log engine is initialized with severety \"" << cfg.mSeverity << "\"";
     }
 
   private:

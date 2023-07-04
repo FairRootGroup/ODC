@@ -83,6 +83,8 @@ int main(int argc, char** argv)
             return EXIT_FAILURE;
         }
 
+        OLOG(info) << "Starting odc-grpc-server " << ODC_VERSION << " (DDS " << DDS_VERSION_STRING << "). Logging severity '" << logConfig.mSeverity << "'";
+
         CliHelper::parsePluginMapOptions(vm, plugins, "rp");
 
         odc::GrpcController controller;
