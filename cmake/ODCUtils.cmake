@@ -13,7 +13,7 @@ find_package(Git)
 function(odc_get_version)
 
   if(GIT_FOUND AND EXISTS ${CMAKE_SOURCE_DIR}/.git)
-    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir "${CMAKE_SOURCE_DIR}/.git" describe --match "[0-9]*\\.[0-9]*" --abbrev=7 HEAD
+    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir "${CMAKE_SOURCE_DIR}/.git" describe --tags --match "[0-9]*\\.[0-9]*" --abbrev=7 HEAD
                     COMMAND sed -e "s/-/./g"
                     OUTPUT_VARIABLE PROJECT_VERSION
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
