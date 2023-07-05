@@ -34,8 +34,7 @@ template<typename Executor, typename Allocator>
 struct ChangeStateOp
 {
     template<typename Handler>
-    ChangeStateOp(uint64_t id,
-                  TopoTransition transition,
+    ChangeStateOp(TopoTransition transition,
                   std::unordered_set<DDSTask::Id> tasks,
                   const TopoStateIndex& stateIndex,
                   TopoState& stateData,
@@ -44,8 +43,7 @@ struct ChangeStateOp
                   Executor const& ex,
                   Allocator const& alloc,
                   Handler&& handler)
-        : mId(id)
-        , mOp(ex, alloc, std::move(handler))
+        : mOp(ex, alloc, std::move(handler))
         , mStateData(stateData)
         , mTimer(ex)
         , mTasks(std::move(tasks))
@@ -136,7 +134,6 @@ struct ChangeStateOp
     DeviceState GetTargetState() const { return mTargetState; }
 
   private:
-    const uint64_t mId;
     AsioAsyncOp<Executor, Allocator, ChangeStateCompletionSignature> mOp;
     TopoState& mStateData;
     boost::asio::steady_timer mTimer;

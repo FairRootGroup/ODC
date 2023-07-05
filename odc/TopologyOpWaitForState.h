@@ -34,8 +34,7 @@ template<typename Executor, typename Allocator>
 struct WaitForStateOp
 {
     template<typename Handler>
-    WaitForStateOp(uint64_t id,
-                   DeviceState targetLastState,
+    WaitForStateOp(DeviceState targetLastState,
                    DeviceState targetCurrentState,
                    std::unordered_set<DDSTask::Id> tasks,
                    const TopoStateIndex& stateIndex,
@@ -45,8 +44,7 @@ struct WaitForStateOp
                    Executor const& ex,
                    Allocator const& alloc,
                    Handler&& handler)
-        : mId(id)
-        , mOp(ex, alloc, std::move(handler))
+        : mOp(ex, alloc, std::move(handler))
         , mTimer(ex)
         , mTasks(std::move(tasks))
         , mTargetLastState(targetLastState)
@@ -134,7 +132,6 @@ struct WaitForStateOp
     bool IsCompleted() { return mOp.IsCompleted(); }
 
   private:
-    const uint64_t mId;
     AsioAsyncOp<Executor, Allocator, WaitForStateCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
     std::unordered_set<DDSTask::Id> mTasks;

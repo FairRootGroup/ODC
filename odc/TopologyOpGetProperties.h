@@ -34,15 +34,13 @@ template<typename Executor, typename Allocator>
 struct GetPropertiesOp
 {
     template<typename Handler>
-    GetPropertiesOp(uint64_t id,
-                    std::unordered_set<DDSTask::Id> tasks,
+    GetPropertiesOp(std::unordered_set<DDSTask::Id> tasks,
                     Duration timeout,
                     std::mutex& mutex,
                     Executor const& ex,
                     Allocator const& alloc,
                     Handler&& handler)
-        : mId(id)
-        , mOp(ex, alloc, std::move(handler))
+        : mOp(ex, alloc, std::move(handler))
         , mTimer(ex)
         , mTasks(std::move(tasks))
         , mMtx(mutex)
@@ -118,7 +116,6 @@ struct GetPropertiesOp
     bool IsCompleted() { return mOp.IsCompleted(); }
 
   private:
-    const uint64_t mId;
     AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
     std::unordered_set<DDSTask::Id> mTasks;

@@ -34,8 +34,7 @@ template<typename Executor, typename Allocator>
 struct SetPropertiesOp
 {
     template<typename Handler>
-    SetPropertiesOp(uint64_t id,
-                    std::unordered_set<DDSTask::Id> tasks,
+    SetPropertiesOp(std::unordered_set<DDSTask::Id> tasks,
                     const TopoStateIndex& stateIndex,
                     TopoState& stateData,
                     Duration timeout,
@@ -43,8 +42,7 @@ struct SetPropertiesOp
                     Executor const& ex,
                     Allocator const& alloc,
                     Handler&& handler)
-        : mId(id)
-        , mOp(ex, alloc, std::move(handler))
+        : mOp(ex, alloc, std::move(handler))
         , mTimer(ex)
         , mTasks(std::move(tasks))
         , mMtx(mutex)
@@ -131,7 +129,6 @@ struct SetPropertiesOp
     bool IsCompleted() { return mOp.IsCompleted(); }
 
   private:
-    const uint64_t mId;
     AsioAsyncOp<Executor, Allocator, SetPropertiesCompletionSignature> mOp;
     boost::asio::steady_timer mTimer;
     std::unordered_set<DDSTask::Id> mTasks;
