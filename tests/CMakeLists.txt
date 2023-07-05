@@ -83,7 +83,7 @@ macro(add_nmin_test TITLE PASS FAIL)
   configure_file(nmin.cfg.in           ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.cfg @ONLY)
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.xml DESTINATION ${PROJECT_INSTALL_DATADIR})
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.cfg DESTINATION ${PROJECT_INSTALL_DATADIR})
-  add_test(NAME ${TITLE} COMMAND $<TARGET_FILE:odc-cli-server> --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.cfg)
+  add_test(NAME ${TITLE} COMMAND $<TARGET_FILE:odc-cli-server> --timeout 20 --severity dbg --batch --cf ${CMAKE_CURRENT_BINARY_DIR}/${TEST_SETUP}.cfg)
   set_tests_properties(${TITLE} PROPERTIES TIMEOUT 60 PASS_REGULAR_EXPRESSION "${PASS}" FAIL_REGULAR_EXPRESSION "${FAIL}" ENVIRONMENT "${TEST_ENV}")
 endmacro()
 
@@ -101,6 +101,9 @@ add_nmin_test(nmin_gt_n "Status code: ERROR" "")
 
 # nmin is less than n - recovery should be possible if conditions satisfied
 add_nmin_test(nmin_lt_n "" "Status code: ERROR")
+
+# nmin is less than n - recovery should be possible if conditions satisfied and failing processes are hanging
+add_nmin_test(nmin_lt_n_hanging "" "Status code: ERROR")
 
 # TODO: fix this case
 # multiple collections per group are currently not allowed (might change in the future) - failure results in complete topology failure

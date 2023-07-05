@@ -11,9 +11,11 @@
 #include <fairmq/runDevice.h>
 
 #include <cstdlib> // getenv
+#include <chrono>
 #include <regex>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace bpo = boost::program_options;
@@ -82,7 +84,29 @@ struct Processor : fair::mq::Device
 void addCustomOptions(bpo::options_description& options)
 {
     options.add_options()
+        ("hang-paths", bpo::value<std::vector<std::string>>()->multitoken()->composing(), "Set of topology paths for which task should simulate hanging.")
         ("self-destruct-paths", bpo::value<std::vector<std::string>>()->multitoken()->composing(), "Set of topology paths for which task should destroy itself.");
 }
 
-std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& /*config*/) { return std::make_unique<Processor>(); }
+std::unique_ptr<fair::mq::Device> getDevice(fair::mq::ProgOptions& config) {
+    std::string ddsTaskPath(std::getenv("DDS_TASK_PATH"));
+    LOG(info) << "DDS_TASK_PATH: " << ddsTaskPath;
+
+    std::vector<std::string> hangPaths = config.GetProperty<std::vector<std::string>>("hang-paths", std::vector<std::string>());
+    if (!hangPaths.empty()) {
+        for (const auto& pathRegexStr : hangPaths) {
+            std::regex pathRegex(pathRegexStr);
+            if (std::regex_match(ddsTaskPath, pathRegex)) {
+                LOG(info) << "<<< task path " << std::quoted(ddsTaskPath) << " matches " << std::quoted(pathRegexStr) << ", hanging >>>";
+                while (true) {
+                    LOG(info) << "hanging...";
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                }
+            } else {
+                LOG(info) << "task path " << std::quoted(ddsTaskPath) << " does not match: " << std::quoted(pathRegexStr) << ".";
+            }
+        }
+    }
+
+    return std::make_unique<Processor>();
+}
