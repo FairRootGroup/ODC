@@ -28,7 +28,7 @@
 namespace odc::core
 {
 
-using WaitForStateCompletionSignature = void(std::error_code);
+using WaitForStateCompletionSignature = void(std::error_code, FailedDevices);
 
 template<typename Executor, typename Allocator>
 struct WaitForStateOp
@@ -58,7 +58,7 @@ struct WaitForStateOp
             mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
                     std::lock_guard<std::mutex> lk(mMtx);
-                    mOp.Timeout();
+                    mOp.Timeout(mTasks);
                 }
             });
         }
@@ -125,7 +125,7 @@ struct WaitForStateOp
     void Complete(std::error_code ec)
     {
         mTimer.cancel();
-        mOp.Complete(ec);
+        mOp.Complete(ec, mTasks);
     }
 
     /// precondition: mMtx is locked.

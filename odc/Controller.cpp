@@ -1104,9 +1104,14 @@ bool Controller::waitForState(const CommonParams& common, Session& session, Erro
     bool success = false;
 
     try {
-        error_code errorCode = session.mTopology->WaitForState(expState, path, requestTimeout(common));
+        auto [errorCode, failedDevices] = session.mTopology->WaitForState(expState, path, requestTimeout(common));
 
         success = !errorCode;
+        // on timeout, check if devices/collections are expendable
+        if (!success && static_cast<ErrorCode>(errorCode.value()) == ErrorCode::OperationTimeout) {
+            success = session.mTopology->checkExpendable(failedDevices);
+        }
+
         if (!success) {
             stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
             switch (static_cast<ErrorCode>(errorCode.value())) {

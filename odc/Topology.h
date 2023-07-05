@@ -257,6 +257,21 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         mDDSSession.sendRequest<SOnTaskDoneRequest>(mDDSOnTaskDoneRequest);
     }
 
+    bool checkExpendable(FailedDevices& failed)
+    {
+        std::lock_guard<std::mutex> lk(*mMtx);
+        for (auto& deviceId : failed) {
+            DeviceStatus& device = mStateData.at(mStateIndex.at(deviceId));
+            if (!IgnoreExpendable(device)) {
+                // if any is not expendable, return
+                return false;
+            }
+        }
+
+        // everything is expendable
+        return true;
+    }
+
     // precondition: mMtx is locked
     bool IgnoreExpendable(odc::core::DeviceStatus& device)
     {
@@ -278,29 +293,33 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             auto col = runtimeCollection.m_collection;
             auto it = mCollectionInfo.find(col->getName());
             if (it != mCollectionInfo.end()) {
+                CollectionInfo& colInfo = it->second;
                 // one collection failed
-                it->second.nCurrent--;
+                colInfo.nCurrent--;
                 // check nMin condition
-                if (it->second.nMin == 0) {
+                if (colInfo.nMin == 0) {
                     // no nMin defined, failure cannot be ignored
-                    OLOG(error, mPartitionID, mLastRunNr.load()) << "Failed collection '" << runtimeCollection.m_collectionPath << "' has no nMin defined. Cannot be ignored.";
+                    OLOG(error, mPartitionID, mLastRunNr.load())
+                        << "Collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
+                        << "has no nMin defined. Cannot be ignored.";
                     return false;
-                }
-                if (it->second.nCurrent < it->second.nMin) {
+                } else if (colInfo.nCurrent < colInfo.nMin) {
                     // if nMin is not satisfied, the failure cannot be ignored
-                    OLOG(error, mPartitionID, mLastRunNr.load()) << "Collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
-                        << " has failed and current number of '" << col->getPath() << "' collections (" << it->second.nCurrent
-                        << ") is less than nMin (" << it->second.nMin << "). failure cannot be ignored.";
+                    OLOG(error, mPartitionID, mLastRunNr.load())
+                        << "Collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
+                        << " has failed and current number of '" << col->getPath() << "' collections (" << colInfo.nCurrent
+                        << ") is less than nMin (" << colInfo.nMin << "). Cannot be ignored.";
                     return false;
                 } else {
-                    // if nMin is satisfied, ignore the entire collection
-                    OLOG(info, mPartitionID, mLastRunNr.load()) << "Ignoring failed collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
-                        << " as the remaining number of '" << col->getPath() << "' collections (" << it->second.nCurrent
-                        << ") is greater than or equal to nMin (" << it->second.nMin << ").";
+                    // if nMin is satisfied, ignore the entire collection & shutdown the responsible agent
+                    OLOG(info, mPartitionID, mLastRunNr.load())
+                        << "Ignoring failed collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
+                        << " as the remaining number of '" << col->getPath() << "' collections (" << colInfo.nCurrent
+                        << ") is greater than or equal to nMin (" << colInfo.nMin << ").";
                     IgnoreCollection(device.collectionId);
 
                     // TODO: shutdown agent only if it has no tasks left
-                    uint64_t agentId = it->second.mRuntimeCollectionAgents.at(device.collectionId);
+                    uint64_t agentId = colInfo.mRuntimeCollectionAgents.at(device.collectionId);
                     ShutdownDDSAgent(agentId);
 
                     return true;
@@ -747,16 +766,18 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param path Select a subset of FairMQ devices in this topology, empty selects all
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    std::error_code WaitForState(const DeviceState targetLastState, const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0))
+    std::pair<std::error_code, FailedDevices> WaitForState(const DeviceState targetLastState, const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0))
     {
         SharedSemaphore blocker;
         std::error_code ec;
-        AsyncWaitForState(targetLastState, targetCurrentState, path, timeout, [&, blocker](std::error_code _ec) mutable {
+        FailedDevices failed;
+        AsyncWaitForState(targetLastState, targetCurrentState, path, timeout, [&, blocker](std::error_code _ec, FailedDevices _failed) mutable {
             ec = _ec;
+            failed = _failed;
             blocker.Signal();
         });
         blocker.Wait();
-        return ec;
+        return { ec, failed };
     }
 
     /// @brief Wait for selected FairMQ devices to reach given current state in this topology
@@ -764,7 +785,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     /// @param path Select a subset of FairMQ devices in this topology, empty selects all
     /// @param timeout Timeout in milliseconds, 0 means no timeout
     /// @throws std::system_error
-    std::error_code WaitForState(const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0))
+    std::pair<std::error_code, FailedDevices> WaitForState(const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0))
     {
         return WaitForState(DeviceState::Undefined, targetCurrentState, path, timeout);
     }
