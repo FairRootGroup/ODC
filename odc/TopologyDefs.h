@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <functional>
 #include <map>
 #include <optional>
 #include <ostream>
@@ -128,6 +129,19 @@ struct DeviceStatus
         , collectionId(_collectionId)
     {}
 
+    friend std::ostream& operator<<(std::ostream& os, const DeviceStatus& ds)
+    {
+        return os << "taskID: "         << ds.taskId
+                  << "; collectionID: " << ds.collectionId
+                  << "; lastState: " << ds.lastState
+                  << "; state: " << ds.state
+                  << "; ignored: " << ds.ignored
+                  << "; expendable: " << ds.expendable
+                  << "; subscribedToStateChanges: " << ds.subscribedToStateChanges
+                  << "; exitCode: " << ds.exitCode
+                  << "; signal: " << ds.signal;
+    }
+
     bool ignored = false;
     bool expendable = false;
     bool subscribedToStateChanges = false;
@@ -175,6 +189,8 @@ struct TopologyState
 using DeviceProperty = std::pair<std::string, std::string>; /// pair := (key, value)
 using DeviceProperties = std::vector<DeviceProperty>;
 using FailedDevices = std::unordered_set<DDSTask::Id>;
+
+using TimeoutHandler = std::function<void(FailedDevices)>;
 
 struct GetPropertiesResult
 {

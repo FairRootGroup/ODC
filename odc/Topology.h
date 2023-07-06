@@ -257,19 +257,13 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         mDDSSession.sendRequest<SOnTaskDoneRequest>(mDDSOnTaskDoneRequest);
     }
 
-    bool checkExpendable(FailedDevices& failed)
+    // precondition: mMtx is locked
+    void CheckExpendable(FailedDevices failed)
     {
-        std::lock_guard<std::mutex> lk(*mMtx);
         for (auto& deviceId : failed) {
             DeviceStatus& device = mStateData.at(mStateIndex.at(deviceId));
-            if (!IgnoreExpendable(device)) {
-                // if any is not expendable, return
-                return false;
-            }
+            IgnoreExpendable(device);
         }
-
-        // everything is expendable
-        return true;
     }
 
     // precondition: mMtx is locked
@@ -297,25 +291,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 // one collection failed
                 colInfo.nCurrent--;
                 // check nMin condition
-                if (colInfo.nMin == 0) {
-                    // no nMin defined, failure cannot be ignored
-                    OLOG(error, mPartitionID, mLastRunNr.load())
-                        << "Collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
-                        << "has no nMin defined. Cannot be ignored.";
-                    return false;
-                } else if (colInfo.nCurrent < colInfo.nMin) {
-                    // if nMin is not satisfied, the failure cannot be ignored
-                    OLOG(error, mPartitionID, mLastRunNr.load())
-                        << "Collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
-                        << " has failed and current number of '" << col->getPath() << "' collections (" << colInfo.nCurrent
-                        << ") is less than nMin (" << colInfo.nMin << "). Cannot be ignored.";
-                    return false;
-                } else {
-                    // if nMin is satisfied, ignore the entire collection & shutdown the responsible agent
-                    OLOG(info, mPartitionID, mLastRunNr.load())
-                        << "Ignoring failed collection '" << runtimeCollection.m_collectionPath << "' (id: " << device.collectionId << ")"
-                        << " as the remaining number of '" << col->getPath() << "' collections (" << colInfo.nCurrent
-                        << ") is greater than or equal to nMin (" << colInfo.nMin << ").";
+                if (CheckNmin(colInfo.nCurrent, colInfo.nMin, runtimeCollection.m_collectionPath, col->getPath(), device.collectionId)) {
                     IgnoreCollection(device.collectionId);
 
                     // TODO: shutdown agent only if it has no tasks left
@@ -329,6 +305,31 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
         // otherwise it is not expendable
         return false;
+    }
+
+    bool CheckNmin(int32_t nCurrent, int32_t nMin, const std::string& runtimeColPath, const std::string& colPath, DDSCollection::Id colId)
+    {
+        if (nMin == 0) {
+            // no nMin defined, failure cannot be ignored
+            OLOG(error, mPartitionID, mLastRunNr.load())
+                << "Collection '" << runtimeColPath << "' (id: " << colId << ")"
+                << "has no nMin defined. Cannot be ignored.";
+            return false;
+        } else if (nCurrent < nMin) {
+            // if nMin is not satisfied, the failure cannot be ignored
+            OLOG(error, mPartitionID, mLastRunNr.load())
+                << "Collection '" << runtimeColPath << "' (id: " << colId << ")"
+                << " has failed and current number of '" << colPath << "' collections (" << nCurrent
+                << ") is less than nMin (" << nMin << "). Cannot be ignored.";
+            return false;
+        } else {
+            // if nMin is satisfied, ignore the entire collection & shutdown the responsible agent
+            OLOG(info, mPartitionID, mLastRunNr.load())
+                << "Ignoring failed collection '" << runtimeColPath << "' (id: " << colId << ")"
+                << " as the remaining number of '" << colPath << "' collections (" << nCurrent
+                << ") is greater than or equal to nMin (" << nMin << ").";
+            return true;
+        }
     }
 
     // precondition: mMtx is locked.
@@ -599,13 +600,13 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 }
 
                 auto [it, inserted] = mChangeStateOps.try_emplace(id,
-                                                                  id,
                                                                   transition,
                                                                   GetTasks(path),
                                                                   mStateIndex,
                                                                   mStateData,
                                                                   timeout,
                                                                   *mMtx,
+                                                                  std::bind(&BasicTopology::CheckExpendable, this, std::placeholders::_1),
                                                                   AsioBase<Executor, Allocator>::GetExecutor(),
                                                                   AsioBase<Executor, Allocator>::GetAllocator(),
                                                                   std::move(handler)
@@ -718,7 +719,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 }
 
                 auto [it, inserted] = mWaitForStateOps.try_emplace(id,
-                                                                   id,
                                                                    targetLastState,
                                                                    targetCurrentState,
                                                                    GetTasks(path),
@@ -726,6 +726,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                                                                    mStateData,
                                                                    timeout,
                                                                    *mMtx,
+                                                                   std::bind(&BasicTopology::CheckExpendable, this, std::placeholders::_1),
                                                                    AsioBase<Executor, Allocator>::GetExecutor(),
                                                                    AsioBase<Executor, Allocator>::GetAllocator(),
                                                                    std::move(handler)
@@ -815,10 +816,10 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 }
 
                 mGetPropertiesOps.try_emplace(id,
-                                              id,
                                               GetTasks(path),
                                               timeout,
                                               *mMtx,
+                                              std::bind(&BasicTopology::CheckExpendable, this, std::placeholders::_1),
                                               AsioBase<Executor, Allocator>::GetExecutor(),
                                               AsioBase<Executor, Allocator>::GetAllocator(),
                                               std::move(handler)
@@ -885,12 +886,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 }
 
                 auto [it, inserted] = mSetPropertiesOps.try_emplace(id,
-                                                                    id,
                                                                     GetTasks(path),
                                                                     mStateIndex,
                                                                     mStateData,
                                                                     timeout,
                                                                     *mMtx,
+                                                                    std::bind(&BasicTopology::CheckExpendable, this, std::placeholders::_1),
                                                                     AsioBase<Executor, Allocator>::GetExecutor(),
                                                                     AsioBase<Executor, Allocator>::GetAllocator(),
                                                                     std::move(handler)

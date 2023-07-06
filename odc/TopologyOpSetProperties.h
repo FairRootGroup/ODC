@@ -39,10 +39,12 @@ struct SetPropertiesOp
                     TopoState& stateData,
                     Duration timeout,
                     std::mutex& mutex,
+                    TimeoutHandler timeoutHandler,
                     Executor const& ex,
                     Allocator const& alloc,
                     Handler&& handler)
         : mOp(ex, alloc, std::move(handler))
+        , mTimeoutHandler(std::move(timeoutHandler))
         , mTimer(ex)
         , mTasks(std::move(tasks))
         , mMtx(mutex)
@@ -52,10 +54,13 @@ struct SetPropertiesOp
             mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
                     std::lock_guard<std::mutex> lk(mMtx);
-                    for (const auto& t : mTasks) {
-                        mFailed.emplace(t);
+                    mTimeoutHandler(mTasks);
+                    if (!mOp.IsCompleted()) {
+                        for (const auto& t : mTasks) {
+                            mFailed.emplace(t);
+                        }
+                        mOp.Timeout(mFailed);
                     }
-                    mOp.Timeout(mFailed);
                 }
             });
         }
@@ -130,6 +135,7 @@ struct SetPropertiesOp
 
   private:
     AsioAsyncOp<Executor, Allocator, SetPropertiesCompletionSignature> mOp;
+    TimeoutHandler mTimeoutHandler;
     boost::asio::steady_timer mTimer;
     std::unordered_set<DDSTask::Id> mTasks;
     FailedDevices mFailed;

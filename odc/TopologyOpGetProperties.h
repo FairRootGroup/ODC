@@ -37,10 +37,12 @@ struct GetPropertiesOp
     GetPropertiesOp(std::unordered_set<DDSTask::Id> tasks,
                     Duration timeout,
                     std::mutex& mutex,
+                    TimeoutHandler timeoutHandler,
                     Executor const& ex,
                     Allocator const& alloc,
                     Handler&& handler)
         : mOp(ex, alloc, std::move(handler))
+        , mTimeoutHandler(std::move(timeoutHandler))
         , mTimer(ex)
         , mTasks(std::move(tasks))
         , mMtx(mutex)
@@ -50,10 +52,13 @@ struct GetPropertiesOp
             mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
                     std::lock_guard<std::mutex> lk(mMtx);
-                    for (const auto& taskId : mTasks) {
-                        mResult.failed.emplace(taskId);
+                    mTimeoutHandler(mTasks);
+                    if (!mOp.IsCompleted()) {
+                        for (const auto& taskId : mTasks) {
+                            mResult.failed.emplace(taskId);
+                        }
+                        mOp.Timeout(mResult);
                     }
-                    mOp.Timeout(mResult);
                 }
             });
         }
@@ -117,6 +122,7 @@ struct GetPropertiesOp
 
   private:
     AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> mOp;
+    TimeoutHandler mTimeoutHandler;
     boost::asio::steady_timer mTimer;
     std::unordered_set<DDSTask::Id> mTasks;
     GetPropertiesResult mResult;

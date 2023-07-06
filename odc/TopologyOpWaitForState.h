@@ -41,10 +41,12 @@ struct WaitForStateOp
                    TopoState& stateData,
                    Duration timeout,
                    std::mutex& mutex,
+                   TimeoutHandler timeoutHandler,
                    Executor const& ex,
                    Allocator const& alloc,
                    Handler&& handler)
         : mOp(ex, alloc, std::move(handler))
+        , mTimeoutHandler(std::move(timeoutHandler))
         , mTimer(ex)
         , mTasks(std::move(tasks))
         , mTargetLastState(targetLastState)
@@ -56,7 +58,10 @@ struct WaitForStateOp
             mTimer.async_wait([&](std::error_code ec) {
                 if (!ec) {
                     std::lock_guard<std::mutex> lk(mMtx);
-                    mOp.Timeout(mTasks);
+                    mTimeoutHandler(mTasks);
+                    if (!mOp.IsCompleted()) {
+                        mOp.Timeout(mTasks);
+                    }
                 }
             });
         }
@@ -133,6 +138,7 @@ struct WaitForStateOp
 
   private:
     AsioAsyncOp<Executor, Allocator, WaitForStateCompletionSignature> mOp;
+    TimeoutHandler mTimeoutHandler;
     boost::asio::steady_timer mTimer;
     std::unordered_set<DDSTask::Id> mTasks;
     DeviceState mTargetLastState;
