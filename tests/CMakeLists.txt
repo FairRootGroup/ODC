@@ -102,8 +102,11 @@ add_nmin_test(nmin_gt_n "Status code: ERROR" "")
 # nmin is less than n - recovery should be possible if conditions satisfied
 add_nmin_test(nmin_lt_n "" "Status code: ERROR")
 
-# nmin is less than n - recovery should be possible if conditions satisfied and failing processes are hanging
-add_nmin_test(nmin_lt_n_hanging "" "Status code: ERROR")
+# nmin is less than n - recovery should be possible if conditions satisfied and failing processes are hanging before idle
+add_nmin_test(nmin_lt_n_hanging_before_idle "" "Status code: ERROR")
+
+# nmin is less than n - recovery should be possible if conditions satisfied and failing processes are hanging in init
+add_nmin_test(nmin_lt_n_hanging_in_init "" "Status code: ERROR")
 
 # TODO: fix this case
 # multiple collections per group are currently not allowed (might change in the future) - failure results in complete topology failure
