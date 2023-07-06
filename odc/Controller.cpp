@@ -1104,7 +1104,7 @@ bool Controller::waitForState(const CommonParams& common, Session& session, Erro
     bool success = false;
 
     try {
-        auto [errorCode, failedDevices] = session.mTopology->WaitForState(expState, path, requestTimeout(common));
+        auto [errorCode, failedDevices] = session.mTopology->WaitForState(DeviceState::Undefined, expState, path, requestTimeout(common));
 
         success = !errorCode;
         if (!success) {

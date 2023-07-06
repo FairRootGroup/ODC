@@ -621,41 +621,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             token);
     }
 
-    /// @brief Initiate state transition on all FairMQ devices in this topology
-    /// @param transition FairMQ device state machine transition
-    /// @param token Asio completion token
-    /// @tparam CompletionToken Asio completion token type
-    /// @throws std::system_error
-    template<typename CompletionToken>
-    auto AsyncChangeState(const TopoTransition transition, CompletionToken&& token)
-    {
-        return AsyncChangeState(transition, "", Duration(0), std::move(token));
-    }
-
-    /// @brief Initiate state transition on all FairMQ devices in this topology with a timeout
-    /// @param transition FairMQ device state machine transition
-    /// @param timeout Timeout in milliseconds, 0 means no timeout
-    /// @param token Asio completion token
-    /// @tparam CompletionToken Asio completion token type
-    /// @throws std::system_error
-    template<typename CompletionToken>
-    auto AsyncChangeState(const TopoTransition transition, Duration timeout, CompletionToken&& token)
-    {
-        return AsyncChangeState(transition, "", timeout, std::move(token));
-    }
-
-    /// @brief Initiate state transition on all FairMQ devices in this topology with a timeout
-    /// @param transition FairMQ device state machine transition
-    /// @param path Select a subset of FairMQ devices in this topology, empty selects all
-    /// @param token Asio completion token
-    /// @tparam CompletionToken Asio completion token type
-    /// @throws std::system_error
-    template<typename CompletionToken>
-    auto AsyncChangeState(const TopoTransition transition, const std::string& path, CompletionToken&& token)
-    {
-        return AsyncChangeState(transition, path, Duration(0), std::move(token));
-    }
-
     /// @brief Perform state transition on FairMQ devices in this topology for a specified topology path
     /// @param transition FairMQ device state machine transition
     /// @param path Select a subset of FairMQ devices in this topology, empty selects all
@@ -674,12 +639,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         blocker.Wait();
         return { ec, state };
     }
-
-    /// @brief Perform state transition on all FairMQ devices in this topology with a timeout
-    /// @param transition FairMQ device state machine transition
-    /// @param timeout Timeout in milliseconds, 0 means no timeout
-    /// @throws std::system_error
-    std::pair<std::error_code, TopoState> ChangeState(const TopoTransition transition, Duration timeout) { return ChangeState(transition, "", timeout); }
 
     /// @brief Returns the current state of the topology
     /// @return map of id : DeviceStatus
@@ -738,29 +697,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             token);
     }
 
-    /// @brief Initiate waiting for selected FairMQ devices to reach given last & current state in this topology
-    /// @param targetLastState the target last device state to wait for
-    /// @param targetCurrentState the target device state to wait for
-    /// @param token Asio completion token
-    /// @tparam CompletionToken Asio completion token type
-    /// @throws std::system_error
-    template<typename CompletionToken>
-    auto AsyncWaitForState(const DeviceState targetLastState, const DeviceState targetCurrentState, CompletionToken&& token)
-    {
-        return AsyncWaitForState(targetLastState, targetCurrentState, "", Duration(0), std::move(token));
-    }
-
-    /// @brief Initiate waiting for selected FairMQ devices to reach given current state in this topology
-    /// @param targetCurrentState the target device state to wait for
-    /// @param token Asio completion token
-    /// @tparam CompletionToken Asio completion token type
-    /// @throws std::system_error
-    template<typename CompletionToken>
-    auto AsyncWaitForState(const DeviceState targetCurrentState, CompletionToken&& token)
-    {
-        return AsyncWaitForState(DeviceState::Undefined, targetCurrentState, "", Duration(0), std::move(token));
-    }
-
     /// @brief Wait for selected FairMQ devices to reach given last & current state in this topology
     /// @param targetLastState the target last device state to wait for
     /// @param targetCurrentState the target device state to wait for
@@ -779,16 +715,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         });
         blocker.Wait();
         return { ec, failed };
-    }
-
-    /// @brief Wait for selected FairMQ devices to reach given current state in this topology
-    /// @param targetCurrentState the target device state to wait for
-    /// @param path Select a subset of FairMQ devices in this topology, empty selects all
-    /// @param timeout Timeout in milliseconds, 0 means no timeout
-    /// @throws std::system_error
-    std::pair<std::error_code, FailedDevices> WaitForState(const DeviceState targetCurrentState, const std::string& path = "", Duration timeout = Duration(0))
-    {
-        return WaitForState(DeviceState::Undefined, targetCurrentState, path, timeout);
     }
 
     /// @brief Initiate property query on selected FairMQ devices in this topology
@@ -829,17 +755,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 mDDSCustomCmd.send(cmds.Serialize(), path);
             },
             token);
-    }
-
-    /// @brief Initiate property query on selected FairMQ devices in this topology
-    /// @param query Key(s) to be queried (regex)
-    /// @param token Asio completion token
-    /// @tparam CompletionToken Asio completion token type
-    /// @throws std::system_error
-    template<typename CompletionToken>
-    auto AsyncGetProperties(const std::string& query, CompletionToken&& token)
-    {
-        return AsyncGetProperties(query, "", Duration(0), std::move(token));
     }
 
     /// @brief Query properties on selected FairMQ devices in this topology
@@ -904,17 +819,6 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                 it->second.TryCompletion();
             },
             token);
-    }
-
-    /// @brief Initiate property update on selected FairMQ devices in this topology
-    /// @param props Properties to set
-    /// @param token Asio completion token
-    /// @tparam CompletionToken Asio completion token type
-    /// @throws std::system_error
-    template<typename CompletionToken>
-    auto AsyncSetProperties(DeviceProperties const& props, CompletionToken&& token)
-    {
-        return AsyncSetProperties(props, "", Duration(0), std::move(token));
     }
 
     /// @brief Set properties on selected FairMQ devices in this topology

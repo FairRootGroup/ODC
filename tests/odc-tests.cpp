@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(async_change_state)
 
     SharedSemaphore blocker;
     Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
-    topo.AsyncChangeState(TopoTransition::InitDevice, [=](std::error_code ec, TopoState) mutable {
+    topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), [=](std::error_code ec, TopoState) mutable {
         BOOST_TEST_MESSAGE(ec);
         BOOST_CHECK_EQUAL(ec, std::error_code());
         blocker.Signal();
@@ -161,7 +161,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_with_executor)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
-    topo.AsyncChangeState(TopoTransition::InitDevice, [](std::error_code ec, TopoState) {
+    topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), [](std::error_code ec, TopoState) {
         BOOST_TEST_MESSAGE(ec);
         BOOST_CHECK_EQUAL(ec, std::error_code());
     });
@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_future)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
-    auto fut(topo.AsyncChangeState(TopoTransition::InitDevice, boost::asio::use_future));
+    auto fut(topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), boost::asio::use_future));
     std::thread t([&]() { f.mIoContext.run(); });
     bool success(false);
 
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_coroutine)
             auto executor = co_await boost::asio::this_coro::executor;
             Topology topo(executor, f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
             try {
-                TopoState state = co_await topo.AsyncChangeState(TopoTransition::InitDevice, asio::use_awaitable);
+                TopoState state = co_await topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), asio::use_awaitable);
                 success = true;
             } catch (const std::system_error& ex) {
                 BOOST_TEST_MESSAGE(ex.what());
@@ -271,16 +271,16 @@ BOOST_AUTO_TEST_CASE(async_change_state_concurrent)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
-    topo.AsyncChangeState(TopoTransition::InitDevice, ".*/(Sampler|Sink).*", [](std::error_code ec, TopoState) mutable {
+    topo.AsyncChangeState(TopoTransition::InitDevice, ".*/(Sampler|Sink).*", Duration(0), [](std::error_code ec, TopoState) mutable {
         BOOST_TEST_MESSAGE("ChangeState for Sampler|Sink: " << ec);
         BOOST_CHECK_EQUAL(ec, std::error_code());
     });
-    topo.AsyncChangeState(TopoTransition::InitDevice, ".*/Processor.*", [](std::error_code ec, TopoState) mutable {
+    topo.AsyncChangeState(TopoTransition::InitDevice, ".*/Processor.*", Duration(0), [](std::error_code ec, TopoState) mutable {
         BOOST_TEST_MESSAGE("ChangeState for Processors: " << ec);
         BOOST_CHECK_EQUAL(ec, std::error_code());
     });
 
-    topo.WaitForState(DeviceState::InitializingDevice);
+    topo.WaitForState(DeviceState::Undefined, DeviceState::InitializingDevice);
     auto const currentState = topo.GetCurrentState();
     BOOST_CHECK_NO_THROW(AggregateState(currentState));
     BOOST_CHECK_EQUAL(StateEqualsTo(currentState, DeviceState::InitializingDevice), true);
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_timeout)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
-    topo.AsyncChangeState(TopoTransition::InitDevice, std::chrono::milliseconds(1), [](std::error_code ec, TopoState) {
+    topo.AsyncChangeState(TopoTransition::InitDevice, "", std::chrono::milliseconds(1), [](std::error_code ec, TopoState) {
         BOOST_TEST_MESSAGE(ec);
         BOOST_CHECK_EQUAL(ec, MakeErrorCode(ErrorCode::OperationTimeout));
     });
@@ -309,7 +309,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_collection_view)
 
     SharedSemaphore blocker;
     Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
-    topo.AsyncChangeState(TopoTransition::InitDevice, [=](std::error_code ec, TopoState state) mutable {
+    topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), [=](std::error_code ec, TopoState state) mutable {
         BOOST_TEST_MESSAGE(ec);
         TopoStateByCollection cstate(GroupByCollectionId(state));
         BOOST_TEST_MESSAGE("num collections: " << cstate.size());
@@ -347,14 +347,14 @@ BOOST_AUTO_TEST_CASE(wait_for_state_full_device_lifecycle)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
-    topo.AsyncWaitForState(DeviceState::ResettingDevice, [](std::error_code ec, FailedDevices failed) {
+    topo.AsyncWaitForState(DeviceState::Undefined, DeviceState::ResettingDevice, "", Duration(0), [](std::error_code ec, FailedDevices failed) {
         BOOST_REQUIRE_EQUAL(ec, std::error_code());
         BOOST_REQUIRE_EQUAL(failed.size(), 0);
     });
     full_device_lifecycle([&](TopoTransition transition) {
         std::cout << "transition: " << transition << std::endl;
         topo.ChangeState(transition);
-        auto const result = topo.WaitForState(gExpectedState.at(transition));
+        auto const result = topo.WaitForState(DeviceState::Undefined, gExpectedState.at(transition));
         BOOST_REQUIRE_EQUAL(result.first, std::error_code());
         BOOST_REQUIRE_EQUAL(result.second.size(), 0);
     });
@@ -415,13 +415,13 @@ BOOST_AUTO_TEST_CASE(async_set_properties_concurrent)
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
 
     SharedSemaphore blocker(2);
-    topo.AsyncSetProperties({ { "key1", "val1" } }, [=](std::error_code ec, FailedDevices failed) mutable {
+    topo.AsyncSetProperties({ { "key1", "val1" } }, "", Duration(0), [=](std::error_code ec, FailedDevices failed) mutable {
         BOOST_TEST_MESSAGE(ec);
         BOOST_REQUIRE_EQUAL(ec, std::error_code());
         BOOST_REQUIRE_EQUAL(failed.size(), 0);
         blocker.Signal();
     });
-    topo.AsyncSetProperties({ { "key2", "val2" }, { "key3", "val3" } }, [=](std::error_code ec, FailedDevices failed) mutable {
+    topo.AsyncSetProperties({ { "key2", "val2" }, { "key3", "val3" } }, "", Duration(0), [=](std::error_code ec, FailedDevices failed) mutable {
         BOOST_TEST_MESSAGE(ec);
         BOOST_REQUIRE_EQUAL(ec, std::error_code());
         BOOST_REQUIRE_EQUAL(failed.size(), 0);
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE(set_properties_mixed)
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
 
     SharedSemaphore blocker;
-    topo.AsyncSetProperties({ { "key1", "val1" } }, [=](std::error_code ec, FailedDevices failed) mutable {
+    topo.AsyncSetProperties({ { "key1", "val1" } }, "", Duration(0), [=](std::error_code ec, FailedDevices failed) mutable {
         BOOST_TEST_MESSAGE(ec);
         BOOST_REQUIRE_EQUAL(ec, std::error_code());
         BOOST_REQUIRE_EQUAL(failed.size(), 0);
