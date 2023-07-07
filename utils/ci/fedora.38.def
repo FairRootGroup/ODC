@@ -1,0 +1,35 @@
+Bootstrap: docker
+From: fedora:38
+
+%post
+    dnf -y update
+    dnf -y install https://alfa-ci.gsi.de/packages/rpm/fedora-38-x86_64/fairsoft-release-dev.rpm
+    dnf -y install abseil-cpp-devel \
+                   asio-devel \
+                   boost-devel \
+                   ca-certificates \
+                   clang-tools-extra \
+                   cmake \
+                   faircmakemodules \
+                   fairlogger-devel \
+                   fairmq-devel \
+                   flatbuffers-devel \
+                   flatbuffers-compiler \
+                   gcc-c++ \
+                   git \
+                   grpc-devel \
+                   grpc-plugins \
+                   libasan \
+                   liblsan \
+                   libubsan \
+                   libxml2 \
+                   ninja-build \
+                   patch \
+                   wget
+    dnf -y clean all
+
+    git clone -b 3.7.22 https://github.com/FairRootGroup/DDS
+    cmake -GNinja -S DDS -B DDS_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_dds-tutorials=OFF
+    cmake --build DDS_build --target wn_bin
+    cmake --build DDS_build --target install
+    rm -rf DDS DDS_build
