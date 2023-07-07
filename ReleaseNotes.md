@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## 0.78.2 (2023-07-07)
+
+- Apply nMin/expendable checks for hanging devices
+
 ## 0.78.1 (2023-06-16)
 
 - Fix regression in resource parameter extraction and add tests for the breaking case
