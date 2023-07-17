@@ -53,12 +53,13 @@ class CInfoLogger
         return instance;
     }
 
-    void registerSink(ESeverity _severity, bool _infologger) const
+    void registerSink(ESeverity _infologgerSeverity, bool _infologger) const
     {
-        if (!_infologger)
+        if (!_infologger) {
             return;
+        }
         auto sink{ boost::make_shared<CSink>() };
-        sink->set_filter(logger::severity >= _severity);
+        sink->set_filter(logger::severity >= _infologgerSeverity);
         boost::log::core::get()->add_sink(sink);
     }
 
