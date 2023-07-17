@@ -53,13 +53,15 @@ class Logger
   public:
     struct Config
     {
-        Config(ESeverity severity = ESeverity::info, const std::string& logDir = "", bool infologger = false)
-            : mSeverity(severity)
+        Config(ESeverity sev = ESeverity::info, ESeverity infologgerSev = ESeverity::info, const std::string& logDir = "", bool infologger = false)
+            : mSeverity(sev)
+            , mInfologgerSeverity(infologgerSev)
             , mLogDir(logDir)
             , mInfologger(infologger)
         {}
 
         ESeverity mSeverity{ ESeverity::info };
+        ESeverity mInfologgerSeverity{ ESeverity::info };
         std::string mLogDir;
         bool mInfologger{ false };
         std::string mInfologgerSystem;
@@ -92,7 +94,7 @@ class Logger
         createFileSink(cfg);
         // Optional InfoLogger sink
         CInfoLogger::instance().setContext(cfg.mInfologgerFacility, cfg.mInfologgerSystem, cfg.mInfologgerRole);
-        CInfoLogger::instance().registerSink(cfg.mSeverity, cfg.mInfologger);
+        CInfoLogger::instance().registerSink(cfg.mInfologgerSeverity, cfg.mInfologger);
 
         boost::log::add_common_attributes();
         boost::log::core::get()->add_global_attribute("Process", boost::log::attributes::current_process_name());
