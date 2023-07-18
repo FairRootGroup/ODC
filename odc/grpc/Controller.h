@@ -424,7 +424,7 @@ class GrpcController final : public odc::ODC::Service
             << "; timeout: "   << req->timeout();
     }
 
-    void logGeneralReply(const std::string& label, const core::CommonParams& common, const GeneralReply& rep)
+    void logGeneralReply(const std::string& label, const core::CommonParams& common, const GeneralReply& rep, bool noError = false)
     {
         std::stringstream ss;
         ss << label << " reply: "
@@ -443,17 +443,25 @@ class GrpcController final : public odc::ODC::Service
 
         if (rep.status() == odc::ReplyStatus::ERROR) {
             ss << "; ERROR: " << rep.error().msg() << " (" << rep.error().code() << ") ";
-            OLOG(error, common) << ss.str();
+            if (noError) {
+                OLOG(info, common) << ss.str();
+            } else {
+                OLOG(error, common) << ss.str();
+            }
         } else if (rep.status() == odc::ReplyStatus::SUCCESS) {
             OLOG(info, common) << ss.str();
         } else {
-            OLOG(error, common) << label << " reply: " << rep.DebugString();
+            if (noError) {
+                OLOG(info, common) << label << " reply: " << rep.DebugString();
+            } else {
+                OLOG(error, common) << label << " reply: " << rep.DebugString();
+            }
         }
     }
 
     void logStateReply(const std::string& label, const core::CommonParams& common, const StateReply& rep)
     {
-        logGeneralReply(label, common, rep.reply());
+        logGeneralReply(label, common, rep.reply(), true);
         if (!rep.devices().empty()) {
             OLOG(debug, common) << "Detailed list of " << rep.devices().size() << " devices:";
             for (const auto& d : rep.devices()) {
