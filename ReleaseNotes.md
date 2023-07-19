@@ -1,5 +1,11 @@
 # ODC Release Notes
 
+## 0.79.0 (2023-07-19)
+
+- GetState: log the request and its results with debug severity only, unless there is an error.
+- GetState: do not error if the topology is not yet initialized, instead return aggregatedState = Undefined, detailedState = [], without error.
+- odc-grpc-server: add --infologger-severity cmd option to control which severities are passed to infoLogger (default is inf).
+
 ## 0.78.2 (2023-07-07)
 
 - Apply nMin/expendable checks for hanging devices
