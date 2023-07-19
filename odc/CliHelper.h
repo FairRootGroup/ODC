@@ -93,9 +93,9 @@ class CliHelper
         std::string defaultLogDir{ smart_path(std::string("$HOME/.ODC/log")) };
         options.add_options()
             ("logdir", value<std::string>(&config.mLogDir)->default_value(defaultLogDir), "Log files directory")
-            ("severity", value<ESeverity>(&config.mSeverity)->default_value(ESeverity::info), "Log severity level")
+            ("severity", value<ESeverity>(&config.mSeverity)->default_value(ESeverity::info), "Log severity level (dbg/inf/wrn/err/fat)")
             ("infologger", bool_switch(&config.mInfologger)->default_value(false), "Enable InfoLogger (ODC needs to be compiled with InfoLogger support)")
-            ("infologger-severity", value<ESeverity>(&config.mInfologgerSeverity)->default_value(ESeverity::info), "Log severity level for InfoLogger")
+            ("infologger-severity", value<ESeverity>(&config.mInfologgerSeverity)->default_value(ESeverity::info), "Log severity level for InfoLogger (dbg/inf/wrn/err/fat)")
             ("infologger-system", value<std::string>(&config.mInfologgerSystem)->default_value("ODC"), "Fills the InfoLogger 'System' field")
             ("infologger-facility", value<std::string>(&config.mInfologgerFacility)->default_value("ODC"), "Fills the InfoLogger 'Facility' field")
             ("infologger-role", value<std::string>(&config.mInfologgerRole)->default_value("production"), "Fills the InfoLogger 'Role' field");
