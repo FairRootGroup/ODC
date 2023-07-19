@@ -313,7 +313,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             // no nMin defined, failure cannot be ignored
             OLOG(error, mPartitionID, mLastRunNr.load())
                 << "Collection '" << runtimeColPath << "' (id: " << colId << ")"
-                << "has no nMin defined. Cannot be ignored.";
+                << " has no nMin defined. Cannot be ignored.";
             return false;
         } else if (nCurrent < nMin) {
             // if nMin is not satisfied, the failure cannot be ignored

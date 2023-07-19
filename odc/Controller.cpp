@@ -1144,21 +1144,18 @@ bool Controller::changeStateReset(const CommonParams& common, Session& session, 
         && changeState(common, session, error, path, TopoTransition::ResetDevice, topologyState);
 }
 
-bool Controller::getState(const CommonParams& common, Session& session, Error& error, const string& path, TopologyState& topologyState)
+void Controller::getState(const CommonParams& common, Session& session, Error& error, const string& path, TopologyState& topologyState)
 {
     if (session.mTopology == nullptr) {
-        error.mCode = MakeErrorCode(ErrorCode::FairMQGetStateFailed);
-        error.mDetails = "FairMQ topology is not initialized";
-        return false;
+        topologyState.aggregated = AggregatedState::Undefined;
+        return;
     }
 
-    bool success = true;
     auto const topoState = session.mTopology->GetCurrentState();
 
     try {
         topologyState.aggregated = aggregateStateForPath(session.mDDSTopo.get(), topoState, path);
     } catch (exception& e) {
-        success = false;
         fillAndLogError(common, error, ErrorCode::FairMQGetStateFailed, toString("Get state failed: ", e.what()));
     }
     if (topologyState.detailed.has_value()) {
@@ -1166,8 +1163,6 @@ bool Controller::getState(const CommonParams& common, Session& session, Error& e
     }
 
     printStateStats(common, topoState);
-
-    return success;
 }
 
 bool Controller::setProperties(const CommonParams& common, Session& session, Error& error, const string& path, const SetPropertiesParams::Props& props, TopologyState& topologyState)
