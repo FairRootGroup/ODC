@@ -142,7 +142,7 @@ class Controller
     bool changeStateReset(    const CommonParams& common, Session& session, Error& error, const std::string& path, TopologyState& topologyState);
     bool waitForState(        const CommonParams& common, Session& session, Error& error, const std::string& path, DeviceState expState);
     bool setProperties(       const CommonParams& common, Session& session, Error& error, const std::string& path, const SetPropertiesParams::Props& props, TopologyState& topologyState);
-    bool getState(            const CommonParams& common, Session& session, Error& error, const std::string& path, TopologyState& state);
+    void getState(            const CommonParams& common, Session& session, Error& error, const std::string& path, TopologyState& state);
 
     void fillAndLogError(               const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void fillAndLogFatalError(          const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
