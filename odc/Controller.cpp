@@ -1162,7 +1162,7 @@ void Controller::getState(const CommonParams& common, Session& session, Error& e
         session.fillDetailedState(topoState, topologyState.detailed.value());
     }
 
-    printStateStats(common, topoState);
+    printStateStats(common, topoState, true);
 }
 
 bool Controller::setProperties(const CommonParams& common, Session& session, Error& error, const string& path, const SetPropertiesParams::Props& props, TopologyState& topologyState)
@@ -1507,7 +1507,7 @@ void Controller::setZoneCfgs(const std::vector<std::string>& zonesStr)
     }
 }
 
-void Controller::printStateStats(const CommonParams& common, const TopoState& topoState)
+void Controller::printStateStats(const CommonParams& common, const TopoState& topoState, bool debugLog /* = false */)
 {
     std::map<DeviceState, uint64_t> taskStateCounts;
     std::map<AggregatedState, uint64_t> collectionStateCounts;
@@ -1533,12 +1533,20 @@ void Controller::printStateStats(const CommonParams& common, const TopoState& to
     for (const auto& [state, count] : taskStateCounts) {
         ss << " " << fair::mq::GetStateName(state) << " (" << count << "/" << topoState.size() << ")";
     }
-    OLOG(info, common) << ss.str();
+    if (debugLog) {
+        OLOG(debug, common) << ss.str();
+    } else {
+        OLOG(info, common) << ss.str();
+    }
     ss.str("");
     ss.clear();
     ss << "Collection states:";
     for (const auto& [state, count] : collectionStateCounts) {
         ss << " " << GetAggregatedStateName(state) << " (" << count << "/" << collectionMap.size() << ")";
     }
-    OLOG(info, common) << ss.str();
+    if (debugLog) {
+        OLOG(debug, common) << ss.str();
+    } else {
+        OLOG(info, common) << ss.str();
+    }
 }

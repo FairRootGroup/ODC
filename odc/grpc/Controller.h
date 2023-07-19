@@ -184,14 +184,14 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
 
-        logCommonRequest("GetState", client, common, req);
-        OLOG(info, common) << "GetState request detailed: " << req->detailed() << "; path: "   << req->path();
+        logCommonRequest("GetState", client, common, req, true);
+        OLOG(debug, common) << "GetState request detailed: " << req->detailed() << "; path: "   << req->path();
 
         const core::DeviceParams deviceParams{ req->path(), req->detailed() };
         const core::RequestResult res{ mController.execGetState(common, deviceParams) };
 
         setupStateReply(rep, res);
-        logStateReply("GetState", common, *rep);
+        logStateReply("GetState", common, *rep, true);
         return ::grpc::Status::OK;
     }
 
@@ -416,15 +416,21 @@ class GrpcController final : public odc::ODC::Service
     }
 
     template<typename Request>
-    void logCommonRequest(const std::string& label, const std::string& client, const core::CommonParams& common, const Request* req)
+    void logCommonRequest(const std::string& label, const std::string& client, const core::CommonParams& common, const Request* req, bool debugLog = false)
     {
-        OLOG(info, common) << label << " request for ODC " << ODC_VERSION << " (DDS " << DDS_VERSION_STRING << ") from " << client << ": "
+        std::stringstream ss;
+        ss << label << " request for ODC " << ODC_VERSION << " (DDS " << DDS_VERSION_STRING << ") from " << client << ": "
             << "partitionId: " << req->partitionid()
             << "; runnr: "     << req->runnr()
             << "; timeout: "   << req->timeout();
+        if (debugLog) {
+            OLOG(debug, common) << ss.str();
+        } else {
+            OLOG(info, common) << ss.str();
+        }
     }
 
-    void logGeneralReply(const std::string& label, const core::CommonParams& common, const GeneralReply& rep)
+    void logGeneralReply(const std::string& label, const core::CommonParams& common, const GeneralReply& rep, bool debugLog = false)
     {
         std::stringstream ss;
         ss << label << " reply: "
@@ -445,15 +451,19 @@ class GrpcController final : public odc::ODC::Service
             ss << "; ERROR: " << rep.error().msg() << " (" << rep.error().code() << ") ";
             OLOG(error, common) << ss.str();
         } else if (rep.status() == odc::ReplyStatus::SUCCESS) {
-            OLOG(info, common) << ss.str();
+            if (debugLog) {
+                OLOG(debug, common) << ss.str();
+            } else {
+                OLOG(info, common) << ss.str();
+            }
         } else {
             OLOG(error, common) << label << " reply: " << rep.DebugString();
         }
     }
 
-    void logStateReply(const std::string& label, const core::CommonParams& common, const StateReply& rep)
+    void logStateReply(const std::string& label, const core::CommonParams& common, const StateReply& rep, bool debugLog = false)
     {
-        logGeneralReply(label, common, rep.reply());
+        logGeneralReply(label, common, rep.reply(), debugLog);
         if (!rep.devices().empty()) {
             OLOG(debug, common) << "Detailed list of " << rep.devices().size() << " devices:";
             for (const auto& d : rep.devices()) {
