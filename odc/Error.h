@@ -36,7 +36,7 @@ struct Error
     std::error_code mCode; ///< Error code
     std::string mDetails;  ///< Details of the error
 
-    friend std::ostream& operator<<(std::ostream& os, const Error& error) { return os << error.mCode << " (" << error.mDetails << ")"; }
+    friend std::ostream& operator<<(std::ostream& os, const Error& error) { return os << "[" << error.mCode << "]: " << error.mDetails; }
 };
 
 enum class ErrorCode
