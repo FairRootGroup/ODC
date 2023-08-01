@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef ODC_CORE_DEFS
-#define ODC_CORE_DEFS
+#ifndef ODC_CORE_PARAMS
+#define ODC_CORE_PARAMS
 
 #include <odc/Error.h>
 #include <odc/Timer.h>
@@ -307,4 +307,4 @@ struct ZoneConfig
 
 } // namespace odc::core
 
-#endif /* defined(ODC_CORE_DEFS) */
+#endif /* defined(ODC_CORE_PARAMS) */
