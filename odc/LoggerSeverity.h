@@ -17,6 +17,7 @@ namespace odc::core {
 /// Log Severity levels
 enum class ESeverity
 {
+    trace,
     debug,
     info,
     warning,
@@ -25,7 +26,7 @@ enum class ESeverity
 };
 
 /// Array of log severity names
-static constexpr std::array<const char*, 8> gSeverityNames{ { "dbg", "inf", "wrn", "err", "fat" } };
+static constexpr std::array<const char*, 8> gSeverityNames{ { "trc", "dbg", "inf", "wrn", "err", "fat" } };
 
 namespace logger {
 BOOST_LOG_ATTRIBUTE_KEYWORD(severity, "Severity", ESeverity)
