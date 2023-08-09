@@ -1,5 +1,8 @@
 .run --id @TEST_SESSION@ -p odc-rp-same -r "<submit><rms>localhost</rms><agents>1</agents><zone>calib</zone><slots>2</slots></submit><submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>2</slots></submit><submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>2</slots></submit><submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>2</slots></submit><submit><rms>localhost</rms><agents>1</agents><zone>online</zone><slots>2</slots></submit>" --topo "@ODC_DATADIR@/@TEST_SETUP@.xml"
 .config  --id @TEST_SESSION@
 .state --detailed --id @TEST_SESSION@
+.reset  --id @TEST_SESSION@
+.state --detailed --id @TEST_SESSION@
+.term  --id @TEST_SESSION@
 .down  --id @TEST_SESSION@
 .quit
