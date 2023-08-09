@@ -465,9 +465,9 @@ class GrpcController final : public odc::ODC::Service
     {
         logGeneralReply(label, common, rep.reply(), debugLog);
         if (!rep.devices().empty()) {
-            OLOG(debug, common) << "Detailed list of " << rep.devices().size() << " devices:";
+            OLOG(trace, common) << "Detailed list of " << rep.devices().size() << " devices:";
             for (const auto& d : rep.devices()) {
-                OLOG(debug, common) << "id: "        << d.id()
+                OLOG(trace, common) << "id: "        << d.id()
                                    << "; state: "   << d.state()
                                    << "; path: "    << d.path()
                                    << "; ignored: " << d.ignored()

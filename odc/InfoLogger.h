@@ -77,6 +77,11 @@ class CInfoLogger
     void log(ESeverity _severity, const std::string& _channel, const std::string& _msg)
     {
         using namespace AliceO2::InfoLogger;
+
+        if (_severity == ESeverity::trace) {
+            return;
+        }
+
         InfoLogger::InfoLoggerMessageOption options{ convertSeverity(_severity), convertSeverityToLevel(_severity), -1, __FILE__, __LINE__ };
 
         // Channel string contains "partition:run"
