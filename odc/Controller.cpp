@@ -481,7 +481,7 @@ StatusRequestResult Controller::execStatus(const StatusParams& params)
     }
     result.mStatusCode = StatusCode::ok;
     result.mMsg = "Status done";
-    result.mExecTime = params.mTimer.duration();
+    result.mExecTime = params.mTimer.duration().count();
     return result;
 }
 
@@ -543,13 +543,13 @@ RequestResult Controller::createRequestResult(const CommonParams& common, const 
 {
     string sidStr = to_string(session.mDDSSession.getSessionID());
     StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
-    return RequestResult(status, msg, common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sidStr, std::move(topologyState), hosts);
+    return RequestResult(status, msg, common.mTimer.duration().count(), error, common.mPartitionID, common.mRunNr, sidStr, std::move(topologyState), hosts);
 }
 
 RequestResult Controller::createRequestResult(const CommonParams& common, const string& sessionId, const Error& error, const string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts)
 {
     StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
-    return RequestResult(status, msg, common.mTimer.duration(), error, common.mPartitionID, common.mRunNr, sessionId, std::move(topologyState), hosts);
+    return RequestResult(status, msg, common.mTimer.duration().count(), error, common.mPartitionID, common.mRunNr, sessionId, std::move(topologyState), hosts);
 }
 
 bool Controller::createDDSSession(const CommonParams& common, Session& session, Error& error)

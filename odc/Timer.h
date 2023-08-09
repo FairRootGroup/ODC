@@ -20,9 +20,9 @@ struct Timer
         : mStart(std::chrono::steady_clock::now())
     {}
 
-    int64_t duration() const
+    std::chrono::milliseconds duration() const
     {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - mStart).count();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - mStart);
     }
 
   private:
