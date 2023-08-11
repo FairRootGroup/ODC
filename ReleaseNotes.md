@@ -1,5 +1,11 @@
 # ODC Release Notes
 
+## 0.80.0 (2023-08-11)
+
+- Logger: add trace severity ("trc" value for --severity for CLI tools). Trace is lower than debug. This severity is not forwarded to infoLogger at all.
+- Log detailed device list (response to getState --detailed) only in trace severity.
+- Check for negative timeout values and produce an error if they occur.
+
 ## 0.79.0 (2023-07-19)
 
 - GetState: log the request and its results with debug severity only, unless there is an error.
