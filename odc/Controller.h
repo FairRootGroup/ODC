@@ -171,6 +171,9 @@ class Controller
         OLOG(debug, common) << "Configured request timeout: " << configuredTimeoutMs.count() << "ms "
             << (common.mTimeout == 0 ? "(controller default)" : "(request parameter)")
             << ", remaining time: " << realTimeoutMs.count() << "ms";
+        if (realTimeoutMs.count() < 0) {
+            throw Error(MakeErrorCode(ErrorCode::RequestTimeout), toString("Request timed out. Remaining time is: ", realTimeoutMs.count(), "ms"));
+        }
         return std::chrono::duration_cast<std::chrono::seconds>(realTimeoutMs);
     }
 

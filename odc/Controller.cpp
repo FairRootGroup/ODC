@@ -88,6 +88,10 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
             } else {
                 ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfo, session.mNinfo, requestTimeout(common));
             }
+        } catch (Error& e) {
+            error = e;
+            OLOG(error, common) << "Resource plugin failed: " << e;
+            return hosts;
         } catch (exception& e) {
             fillAndLogError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
             return hosts;
@@ -152,6 +156,9 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
             for (const auto& [groupName, count] : agentCounts) {
                 OLOG(info, common) << "  " << std::quoted(groupName) << ": " << count << " agents";
             }
+        } catch (Error& e) {
+            error = e;
+            OLOG(error, common) << "Failed getting agent info: " << e;
         } catch (const exception& e) {
             fillAndLogError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Failed getting agent info: ", e.what()));
         }
@@ -207,8 +214,11 @@ void Controller::attemptSubmitRecovery(const CommonParams& common,
                 fillAndLogError(common, error, ErrorCode::DDSCreateTopologyFailed, toString("Failed updating topology: ", e.what()));
             }
         }
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Submit recovery failed: " << e;
     } catch (const exception& e) {
-        fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Recovery failed: ", e.what()));
+        fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit recovery failed: ", e.what()));
     }
 }
 
@@ -260,6 +270,9 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     try {
         session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
         extractRequirements(common, session);
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Activate failed: " << e;
     } catch (exception& e) {
         fillAndLogFatalError(common, error, ErrorCode::TopologyFailed, e.what());
     }
@@ -300,6 +313,9 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
             try {
                 session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
                 extractRequirements(common, session);
+            } catch (Error& e) {
+                error = e;
+                OLOG(error, common) << "Topology creation failed: " << e;
             } catch (exception& e) {
                 fillAndLogFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
             }
@@ -338,6 +354,9 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
     try {
         session.mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
         extractRequirements(common, session);
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Topology creation failed: " << e;
     } catch (exception& e) {
         fillAndLogFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
     }
@@ -624,6 +643,10 @@ std::string Controller::getActiveDDSTopology(const CommonParams& common, Session
         OLOG(info, common) << ss.str();
         OLOG(debug, common) << "Commander info: " << commanderInfo;
         return commanderInfo.m_activeTopologyPath;
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Error getting DDS commander info: " << e;
+        return "";
     } catch (exception& e) {
         fillAndLogError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Error getting DDS commander info: ", e.what()));
         return "";
@@ -675,15 +698,21 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
 
     session.mDDSSession.sendRequest<SSubmitRequest>(requestPtr);
 
-    mutex mtx;
-    unique_lock<mutex> lock(mtx);
-    cv_status waitStatus = cv.wait_for(lock, requestTimeout(common));
+    try {
+        mutex mtx;
+        unique_lock<mutex> lock(mtx);
+        cv_status waitStatus = cv.wait_for(lock, requestTimeout(common));
 
-    if (waitStatus == cv_status::timeout) {
+        if (waitStatus == cv_status::timeout) {
+            success = false;
+            fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
+        } else {
+            // OLOG(info, common) << "Agent submission done successfully";
+        }
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Agent submission error: " << e;
         success = false;
-        fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
-    } else {
-        // OLOG(info, common) << "Agent submission done successfully";
     }
     return success;
 }
@@ -692,6 +721,10 @@ bool Controller::waitForNumActiveSlots(const CommonParams& common, Session& sess
 {
     try {
         session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common));
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Error while waiting for DDS slots: " << e;
+        return false;
     } catch (exception& e) {
         fillAndLogError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS slots: ", e.what()));
         return false;
@@ -764,27 +797,33 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
 
     session.mDDSSession.sendRequest<dds::tools_api::STopologyRequest>(requestPtr);
 
-    unique_lock<mutex> lock(mtx);
-    cv_status waitStatus = cv.wait_for(lock, requestTimeout(common));
+    try {
+        unique_lock<mutex> lock(mtx);
+        cv_status waitStatus = cv.wait_for(lock, requestTimeout(common));
 
-    if (waitStatus == cv_status::timeout) {
+        if (waitStatus == cv_status::timeout) {
+            success = false;
+            fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for topology activation");
+            OLOG(error, common) << error;
+        } else {
+            // try {
+            //     if (!session.mCollections.empty()) {
+            //         OLOG(info, common) << "Collections:";
+            //         for (const auto& [id, colInfo] : session.mCollections) {
+            //             OLOG(info, common) << "  " << colInfo;
+            //             for (const auto& [colId, agentId] : colInfo.mRuntimeCollectionAgents) {
+            //                 OLOG(info, common) << "    runtime collection: id: " << colId << ", agent id: " << agentId;
+            //             }
+            //         }
+            //     }
+            // } catch (const exception& e) {
+            //     fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, toString("Failed getting slot info: ", e.what()));
+            // }
+        }
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Error during topology activation: " << e;
         success = false;
-        fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for topology activation");
-        OLOG(error, common) << error;
-    } else {
-        // try {
-        //     if (!session.mCollections.empty()) {
-        //         OLOG(info, common) << "Collections:";
-        //         for (const auto& [id, colInfo] : session.mCollections) {
-        //             OLOG(info, common) << "  " << colInfo;
-        //             for (const auto& [colId, agentId] : colInfo.mRuntimeCollectionAgents) {
-        //                 OLOG(info, common) << "    runtime collection: id: " << colId << ", agent id: " << agentId;
-        //             }
-        //         }
-        //     }
-        // } catch (const exception& e) {
-        //     fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, toString("Failed getting slot info: ", e.what()));
-        // }
     }
 
     // session.debug();
@@ -1083,6 +1122,10 @@ bool Controller::changeState(const CommonParams& common, Session& session, Error
         }
 
         printStateStats(common, topoState);
+    } catch (Error& e) {
+        error = e;
+        stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
+        OLOG(fatal, common) << "Change state failed: " << e;
     } catch (exception& e) {
         stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
         fillAndLogFatalError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Change state failed: ", e.what()));
@@ -1120,6 +1163,10 @@ bool Controller::waitForState(const CommonParams& common, Session& session, Erro
         } else {
             OLOG(info, common) << "Topology state is now " << expState;
         }
+    } catch (Error& e) {
+        error = e;
+        stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
+        OLOG(fatal, common) << "Wait for state failed: " << e;
     } catch (exception& e) {
         stateSummaryOnFailure(common, session, session.mTopology->GetCurrentState(), expState);
         fillAndLogError(common, error, ErrorCode::FairMQChangeStateFailed, toString("Wait for state failed: ", e.what()));
@@ -1194,6 +1241,9 @@ bool Controller::setProperties(const CommonParams& common, Session& session, Err
         }
 
         topologyState.aggregated = AggregateState(session.mTopology->GetCurrentState());
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Set properties failed: " << e;
     } catch (exception& e) {
         fillAndLogError(common, error, ErrorCode::FairMQSetPropertiesFailed, toString("Set properties failed: ", e.what()));
     }
@@ -1397,6 +1447,8 @@ void Controller::ShutdownDDSAgent(const CommonParams& common, Session& session, 
             OLOG(info, common) << "Successfully reduced number of slots to " << currentSlotCount;
         }
         session.mTotalSlots = currentSlotCount;
+    } catch (Error& e) {
+        OLOG(error, common) << "Agent Shutdown failed: " << e;
     } catch (exception& e) {
         OLOG(error, common) << "Failed updating nubmer of slots: " << e.what();
     }
