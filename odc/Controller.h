@@ -162,17 +162,17 @@ class Controller
 
     std::string topoFilepath(const CommonParams& common, const std::string& topologyFile, const std::string& topologyContent, const std::string& topologyScript);
 
-    std::chrono::seconds requestTimeout(const CommonParams& common) const
+    std::chrono::seconds requestTimeout(const CommonParams& common, const std::string& op) const
     {
         std::chrono::seconds configuredTimeoutS = (common.mTimeout == 0 ? mTimeout : std::chrono::seconds(common.mTimeout));
         std::chrono::milliseconds configuredTimeoutMs = std::chrono::duration_cast<std::chrono::milliseconds>(configuredTimeoutS);
         // subtract time elapsed since the beginning of the request
         std::chrono::milliseconds realTimeoutMs = configuredTimeoutMs - common.mTimer.duration();
-        OLOG(debug, common) << "Configured request timeout: " << configuredTimeoutMs.count() << "ms "
+        OLOG(debug, common) << op << ": configured request timeout: " << configuredTimeoutMs.count() << "ms "
             << (common.mTimeout == 0 ? "(controller default)" : "(request parameter)")
             << ", remaining time: " << realTimeoutMs.count() << "ms";
         if (realTimeoutMs.count() < 0) {
-            throw Error(MakeErrorCode(ErrorCode::RequestTimeout), toString("Request timed out. Remaining time is: ", realTimeoutMs.count(), "ms"));
+            throw Error(MakeErrorCode(ErrorCode::RequestTimeout), toString("Request timeout. Remaining time is: ", realTimeoutMs.count(), "ms"));
         }
         return std::chrono::duration_cast<std::chrono::seconds>(realTimeoutMs);
     }

@@ -86,7 +86,7 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
             if (extractResources) {
                 ddsParams = mSubmit.makeParams(mRMS, mZoneCfgs, session.mAgentGroupInfo);
             } else {
-                ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfo, session.mNinfo, requestTimeout(common));
+                ddsParams = mSubmit.makeParams(plugin, res, common, session.mZoneInfo, session.mNinfo, requestTimeout(common, "submit::MakeParams"));
             }
         } catch (Error& e) {
             error = e;
@@ -638,7 +638,7 @@ std::string Controller::getActiveDDSTopology(const CommonParams& common, Session
         stringstream ss;
         session.mDDSSession.syncSendRequest<SCommanderInfoRequest>(SCommanderInfoRequest::request_t(),
                                                                     commanderInfo,
-                                                                    requestTimeout(common),
+                                                                    requestTimeout(common, "getActiveDDSTopology..syncSendRequest<SCommanderInfoRequest>"),
                                                                     &ss);
         OLOG(info, common) << ss.str();
         OLOG(debug, common) << "Commander info: " << commanderInfo;
@@ -701,7 +701,7 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
     try {
         mutex mtx;
         unique_lock<mutex> lock(mtx);
-        cv_status waitStatus = cv.wait_for(lock, requestTimeout(common));
+        cv_status waitStatus = cv.wait_for(lock, requestTimeout(common, "wait_for lock in submitDDSAgents"));
 
         if (waitStatus == cv_status::timeout) {
             success = false;
@@ -720,7 +720,7 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
 bool Controller::waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots)
 {
     try {
-        session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common));
+        session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common, "waitForNumActiveSlots..waitForNumSlots<dds::tools_api::CSession::EAgentState::active>"));
     } catch (Error& e) {
         error = e;
         OLOG(error, common) << "Error while waiting for DDS slots: " << e;
@@ -799,7 +799,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
 
     try {
         unique_lock<mutex> lock(mtx);
-        cv_status waitStatus = cv.wait_for(lock, requestTimeout(common));
+        cv_status waitStatus = cv.wait_for(lock, requestTimeout(common, "wait_for lock in activateDDSTopology"));
 
         if (waitStatus == cv_status::timeout) {
             success = false;
@@ -1097,7 +1097,7 @@ bool Controller::changeState(const CommonParams& common, Session& session, Error
     bool success = true;
 
     try {
-        auto [errorCode, topoState] = session.mTopology->ChangeState(transition, path, requestTimeout(common));
+        auto [errorCode, topoState] = session.mTopology->ChangeState(transition, path, requestTimeout(common, toString("ChangeState(", transition, ")")));
 
         success = !errorCode;
         if (!success) {
@@ -1147,7 +1147,7 @@ bool Controller::waitForState(const CommonParams& common, Session& session, Erro
     bool success = false;
 
     try {
-        auto [errorCode, failedDevices] = session.mTopology->WaitForState(DeviceState::Undefined, expState, path, requestTimeout(common));
+        auto [errorCode, failedDevices] = session.mTopology->WaitForState(DeviceState::Undefined, expState, path, requestTimeout(common, toString("WaitForState(", expState, ")")));
 
         success = !errorCode;
         if (!success) {
@@ -1220,7 +1220,7 @@ bool Controller::setProperties(const CommonParams& common, Session& session, Err
     }
 
     try {
-        auto [errorCode, failedDevices] = session.mTopology->SetProperties(props, path, requestTimeout(common));
+        auto [errorCode, failedDevices] = session.mTopology->SetProperties(props, path, requestTimeout(common, "SetProperties"));
         if (!errorCode) {
             OLOG(info, common) << "Set property finished successfully";
         } else {
@@ -1423,14 +1423,14 @@ void Controller::ShutdownDDSAgent(const CommonParams& common, Session& session, 
         SAgentCommandRequest::request_t agentCmd;
         agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
         agentCmd.m_arg1 = agentID;
-        session.mDDSSession.syncSendRequest<SAgentCommandRequest>(agentCmd, requestTimeout(common));
+        session.mDDSSession.syncSendRequest<SAgentCommandRequest>(agentCmd, requestTimeout(common, "ShutdownDDSAgent..syncSendRequest<SAgentCommandRequest>"));
 
         // TODO: notification on agent shutdown in development in DDS
         currentSlotCount = getNumSlots(common, session);
         OLOG(info, common) << "Current number of slots: " << currentSlotCount;
 
         if (currentSlotCount != expectedNumSlots) {
-            int64_t secondsLeft = requestTimeout(common).count();
+            int64_t secondsLeft = requestTimeout(common, "ShutdownDDSAgent..measure remaining time").count();
             if (secondsLeft > 0) {
                 int64_t maxAttempts = (secondsLeft * 1000) / 50;
                 while (currentSlotCount != expectedNumSlots && maxAttempts > 0) {
@@ -1458,7 +1458,7 @@ dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(con
 {
     using namespace dds::tools_api;
     SAgentInfoRequest::responseVector_t agentInfo;
-    session.mDDSSession.syncSendRequest<SAgentInfoRequest>(SAgentInfoRequest::request_t(), agentInfo, requestTimeout(common));
+    session.mDDSSession.syncSendRequest<SAgentInfoRequest>(SAgentInfoRequest::request_t(), agentInfo, requestTimeout(common, "getAgentInfo..syncSendRequest<SAgentInfoRequest>"));
     return agentInfo;
 }
 
@@ -1466,7 +1466,7 @@ uint32_t Controller::getNumSlots(const CommonParams& common, Session& session) c
 {
     using namespace dds::tools_api;
     SAgentCountRequest::response_t agentCountInfo;
-    session.mDDSSession.syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), agentCountInfo, requestTimeout(common));
+    session.mDDSSession.syncSendRequest<SAgentCountRequest>(SAgentCountRequest::request_t(), agentCountInfo, requestTimeout(common, "getNumSlots..syncSendRequest<SAgentCountRequest>"));
     return agentCountInfo.m_activeSlotsCount;
 }
 
@@ -1490,7 +1490,7 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
         OLOG(info, common) << "Executing topology generation script: " << topologyScript;
         std::vector<std::pair<std::string, std::string>> extraEnv;
         extraEnv.emplace_back(std::make_pair("ODC_TOPO_GEN_CMD", topologyScript));
-        execute(topologyScript, requestTimeout(common), &out, &err, &exitCode, extraEnv);
+        execute(topologyScript, requestTimeout(common, "topoFilepath..execute"), &out, &err, &exitCode, extraEnv);
 
         const size_t shortSize = 75;
         string shortSuffix;
