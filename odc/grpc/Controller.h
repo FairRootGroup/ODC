@@ -60,10 +60,10 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("Initialize", client, common, req);
         OLOG(info, common) << "Initialize request session ID: " << req->sessionid();
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::InitializeParams initializeParams{ req->sessionid() };
         const core::RequestResult res{ mController.execInitialize(common, initializeParams) };
@@ -79,10 +79,10 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("Submit", client, common, req);
         OLOG(info, common) << "Submit request plugin: " << req->plugin() << "; resources: " << req->resources();
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::SubmitParams submitParams{ req->plugin(), req->resources() };
         const core::RequestResult res{ mController.execSubmit(common, submitParams) };
@@ -97,8 +97,6 @@ class GrpcController final : public odc::ODC::Service
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
-
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         logCommonRequest("Activate", client, common, req);
         OLOG(info, common) << "Activate request topology file: " << req->topology();
@@ -115,6 +113,8 @@ class GrpcController final : public odc::ODC::Service
             OLOG(info, common) << "Run request END OF TOPOLOGY SCRIPT";
         }
 
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
+
         const core::ActivateParams activateParams{ req->topology(), req->content(), req->script() };
         const core::RequestResult res{ mController.execActivate(common, activateParams) };
 
@@ -128,8 +128,6 @@ class GrpcController final : public odc::ODC::Service
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
-
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         logCommonRequest("Run", client, common, req);
         OLOG(info, common) << "Run request plugin: " << req->plugin()
@@ -149,6 +147,8 @@ class GrpcController final : public odc::ODC::Service
             OLOG(info, common) << "Run request END OF TOPOLOGY SCRIPT";
         }
 
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
+
         const core::RunParams runParams{ req->plugin(), req->resources(), req->topology(), req->content(), req->script(), req->extracttoporesources() };
         const core::RequestResult res{ mController.execRun(common, runParams) };
 
@@ -163,12 +163,12 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("Update", client, common, req);
         OLOG(info, common) << "Update request topology: " << req->topology();
         OLOG(info, common) << "Update request content: "  << req->content();
         OLOG(info, common) << "Update request script: "   << req->script();
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::UpdateParams updateParams{ req->topology(), req->content(), req->script() };
         const core::RequestResult res{ mController.execUpdate(common, updateParams) };
@@ -201,8 +201,6 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("SetProperties", client, common, req);
         OLOG(info, common) << "SetProperties request path: " << req->path();
 
@@ -214,6 +212,8 @@ class GrpcController final : public odc::ODC::Service
             OLOG(info, common) << "  key: " << prop.key() << "; value: " << prop.value();
             props.push_back(core::SetPropertiesParams::Prop(prop.key(), prop.value()));
         }
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::SetPropertiesParams setPropertiesParams{ props, req->path() };
         const core::RequestResult res{ mController.execSetProperties(common, setPropertiesParams) };
@@ -229,9 +229,9 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("Configure", client, common, &(req->request()));
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         const core::RequestResult res{ mController.execConfigure(common, deviceParams) };
@@ -247,9 +247,9 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("Start", client, common, &(req->request()));
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         const core::RequestResult res{ mController.execStart(common, deviceParams) };
@@ -265,9 +265,9 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("Stop", client, common, &(req->request()));
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         const core::RequestResult res{ mController.execStop(common, deviceParams) };
@@ -283,9 +283,9 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("Reset", client, common, &(req->request()));
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         const core::RequestResult res{ mController.execReset(common, deviceParams) };
@@ -294,15 +294,16 @@ class GrpcController final : public odc::ODC::Service
         logStateReply("Reset", common, *rep);
         return ::grpc::Status::OK;
     }
+
     ::grpc::Status Terminate(::grpc::ServerContext* ctx, const odc::TerminateRequest* req, odc::StateReply* rep) override
     {
         assert(ctx);
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->request().partitionid(), req->request().runnr(), req->request().timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("Terminate", client, common, &(req->request()));
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::DeviceParams deviceParams{ req->request().path(), req->request().detailed() };
         const core::RequestResult res{ mController.execTerminate(common, deviceParams) };
@@ -318,9 +319,9 @@ class GrpcController final : public odc::ODC::Service
         const std::string client{ clientMetadataAsString(*ctx) };
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
 
-        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
-
         logCommonRequest("Shutdown", client, common, req);
+
+        std::lock_guard<std::mutex> lock(getMutex(common.mPartitionID));
 
         const core::RequestResult res{ mController.execShutdown(common) };
 
