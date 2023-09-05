@@ -11,7 +11,7 @@
 #include <odc/Logger.h>
 #include <odc/MiscUtils.h>
 #include <odc/Version.h>
-#include <odc/grpc/Controller.h>
+#include <odc/grpc/Server.h>
 
 #include <dds/Tools.h>
 
@@ -87,16 +87,16 @@ int main(int argc, char** argv)
 
         CliHelper::parsePluginMapOptions(vm, plugins, "rp");
 
-        odc::GrpcController controller;
-        controller.setTimeout(chrono::seconds(timeout));
-        controller.setHistoryDir(historyDir);
-        controller.setZoneCfgs(zonesStr);
-        controller.setRMS(rms);
-        controller.registerResourcePlugins(plugins);
+        odc::GrpcServer server;
+        server.setTimeout(chrono::seconds(timeout));
+        server.setHistoryDir(historyDir);
+        server.setZoneCfgs(zonesStr);
+        server.setRMS(rms);
+        server.registerResourcePlugins(plugins);
         if (!restoreId.empty()) {
-            controller.restore(restoreId, restoreDir);
+            server.restore(restoreId, restoreDir);
         }
-        controller.run(host);
+        server.run(host);
     } catch (exception& e) {
         std::cout << "Unhandled exception: " << e.what() << std::endl;
         OLOG(fatal) << "Unhandled exception: " << e.what();

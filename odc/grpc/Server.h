@@ -6,8 +6,8 @@
  *                  copied verbatim in the file "LICENSE"                       *
  ********************************************************************************/
 
-#ifndef ODC_GRPCCONTROLLER
-#define ODC_GRPCCONTROLLER
+#ifndef ODC_GRPCSERVER
+#define ODC_GRPCSERVER
 
 #include <odc/DDSSubmit.h>
 #include <odc/Controller.h>
@@ -31,10 +31,10 @@
 
 namespace odc {
 
-class GrpcController final : public odc::ODC::Service
+class GrpcServer final : public odc::ODC::Service
 {
   public:
-    GrpcController() {}
+    GrpcServer() {}
 
     void run(const std::string& host)
     {
@@ -185,7 +185,7 @@ class GrpcController final : public odc::ODC::Service
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
 
         logCommonRequest("GetState", client, common, req, true);
-        OLOG(debug, common) << "GetState request detailed: " << req->detailed() << "; path: "   << req->path();
+        OLOG(debug, common) << "GetState request detailed: " << req->detailed() << "; path: " << std::quoted(req->path());
 
         const core::DeviceParams deviceParams{ req->path(), req->detailed() };
         const core::RequestResult res{ mController.execGetState(common, deviceParams) };
@@ -202,7 +202,7 @@ class GrpcController final : public odc::ODC::Service
         const core::CommonParams common(req->partitionid(), req->runnr(), req->timeout());
 
         logCommonRequest("SetProperties", client, common, req);
-        OLOG(info, common) << "SetProperties request path: " << req->path();
+        OLOG(info, common) << "SetProperties request path: " << std::quoted(req->path());
 
         // Convert from protobuf to ODC format
         OLOG(info, common) << "SetProperties request properties: ";
@@ -511,4 +511,4 @@ class GrpcController final : public odc::ODC::Service
 
 } // namespace odc::grpc
 
-#endif // ODC_GRPCCONTROLLER
+#endif // ODC_GRPCSERVER

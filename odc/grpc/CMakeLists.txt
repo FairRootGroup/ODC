@@ -9,7 +9,7 @@
 set(target "grpc")
 add_library(${target} STATIC
   "Client.h"
-  "Controller.h"
+  "Server.h"
   "odc.proto"
 )
 add_library("${PROJECT_NAME}::${target}" ALIAS "${target}")
