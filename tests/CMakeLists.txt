@@ -166,8 +166,7 @@ odc_add_boost_tests(SUITE odc
 odc_add_boost_tests(SUITE cc
   TESTS
   format/construction
-  format/serialization_binary
-  format/serialization_json
+  format/serialization
 
   DEPS ODC::cc
 

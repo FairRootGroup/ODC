@@ -615,8 +615,8 @@ namespace odc::cc
             fCmds.clear();
         }
 
-        std::string Serialize(const Format type = Format::Binary) const;
-        void Deserialize(const std::string&, const Format type = Format::Binary);
+        std::string Serialize() const;
+        void Deserialize(const std::string&);
 
       private:
         container fCmds;

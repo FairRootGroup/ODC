@@ -222,7 +222,7 @@ void checkCommands(Cmds& cmds)
     BOOST_TEST(count == 15);
 }
 
-BOOST_AUTO_TEST_CASE(serialization_binary)
+BOOST_AUTO_TEST_CASE(serialization)
 {
     Cmds outCmds;
     fillCommands(outCmds);
@@ -230,17 +230,6 @@ BOOST_AUTO_TEST_CASE(serialization_binary)
 
     Cmds inCmds;
     inCmds.Deserialize(buffer);
-    checkCommands(inCmds);
-}
-
-BOOST_AUTO_TEST_CASE(serialization_json)
-{
-    Cmds outCmds;
-    fillCommands(outCmds);
-    std::string buffer(outCmds.Serialize(Format::JSON));
-
-    Cmds inCmds;
-    inCmds.Deserialize(buffer, Format::JSON);
     checkCommands(inCmds);
 }
 

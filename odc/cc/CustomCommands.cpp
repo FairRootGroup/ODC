@@ -173,7 +173,7 @@ namespace odc::cc
         return typeToFBCmd.at(static_cast<int>(type));
     }
 
-    string Cmds::Serialize(const Format type) const
+    string Cmds::Serialize() const
     {
         flatbuffers::FlatBufferBuilder fbb;
         vector<flatbuffers::Offset<FBCommand>> commandOffsets;
@@ -348,49 +348,18 @@ namespace odc::cc
         auto cmds = CreateFBCommands(fbb, commands);
         fbb.Finish(cmds);
 
-        if (type == Format::Binary)
-        {
-            return string(reinterpret_cast<char*>(fbb.GetBufferPointer()), fbb.GetSize());
-        }
-        else
-        { // Type == Format::JSON
-            flatbuffers::Parser parser;
-            if (!parser.Parse(customCommandsFormatDefFbs))
-            {
-                throw CommandFormatError("Serialize couldn't parse commands format");
-            }
-            std::string json;
-            if (!flatbuffers::GenerateText(parser, fbb.GetBufferPointer(), &json))
-            {
-                throw CommandFormatError("Serialize couldn't serialize parsed data to JSON!");
-            }
-            return json;
-        }
+        return string(reinterpret_cast<char*>(fbb.GetBufferPointer()), fbb.GetSize());
     }
 
-    void Cmds::Deserialize(const string& str, const Format type)
+    void Cmds::Deserialize(const string& str)
     {
         fCmds.clear();
 
         const flatbuffers::Vector<flatbuffers::Offset<FBCommand>>* cmds = nullptr;
 
         flatbuffers::Parser parser;
-        if (type == Format::Binary)
-        {
-            cmds = GetFBCommands(const_cast<char*>(str.c_str()))->commands();
-        }
-        else
-        { // Type == Format::JSON
-            if (!parser.Parse(customCommandsFormatDefFbs))
-            {
-                throw CommandFormatError("Deserialize couldn't parse commands format");
-            }
-            if (!parser.Parse(str.c_str()))
-            {
-                throw CommandFormatError("Deserialize couldn't parse incoming JSON string");
-            }
-            cmds = GetFBCommands(parser.builder_.GetBufferPointer())->commands();
-        }
+
+        cmds = GetFBCommands(const_cast<char*>(str.c_str()))->commands();
 
         for (unsigned int i = 0; i < cmds->size(); ++i)
         {
