@@ -92,7 +92,7 @@ class CliController : public odc::core::CliControllerHelper<CliController>
         return ss.str();
     }
 
-    std::string statusReply(const core::StatusRequestResult& result)
+    std::string statusReply(const core::RequestResult& result)
     {
         std::stringstream ss;
         if (result.mStatusCode == core::StatusCode::ok) {

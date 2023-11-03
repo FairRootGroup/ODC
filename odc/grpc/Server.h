@@ -337,14 +337,14 @@ class GrpcServer final : public odc::ODC::Service
 
         OLOG(info) << "Status request for ODC " << ODC_VERSION << " (DDS " << DDS_VERSION_STRING << ") from " << client << ": runnning: " << req->running();
 
-        const core::StatusRequestResult res{ mController.execStatus(core::StatusParams(req->running())) };
+        const core::RequestResult res{ mController.execStatus(core::StatusParams(req->running())) };
         setupStatusReply(rep, res);
         logStatusReply(*rep);
         return ::grpc::Status::OK;
     }
 
   private:
-    odc::Error* newError(const core::BaseRequestResult& res)
+    odc::Error* newError(const core::RequestResult& res)
     {
         odc::Error* error{ new odc::Error() };
         error->set_code(res.mError.mCode.value());
@@ -390,7 +390,7 @@ class GrpcServer final : public odc::ODC::Service
         }
     }
 
-    void setupStatusReply(odc::StatusReply* rep, const core::StatusRequestResult& res)
+    void setupStatusReply(odc::StatusReply* rep, const core::RequestResult& res)
     {
         if (res.mStatusCode == core::StatusCode::ok) {
             rep->set_status(odc::ReplyStatus::SUCCESS);

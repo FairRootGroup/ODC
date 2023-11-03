@@ -96,7 +96,7 @@ class Controller
     RequestResult execTerminate(const CommonParams& common, const DeviceParams& params);
 
     /// \brief Status request
-    StatusRequestResult execStatus(const StatusParams& params);
+    RequestResult execStatus(const StatusParams& params);
 
     static void extractRequirements(const CommonParams& common, Session& session);
 

@@ -52,23 +52,7 @@ struct PartitionStatus
     AggregatedState mAggregatedState = AggregatedState::Undefined;  ///< Aggregated state of the affected divices
 };
 
-struct BaseRequestResult
-{
-    BaseRequestResult() {}
-    BaseRequestResult(StatusCode statusCode, const std::string& msg, size_t execTime, const Error& error)
-        : mStatusCode(statusCode)
-        , mMsg(msg)
-        , mExecTime(execTime)
-        , mError(error)
-    {}
-
-    StatusCode mStatusCode = StatusCode::unknown; ///< Operation status code
-    std::string mMsg;                             ///< General message about the status
-    size_t mExecTime = 0;                         ///< Execution time in milliseconds
-    Error mError;                                 ///< In case of error containes information about the error
-};
-
-struct RequestResult : public BaseRequestResult
+struct RequestResult
 {
     RequestResult() {}
     RequestResult(StatusCode statusCode,
@@ -80,13 +64,21 @@ struct RequestResult : public BaseRequestResult
                   const std::string& sessionID,
                   TopologyState topologyState,
                   std::unordered_set<std::string> hosts)
-        : BaseRequestResult(statusCode, msg, execTime, error)
+        : mStatusCode(statusCode)
+        , mMsg(msg)
+        , mExecTime(execTime)
+        , mError(error)
         , mPartitionID(partitionID)
         , mRunNr(runNr)
         , mDDSSessionID(sessionID)
         , mTopologyState(std::move(topologyState))
         , mHosts(std::move(hosts))
     {}
+
+    StatusCode mStatusCode = StatusCode::unknown; ///< Operation status code
+    std::string mMsg;                             ///< General message about the status
+    size_t mExecTime = 0;                         ///< Execution time in milliseconds
+    Error mError;                                 ///< In case of error containes information about the error
 
     std::string mPartitionID;     ///< Partition ID
     uint64_t mRunNr = 0;          ///< Run number
@@ -95,15 +87,6 @@ struct RequestResult : public BaseRequestResult
 
     // Optional parameters
     std::unordered_set<std::string> mHosts; ///< List of used hosts
-};
-
-struct StatusRequestResult : public BaseRequestResult
-{
-    StatusRequestResult() {}
-    StatusRequestResult(StatusCode statusCode, const std::string& msg, size_t execTime, const Error& error)
-        : BaseRequestResult(statusCode, msg, execTime, error)
-    {}
-
     std::vector<PartitionStatus> mPartitions; ///< Statuses of partitions
 };
 
