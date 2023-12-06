@@ -1,6 +1,6 @@
 # ODC Release Notes
 
-## 0.80.1
+## 0.80.1 (2023-10-30)
 
 - CustomCommands: Adapt to the changes in https://github.com/google/flatbuffers/releases/tag/v23.5.8 by dropping the (unused) JSON commands format.
 - Rename GrpcController -> GrpcServer (non-breaking).
