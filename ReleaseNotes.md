@@ -1,5 +1,12 @@
 # ODC Release Notes
 
+## 0.80.1
+
+- CustomCommands: Adapt to the changes in https://github.com/google/flatbuffers/releases/tag/v23.5.8 by dropping the (unused) JSON commands format.
+- Rename GrpcController -> GrpcServer (non-breaking).
+- Additional debug info for request timeouts.
+- gRPC controller: log request before lock to provide better feedback if the lock can't be acquired.
+
 ## 0.80.0 (2023-08-11)
 
 - Logger: add trace severity ("trc" value for --severity for CLI tools). Trace is lower than debug. This severity is not forwarded to infoLogger at all.
