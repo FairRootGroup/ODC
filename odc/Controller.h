@@ -64,6 +64,32 @@ class Controller
 
     // DDS topology and session requests
 
+    template<typename R>
+    RequestResult execWrapper(const R& request)
+    {
+        try {
+            return static_cast<T*>(this)->exec<R>(request);
+        } catch (const odc::core::Error& e) {
+            OLOG(error) << "Exception reached top of the " << static_cast<T*>(this)->sName << " request: odc::core::Error: " << e;
+            request.mResult.mError = e;
+        } catch (const odc::core::RuntimeError& re) {
+            OLOG(fatal) << "Exception reached top of the " << static_cast<T*>(this)->sName << " request: odc::core::RuntimeError: " << re.what();
+            request.mResult.mError = Error(MakeErrorCode(ErrorCode::RuntimeError), re.what());
+        } catch (const std::exception& e) {
+            OLOG(fatal) << "Exception reached top of the " << static_cast<T*>(this)->sName << " request: std::exception: " << e.what();
+            request.mResult.mError = Error(MakeErrorCode(ErrorCode::RuntimeError), e.what());
+        } catch (...) {
+            OLOG(fatal) << "Exception reached top of the " << static_cast<T*>(this)->sName << " request: unknown exception";
+            request.mResult.mError = Error(MakeErrorCode(ErrorCode::RuntimeError), "unknown exception");
+        }
+
+        request.mResult.mExecTime = mTimer.duration();
+        return request.mResult;
+    }
+
+    template<typename R>
+    RequestResult exec(const R& request);
+
     /// \brief Initialize DDS session
     RequestResult execInitialize(const CommonParams& common, const InitializeParams& params);
     /// \brief Submit DDS agents. Can be called multiple times in order to submit more agents.

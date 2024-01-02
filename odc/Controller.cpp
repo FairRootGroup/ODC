@@ -12,6 +12,7 @@
 #include <odc/Logger.h>
 #include <odc/Process.h>
 #include <odc/Restore.h>
+#include <odc/Requests.h>
 #include <odc/Topology.h>
 
 #include <dds/TopoCreator.h>
