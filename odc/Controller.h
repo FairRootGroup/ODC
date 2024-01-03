@@ -26,6 +26,17 @@
 namespace odc::core
 {
 
+struct Partition
+{
+    Partition(const std::string& id)
+        : mID(id)
+    {}
+
+    std::string mID;
+    std::unique_ptr<Session> mSession = nullptr;
+    std::unique_ptr<Topology> mTopology = nullptr;
+};
+
 class Controller
 {
   public:
@@ -100,31 +111,26 @@ class Controller
 
     static void extractRequirements(const CommonParams& common, Session& session);
 
-    struct Partition {
-      std::unique_ptr<Session> session;
-      std::unique_ptr<Topology> topology;
-    };
-
   private:
-    std::map<std::string, std::unique_ptr<Session>> mSessions; ///< Map of partition ID to session info
-    std::mutex mSessionsMtx;                                   ///< Mutex of sessions map
-    std::chrono::seconds mTimeout{ 30 };                       ///< Request timeout in sec
-    DDSSubmit mSubmit;                                         ///< ODC to DDS submit resource converter
-    std::string mRestoreId;                                    ///< Restore ID
-    std::string mRestoreDir;                                   ///< Restore file directory
-    std::string mHistoryDir;                                   ///< History file directory
-    std::map<std::string, ZoneConfig> mZoneCfgs;               ///< stores zones configuration (cfgFilePath/envFilePath) by zone name
-    std::string mRMS{ "localhost" };                           ///< resource management system to be used by DDS
+    std::map<std::string, Partition> mPartitions; ///< Map of partition ID to Partition object
+    std::mutex mPartitionMtx;                     ///< Mutex for the partition map
+    std::chrono::seconds mTimeout{ 30 };          ///< Request timeout in sec
+    DDSSubmit mSubmit;                            ///< ODC to DDS submit resource converter
+    std::string mRestoreId;                       ///< Restore ID
+    std::string mRestoreDir;                      ///< Restore file directory
+    std::string mHistoryDir;                      ///< History file directory
+    std::map<std::string, ZoneConfig> mZoneCfgs;  ///< stores zones configuration (cfgFilePath/envFilePath) by zone name
+    std::string mRMS{ "localhost" };              ///< resource management system to be used by DDS
 
     void updateRestore();
     void updateHistory(const CommonParams& common, const std::string& sessionId);
 
     std::unordered_set<std::string> submit(const CommonParams& common, Session& session, Error& error, const std::string& plugin, const std::string& res, bool extractResources);
-    void activate(const CommonParams& common, Session& session, Error& error);
+    void activate(const CommonParams& common, Partition& partition, Error& error);
 
     bool createDDSSession(           const CommonParams& common, Session& session, Error& error);
     bool attachToDDSSession(         const CommonParams& common, Session& session, Error& error, const std::string& sessionID);
-    bool shutdownDDSSession(         const CommonParams& common, Session& session, Error& error);
+    bool shutdownDDSSession(         const CommonParams& common, Partition& partition, Error& error);
     std::string getActiveDDSTopology(const CommonParams& common, Session& session, Error& error);
 
     bool submitDDSAgents(      const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params);
@@ -134,15 +140,15 @@ class Controller
     bool activateDDSTopology(const CommonParams& common, Session& session, Error& error, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
     bool createDDSTopology(  const CommonParams& common, Session& session, Error& error);
 
-    bool createTopology(const CommonParams& common, Session& session, Error& error);
-    bool resetTopology(Session& session);
+    bool createTopology(const CommonParams& common, Partition& partition, Error& error);
+    bool resetTopology(Partition& partition);
 
-    bool changeState(         const CommonParams& common, Session& session, Error& error, const std::string& path, TopoTransition transition, TopologyState& topologyState);
-    bool changeStateConfigure(const CommonParams& common, Session& session, Error& error, const std::string& path, TopologyState& topologyState);
-    bool changeStateReset(    const CommonParams& common, Session& session, Error& error, const std::string& path, TopologyState& topologyState);
-    bool waitForState(        const CommonParams& common, Session& session, Error& error, const std::string& path, DeviceState expState);
-    bool setProperties(       const CommonParams& common, Session& session, Error& error, const std::string& path, const SetPropertiesParams::Props& props, TopologyState& topologyState);
-    void getState(            const CommonParams& common, Session& session, Error& error, const std::string& path, TopologyState& state);
+    bool changeState(         const CommonParams& common, Partition& partition, Error& error, const std::string& path, TopoTransition transition, TopologyState& topologyState);
+    bool changeStateConfigure(const CommonParams& common, Partition& partition, Error& error, const std::string& path, TopologyState& topologyState);
+    bool changeStateReset(    const CommonParams& common, Partition& partition, Error& error, const std::string& path, TopologyState& topologyState);
+    bool waitForState(        const CommonParams& common, Partition& partition, Error& error, const std::string& path, DeviceState expState);
+    bool setProperties(       const CommonParams& common, Partition& partition, Error& error, const std::string& path, const SetPropertiesParams::Props& props, TopologyState& topologyState);
+    void getState(            const CommonParams& common, Partition& partition, Error& error, const std::string& path, TopologyState& state);
 
     void fillAndLogError(               const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void fillAndLogFatalError(          const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
@@ -153,8 +159,8 @@ class Controller
     RequestResult createRequestResult(const CommonParams& common, const std::string& sessionId, const Error& error, const std::string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts);
     AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopoState& topoState, const std::string& path);
 
-    Session& acquireSession(const CommonParams& common);
-    void removeSession(const CommonParams& common);
+    Partition& acquirePartition(const CommonParams& common);
+    void removePartition(const CommonParams& common);
 
     void stateSummaryOnFailure(const CommonParams& common, Session& session, const TopoState& topoState, DeviceState expectedState);
     void attemptSubmitRecovery(const CommonParams& common, Session& session, Error& error, const std::vector<DDSSubmitParams>& ddsParams, const std::map<std::string, uint32_t>& agentCounts);

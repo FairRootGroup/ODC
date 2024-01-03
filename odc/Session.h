@@ -9,7 +9,7 @@
 #ifndef ODC_CORE_SESSION
 #define ODC_CORE_SESSION
 
-#include <odc/Topology.h>
+#include <odc/TopologyDefs.h>
 
 #include <dds/Tools.h>
 #include <dds/Topology.h>
@@ -74,7 +74,6 @@ struct Session
 
     std::unique_ptr<dds::topology_api::CTopology> mDDSTopo = nullptr; ///< DDS topology
     dds::tools_api::CSession mDDSSession; ///< DDS session
-    std::unique_ptr<Topology> mTopology = nullptr; ///< Topology
     std::string mPartitionID; ///< External partition ID of this DDS session
     std::string mTopoFilePath;
     std::map<std::string, CollectionNInfo> mNinfo; ///< Holds information on minimum number of collections, by collection name
