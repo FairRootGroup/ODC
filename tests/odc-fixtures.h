@@ -24,6 +24,7 @@
 
 #include <map>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <thread>
 #include <unordered_set>
@@ -85,6 +86,41 @@ struct TopologyFixture
 
         auto topologyRequest = STopologyRequest::makeRequest(topologyInfo);
         topologyRequest->setMessageCallback([](const SMessageResponseData& message) { BOOST_TEST_MESSAGE(message.m_msg); });
+
+        std::mutex mtx;
+        // fill the task/collection details
+        topologyRequest->setResponseCallback([this, &mtx](const dds::tools_api::STopologyResponseData& res) {
+            std::cout << "DDS Activate Response: "
+                << "agentID: " << res.m_agentID
+                << "; slotID: " << res.m_slotID
+                << "; taskID: " << res.m_taskID
+                << "; collectionID: " << res.m_collectionID
+                << "; host: " << res.m_host
+                << "; path: " << res.m_path
+                << "; workDir: " << res.m_wrkDir
+                << "; activated: " << res.m_activated
+                << std::endl;
+
+            // We are not interested in stopped tasks
+            if (res.m_activated) {
+                // response callbacks can be called in parallel - protect session access with a lock
+                std::lock_guard<std::mutex> lock(mtx);
+                mSession.mTaskDetails.emplace(res.m_taskID, TaskDetails{res.m_agentID, res.m_slotID, res.m_taskID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir});
+
+                if (res.m_collectionID > 0) {
+                    if (mSession.mCollectionDetails.find(res.m_collectionID) == mSession.mCollectionDetails.end()) {
+                        std::string path = res.m_path;
+                        auto pos = path.rfind('/');
+                        if (pos != std::string::npos) {
+                            path.erase(pos);
+                        }
+                        mSession.mCollectionDetails.emplace(res.m_collectionID, CollectionDetails{res.m_agentID, res.m_collectionID, path, res.m_host, res.m_wrkDir});
+                        mSession.mRuntimeCollectionIndex.at(res.m_collectionID)->mRuntimeCollectionAgents[res.m_collectionID] = res.m_agentID;
+                    }
+                }
+            }
+        });
+
         topologyRequest->setDoneCallback([blocker]() mutable { blocker.Signal(); });
         mSession.mDDSSession.sendRequest<STopologyRequest>(topologyRequest);
         blocker.Wait();
