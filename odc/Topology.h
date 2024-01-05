@@ -14,6 +14,7 @@
 #include <odc/Error.h>
 #include <odc/MiscUtils.h>
 #include <odc/Semaphore.h>
+#include <odc/Session.h>
 #include <odc/TopologyDefs.h>
 #include <odc/TopologyOpChangeState.h>
 #include <odc/TopologyOpGetProperties.h>
@@ -62,38 +63,26 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 {
   public:
     /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
-    /// @param topo CTopology
-    /// @param session CSession
+    /// @param topo DDS CTopology
+    /// @param session ODC Session
     /// @param blockUntilConnected if true, ctor will wait for all tasks to confirm subscriptions
-    BasicTopology(dds::topology_api::CTopology& topo,
-                  dds::tools_api::CSession& session,
-                  const std::unordered_set<uint64_t>& expendableTasks,
-                  std::map<std::string, odc::core::CollectionInfo>& collectionInfo,
-                  const std::string& partitionId,
-                  std::atomic<uint64_t>& lastRunNr,
-                  bool blockUntilConnected = false)
-        : BasicTopology<Executor, Allocator>(boost::asio::system_executor(), topo, session, expendableTasks, collectionInfo, partitionId, lastRunNr, blockUntilConnected)
+    BasicTopology(dds::topology_api::CTopology& topo, Session& session, bool blockUntilConnected = false)
+        : BasicTopology<Executor, Allocator>(boost::asio::system_executor(), topo, session, blockUntilConnected)
     {}
 
     /// @brief (Re)Construct a FairMQ topology from an existing DDS topology
     /// @param ex I/O executor to be associated
-    /// @param topo CTopology
-    /// @param session CSession
+    /// @param topo DDS CTopology
+    /// @param session ODC Session
     /// @param blockUntilConnected if true, ctor will wait for all tasks to confirm subscriptions
-    /// @param expendableTasks list of expendable tasks
-    /// @param collectionInfo collections information
     /// @throws RuntimeError
     BasicTopology(const Executor& ex,
                   dds::topology_api::CTopology& topo,
-                  dds::tools_api::CSession& ddsSession,
-                  const std::unordered_set<uint64_t>& expendableTasks,
-                  std::map<std::string, odc::core::CollectionInfo>& collectionInfo,
-                  const std::string& partitionId,
-                  std::atomic<uint64_t>& lastRunNr,
+                  Session& session,
                   bool blockUntilConnected = false,
                   Allocator alloc = DefaultAllocator())
         : AsioBase<Executor, Allocator>(ex, std::move(alloc))
-        , mDDSSession(ddsSession)
+        , mSession(session)
         , mDDSCustomCmd(mDDSService)
         , mDDSTopo(topo)
         , mMtx(std::make_unique<std::mutex>())
@@ -101,9 +90,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         , mNumStateChangePublishers(0)
         , mHeartbeatsTimer(boost::asio::system_executor())
         , mHeartbeatInterval(600000)
-        , mCollectionInfo(collectionInfo)
-        , mPartitionID(partitionId)
-        , mLastRunNr(lastRunNr)
+        , mPartitionID(mSession.mPartitionID)
     {
         // TODO: resources should be extracted from the topology file here, not in the Controller
 
@@ -114,7 +101,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         mStateData.reserve(boost::size(tasks));
         int index = 0;
         for (const auto& [id, task] : tasks) {
-            bool expendable = expendableTasks.find(id) != expendableTasks.end();
+            bool expendable = mSession.mExpendableTasks.find(id) != mSession.mExpendableTasks.end();
             mStateData.push_back(DeviceStatus(expendable, id, task.m_taskCollectionId));
             mStateIndex.emplace(id, index++);
         }
@@ -122,7 +109,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         SubscribeToCommands();
         SubscribeToTaskDoneEvents();
 
-        mDDSService.start(to_string(mDDSSession.getSessionID()));
+        mDDSService.start(to_string(mSession.mDDSSession.getSessionID()));
         SubscribeToStateChanges();
         if (blockUntilConnected) {
             WaitForPublisherCount(mStateIndex.size());
@@ -167,15 +154,15 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
         set.reserve(boost::size(tasks));
 
-        // OLOG(debug, mPartitionID, mLastRunNr.load()) << "GetTasks(): Num of tasks: " << boost::size(tasks);
+        // OLOG(debug, mPartitionID, mSession.mLastRunNr.load()) << "GetTasks(): Num of tasks: " << boost::size(tasks);
         for (const auto& task : tasks) {
-            // OLOG(debug, mPartitionID, mLastRunNr.load()) << "GetTasks(): Found task with id: " << task.first << ", "
+            // OLOG(debug, mPartitionID, mSession.mLastRunNr.load()) << "GetTasks(): Found task with id: " << task.first << ", "
             //            << "Path: " << task.second.m_taskPath << ", "
             //            << "Collection id: " << task.second.m_taskCollectionId << ", "
             //            << "Name: " << task.second.m_task->getName() << "_" << task.second.m_taskIndex;
             const DeviceStatus& ds = mStateData.at(mStateIndex.at(task.first));
             if (ds.ignored) {
-                // OLOG(debug, mPartitionID, mLastRunNr.load()) << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping";
+                // OLOG(debug, mPartitionID, mSession.mLastRunNr.load()) << "GetTasks(): Task " << ds.taskId << " has failed and is set to be ignored, skipping";
                 continue;
             }
             set.emplace(task.first);
@@ -249,12 +236,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
                << "; host: "              << task.m_host
                << "; working directory: " << quoted(task.m_wrkDir);
             if (unexpected) {
-                OLOG(error, mPartitionID, mLastRunNr.load()) << ss.str();
+                OLOG(error, mPartitionID, mSession.mLastRunNr.load()) << ss.str();
             } else {
-                OLOG(debug, mPartitionID, mLastRunNr.load()) << ss.str();
+                OLOG(debug, mPartitionID, mSession.mLastRunNr.load()) << ss.str();
             }
         });
-        mDDSSession.sendRequest<SOnTaskDoneRequest>(mDDSOnTaskDoneRequest);
+        mSession.mDDSSession.sendRequest<SOnTaskDoneRequest>(mDDSOnTaskDoneRequest);
     }
 
     // precondition: mMtx is locked
@@ -270,13 +257,13 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     bool IgnoreExpendable(odc::core::DeviceStatus& device)
     {
         if (device.ignored) {
-            OLOG(debug, mPartitionID, mLastRunNr.load()) << "Failed Device " << device.taskId << " is already ignored.";
+            OLOG(debug, mPartitionID, mSession.mLastRunNr.load()) << "Failed Device " << device.taskId << " is already ignored.";
             // TODO: check if and when this can happen
             return true;
         }
 
         if (device.expendable) {
-            OLOG(debug, mPartitionID, mLastRunNr.load()) << "Failed Device " << device.taskId << " is expendable. ignoring.";
+            OLOG(debug, mPartitionID, mSession.mLastRunNr.load()) << "Failed Device " << device.taskId << " is expendable. ignoring.";
             IgnoreDevice(device);
             return true;
         }
@@ -285,8 +272,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         if (device.collectionId != 0) {
             auto runtimeCollection = mDDSTopo.getRuntimeCollectionById(device.collectionId);
             auto col = runtimeCollection.m_collection;
-            auto it = mCollectionInfo.find(col->getName());
-            if (it != mCollectionInfo.end()) {
+            auto it = mSession.mCollections.find(col->getName());
+            if (it != mSession.mCollections.end()) {
                 CollectionInfo& colInfo = it->second;
                 // one collection failed
                 colInfo.nCurrent--;
@@ -311,20 +298,20 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         if (nMin == 0) {
             // no nMin defined, failure cannot be ignored
-            OLOG(error, mPartitionID, mLastRunNr.load())
+            OLOG(error, mPartitionID, mSession.mLastRunNr.load())
                 << "Collection '" << runtimeColPath << "' (id: " << colId << ")"
                 << " has no nMin defined. Cannot be ignored.";
             return false;
         } else if (nCurrent < nMin) {
             // if nMin is not satisfied, the failure cannot be ignored
-            OLOG(error, mPartitionID, mLastRunNr.load())
+            OLOG(error, mPartitionID, mSession.mLastRunNr.load())
                 << "Collection '" << runtimeColPath << "' (id: " << colId << ")"
                 << " has failed and current number of '" << colPath << "' collections (" << nCurrent
                 << ") is less than nMin (" << nMin << "). Cannot be ignored.";
             return false;
         } else {
             // if nMin is satisfied, ignore the entire collection & shutdown the responsible agent
-            OLOG(info, mPartitionID, mLastRunNr.load())
+            OLOG(info, mPartitionID, mSession.mLastRunNr.load())
                 << "Ignoring failed collection '" << runtimeColPath << "' (id: " << colId << ")"
                 << " as the remaining number of '" << colPath << "' collections (" << nCurrent
                 << ") is greater than or equal to nMin (" << nMin << ").";
@@ -335,7 +322,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     // precondition: mMtx is locked.
     void IgnoreDevice(DeviceStatus& device)
     {
-        // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Ignoring device " << device.taskId << " from collection " << device.collectionId;
+        // OLOG(debug, mPartitionID, mSession.mLastRunNr.load()) << "Ignoring device " << device.taskId << " from collection " << device.collectionId;
         if (device.subscribedToStateChanges) {
             device.subscribedToStateChanges = false;
             --mNumStateChangePublishers;
@@ -378,7 +365,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         auto count = 0;
         constexpr auto checkInterval(50ms);
         constexpr auto maxCount(30s / checkInterval);
-        while (!publisherCountReached() && mDDSSession.IsRunning() && count < maxCount) {
+        while (!publisherCountReached() && mSession.mDDSSession.IsRunning() && count < maxCount) {
             mStateChangeSubscriptionsCV->wait_for(lk, checkInterval, publisherCountReached);
             ++count;
         }
@@ -506,12 +493,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             DeviceState lastState = device.state;
             device.lastState = cmd.GetLastState();
             device.state = cmd.GetCurrentState();
-            // OLOG(debug, mPartitionID, mLastRunNr.load()) << "Updated state entry: taskId=" << taskId << ", state=" << device.state;
+            // OLOG(debug, mPartitionID, mSession.mLastRunNr.load()) << "Updated state entry: taskId=" << taskId << ", state=" << device.state;
 
             bool expendable = false;
             // check if we have an unexpected exit
             if (device.state == DeviceState::Error || (device.state == DeviceState::Exiting && lastState != DeviceState::Idle)) {
-                OLOG(error, mPartitionID, mLastRunNr.load()) << "Device " << device.taskId << " unexpectedly reached " << device.state << " state";
+                OLOG(error, mPartitionID, mSession.mLastRunNr.load()) << "Device " << device.taskId << " unexpectedly reached " << device.state << " state";
                 // check if the device is expendable
                 expendable = IgnoreExpendable(device);
                 // Update SetProperties OPs only if unexpected exit
@@ -847,19 +834,19 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         try {
             using namespace dds::tools_api;
-            OLOG(info, mPartitionID, mLastRunNr.load()) << "Sending shutdown signal to agent " << agentID;;
+            OLOG(info, mPartitionID, mSession.mLastRunNr.load()) << "Sending shutdown signal to agent " << agentID;;
             SAgentCommandRequest::request_t agentCmd;
             agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
             agentCmd.m_arg1 = agentID;
             SAgentCommandRequest::ptr_t requestPtr{ SAgentCommandRequest::makeRequest(agentCmd) };
-            mDDSSession.sendRequest<SAgentCommandRequest>(requestPtr);
+            mSession.mDDSSession.sendRequest<SAgentCommandRequest>(requestPtr);
         } catch (std::exception& e) {
-            OLOG(error, mPartitionID, mLastRunNr.load()) << "Failed sending shutdown signal to agent with id " << agentID << ": " << e.what();
+            OLOG(error, mPartitionID, mSession.mLastRunNr.load()) << "Failed sending shutdown signal to agent with id " << agentID << ": " << e.what();
         }
     }
 
   private:
-    dds::tools_api::CSession& mDDSSession;
+    Session& mSession;
     dds::intercom_api::CIntercomService mDDSService;
     dds::intercom_api::CCustomCmd mDDSCustomCmd;
     dds::topology_api::CTopology& mDDSTopo;
@@ -879,9 +866,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     std::unordered_map<uint64_t, SetPropertiesOp<Executor, Allocator>> mSetPropertiesOps;
     std::unordered_map<uint64_t, GetPropertiesOp<Executor, Allocator>> mGetPropertiesOps;
 
-    std::map<std::string, odc::core::CollectionInfo>& mCollectionInfo;
     std::string mPartitionID;
-    std::atomic<uint64_t>& mLastRunNr;
 
     // precodition: mMtx is locked.
     TopoState GetCurrentStateUnsafe() const { return mStateData; }

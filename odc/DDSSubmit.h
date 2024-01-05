@@ -13,6 +13,7 @@
 #include <odc/Logger.h>
 #include <odc/Params.h>
 #include <odc/PluginManager.h>
+#include <odc/TopologyDefs.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -25,13 +26,6 @@
 #include <vector>
 
 namespace odc::core {
-
-struct ZoneGroup
-{
-    int32_t n;
-    int32_t nCores;
-    std::string agentGroup;
-};
 
 struct DDSSubmitParams
 {
