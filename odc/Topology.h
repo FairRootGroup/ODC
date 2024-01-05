@@ -311,10 +311,12 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             return false;
         } else {
             // if nMin is satisfied, ignore the entire collection & shutdown the responsible agent
+            auto& colDetails = mSession.getCollectionDetails(colId);
             OLOG(info, mPartitionID, mSession.mLastRunNr.load())
                 << "Ignoring failed collection '" << runtimeColPath << "' (id: " << colId << ")"
                 << " as the remaining number of '" << colPath << "' collections (" << nCurrent
-                << ") is greater than or equal to nMin (" << nMin << ").";
+                << ") is greater than or equal to nMin (" << nMin << ")."
+                << " On host: " << colDetails.mHost << ", working directory: " << colDetails.mWrkDir;
             return true;
         }
     }
@@ -498,7 +500,8 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             bool expendable = false;
             // check if we have an unexpected exit
             if (device.state == DeviceState::Error || (device.state == DeviceState::Exiting && lastState != DeviceState::Idle)) {
-                OLOG(error, mPartitionID, mSession.mLastRunNr.load()) << "Device " << device.taskId << " unexpectedly reached " << device.state << " state";
+                auto& deviceDetails = mSession.getTaskDetails(device.taskId);
+                OLOG(error, mPartitionID, mSession.mLastRunNr.load()) << "Device " << device.taskId << " unexpectedly reached " << device.state << " state. On host: " << deviceDetails.mHost << ", working directory: " << deviceDetails.mWrkDir;
                 // check if the device is expendable
                 expendable = IgnoreExpendable(device);
                 // Update SetProperties OPs only if unexpected exit
