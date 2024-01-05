@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## 0.80.2 (2024-01-05)
+
+- Add more details in the log on failed tasks/collections: host & working directory
+
 ## 0.80.1 (2023-10-30)
 
 - CustomCommands: Adapt to the changes in https://github.com/google/flatbuffers/releases/tag/v23.5.8 by dropping the (unused) JSON commands format.
