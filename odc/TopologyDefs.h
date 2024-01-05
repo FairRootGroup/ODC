@@ -387,6 +387,13 @@ struct AgentGroupInfo
     }
 };
 
+struct ZoneGroup
+{
+    int32_t n;
+    int32_t nCores;
+    std::string agentGroup;
+};
+
 } // namespace odc::core
 
 #endif /* ODC_TOPOLOGYDEFS */

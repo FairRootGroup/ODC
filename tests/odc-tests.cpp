@@ -126,7 +126,7 @@ BOOST_AUTO_TEST_CASE(construction)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
 }
 
 BOOST_AUTO_TEST_CASE(construction2)
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(construction2)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mSession);
 }
 
 BOOST_AUTO_TEST_CASE(async_change_state)
@@ -145,7 +145,7 @@ BOOST_AUTO_TEST_CASE(async_change_state)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     SharedSemaphore blocker;
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), [=](std::error_code ec, TopoState) mutable {
         BOOST_TEST_MESSAGE(ec);
         BOOST_CHECK_EQUAL(ec, std::error_code());
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_with_executor)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mSession);
     topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), [](std::error_code ec, TopoState) {
         BOOST_TEST_MESSAGE(ec);
         BOOST_CHECK_EQUAL(ec, std::error_code());
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_future)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mSession);
     auto fut(topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), boost::asio::use_future));
     std::thread t([&]() { f.mIoContext.run(); });
     bool success(false);
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_coroutine)
         f.mIoContext.get_executor(),
         [&]() mutable -> boost::asio::awaitable<void> {
             auto executor = co_await boost::asio::this_coro::executor;
-            Topology topo(executor, f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+            Topology topo(executor, f.mDDSTopo, f.mSession);
             try {
                 TopoState state = co_await topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), asio::use_awaitable);
                 success = true;
@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(change_state)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     auto result(topo.ChangeState(TopoTransition::InitDevice));
     BOOST_TEST_MESSAGE(result.first);
 
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(mixed_state)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     auto result1(topo.ChangeState(TopoTransition::InitDevice, ".*/Sampler.*"));
     BOOST_TEST_MESSAGE(result1.first);
 
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_concurrent)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     topo.AsyncChangeState(TopoTransition::InitDevice, ".*/(Sampler|Sink).*", Duration(0), [](std::error_code ec, TopoState) mutable {
         BOOST_TEST_MESSAGE("ChangeState for Sampler|Sink: " << ec);
         BOOST_CHECK_EQUAL(ec, std::error_code());
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_timeout)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mSession);
     topo.AsyncChangeState(TopoTransition::InitDevice, "", std::chrono::milliseconds(1), [](std::error_code ec, TopoState) {
         BOOST_TEST_MESSAGE(ec);
         BOOST_CHECK_EQUAL(ec, MakeErrorCode(ErrorCode::OperationTimeout));
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(async_change_state_collection_view)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     SharedSemaphore blocker;
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), [=](std::error_code ec, TopoState state) mutable {
         BOOST_TEST_MESSAGE(ec);
         TopoStateByCollection cstate(GroupByCollectionId(state));
@@ -336,7 +336,7 @@ BOOST_AUTO_TEST_CASE(change_state_full_device_lifecycle)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     full_device_lifecycle([&](TopoTransition transition) { BOOST_CHECK_EQUAL(topo.ChangeState(transition).first, std::error_code()); });
 }
 
@@ -346,7 +346,7 @@ BOOST_AUTO_TEST_CASE(wait_for_state_full_device_lifecycle)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     topo.AsyncWaitForState(DeviceState::Undefined, DeviceState::ResettingDevice, "", Duration(0), [](std::error_code ec, FailedDevices failed) {
         BOOST_REQUIRE_EQUAL(ec, std::error_code());
         BOOST_REQUIRE_EQUAL(failed.size(), 0);
@@ -366,7 +366,7 @@ BOOST_AUTO_TEST_CASE(change_state_full_device_lifecycle2)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     for (int i(0); i < 10; ++i) {
         for (auto transition : { TopoTransition::InitDevice,
                                  TopoTransition::CompleteInit,
@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE(set_properties)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
 
     auto const result1 = topo.SetProperties({ { "key1", "val1" } });
@@ -411,7 +411,7 @@ BOOST_AUTO_TEST_CASE(async_set_properties_concurrent)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
 
     SharedSemaphore blocker(2);
@@ -439,7 +439,7 @@ BOOST_AUTO_TEST_CASE(async_set_properties_timeout)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
 
     auto devices = topo.GetCurrentState();
@@ -463,7 +463,7 @@ BOOST_AUTO_TEST_CASE(set_properties_mixed)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
 
     SharedSemaphore blocker;
@@ -491,7 +491,7 @@ BOOST_AUTO_TEST_CASE(get_properties)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
 
     auto const result = topo.GetProperties("^(session|id)$");
@@ -516,7 +516,7 @@ BOOST_AUTO_TEST_CASE(set_and_get_properties)
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     BOOST_REQUIRE_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
 
     DeviceProperties const props{ { "key1", "val1" }, { "key2", "val2" } };
@@ -604,7 +604,7 @@ BOOST_AUTO_TEST_CASE(device_crashed)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     {
-        Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+        Topology topo(f.mDDSTopo, f.mSession);
         BOOST_CHECK_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
         BOOST_CHECK_EQUAL(topo.ChangeState(TopoTransition::CompleteInit).first, std::error_code());
         try {
@@ -624,10 +624,10 @@ BOOST_AUTO_TEST_CASE(underlying_session_terminated)
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
     {
-        Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+        Topology topo(f.mDDSTopo, f.mSession);
         BOOST_CHECK_EQUAL(topo.ChangeState(TopoTransition::InitDevice).first, std::error_code());
         BOOST_CHECK_EQUAL(topo.ChangeState(TopoTransition::CompleteInit).first, std::error_code());
-        f.mDDSSession.shutdown();
+        f.mSession.mDDSSession.shutdown();
         BOOST_TEST_CHECKPOINT("Session shut down.");
     }
     BOOST_TEST_CHECKPOINT("Topology destructed.");
@@ -649,9 +649,9 @@ BOOST_AUTO_TEST_CASE(construction)
 
     boost::asio::io_context ioContext;
     std::array<Topology, num> topos{
-        Topology(ioContext.get_executor(), f[0].mDDSTopo, f[0].mDDSSession, f[0].mExpendableTasks, f[0].mCollectionInfo, "", f[0].mLastRunNr),
-        Topology(ioContext.get_executor(), f[1].mDDSTopo, f[1].mDDSSession, f[1].mExpendableTasks, f[1].mCollectionInfo, "", f[1].mLastRunNr),
-        Topology(ioContext.get_executor(), f[2].mDDSTopo, f[2].mDDSSession, f[2].mExpendableTasks, f[2].mCollectionInfo, "", f[2].mLastRunNr),
+        Topology(ioContext.get_executor(), f[0].mDDSTopo, f[0].mSession),
+        Topology(ioContext.get_executor(), f[1].mDDSTopo, f[1].mSession),
+        Topology(ioContext.get_executor(), f[2].mDDSTopo, f[2].mSession),
     };
     ioContext.run();
 }
@@ -667,9 +667,9 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_serial)
                                         TopologyFixture(framework::master_test_suite().argv[2]) };
 
     std::array<Topology, num> topos{
-        Topology(f[0].mDDSTopo, f[0].mDDSSession, f[0].mExpendableTasks, f[0].mCollectionInfo, "", f[0].mLastRunNr),
-        Topology(f[1].mDDSTopo, f[1].mDDSSession, f[1].mExpendableTasks, f[1].mCollectionInfo, "", f[1].mLastRunNr),
-        Topology(f[2].mDDSTopo, f[2].mDDSSession, f[2].mExpendableTasks, f[2].mCollectionInfo, "", f[2].mLastRunNr),
+        Topology(f[0].mDDSTopo, f[0].mSession),
+        Topology(f[1].mDDSTopo, f[1].mSession),
+        Topology(f[2].mDDSTopo, f[2].mSession),
     };
 
     boost::asio::io_context ioContext;
@@ -679,7 +679,7 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_serial)
             ioContext.post([&f, &topos, i, transition]() {
                 auto [ec, state] = topos[i].ChangeState(transition);
                 BOOST_REQUIRE_EQUAL(ec, std::error_code());
-                BOOST_TEST_MESSAGE(f[i].mDDSSession.getSessionID() << ": " << AggregateState(state) << " -> " << ec);
+                BOOST_TEST_MESSAGE(f[i].mSession.mDDSSession.getSessionID() << ": " << AggregateState(state) << " -> " << ec);
             });
         });
     }
@@ -697,9 +697,9 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_interleaved)
                                         TopologyFixture(framework::master_test_suite().argv[2]) };
 
     std::array<Topology, num> topos{
-        Topology(f[0].mDDSTopo, f[0].mDDSSession, f[0].mExpendableTasks, f[0].mCollectionInfo, "", f[0].mLastRunNr),
-        Topology(f[1].mDDSTopo, f[1].mDDSSession, f[1].mExpendableTasks, f[1].mCollectionInfo, "", f[1].mLastRunNr),
-        Topology(f[2].mDDSTopo, f[2].mDDSSession, f[2].mExpendableTasks, f[2].mCollectionInfo, "", f[2].mLastRunNr),
+        Topology(f[0].mDDSTopo, f[0].mSession),
+        Topology(f[1].mDDSTopo, f[1].mSession),
+        Topology(f[2].mDDSTopo, f[2].mSession),
     };
 
     boost::asio::io_context ioContext;
@@ -709,7 +709,7 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_interleaved)
             ioContext.post([&f, &topos, i, transition]() {
                 auto [ec, state] = topos[i].ChangeState(transition);
                 BOOST_REQUIRE_EQUAL(ec, std::error_code());
-                BOOST_TEST_MESSAGE(f[i].mDDSSession.getSessionID() << ": " << AggregateState(state) << " -> " << ec);
+                BOOST_TEST_MESSAGE(f[i].mSession.mDDSSession.getSessionID() << ": " << AggregateState(state) << " -> " << ec);
             });
         }
     });
@@ -722,7 +722,7 @@ auto run_full_cycle()
     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mDDSTopo, f.mDDSSession, f.mExpendableTasks, f.mCollectionInfo, "", f.mLastRunNr);
+    Topology topo(f.mDDSTopo, f.mSession);
     full_device_lifecycle([&](TopoTransition transition) { BOOST_REQUIRE_EQUAL(topo.ChangeState(transition).first, std::error_code()); });
 }
 

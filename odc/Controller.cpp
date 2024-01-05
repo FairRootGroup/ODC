@@ -1058,14 +1058,7 @@ bool Controller::createDDSTopology(const CommonParams& common, Session& session,
 bool Controller::createTopology(const CommonParams& common, Partition& partition, Error& error)
 {
     try {
-        partition.mTopology = make_unique<Topology>(
-            *(partition.mSession->mDDSTopo),
-            partition.mSession->mDDSSession,
-            partition.mSession->mExpendableTasks,
-            partition.mSession->mCollections,
-            common.mPartitionID,
-            partition.mSession->mLastRunNr,
-            false);
+        partition.mTopology = make_unique<Topology>(*(partition.mSession->mDDSTopo), *(partition.mSession), false);
     } catch (exception& e) {
         partition.mTopology = nullptr;
         fillAndLogError(common, error, ErrorCode::FairMQCreateTopologyFailed, toString("Failed to initialize FairMQ topology: ", e.what()));
