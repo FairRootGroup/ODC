@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## master (unreleased)
+
+- Fix a deprecation warning with C++20
+
 ## 0.80.2 (2024-01-05)
 
 - Add more details in the log on failed tasks/collections: host & working directory
