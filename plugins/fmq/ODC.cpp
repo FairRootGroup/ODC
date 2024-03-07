@@ -235,7 +235,7 @@ void ODC::SubscribeForConnectingChannels()
         string channelName = key.substr(8);
         LOG(info) << "Update for channel name: " << channelName;
 
-        boost::asio::post(fWorkerQueue, [=, this]() {
+        boost::asio::post(fWorkerQueue, [key, value, senderTaskID, channelName, this]() {
             try {
                 {
                     unique_lock<mutex> lk(fUpdateMutex);
