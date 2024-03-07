@@ -916,7 +916,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         string topoPath = parent->getPath();
         int nCores = 0;
         int32_t n = c->getTotalCounter();
-        int32_t nmin = 0;
+        int32_t nmin = -1;
         int32_t numTasks = c->getNofTasks();
         int32_t numTasksTotal = numTasks * n;
 

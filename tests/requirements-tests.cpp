@@ -132,10 +132,10 @@ BOOST_AUTO_TEST_CASE(simple)
     BOOST_TEST(session.mZoneInfo.size() == 0);
     BOOST_TEST(session.mNinfo.size() == 0);
     BOOST_TEST(session.mCollections.size() == 1);
-    testCollection(session.mCollections.at("EPNCollection"), "EPNCollection", "", "", 1, 0, 0, 12, 12);
+    testCollection(session.mCollections.at("EPNCollection"), "EPNCollection", "", "", 1, -1, 0, 12, 12);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 1);
-    testAgentGroupInfo(session.mAgentGroupInfo.at(""), "", "", 1, 0, 12, 0);
+    testAgentGroupInfo(session.mAgentGroupInfo.at(""), "", "", 1, -1, 12, 0);
 }
 
 BOOST_AUTO_TEST_CASE(zones_from_agent_groupnames)
@@ -157,11 +157,11 @@ BOOST_AUTO_TEST_CASE(zones_from_agent_groupnames)
     testZoneGroup(session.mZoneInfo.at("online").at(0), 4, 0, "online");
 
     BOOST_TEST(session.mCollections.size() == 2);
-    testCollection(session.mCollections.at("SamplersSinks"), "SamplersSinks", "calib", "calib", 1, 0, 0, 2, 2);
+    testCollection(session.mCollections.at("SamplersSinks"), "SamplersSinks", "calib", "calib", 1, -1, 0, 2, 2);
     testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, 2, 0, 2, 8);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib"), "calib", "calib", 1, 0, 2, 0);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib"), "calib", "calib", 1, -1, 2, 0);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, 2, 2, 0);
 }
 
@@ -185,14 +185,14 @@ BOOST_AUTO_TEST_CASE(zones_with_ncores)
     testZoneGroup(session.mZoneInfo.at("online").at(0), 4, 0, "online");
 
     BOOST_TEST(session.mCollections.size() == 3);
-    testCollection(session.mCollections.at("Samplers"), "Samplers", "calib", "calib1", 1, 0, 2, 1, 1);
-    testCollection(session.mCollections.at("Sinks"), "Sinks", "calib", "calib2", 1, 0, 1, 1, 1);
-    testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, 0, 0, 1, 4);
+    testCollection(session.mCollections.at("Samplers"), "Samplers", "calib", "calib1", 1, -1, 2, 1, 1);
+    testCollection(session.mCollections.at("Sinks"), "Sinks", "calib", "calib2", 1, -1, 1, 1, 1);
+    testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, -1, 0, 1, 4);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 3);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, 0, 1, 0);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, 0, 1, 2);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib2"), "calib2", "calib", 1, 0, 1, 1);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, -1, 1, 0);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, -1, 1, 2);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib2"), "calib2", "calib", 1, -1, 1, 1);
 }
 
 BOOST_AUTO_TEST_CASE(nmin)
@@ -214,16 +214,16 @@ BOOST_AUTO_TEST_CASE(nmin)
     testZoneGroup(session.mZoneInfo.at("online").at(0), 4, 0, "online");
 
     BOOST_TEST(session.mNinfo.size() == 2);
-    testNinfo(session.mNinfo.at("SamplersSinks"), 1, 0, "calib");
+    testNinfo(session.mNinfo.at("SamplersSinks"), 1, -1, "calib");
     testNinfo(session.mNinfo.at("Processors"), 4, 2, "online");
 
     BOOST_TEST(session.mCollections.size() == 2);
-    testCollection(session.mCollections.at("SamplersSinks"), "SamplersSinks", "calib", "calib", 1, 0, 0, 2, 2);
+    testCollection(session.mCollections.at("SamplersSinks"), "SamplersSinks", "calib", "calib", 1, -1, 0, 2, 2);
     testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, 2, 0, 2, 8);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, 2, 2, 0);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib"), "calib", "calib", 1, 0, 2, 0);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib"), "calib", "calib", 1, -1, 2, 0);
 }
 
 BOOST_AUTO_TEST_CASE(epn)
@@ -245,16 +245,16 @@ BOOST_AUTO_TEST_CASE(epn)
     testZoneGroup(session.mZoneInfo.at("online").at(0), 50, 0, "online");
 
     BOOST_TEST(session.mNinfo.size() == 2);
-    testNinfo(session.mNinfo.at("wf11.dds"), 1, 0, "calib1");
+    testNinfo(session.mNinfo.at("wf11.dds"), 1, -1, "calib1");
     testNinfo(session.mNinfo.at("RecoCollection"), 50, 50, "online");
 
     BOOST_TEST(session.mCollections.size() == 2);
-    testCollection(session.mCollections.at("wf11.dds"), "wf11.dds", "calib", "calib1", 1, 0, 128, 17, 17);
+    testCollection(session.mCollections.at("wf11.dds"), "wf11.dds", "calib", "calib1", 1, -1, 128, 17, 17);
     testCollection(session.mCollections.at("RecoCollection"), "RecoCollection", "online", "online", 50, 50, 0, 223, 11150);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 50, 50, 223, 0);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, 0, 17, 128);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, -1, 17, 128);
 }
 
 BOOST_AUTO_TEST_CASE(epn_2)
@@ -280,24 +280,24 @@ BOOST_AUTO_TEST_CASE(epn_2)
 
     BOOST_TEST(session.mNinfo.size() == 5);
     testNinfo(session.mNinfo.at("RecoCollection"), 108, 93, "online");
-    testNinfo(session.mNinfo.at("wf5.dds"), 1, 0, "calib1");
-    testNinfo(session.mNinfo.at("wf4.dds"), 1, 0, "calib2");
-    testNinfo(session.mNinfo.at("wf10.dds"), 1, 0, "calib3");
-    testNinfo(session.mNinfo.at("wf6.dds"), 1, 0, "calib4");
+    testNinfo(session.mNinfo.at("wf5.dds"), 1, -1, "calib1");
+    testNinfo(session.mNinfo.at("wf4.dds"), 1, -1, "calib2");
+    testNinfo(session.mNinfo.at("wf10.dds"), 1, -1, "calib3");
+    testNinfo(session.mNinfo.at("wf6.dds"), 1, -1, "calib4");
 
     BOOST_TEST(session.mCollections.size() == 5);
     testCollection(session.mCollections.at("RecoCollection"), "RecoCollection", "online", "online", 108, 93, 0, 351, 37908);
-    testCollection(session.mCollections.at("wf5.dds"), "wf5.dds", "calib", "calib1", 1, 0, 32, 7, 7);
-    testCollection(session.mCollections.at("wf4.dds"), "wf4.dds", "calib", "calib2", 1, 0, 32, 13, 13);
-    testCollection(session.mCollections.at("wf10.dds"), "wf10.dds", "calib", "calib3", 1, 0, 16, 7, 7);
-    testCollection(session.mCollections.at("wf6.dds"), "wf6.dds", "calib", "calib4", 1, 0, 16, 13, 13);
+    testCollection(session.mCollections.at("wf5.dds"), "wf5.dds", "calib", "calib1", 1, -1, 32, 7, 7);
+    testCollection(session.mCollections.at("wf4.dds"), "wf4.dds", "calib", "calib2", 1, -1, 32, 13, 13);
+    testCollection(session.mCollections.at("wf10.dds"), "wf10.dds", "calib", "calib3", 1, -1, 16, 7, 7);
+    testCollection(session.mCollections.at("wf6.dds"), "wf6.dds", "calib", "calib4", 1, -1, 16, 13, 13);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 5);
     testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 108, 93, 351, 0);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, 0, 7, 32);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib2"), "calib2", "calib", 1, 0, 13, 32);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib3"), "calib3", "calib", 1, 0, 7, 16);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib4"), "calib4", "calib", 1, 0, 13, 16);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, -1, 7, 32);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib2"), "calib2", "calib", 1, -1, 13, 32);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib3"), "calib3", "calib", 1, -1, 7, 16);
+    testAgentGroupInfo(session.mAgentGroupInfo.at("calib4"), "calib4", "calib", 1, -1, 13, 16);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

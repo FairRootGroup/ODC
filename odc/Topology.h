@@ -296,7 +296,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     bool CheckNmin(int32_t nCurrent, int32_t nMin, const std::string& runtimeColPath, const std::string& colPath, DDSCollection::Id colId)
     {
-        if (nMin == 0) {
+        if (nMin == -1) {
             // no nMin defined, failure cannot be ignored
             OLOG(error, mPartitionID, mSession.mLastRunNr.load())
                 << "Collection '" << runtimeColPath << "' (id: " << colId << ")"

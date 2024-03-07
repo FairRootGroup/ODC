@@ -1,7 +1,8 @@
 # ODC Release Notes
 
-## master (unreleased)
+## 0.81.0 (2024-03-07)
 
+- **Breaking Change**: Support expendable collections. When nMin is 0, collection is considered to be expendable and failure of all collection members will not trigger a global error. Previously nMin of 0 was the default, which would mean no nMin defined. Now this behaviour occurs when nMin is -1, which is also the new default.
 - Fix a deprecation warning with C++20
 
 ## 0.80.2 (2024-01-05)
