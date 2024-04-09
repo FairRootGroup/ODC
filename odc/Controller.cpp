@@ -21,6 +21,7 @@
 #include <boost/process.hpp>
 
 #include <algorithm>
+#include <cctype> // std::tolower
 #include <filesystem>
 
 using namespace odc;
@@ -1314,12 +1315,26 @@ void Controller::fillAndLogFatalError(const CommonParams& common, Error& error, 
     OLOG(fatal, common) << error.mDetails;
 }
 
+void Controller::logLineWarningOrDetectedSev(const CommonParams& common, const string& line)
+{
+    string lowerCaseLine = line;
+    std::transform(lowerCaseLine.begin(), lowerCaseLine.end(), lowerCaseLine.begin(), [](unsigned char c){ return std::tolower(c); });
+
+    if (lowerCaseLine.find("fatal") != string::npos) {
+        OLOG(fatal, common) << line;
+    } else if (lowerCaseLine.find("error") != string::npos) {
+        OLOG(error, common) << line;
+    } else {
+        OLOG(warning, common) << line;
+    }
+}
+
 void Controller::logFatalLineByLine(const CommonParams& common, const string& msg)
 {
     stringstream ss(msg);
     string line;
     while (getline(ss, line, '\n')) {
-        OLOG(fatal, common) << line;
+        logLineWarningOrDetectedSev(common, line);
     }
 }
 
@@ -1494,7 +1509,8 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
         }
 
         if (exitCode != EXIT_SUCCESS) {
-            logFatalLineByLine(common, toString("Topology generation script failed with exit code: ", exitCode, ", stderr:\n", quoted(err), ",\nstdout:\n", quoted(shortOut), shortSuffix));
+            OLOG(fatal, common) << "Topology generation script failed with exit code: " << exitCode;
+            logFatalLineByLine(common, toString(", stderr:\n", quoted(err), ",\nstdout:\n", quoted(shortOut), shortSuffix));
             throw runtime_error(toString("Topology generation script failed with exit code: ", exitCode, ", stderr: ", quoted(err)));
         }
 

@@ -154,6 +154,7 @@ class Controller
     void fillAndLogFatalError(          const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void fillAndLogFatalErrorLineByLine(const CommonParams& common, Error& error, ErrorCode errorCode, const std::string& msg);
     void logFatalLineByLine(            const CommonParams& common, const std::string& msg);
+    void logLineWarningOrDetectedSev(   const CommonParams& common, const std::string& line);
 
     RequestResult createRequestResult(const CommonParams& common, const Session& session, const Error& error, const std::string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts);
     RequestResult createRequestResult(const CommonParams& common, const std::string& sessionId, const Error& error, const std::string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts);
