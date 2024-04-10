@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## 0.82.0 (2024-04-10)
+
+- Log topology generation failures with content aware severity: fatal when "fatal" is present in the output, error when "error" is present in the output, warning otherwise.
+
 ## 0.81.0 (2024-03-07)
 
 - **Breaking Change**: Support expendable collections. When nMin is 0, collection is considered to be expendable and failure of all collection members will not trigger a global error. Previously nMin of 0 was the default, which would mean no nMin defined. Now this behaviour occurs when nMin is -1, which is also the new default.
