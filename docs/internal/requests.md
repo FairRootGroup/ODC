@@ -32,3 +32,26 @@
 | Terminate     | mTopology->ChangeState                                                      |
 | Shutdown      | -                                                                           |
 | Status        | -                                                                           |
+
+
+Run
+    topoFilepath()
+        requestTimeout("topoFilepath..execute")
+    submit
+        makeParams
+            execPlugin
+                execute
+        submitDDSAgents
+            requestTimeout("wait_for lock in submitDDSAgents")
+        waitForNumActiveSlots
+            requestTimeout("waitForNumActiveSlots..waitForNumSlots<dds::tools_api::CSession::EAgentState::active>")
+        getAgentInfo
+            requestTimeout("getAgentInfo..syncSendRequest<SAgentInfoRequest>")
+        attemptSubmitRecovery
+            getNumSlots
+                requestTimeout("getNumSlots..syncSendRequest<SAgentCountRequest>")
+    activate
+        activateDDSTopology
+            requestTimeout("wait_for lock in activateDDSTopology")
+        waitForState
+            requestTimeout("WaitForState {expState}")

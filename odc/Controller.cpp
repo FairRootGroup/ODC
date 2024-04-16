@@ -807,6 +807,20 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
             success = false;
             fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for topology activation");
             OLOG(error, common) << error;
+
+            auto agentInfo = getAgentInfo(common, session);
+            OLOG(info, common) << agentInfo.size() << " DDS agents active:";
+            for (const auto& ai : agentInfo) {
+                OLOG(info, common)
+                    << "  Agent ID: " << ai.m_agentID
+                    << "; host: " << ai.m_host
+                    << "; path: " << ai.m_DDSPath
+                    << "; group: " << ai.m_groupName
+                    << "; slots: " << ai.m_nSlots
+                    << " (idle: " << ai.m_nIdleSlots
+                    << ", executing: " << ai.m_nExecutingSlots << ").";
+            }
+
         } else {
             // try {
             //     if (!session.mCollections.empty()) {
