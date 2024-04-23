@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+## 0.83.0 (2024-04-23)
+
+- Log agent info in case of topology activation timeout
+
 ## 0.82.0 (2024-04-10)
 
 - Log topology generation failures with content aware severity: fatal when "fatal" is present in the output, error when "error" is present in the output, warning otherwise.
