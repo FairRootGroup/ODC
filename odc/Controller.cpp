@@ -708,6 +708,8 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
         if (waitStatus == cv_status::timeout) {
             success = false;
             fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
+
+            requestPtr->unsubscribeAll();
         } else {
             // OLOG(info, common) << "Agent submission done successfully";
         }
@@ -807,6 +809,8 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
             success = false;
             fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for topology activation");
             OLOG(error, common) << error;
+
+            requestPtr->unsubscribeAll();
 
             auto agentInfo = getAgentInfo(common, session);
             OLOG(info, common) << agentInfo.size() << " DDS agents active:";
