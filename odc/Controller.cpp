@@ -680,6 +680,8 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
 
     OLOG(info, common) << "Submitting: " << requestInfo;
 
+    bool done = false;
+    mutex mtx;
     condition_variable cv;
 
     SSubmitRequest::ptr_t requestPtr = SSubmitRequest::makeRequest(requestInfo);
@@ -693,19 +695,21 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
         }
     });
 
-    requestPtr->setDoneCallback([&cv, &common]() {
-        // OLOG(info, common) << "Agent submission done";
+    requestPtr->setDoneCallback([&mtx, &cv, &done]() {
+        {
+            lock_guard<mutex> lock(mtx);
+            done = true;
+        }
         cv.notify_all();
     });
 
     session.mDDSSession.sendRequest<SSubmitRequest>(requestPtr);
 
     try {
-        mutex mtx;
         unique_lock<mutex> lock(mtx);
-        cv_status waitStatus = cv.wait_for(lock, requestTimeout(common, "wait_for lock in submitDDSAgents"));
+        cv.wait_for(lock, requestTimeout(common, "wait_for lock in submitDDSAgents"), [&done]{ return done; });
 
-        if (waitStatus == cv_status::timeout) {
+        if (!done) {
             success = false;
             fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
 
@@ -745,6 +749,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
     topoInfo.m_disableValidation = true;
     topoInfo.m_updateType = updateType;
 
+    bool done = false;
     mutex mtx;
     condition_variable cv;
 
@@ -797,15 +802,21 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
         }
     });
 
-    requestPtr->setDoneCallback([&cv]() { cv.notify_all(); });
+    requestPtr->setDoneCallback([&mtx, &cv, &done]() {
+        {
+            lock_guard<mutex> lock(mtx);
+            done = true;
+        }
+        cv.notify_all();
+    });
 
     session.mDDSSession.sendRequest<dds::tools_api::STopologyRequest>(requestPtr);
 
     try {
         unique_lock<mutex> lock(mtx);
-        cv_status waitStatus = cv.wait_for(lock, requestTimeout(common, "wait_for lock in activateDDSTopology"));
+        cv.wait_for(lock, requestTimeout(common, "wait_for lock in activateDDSTopology"), [&done]{ return done; });
 
-        if (waitStatus == cv_status::timeout) {
+        if (!done) {
             success = false;
             fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for topology activation");
             OLOG(error, common) << error;
@@ -824,7 +835,6 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
                     << " (idle: " << ai.m_nIdleSlots
                     << ", executing: " << ai.m_nExecutingSlots << ").";
             }
-
         } else {
             // try {
             //     if (!session.mCollections.empty()) {
@@ -1485,7 +1495,51 @@ dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(con
 {
     using namespace dds::tools_api;
     SAgentInfoRequest::responseVector_t agentInfo;
-    session.mDDSSession.syncSendRequest<SAgentInfoRequest>(SAgentInfoRequest::request_t(), agentInfo, requestTimeout(common, "getAgentInfo..syncSendRequest<SAgentInfoRequest>"));
+    SAgentInfoRequest::request_t infoRequest;
+    SAgentInfoRequest::ptr_t requestPtr = SAgentInfoRequest::makeRequest(infoRequest);
+
+    bool done = false;
+    mutex mtx;
+    condition_variable cv;
+
+    requestPtr->setResponseCallback([&agentInfo](const SAgentInfoResponseData& response) {
+        agentInfo.push_back(response);
+    });
+
+    requestPtr->setMessageCallback([&common](const SMessageResponseData& msg) {
+        if (msg.m_severity == dds::intercom_api::EMsgSeverity::error) {
+            OLOG(error, common) << "DDS Failed to collect agent info agents: " << msg.m_msg;
+        } else {
+            OLOG(info, common) << "DDS Server reports: " << msg.m_msg;
+        }
+    });
+
+    requestPtr->setDoneCallback([&mtx, &cv, &done]() {
+        {
+            lock_guard<mutex> lock(mtx);
+            done = true;
+        }
+        cv.notify_all();
+    });
+
+    session.mDDSSession.sendRequest<SAgentInfoRequest>(requestPtr);
+
+    try {
+        unique_lock<mutex> lock(mtx);
+        cv.wait_for(lock, requestTimeout(common, "wait_for lock in getAgentInfo"), [&done]{ return done; });
+
+        if (!done) {
+            OLOG(error, common) << "Timed out waiting for DDS agent info";
+
+            requestPtr->unsubscribeAll();
+        } else {
+            // OLOG(info, common) << "Agent submission done successfully";
+        }
+    } catch (Error& e) {
+        OLOG(error, common) << "Agent submission error: " << e;
+    }
+
+    // session.mDDSSession.syncSendRequest<SAgentInfoRequest>(SAgentInfoRequest::request_t(), agentInfo, requestTimeout(common, "getAgentInfo..syncSendRequest<SAgentInfoRequest>"));
     return agentInfo;
 }
 
