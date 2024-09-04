@@ -7,19 +7,20 @@ def jobMatrix(String type, List specs) {
     def selector = ""
     def os = ""
     def ver = ""
+    def dds = ""
 
     if (type == 'build') {
       job = "${spec.os}-${spec.ver}-${spec.arch}-${spec.compiler}"
-      if (spec.os =~ /^macos/) {
-        selector = "${spec.os}-${spec.ver}-${spec.arch}"
-      }
+      selector = "${spec.os}-${spec.ver}-${spec.arch}"
       os = spec.os
       ver = spec.ver
+      dds = spec.dds
     } else { // == 'check'
       job = "${spec.name}"
-      selector = 'fedora-36-x86_64'
+      selector = 'fedora-39-x86_64'
       os = 'fedora'
-      ver = '36'
+      ver = '39'
+      dds = '3.10'
     }
 
     def label = "${job}"
@@ -36,13 +37,7 @@ def jobMatrix(String type, List specs) {
           def ctestcmd = "ctest -S ODCTest.cmake -VV --output-on-failure"
           sh "echo \"set -e\" >> ${jobscript}"
           sh "echo \"export LABEL=\\\"\${JOB_BASE_NAME} ${label}\\\"\" >> ${jobscript}"
-          if (selector =~ /alice/) {
-            ctestcmd = "aliBuild build --defaults o2 ODC --debug && cd ODC && alienv setenv ODC/latest,CMake/latest -c ctest -VV -S ODCTest.cmake -DTEST_ONLY=ON -DCTEST_BINARY_DIRECTORY=\\\\\\\${ALIBUILD_WORK_DIR}/BUILD/ODC-latest/ODC"
-          }
-          def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
-          if (selector =~ /alice/) {
-            containercmd = "singularity exec -f --no-home -B.:/root/ODC -w ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}.${ver}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
-          }
+          def containercmd = "singularity exec -B/shared ${env.SINGULARITY_CONTAINER_ROOT}/odc/${os}${ver}_dds${dds}.sif bash -l -c \\\"${ctestcmd} ${extra}\\\""
           sh """\
             echo \"echo \\\"*** Job started at .......: \\\$(date -R)\\\"\" >> ${jobscript}
             echo \"echo \\\"*** Job ID ...............: \\\${SLURM_JOB_ID}\\\"\" >> ${jobscript}
@@ -81,10 +76,11 @@ pipeline{
       steps{
         script {
           def builds = jobMatrix('build', [
-            [os: 'fedora', ver: '36',    arch: 'x86_64', compiler: 'gcc-12'],
-            // [os: 'fedora', ver: '37',    arch: 'x86_64', compiler: 'gcc-12'],
-            [os: 'fedora', ver: '38',    arch: 'x86_64', compiler: 'gcc-13'],
-            // [os: 'centos', ver: '8stream.alice', arch: 'x86_64', compiler: 'gcc-10'],
+            [os: 'fedora', ver: '36', arch: 'x86_64', compiler: 'gcc-12', dds: '3.7.22'],
+            // [os: 'fedora', ver: '37', arch: 'x86_64', compiler: 'gcc-12', dds: '3.7.22'], // broken flatbuffers detection
+            [os: 'fedora', ver: '38', arch: 'x86_64', compiler: 'gcc-13', dds: '3.7.22'],
+            [os: 'fedora', ver: '39', arch: 'x86_64', compiler: 'gcc-13', dds: '3.10'],
+            [os: 'fedora', ver: '40', arch: 'x86_64', compiler: 'gcc-14', dds: '3.10'],
           ])
 
           def checks = jobMatrix('check', [
