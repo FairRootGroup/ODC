@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(construction)
 
     BOOST_TEST(propertiesSetCmds.At(0).GetType() == Type::properties_set);
     BOOST_TEST(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetDeviceId() == "somedeviceid");
-    BOOST_TEST(static_cast<Properties&>(propertiesSetCmds.At(0)).GetTaskId() == 123456);
+    BOOST_TEST(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetTaskId() == 123456);
     BOOST_TEST(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetRequestId() == 42);
     BOOST_TEST(static_cast<PropertiesSet&>(propertiesSetCmds.At(0)).GetResult() == Result::Ok);
 }
