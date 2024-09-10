@@ -20,7 +20,7 @@ def jobMatrix(String type, List specs) {
       selector = 'fedora-39-x86_64'
       os = 'fedora'
       ver = '39'
-      dds = '3.10'
+      dds = '3.11'
     }
 
     def label = "${job}"
@@ -79,8 +79,8 @@ pipeline{
             [os: 'fedora', ver: '36', arch: 'x86_64', compiler: 'gcc-12', dds: '3.7.22'],
             // [os: 'fedora', ver: '37', arch: 'x86_64', compiler: 'gcc-12', dds: '3.7.22'], // broken flatbuffers detection
             [os: 'fedora', ver: '38', arch: 'x86_64', compiler: 'gcc-13', dds: '3.7.22'],
-            [os: 'fedora', ver: '39', arch: 'x86_64', compiler: 'gcc-13', dds: '3.10'],
-            [os: 'fedora', ver: '40', arch: 'x86_64', compiler: 'gcc-14', dds: '3.10'],
+            [os: 'fedora', ver: '39', arch: 'x86_64', compiler: 'gcc-13', dds: '3.11'],
+            [os: 'fedora', ver: '40', arch: 'x86_64', compiler: 'gcc-14', dds: '3.11'],
           ])
 
           def checks = jobMatrix('check', [
