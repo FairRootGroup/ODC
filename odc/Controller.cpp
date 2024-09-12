@@ -664,7 +664,9 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
     requestInfo.m_submissionTag = common.mPartitionID;
     requestInfo.m_rms = params.mRMS;
     requestInfo.m_instances = params.mNumAgents;
-    requestInfo.m_minInstances = params.mMinAgents;
+    // requestInfo.m_minInstances = params.mMinAgents;
+    requestInfo.m_minInstances = 0;
+    OLOG(debug, common) << "Ignoring params.mMinAgents for DDS submission to avoid nMin handling temporarily";
     requestInfo.m_slots = params.mNumSlots;
     requestInfo.m_config = params.mConfigFile;
     requestInfo.m_envCfgFilePath = params.mEnvFile;
