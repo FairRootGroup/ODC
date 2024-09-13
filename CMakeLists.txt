@@ -28,7 +28,7 @@ option(BUILD_EPN_PLUGIN "Build EPN plugin of ODC" ON)
 option(BUILD_EXAMPLES "Build ODC examples" ON)
 option(BUILD_INFOLOGGER "Build with InfoLogger support" OFF)
 
-# Define CMAKE_INSTALL_*DIR variables
+# Define CMAKE_INSTALL_*DIR variables test
 include(GNUInstallDirs)
 
 # Define install dirs
