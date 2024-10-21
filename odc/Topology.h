@@ -276,10 +276,13 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             if (it != mSession.mCollections.end()) {
                 CollectionInfo& colInfo = it->second;
                 // one collection failed
-                colInfo.nCurrent--;
+                if (colInfo.mFailedRuntimeCollections.find(device.collectionId) == colInfo.mFailedRuntimeCollections.end()) {
+                    colInfo.mFailedRuntimeCollections.insert(device.collectionId);
+                    colInfo.nCurrent--;
+                }
                 // check nMin condition
                 if (CheckNmin(colInfo.nCurrent, colInfo.nMin, runtimeCollection.m_collectionPath, col->getPath(), device.collectionId)) {
-                    IgnoreCollection(device.collectionId);
+                    IgnoreCollectionDevices(device.collectionId);
 
                     // TODO: shutdown agent only if it has no tasks left
                     uint64_t agentId = colInfo.mRuntimeCollectionAgents.at(device.collectionId);
@@ -334,7 +337,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
     // precondition: mMtx is locked.
-    void IgnoreCollection(odc::core::DDSCollection::Id id)
+    void IgnoreCollectionDevices(odc::core::DDSCollection::Id id)
     {
         for (auto& device : mStateData) {
             if (device.collectionId == id) {

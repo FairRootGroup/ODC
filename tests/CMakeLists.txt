@@ -108,6 +108,9 @@ add_nmin_test(nmin_lt_n "" "Status code: ERROR")
 # nmin is less than n - recovery should be possible if conditions satisfied and failing processes are hanging before idle
 add_nmin_test(nmin_lt_n_hanging_before_idle "" "Status code: ERROR")
 
+# nmin is less than n - recovery not possible if all processes are hanging before idle
+add_nmin_test(nmin_lt_n_hanging_before_idle_failure "Status code: ERROR" "")
+
 # nmin is less than n - recovery should be possible if conditions satisfied and failing processes are hanging in init
 add_nmin_test(nmin_lt_n_hanging_in_init "" "Status code: ERROR")
 

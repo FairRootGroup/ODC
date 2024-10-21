@@ -991,7 +991,20 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
         }
 
         // TODO: should n_current be set to 0 and increased as collections are launched instead?
-        session.mCollections[c->getName()] = CollectionInfo{c->getName(), zone, agentGroup, topoParent, topoPath, n, n, nmin, nCores, numTasks, numTasksTotal, std::unordered_map<uint64_t, uint64_t>()};
+        session.mCollections[c->getName()] = CollectionInfo{
+            c->getName(),
+            zone,
+            agentGroup,
+            topoParent,
+            topoPath,
+            n,
+            n,
+            nmin,
+            nCores,
+            numTasks,
+            numTasksTotal,
+            std::unordered_map<DDSCollection::Id, uint64_t>(),
+            std::unordered_set<DDSCollection::Id>()};
 
         auto agiIt = session.mAgentGroupInfo.find(agentGroup);
         if (agiIt == session.mAgentGroupInfo.end()) {
