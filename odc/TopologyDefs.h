@@ -111,18 +111,6 @@ struct DeviceStatus
 {
     DeviceStatus() = default;
 
-    DeviceStatus(bool _ignored, bool _expendable, bool _subscribed, DeviceState _lastState, DeviceState _state, DDSTask::Id _taskId, DDSCollection::Id _collectionId, int _exitCode, int _signal)
-        : ignored(_ignored)
-        , expendable(_expendable)
-        , subscribedToStateChanges(_subscribed)
-        , lastState(_lastState)
-        , state(_state)
-        , taskId(_taskId)
-        , collectionId(_collectionId)
-        , exitCode(_exitCode)
-        , signal(_signal)
-    {}
-
     DeviceStatus(bool _expendable, DDSTask::Id _taskId, DDSCollection::Id _collectionId)
         : expendable(_expendable)
         , taskId(_taskId)
