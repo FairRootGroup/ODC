@@ -140,9 +140,9 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
     // precondition: mMtx is locked.
-    std::unordered_set<DDSTask::Id> GetTasks(const std::string& path) const
+    std::unordered_set<DDSTaskId> GetTasks(const std::string& path) const
     {
-        std::unordered_set<DDSTask::Id> set;
+        std::unordered_set<DDSTaskId> set;
 
         dds::topology_api::STopoRuntimeTask::FilterIteratorPair_t itPair;
         if (path.empty()) {
@@ -297,7 +297,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         return false;
     }
 
-    bool CheckNmin(int32_t nCurrent, int32_t nMin, const std::string& runtimeColPath, const std::string& colPath, DDSCollection::Id colId)
+    bool CheckNmin(int32_t nCurrent, int32_t nMin, const std::string& runtimeColPath, const std::string& colPath, DDSCollectionId colId)
     {
         if (nMin == -1) {
             // no nMin defined, failure cannot be ignored
@@ -337,7 +337,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     }
 
     // precondition: mMtx is locked.
-    void IgnoreCollectionDevices(odc::core::DDSCollection::Id id)
+    void IgnoreCollectionDevices(odc::core::DDSCollectionId id)
     {
         for (auto& device : mStateData) {
             if (device.collectionId == id) {
@@ -346,7 +346,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
         }
     }
 
-    void IgnoreTaskForAllOps(odc::core::DDSTask::Id id)
+    void IgnoreTaskForAllOps(odc::core::DDSTaskId id)
     {
         for (auto& op : mChangeStateOps) {
             op.second.Ignore(id);
@@ -442,7 +442,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     void HandleCmd(cc::StateChangeSubscription const& cmd)
     {
         if (cmd.GetResult() == cc::Result::Ok) {
-            DDSTask::Id taskId(cmd.GetTaskId());
+            DDSTaskId taskId(cmd.GetTaskId());
 
             try {
                 std::unique_lock<std::mutex> lk(*mMtx);
@@ -467,7 +467,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     void HandleCmd(cc::StateChangeUnsubscription const& cmd)
     {
         if (cmd.GetResult() == cc::Result::Ok) {
-            DDSTask::Id taskId(cmd.GetTaskId());
+            DDSTaskId taskId(cmd.GetTaskId());
 
             try {
                 std::unique_lock<std::mutex> lk(*mMtx);
@@ -490,7 +490,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
 
     void HandleCmd(cc::StateChange const& cmd)
     {
-        DDSTask::Id taskId(cmd.GetTaskId());
+        DDSTaskId taskId(cmd.GetTaskId());
 
         try {
             std::lock_guard<std::mutex> lk(*mMtx);
@@ -528,7 +528,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     void HandleCmd(cc::TransitionStatus const& cmd)
     {
         if (cmd.GetResult() != cc::Result::Ok) {
-            DDSTask::Id taskId(cmd.GetTaskId());
+            DDSTaskId taskId(cmd.GetTaskId());
             std::lock_guard<std::mutex> lk(*mMtx);
             // TODO: check if this can be done from within the OP
             for (auto& op : mChangeStateOps) {

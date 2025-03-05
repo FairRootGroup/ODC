@@ -1003,8 +1003,8 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
             nCores,
             numTasks,
             numTasksTotal,
-            std::unordered_map<DDSCollection::Id, uint64_t>(),
-            std::unordered_set<DDSCollection::Id>()};
+            std::unordered_map<DDSCollectionId, uint64_t>(),
+            std::unordered_set<DDSCollectionId>()};
 
         auto agiIt = session.mAgentGroupInfo.find(agentGroup);
         if (agiIt == session.mAgentGroupInfo.end()) {

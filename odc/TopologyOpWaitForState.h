@@ -36,7 +36,7 @@ struct WaitForStateOp
     template<typename Handler>
     WaitForStateOp(DeviceState targetLastState,
                    DeviceState targetCurrentState,
-                   std::unordered_set<DDSTask::Id> tasks,
+                   std::unordered_set<DDSTaskId> tasks,
                    const TopoStateIndex& stateIndex,
                    TopoState& stateData,
                    Duration timeout,
@@ -89,7 +89,7 @@ struct WaitForStateOp
     ~WaitForStateOp() = default;
 
     /// precondition: mMtx is locked.
-    void Update(const DDSTask::Id taskId, const DeviceState lastState, const DeviceState currentState, bool expendable)
+    void Update(const DDSTaskId taskId, const DeviceState lastState, const DeviceState currentState, bool expendable)
     {
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
             if (currentState == mTargetCurrentState && (lastState == mTargetLastState || mTargetLastState == DeviceState::Undefined)) {
@@ -104,7 +104,7 @@ struct WaitForStateOp
     }
 
     /// precondition: mMtx is locked.
-    void Ignore(const DDSTask::Id taskId)
+    void Ignore(const DDSTaskId taskId)
     {
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
             mTasks.erase(taskId);
@@ -132,7 +132,7 @@ struct WaitForStateOp
     }
 
     /// precondition: mMtx is locked.
-    bool ContainsTask(DDSTask::Id id) { return mTasks.count(id) > 0; }
+    bool ContainsTask(DDSTaskId id) { return mTasks.count(id) > 0; }
 
     bool IsCompleted() { return mOp.IsCompleted(); }
 
@@ -140,7 +140,7 @@ struct WaitForStateOp
     AsioAsyncOp<Executor, Allocator, WaitForStateCompletionSignature> mOp;
     TimeoutHandler mTimeoutHandler;
     boost::asio::steady_timer mTimer;
-    std::unordered_set<DDSTask::Id> mTasks;
+    std::unordered_set<DDSTaskId> mTasks;
     DeviceState mTargetLastState;
     DeviceState mTargetCurrentState;
     std::mutex& mMtx;

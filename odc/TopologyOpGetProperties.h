@@ -34,7 +34,7 @@ template<typename Executor, typename Allocator>
 struct GetPropertiesOp
 {
     template<typename Handler>
-    GetPropertiesOp(std::unordered_set<DDSTask::Id> tasks,
+    GetPropertiesOp(std::unordered_set<DDSTaskId> tasks,
                     Duration timeout,
                     std::mutex& mutex,
                     TimeoutHandler timeoutHandler,
@@ -74,7 +74,7 @@ struct GetPropertiesOp
     ~GetPropertiesOp() = default;
 
     /// precondition: mMtx is locked.
-    void Update(const DDSTask::Id taskId, cc::Result result, DeviceProperties props)
+    void Update(const DDSTaskId taskId, cc::Result result, DeviceProperties props)
     {
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
             if (result == cc::Result::Ok) {
@@ -87,7 +87,7 @@ struct GetPropertiesOp
         }
     }
 
-    void Ignore(const DDSTask::Id taskId)
+    void Ignore(const DDSTaskId taskId)
     {
         if (!mOp.IsCompleted() && ContainsTask(taskId)) {
             mTasks.erase(taskId);
@@ -116,7 +116,7 @@ struct GetPropertiesOp
     }
 
     /// precondition: mMtx is locked.
-    bool ContainsTask(DDSTask::Id id) { return mTasks.count(id) > 0; }
+    bool ContainsTask(DDSTaskId id) { return mTasks.count(id) > 0; }
 
     bool IsCompleted() { return mOp.IsCompleted(); }
 
@@ -124,7 +124,7 @@ struct GetPropertiesOp
     AsioAsyncOp<Executor, Allocator, GetPropertiesCompletionSignature> mOp;
     TimeoutHandler mTimeoutHandler;
     boost::asio::steady_timer mTimer;
-    std::unordered_set<DDSTask::Id> mTasks;
+    std::unordered_set<DDSTaskId> mTasks;
     GetPropertiesResult mResult;
     std::mutex& mMtx;
 };
