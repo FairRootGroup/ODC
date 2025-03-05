@@ -29,16 +29,8 @@ namespace odc::core
 using DeviceId = std::string;
 using DeviceState = fair::mq::State;
 using DeviceTransition = fair::mq::Transition;
-
-struct DDSCollection
-{
-    using Id = std::uint64_t;
-};
-
-struct DDSTask
-{
-    using Id = std::uint64_t;
-};
+using DDSCollectionId = std::uint64_t;
+using DDSTaskId = std::uint64_t;
 
 static const std::map<DeviceTransition, DeviceState> gExpectedState = {
     { DeviceTransition::InitDevice,   DeviceState::InitializingDevice },
@@ -111,7 +103,7 @@ struct DeviceStatus
 {
     DeviceStatus() = default;
 
-    DeviceStatus(bool _expendable, DDSTask::Id _taskId, DDSCollection::Id _collectionId)
+    DeviceStatus(bool _expendable, DDSTaskId _taskId, DDSCollectionId _collectionId)
         : expendable(_expendable)
         , taskId(_taskId)
         , collectionId(_collectionId)
@@ -135,8 +127,8 @@ struct DeviceStatus
     bool subscribedToStateChanges = false;
     DeviceState lastState = DeviceState::Undefined;
     DeviceState state = DeviceState::Undefined;
-    DDSTask::Id taskId;
-    DDSCollection::Id collectionId;
+    DDSTaskId taskId;
+    DDSCollectionId collectionId;
     int exitCode = -1;
     int signal = -1;
 };
@@ -176,7 +168,7 @@ struct TopologyState
 
 using DeviceProperty = std::pair<std::string, std::string>; /// pair := (key, value)
 using DeviceProperties = std::vector<DeviceProperty>;
-using FailedDevices = std::unordered_set<DDSTask::Id>;
+using FailedDevices = std::unordered_set<DDSTaskId>;
 
 using TimeoutHandler = std::function<void(FailedDevices)>;
 
@@ -186,14 +178,14 @@ struct GetPropertiesResult
     {
         DeviceProperties props;
     };
-    std::unordered_map<DDSTask::Id, Device> devices;
+    std::unordered_map<DDSTaskId, Device> devices;
     FailedDevices failed;
 };
 
 using TopoState = std::vector<DeviceStatus>;
-using TopoStateIndex = std::unordered_map<DDSTask::Id, int>; //  task id -> index in the data vector
-using TopoStateByTask = std::unordered_map<DDSTask::Id, DeviceStatus>;
-using TopoStateByCollection = std::unordered_map<DDSCollection::Id, std::vector<DeviceStatus>>;
+using TopoStateIndex = std::unordered_map<DDSTaskId, int>; //  task id -> index in the data vector
+using TopoStateByTask = std::unordered_map<DDSTaskId, DeviceStatus>;
+using TopoStateByCollection = std::unordered_map<DDSCollectionId, std::vector<DeviceStatus>>;
 using TopoTransition = fair::mq::Transition;
 
 inline AggregatedState AggregateState(const TopoState& topoState)
@@ -319,8 +311,8 @@ struct CollectionInfo
     int nCores;
     int32_t numTasks;
     int32_t totalTasks;
-    std::unordered_map<DDSCollection::Id, uint64_t> mRuntimeCollectionAgents; ///< runtime collection ID -> agent ID
-    std::unordered_set<DDSCollection::Id> mFailedRuntimeCollections;
+    std::unordered_map<DDSCollectionId, uint64_t> mRuntimeCollectionAgents; ///< runtime collection ID -> agent ID
+    std::unordered_set<DDSCollectionId> mFailedRuntimeCollections;
 
     friend std::ostream& operator<<(std::ostream& os, const CollectionInfo& ci)
     {
