@@ -31,6 +31,7 @@ using DeviceState = fair::mq::State;
 using DeviceTransition = fair::mq::Transition;
 using DDSCollectionId = std::uint64_t;
 using DDSTaskId = std::uint64_t;
+using DDSAgentId = std::uint64_t;
 
 static const std::map<DeviceTransition, DeviceState> gExpectedState = {
     { DeviceTransition::InitDevice,   DeviceState::InitializingDevice },

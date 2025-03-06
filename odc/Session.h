@@ -81,10 +81,10 @@ struct Session
     std::unordered_map<std::string, AgentGroupInfo> mAgentGroupInfo; ///< Agent group info groupName:AgentGroupInfo
     std::vector<TaskInfo> mStandaloneTasks; ///< Standalone tasks (not belonging to any collection)
     std::map<std::string, CollectionInfo> mCollections; ///< Collection info collectionName:CollectionInfo
-    std::unordered_map<uint64_t, CollectionInfo*> mRuntimeCollectionIndex; ///< Collection index by collection ID
-    std::unordered_set<uint64_t> mExpendableTasks; ///< List of expandable task IDs
+    std::unordered_map<DDSCollectionId, CollectionInfo*> mRuntimeCollectionIndex; ///< Collection index by collection ID
+    std::unordered_set<DDSTaskId> mExpendableTasks; ///< List of expandable task IDs
     size_t mTotalSlots = 0; ///< total number of DDS slots
-    std::unordered_map<uint64_t, uint32_t> mAgentSlots;
+    std::unordered_map<DDSAgentId, uint32_t> mAgentSlots; ///< agent ID : number of slots
     bool mRunAttempted = false;
     dds::tools_api::SOnTaskDoneRequest::ptr_t mDDSOnTaskDoneRequest;
     std::atomic<uint64_t> mLastRunNr = 0;
