@@ -1462,49 +1462,49 @@ void Controller::stateSummaryOnFailure(const CommonParams& common, Session& sess
     }
 }
 
-void Controller::ShutdownDDSAgent(const CommonParams& common, Session& session, uint64_t agentID)
-{
-    try {
-        size_t currentSlotCount = session.mTotalSlots;
-        size_t numSlotsToRemove = session.mAgentSlots.at(agentID);
-        size_t expectedNumSlots = session.mTotalSlots - numSlotsToRemove;
-        OLOG(info, common) << "Current number of slots: " << session.mTotalSlots << ", expecting to reduce to " << expectedNumSlots;
+// void Controller::ShutdownDDSAgent(const CommonParams& common, Session& session, uint64_t agentID)
+// {
+//     try {
+//         size_t currentSlotCount = session.mTotalSlots;
+//         size_t numSlotsToRemove = session.mAgentSlots.at(agentID);
+//         size_t expectedNumSlots = session.mTotalSlots - numSlotsToRemove;
+//         OLOG(info, common) << "Current number of slots: " << session.mTotalSlots << ", expecting to reduce to " << expectedNumSlots;
 
-        using namespace dds::tools_api;
-        OLOG(info, common) << "Sending shutdown signal to agent " << agentID;;
-        SAgentCommandRequest::request_t agentCmd;
-        agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
-        agentCmd.m_arg1 = agentID;
-        session.mDDSSession.syncSendRequest<SAgentCommandRequest>(agentCmd, requestTimeout(common, "ShutdownDDSAgent..syncSendRequest<SAgentCommandRequest>"));
+//         using namespace dds::tools_api;
+//         OLOG(info, common) << "Sending shutdown signal to agent " << agentID;;
+//         SAgentCommandRequest::request_t agentCmd;
+//         agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
+//         agentCmd.m_arg1 = agentID;
+//         session.mDDSSession.syncSendRequest<SAgentCommandRequest>(agentCmd, requestTimeout(common, "ShutdownDDSAgent..syncSendRequest<SAgentCommandRequest>"));
 
-        // TODO: notification on agent shutdown in development in DDS
-        currentSlotCount = getNumSlots(common, session);
-        OLOG(info, common) << "Current number of slots: " << currentSlotCount;
+//         // TODO: notification on agent shutdown in development in DDS
+//         currentSlotCount = getNumSlots(common, session);
+//         OLOG(info, common) << "Current number of slots: " << currentSlotCount;
 
-        if (currentSlotCount != expectedNumSlots) {
-            int64_t secondsLeft = requestTimeout(common, "ShutdownDDSAgent..measure remaining time").count();
-            if (secondsLeft > 0) {
-                int64_t maxAttempts = (secondsLeft * 1000) / 50;
-                while (currentSlotCount != expectedNumSlots && maxAttempts > 0) {
-                    this_thread::sleep_for(chrono::milliseconds(50));
-                    currentSlotCount = getNumSlots(common, session);
-                    // OLOG(info, common) << "Current number of slots: " << currentSlotCount;
-                    --maxAttempts;
-                }
-            }
-        }
-        if (currentSlotCount != expectedNumSlots) {
-            OLOG(warning, common) << "Could not reduce the number of slots to " << expectedNumSlots << ", current count is: " << currentSlotCount;
-        } else {
-            OLOG(info, common) << "Successfully reduced number of slots to " << currentSlotCount;
-        }
-        session.mTotalSlots = currentSlotCount;
-    } catch (Error& e) {
-        OLOG(error, common) << "Agent Shutdown failed: " << e;
-    } catch (exception& e) {
-        OLOG(error, common) << "Failed updating nubmer of slots: " << e.what();
-    }
-}
+//         if (currentSlotCount != expectedNumSlots) {
+//             int64_t secondsLeft = requestTimeout(common, "ShutdownDDSAgent..measure remaining time").count();
+//             if (secondsLeft > 0) {
+//                 int64_t maxAttempts = (secondsLeft * 1000) / 50;
+//                 while (currentSlotCount != expectedNumSlots && maxAttempts > 0) {
+//                     this_thread::sleep_for(chrono::milliseconds(50));
+//                     currentSlotCount = getNumSlots(common, session);
+//                     // OLOG(info, common) << "Current number of slots: " << currentSlotCount;
+//                     --maxAttempts;
+//                 }
+//             }
+//         }
+//         if (currentSlotCount != expectedNumSlots) {
+//             OLOG(warning, common) << "Could not reduce the number of slots to " << expectedNumSlots << ", current count is: " << currentSlotCount;
+//         } else {
+//             OLOG(info, common) << "Successfully reduced number of slots to " << currentSlotCount;
+//         }
+//         session.mTotalSlots = currentSlotCount;
+//     } catch (Error& e) {
+//         OLOG(error, common) << "Agent Shutdown failed: " << e;
+//     } catch (exception& e) {
+//         OLOG(error, common) << "Failed updating nubmer of slots: " << e.what();
+//     }
+// }
 
 dds::tools_api::SAgentInfoRequest::responseVector_t Controller::getAgentInfo(const CommonParams& common, Session& session) const
 {
