@@ -27,7 +27,7 @@ namespace odc::core
 
 struct Session
 {
-    TaskDetails& getTaskDetails(uint64_t taskID)
+    TaskDetails& getTaskDetails(DDSTaskId taskID)
     {
         auto it = mTaskDetails.find(taskID);
         if (it == mTaskDetails.end()) {
@@ -36,7 +36,7 @@ struct Session
         return it->second;
     }
 
-    CollectionDetails& getCollectionDetails(uint64_t collectionID)
+    CollectionDetails& getCollectionDetails(DDSCollectionId collectionID)
     {
         auto it = mCollectionDetails.find(collectionID);
         if (it == mCollectionDetails.end()) {
@@ -88,8 +88,8 @@ struct Session
     bool mRunAttempted = false;
     dds::tools_api::SOnTaskDoneRequest::ptr_t mDDSOnTaskDoneRequest;
     std::atomic<uint64_t> mLastRunNr = 0;
-    std::unordered_map<uint64_t, TaskDetails> mTaskDetails; ///< Additional information about task
-    std::unordered_map<uint64_t, CollectionDetails> mCollectionDetails; ///< Additional information about collection
+    std::unordered_map<DDSTaskId, TaskDetails> mTaskDetails; ///< Additional information about task
+    std::unordered_map<DDSCollectionId, CollectionDetails> mCollectionDetails; ///< Additional information about collection
 };
 
 } // namespace odc::core
