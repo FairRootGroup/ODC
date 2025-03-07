@@ -135,7 +135,7 @@ class Controller
 
     bool submitDDSAgents(      const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params);
     bool waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots);
-    void ShutdownDDSAgent(     const CommonParams& common, Session& session, uint64_t agentID);
+    // void ShutdownDDSAgent(     const CommonParams& common, Session& session, uint64_t agentID);
 
     bool activateDDSTopology(const CommonParams& common, Session& session, Error& error, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType);
     bool createDDSTopology(  const CommonParams& common, Session& session, Error& error);
