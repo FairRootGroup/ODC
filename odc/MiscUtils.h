@@ -26,6 +26,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace odc::core
 {
@@ -39,6 +40,18 @@ auto toString(T&&... t) -> std::string
     std::stringstream ss;
     (void)std::initializer_list<int>{ (ss << t, 0)... };
     return ss.str();
+}
+
+inline std::string strVecToStr(const std::vector<std::string>& v)
+{
+    std::ostringstream oss;
+    if (!v.empty()) {
+        oss << v[0];
+        for (size_t i = 1; i < v.size(); ++i) {
+            oss << ", " << v[i];
+        }
+    }
+    return oss.str();
 }
 
 // generates UUID string

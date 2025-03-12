@@ -178,6 +178,9 @@ BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_zones)
     BOOST_TEST(ddsParams2.size() == 2);
     testParameterSet(ddsParams.at(1), "slurm", "calib", "calib", 1, -1, 2, 0, "/home/user/slurm-calib.cfg", "");
     testParameterSet(ddsParams.at(0), "slurm", "online", "online", 4, 2, 2, 0, "/home/user/slurm-online.cfg", "");
+
+    std::sort(ddsParams.begin(), ddsParams.end());
+    std::sort(ddsParams2.begin(), ddsParams2.end());
     compareParameterSets(ddsParams.at(0), ddsParams2.at(0));
     compareParameterSets(ddsParams.at(1), ddsParams2.at(1));
 }
@@ -213,8 +216,8 @@ BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_zones_group_without_n_with_tasks)
     BOOST_TEST(ddsParams.size() == 1);
     BOOST_TEST(ddsParams2.size() == 2);
     testParameterSet(ddsParams.at(0), "slurm", "online", "online", 4, 2, 2, 0, "/home/user/slurm-online.cfg", "");
-    testParameterSet(ddsParams2.at(1), "slurm", "calib", "calib", 1, -1, 2, 0, "/home/user/slurm-calib.cfg", "");
-    testParameterSet(ddsParams2.at(0), "slurm", "online", "online", 4, 2, 2, 0, "/home/user/slurm-online.cfg", "");
+    testParameterSet(ddsParams2.at(0), "slurm", "calib", "calib", 1, -1, 2, 0, "/home/user/slurm-calib.cfg", "");
+    testParameterSet(ddsParams2.at(1), "slurm", "online", "online", 4, 2, 2, 0, "/home/user/slurm-online.cfg", "");
 }
 
 BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_zones_group_without_n_without_tasks)
@@ -282,9 +285,12 @@ BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_ncores_without_n)
     testParameterSet(ddsParams.at(0), "slurm", "calib", "calib1", 1, -1, 1, 2, "/home/user/slurm-calib.cfg", "");
     testParameterSet(ddsParams.at(1), "slurm", "online", "online", 4, -1, 1, 0, "/home/user/slurm-online.cfg", "");
     testParameterSet(ddsParams.at(2), "slurm", "calib", "calib2", 1, -1, 1, 1, "/home/user/slurm-calib.cfg", "");
-    compareParameterSets(ddsParams.at(0), ddsParams2.at(2));
-    compareParameterSets(ddsParams.at(1), ddsParams2.at(0));
-    compareParameterSets(ddsParams.at(2), ddsParams2.at(1));
+
+    std::sort(ddsParams.begin(), ddsParams.end());
+    std::sort(ddsParams2.begin(), ddsParams2.end());
+    compareParameterSets(ddsParams.at(0), ddsParams2.at(0));
+    compareParameterSets(ddsParams.at(1), ddsParams2.at(1));
+    compareParameterSets(ddsParams.at(2), ddsParams2.at(2));
 }
 
 BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_ncores)
@@ -319,9 +325,12 @@ BOOST_AUTO_TEST_CASE(odc_rp_epn_slurm_ncores)
     testParameterSet(ddsParams.at(0), "slurm", "calib", "calib1", 1, -1, 1, 2, "/home/user/slurm-calib.cfg", "");
     testParameterSet(ddsParams.at(1), "slurm", "online", "online", 4, -1, 1, 0, "/home/user/slurm-online.cfg", "");
     testParameterSet(ddsParams.at(2), "slurm", "calib", "calib2", 1, -1, 1, 1, "/home/user/slurm-calib.cfg", "");
-    compareParameterSets(ddsParams.at(0), ddsParams2.at(2));
-    compareParameterSets(ddsParams.at(1), ddsParams2.at(0));
-    compareParameterSets(ddsParams.at(2), ddsParams2.at(1));
+
+    std::sort(ddsParams.begin(), ddsParams.end());
+    std::sort(ddsParams2.begin(), ddsParams2.end());
+    compareParameterSets(ddsParams.at(0), ddsParams2.at(0));
+    compareParameterSets(ddsParams.at(1), ddsParams2.at(1));
+    compareParameterSets(ddsParams.at(2), ddsParams2.at(2));
 }
 
 BOOST_AUTO_TEST_CASE(odc_extract_epn)
@@ -346,8 +355,8 @@ BOOST_AUTO_TEST_CASE(odc_extract_epn)
     printParams(ddsParams);
 
     BOOST_TEST(ddsParams.size() == 2);
-    testParameterSet(ddsParams.at(0), "slurm", "online", "online", 50, 50, 223, 0, "/home/user/slurm-online.cfg", "");
-    testParameterSet(ddsParams.at(1), "slurm", "calib", "calib1", 1, -1, 17, 128, "/home/user/slurm-calib.cfg", "");
+    testParameterSet(ddsParams.at(1), "slurm", "online", "online", 50, 50, 223, 0, "/home/user/slurm-online.cfg", "");
+    testParameterSet(ddsParams.at(0), "slurm", "calib", "calib1", 1, -1, 17, 128, "/home/user/slurm-calib.cfg", "");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

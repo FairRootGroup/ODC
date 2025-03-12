@@ -83,6 +83,54 @@ struct DDSSubmitParams
     }
 };
 
+// Less-than operator for std::sort
+inline bool operator<(const DDSSubmitParams& lhs, const DDSSubmitParams& rhs)
+{
+    if (lhs.mAgentGroup != rhs.mAgentGroup)
+        return lhs.mAgentGroup < rhs.mAgentGroup;
+
+    if (lhs.mZone != rhs.mZone)
+        return lhs.mZone < rhs.mZone;
+
+    if (lhs.mRMS != rhs.mRMS)
+        return lhs.mRMS < rhs.mRMS;
+
+    if (lhs.mNumAgents != rhs.mNumAgents)
+        return lhs.mNumAgents < rhs.mNumAgents;
+
+    if (lhs.mMinAgents != rhs.mMinAgents)
+        return lhs.mMinAgents < rhs.mMinAgents;
+
+    if (lhs.mNumSlots != rhs.mNumSlots)
+        return lhs.mNumSlots < rhs.mNumSlots;
+
+    if (lhs.mNumCores != rhs.mNumCores)
+        return lhs.mNumCores < rhs.mNumCores;
+
+    if (lhs.mConfigFile != rhs.mConfigFile)
+        return lhs.mConfigFile < rhs.mConfigFile;
+
+    return lhs.mEnvFile < rhs.mEnvFile;
+}
+
+inline bool operator==(const DDSSubmitParams& lhs, const DDSSubmitParams& rhs)
+{
+    return lhs.mRMS == rhs.mRMS &&
+           lhs.mZone == rhs.mZone &&
+           lhs.mAgentGroup == rhs.mAgentGroup &&
+           lhs.mNumAgents == rhs.mNumAgents &&
+           lhs.mMinAgents == rhs.mMinAgents &&
+           lhs.mNumSlots == rhs.mNumSlots &&
+           lhs.mNumCores == rhs.mNumCores &&
+           lhs.mConfigFile == rhs.mConfigFile &&
+           lhs.mEnvFile == rhs.mEnvFile;
+}
+
+inline bool operator!=(const DDSSubmitParams& lhs, const DDSSubmitParams& rhs)
+{
+    return !(lhs == rhs);
+}
+
 class DDSSubmit : public PluginManager
 {
   public:
@@ -94,14 +142,14 @@ class DDSSubmit : public PluginManager
     std::vector<DDSSubmitParams> makeParams(
         const std::string& rms,
         const std::map<std::string, ZoneConfig>& zoneCfgs,
-        const std::unordered_map<std::string, AgentGroupInfo>& agentGroupInfo)
+        const std::vector<AgentGroupInfo>& agentGroupInfo)
     {
         std::vector<DDSSubmitParams> params;
 
-        for (const auto& [groupName, groupInfo] : agentGroupInfo) {
+        for (const auto& groupInfo : agentGroupInfo) {
             DDSSubmitParams par;
             par.mRMS = rms;
-            par.mAgentGroup = groupName;
+            par.mAgentGroup = groupInfo.name;
             par.mZone = groupInfo.zone;
 
             // if config for the given zone exists, add it

@@ -58,7 +58,7 @@ void printSessionDetails(const Session& session)
     }
 
     std::cout << session.mAgentGroupInfo.size() << " Agent group(s):" << std::endl;
-    for (const auto& [groupName, agi] : session.mAgentGroupInfo) {
+    for (const auto& agi : session.mAgentGroupInfo) {
         std::cout << "  " << agi << std::endl;
     }
     std::cout << "###########" << std::endl;
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(simple)
     testCollection(session.mCollections.at("EPNCollection"), "EPNCollection", "", "", 1, -1, 0, 12, 12);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 1);
-    testAgentGroupInfo(session.mAgentGroupInfo.at(""), "", "", 1, -1, 12, 0);
+    testAgentGroupInfo(*session.findAgentGroup(""), "", "", 1, -1, 12, 0);
 }
 
 BOOST_AUTO_TEST_CASE(zones_from_agent_groupnames)
@@ -161,8 +161,8 @@ BOOST_AUTO_TEST_CASE(zones_from_agent_groupnames)
     testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, 2, 0, 2, 8);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib"), "calib", "calib", 1, -1, 2, 0);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, 2, 2, 0);
+    testAgentGroupInfo(*session.findAgentGroup("calib"), "calib", "calib", 1, -1, 2, 0);
+    testAgentGroupInfo(*session.findAgentGroup("online"), "online", "online", 4, 2, 2, 0);
 }
 
 BOOST_AUTO_TEST_CASE(zones_with_ncores)
@@ -190,9 +190,9 @@ BOOST_AUTO_TEST_CASE(zones_with_ncores)
     testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, -1, 0, 1, 4);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 3);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, -1, 1, 0);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, -1, 1, 2);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib2"), "calib2", "calib", 1, -1, 1, 1);
+    testAgentGroupInfo(*session.findAgentGroup("online"), "online", "online", 4, -1, 1, 0);
+    testAgentGroupInfo(*session.findAgentGroup("calib1"), "calib1", "calib", 1, -1, 1, 2);
+    testAgentGroupInfo(*session.findAgentGroup("calib2"), "calib2", "calib", 1, -1, 1, 1);
 }
 
 BOOST_AUTO_TEST_CASE(nmin)
@@ -222,8 +222,8 @@ BOOST_AUTO_TEST_CASE(nmin)
     testCollection(session.mCollections.at("Processors"), "Processors", "online", "online", 4, 2, 0, 2, 8);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 4, 2, 2, 0);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib"), "calib", "calib", 1, -1, 2, 0);
+    testAgentGroupInfo(*session.findAgentGroup("online"), "online", "online", 4, 2, 2, 0);
+    testAgentGroupInfo(*session.findAgentGroup("calib"), "calib", "calib", 1, -1, 2, 0);
 }
 
 BOOST_AUTO_TEST_CASE(epn)
@@ -253,8 +253,8 @@ BOOST_AUTO_TEST_CASE(epn)
     testCollection(session.mCollections.at("RecoCollection"), "RecoCollection", "online", "online", 50, 50, 0, 223, 11150);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 2);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 50, 50, 223, 0);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, -1, 17, 128);
+    testAgentGroupInfo(*session.findAgentGroup("online"), "online", "online", 50, 50, 223, 0);
+    testAgentGroupInfo(*session.findAgentGroup("calib1"), "calib1", "calib", 1, -1, 17, 128);
 }
 
 BOOST_AUTO_TEST_CASE(epn_2)
@@ -293,11 +293,11 @@ BOOST_AUTO_TEST_CASE(epn_2)
     testCollection(session.mCollections.at("wf6.dds"), "wf6.dds", "calib", "calib4", 1, -1, 16, 13, 13);
 
     BOOST_TEST(session.mAgentGroupInfo.size() == 5);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("online"), "online", "online", 108, 93, 351, 0);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib1"), "calib1", "calib", 1, -1, 7, 32);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib2"), "calib2", "calib", 1, -1, 13, 32);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib3"), "calib3", "calib", 1, -1, 7, 16);
-    testAgentGroupInfo(session.mAgentGroupInfo.at("calib4"), "calib4", "calib", 1, -1, 13, 16);
+    testAgentGroupInfo(*session.findAgentGroup("online"), "online", "online", 108, 93, 351, 0);
+    testAgentGroupInfo(*session.findAgentGroup("calib1"), "calib1", "calib", 1, -1, 7, 32);
+    testAgentGroupInfo(*session.findAgentGroup("calib2"), "calib2", "calib", 1, -1, 13, 32);
+    testAgentGroupInfo(*session.findAgentGroup("calib3"), "calib3", "calib", 1, -1, 7, 16);
+    testAgentGroupInfo(*session.findAgentGroup("calib4"), "calib4", "calib", 1, -1, 13, 16);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

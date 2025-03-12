@@ -53,12 +53,25 @@ struct Session
         for (const auto& state : topoState) {
             auto it = mTaskDetails.find(state.taskId);
             if (it != mTaskDetails.end()) {
-                detailedState.emplace_back(DetailedTaskStatus(state, it->second.mPath, it->second.mHost));
+                detailedState.emplace_back(DetailedTaskStatus(state, it->second.mPath, it->second.mHost, it->second.mRMSJobID));
             } else {
-                detailedState.emplace_back(DetailedTaskStatus(state, "unknown", "unknown"));
+                detailedState.emplace_back(DetailedTaskStatus(state, "unknown", "unknown", "unknown"));
             }
         }
     }
+
+    std::vector<odc::core::AgentGroupInfo>::iterator findAgentGroup(const std::string& agentGroupName)
+    {
+        auto agiIt = std::find_if(mAgentGroupInfo.begin(), mAgentGroupInfo.end(), [&agentGroupName](const AgentGroupInfo& info) {
+            return info.name == agentGroupName;
+        });
+        if (agiIt != mAgentGroupInfo.end()) {
+            return agiIt;
+        } else {
+            return mAgentGroupInfo.end();
+        }
+    }
+
 
     void debug()
     {
@@ -78,13 +91,13 @@ struct Session
     std::string mTopoFilePath;
     std::map<std::string, CollectionNInfo> mNinfo; ///< Holds information on minimum number of collections, by collection name
     std::map<std::string, std::vector<ZoneGroup>> mZoneInfo; ///< Zones info zoneName:vector<ZoneGroup>
-    std::unordered_map<std::string, AgentGroupInfo> mAgentGroupInfo; ///< Agent group info groupName:AgentGroupInfo
+    std::vector<AgentGroupInfo> mAgentGroupInfo; ///< Agent group info groupName:AgentGroupInfo
+    std::unordered_map<DDSAgentId, AgentInfo> mAgentInfo; ///< agent ID : agent info
     std::vector<TaskInfo> mStandaloneTasks; ///< Standalone tasks (not belonging to any collection)
     std::map<std::string, CollectionInfo> mCollections; ///< Collection info collectionName:CollectionInfo
     std::unordered_map<DDSCollectionId, CollectionInfo*> mRuntimeCollectionIndex; ///< Collection index by collection ID
     std::unordered_set<DDSTaskId> mExpendableTasks; ///< List of expandable task IDs
     size_t mTotalSlots = 0; ///< total number of DDS slots
-    std::unordered_map<DDSAgentId, uint32_t> mAgentSlots; ///< agent ID : number of slots
     bool mRunAttempted = false;
     dds::tools_api::SOnTaskDoneRequest::ptr_t mDDSOnTaskDoneRequest;
     std::atomic<uint64_t> mLastRunNr = 0;

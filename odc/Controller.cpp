@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cctype> // std::tolower
 #include <filesystem>
+#include <iterator> // std::distance
 
 using namespace odc;
 using namespace odc::core;
@@ -53,7 +54,7 @@ RequestResult Controller::execInitialize(const CommonParams& common, const Initi
         }
     }
     updateRestore();
-    return createRequestResult(common, *(partition.mSession), error, "Initialize done", TopologyState(), {});
+    return createRequestResult(common, *(partition.mSession), error, "Initialize done", TopologyState(), "", {});
 }
 
 RequestResult Controller::execSubmit(const CommonParams& common, const SubmitParams& params)
@@ -61,14 +62,15 @@ RequestResult Controller::execSubmit(const CommonParams& common, const SubmitPar
     Error error;
     auto& partition = acquirePartition(common);
 
-    auto hosts = submit(common, *(partition.mSession), error, params.mPlugin, params.mResources, false);
+    auto [hosts, rmsJobIDs] = submit(common, *(partition.mSession), error, params.mPlugin, params.mResources, false);
 
-    return createRequestResult(common, *(partition.mSession), error, "Submit done", TopologyState(), hosts);
+    return createRequestResult(common, *(partition.mSession), error, "Submit done", TopologyState(), rmsJobIDs, hosts);
 }
 
-unordered_set<string> Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res, bool extractResources)
+pair<unordered_set<string>, string> Controller::submit(const CommonParams& common, Session& session, Error& error, const string& plugin, const string& res, bool extractResources)
 {
     unordered_set<string> hosts;
+    string rmsJobIDs;
     if (extractResources) {
         OLOG(info, common) << "Attempting submission with resources extracted from topology.";
     } else {
@@ -77,7 +79,7 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
 
     if (!session.mDDSSession.IsRunning()) {
         fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
-        return hosts;
+        return std::make_pair(hosts, rmsJobIDs);
     }
 
     // Get DDS submit parameters from ODC resource plugin
@@ -92,10 +94,10 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
         } catch (Error& e) {
             error = e;
             OLOG(error, common) << "Resource plugin failed: " << e;
-            return hosts;
+            return std::make_pair(hosts, rmsJobIDs);
         } catch (exception& e) {
             fillAndLogError(common, error, ErrorCode::ResourcePluginFailed, toString("Resource plugin failed: ", e.what()));
-            return hosts;
+            return std::make_pair(hosts, rmsJobIDs);
         }
     }
 
@@ -138,14 +140,28 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
             hosts.reserve(agentInfo.size());
             for (const auto& ai : agentInfo) {
                 agentCounts[ai.m_groupName]++;
-                session.mAgentSlots[ai.m_agentID] = ai.m_nSlots;
+                session.mAgentInfo[ai.m_agentID].numSlots = ai.m_nSlots;
+
+                std::string rmsJobID;
+                auto agiIt = std::find_if(session.mAgentGroupInfo.begin(), session.mAgentGroupInfo.end(), [&ai](const AgentGroupInfo& info) {
+                    return info.name == ai.m_groupName;
+                });
+                if (agiIt != session.mAgentGroupInfo.end()) {
+                    session.mAgentInfo.at(ai.m_agentID).agentGroupInfoIndex = std::distance(session.mAgentGroupInfo.begin(), agiIt);
+                    rmsJobID = agiIt->rmsJobID;
+                } else {
+                    OLOG(error, common) << "Agent group info not found for agent " << ai.m_agentID;
+                }
+
                 hosts.emplace(ai.m_host);
+                rmsJobIDs += rmsJobID + " ";
                 OLOG(info, common)
                     << "  Agent ID: " << ai.m_agentID
                     // << ", pid: " << ai.m_agentPid
                     << "; host: " << ai.m_host
                     << "; path: " << ai.m_DDSPath
                     << "; group: " << ai.m_groupName
+                    << "; rmsJobID: " << std::quoted(rmsJobID)
                     // << "; index: " << ai.m_index
                     // << "; username: " << ai.m_username
                     << "; startup time: " << ai.m_startUpTime.count() << " ms"
@@ -167,9 +183,9 @@ unordered_set<string> Controller::submit(const CommonParams& common, Session& se
         if (error.mCode) {
             attemptSubmitRecovery(common, session, error, ddsParams, agentCounts);
         }
-
     }
-    return hosts;
+
+    return std::make_pair(hosts, rmsJobIDs);
 }
 
 void Controller::attemptSubmitRecovery(const CommonParams& common,
@@ -283,7 +299,7 @@ RequestResult Controller::execActivate(const CommonParams& common, const Activat
     }
 
     TopologyState topologyState(error.mCode ? AggregatedState::Undefined : AggregatedState::Idle);
-    return createRequestResult(common, *(partition.mSession), error, "Activate done", std::move(topologyState), {});
+    return createRequestResult(common, *(partition.mSession), error, "Activate done", std::move(topologyState), "", {});
 }
 
 void Controller::activate(const CommonParams& common, Partition& partition, Error& error)
@@ -299,6 +315,7 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
     Error error;
     auto& partition = acquirePartition(common);
     std::unordered_set<std::string> hosts;
+    std::string rmsJobIDs;
 
     if (!partition.mSession->mRunAttempted) {
         partition.mSession->mRunAttempted = true;
@@ -326,7 +343,7 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
                     fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
                 }
 
-                hosts = submit(common, *(partition.mSession), error, params.mPlugin, params.mResources, params.mExtractTopoResources);
+                std::tie(hosts, rmsJobIDs) = submit(common, *(partition.mSession), error, params.mPlugin, params.mResources, params.mExtractTopoResources);
 
                 if (!partition.mSession->mDDSSession.IsRunning()) {
                     fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
@@ -342,7 +359,7 @@ RequestResult Controller::execRun(const CommonParams& common, const RunParams& p
     }
 
     TopologyState topologyState(error.mCode ? AggregatedState::Undefined : AggregatedState::Idle);
-    return createRequestResult(common, *(partition.mSession), error, "Run done", std::move(topologyState), hosts);
+    return createRequestResult(common, *(partition.mSession), error, "Run done", std::move(topologyState), rmsJobIDs, hosts);
 }
 
 RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
@@ -371,7 +388,7 @@ RequestResult Controller::execUpdate(const CommonParams& common, const UpdatePar
             && waitForState(common, partition, error, "", DeviceState::Idle)
             && changeStateConfigure(common, partition, error, "", topologyState);
     }
-    return createRequestResult(common, *(partition.mSession), error, "Update done", std::move(topologyState), {});
+    return createRequestResult(common, *(partition.mSession), error, "Update done", std::move(topologyState), "", {});
 }
 
 RequestResult Controller::execShutdown(const CommonParams& common)
@@ -389,7 +406,7 @@ RequestResult Controller::execShutdown(const CommonParams& common)
     removePartition(common);
     updateRestore();
 
-    return createRequestResult(common, ddsSessionId, error, "Shutdown done", TopologyState(), {});
+    return createRequestResult(common, ddsSessionId, error, "Shutdown done", TopologyState(), "", {});
 }
 
 RequestResult Controller::execSetProperties(const CommonParams& common, const SetPropertiesParams& params)
@@ -399,7 +416,7 @@ RequestResult Controller::execSetProperties(const CommonParams& common, const Se
 
     TopologyState topologyState;
     setProperties(common, partition, error, params.mPath, params.mProperties, topologyState);
-    return createRequestResult(common, *(partition.mSession), error, "SetProperties done", std::move(topologyState), {});
+    return createRequestResult(common, *(partition.mSession), error, "SetProperties done", std::move(topologyState), "", {});
 }
 
 RequestResult Controller::execGetState(const CommonParams& common, const DeviceParams& params)
@@ -409,7 +426,7 @@ RequestResult Controller::execGetState(const CommonParams& common, const DeviceP
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     getState(common, partition, error, params.mPath, topologyState);
-    return createRequestResult(common, *(partition.mSession), error, "GetState done", std::move(topologyState), {});
+    return createRequestResult(common, *(partition.mSession), error, "GetState done", std::move(topologyState), "", {});
 }
 
 RequestResult Controller::execConfigure(const CommonParams& common, const DeviceParams& params)
@@ -419,7 +436,7 @@ RequestResult Controller::execConfigure(const CommonParams& common, const Device
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeStateConfigure(common, partition, error, params.mPath, topologyState);
-    return createRequestResult(common, *(partition.mSession), error, "Configure done", std::move(topologyState), {});
+    return createRequestResult(common, *(partition.mSession), error, "Configure done", std::move(topologyState), "", {});
 }
 
 RequestResult Controller::execStart(const CommonParams& common, const DeviceParams& params)
@@ -432,7 +449,7 @@ RequestResult Controller::execStart(const CommonParams& common, const DevicePara
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeState(common, partition, error, params.mPath, TopoTransition::Run, topologyState);
-    return createRequestResult(common, *(partition.mSession), error, "Start done", std::move(topologyState), {});
+    return createRequestResult(common, *(partition.mSession), error, "Start done", std::move(topologyState), "", {});
 }
 
 RequestResult Controller::execStop(const CommonParams& common, const DeviceParams& params)
@@ -446,7 +463,7 @@ RequestResult Controller::execStop(const CommonParams& common, const DeviceParam
     // reset the run number, which is valid only for the running state
     partition.mSession->mLastRunNr.store(0);
 
-    return createRequestResult(common, *(partition.mSession), error, "Stop done", std::move(topologyState), {});
+    return createRequestResult(common, *(partition.mSession), error, "Stop done", std::move(topologyState), "", {});
 }
 
 RequestResult Controller::execReset(const CommonParams& common, const DeviceParams& params)
@@ -456,7 +473,7 @@ RequestResult Controller::execReset(const CommonParams& common, const DevicePara
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeStateReset(common, partition, error, params.mPath, topologyState);
-    return createRequestResult(common, *(partition.mSession), error, "Reset done", std::move(topologyState), {});
+    return createRequestResult(common, *(partition.mSession), error, "Reset done", std::move(topologyState), "", {});
 }
 
 RequestResult Controller::execTerminate(const CommonParams& common, const DeviceParams& params)
@@ -466,7 +483,7 @@ RequestResult Controller::execTerminate(const CommonParams& common, const Device
 
     TopologyState topologyState(AggregatedState::Undefined, params.mDetailed ? std::make_optional<DetailedState>() : std::nullopt);
     changeState(common, partition, error, params.mPath, TopoTransition::End, topologyState);
-    return createRequestResult(common, *(partition.mSession), error, "Terminate done", std::move(topologyState), {});
+    return createRequestResult(common, *(partition.mSession), error, "Terminate done", std::move(topologyState), "", {});
 }
 
 StatusRequestResult Controller::execStatus(const StatusParams& params)
@@ -560,17 +577,17 @@ void Controller::updateHistory(const CommonParams& common, const std::string& se
     }
 }
 
-RequestResult Controller::createRequestResult(const CommonParams& common, const Session& session, const Error& error, const string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts)
+RequestResult Controller::createRequestResult(const CommonParams& common, const Session& session, const Error& error, const string& msg, TopologyState&& topologyState, const std::string& rmsJobIDs, const std::unordered_set<std::string>& hosts)
 {
     string sidStr = to_string(session.mDDSSession.getSessionID());
     StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
-    return RequestResult(status, msg, common.mTimer.duration().count(), error, common.mPartitionID, common.mRunNr, sidStr, std::move(topologyState), hosts);
+    return RequestResult(status, msg, common.mTimer.duration().count(), error, common.mPartitionID, common.mRunNr, sidStr, std::move(topologyState), rmsJobIDs, hosts);
 }
 
-RequestResult Controller::createRequestResult(const CommonParams& common, const string& sessionId, const Error& error, const string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts)
+RequestResult Controller::createRequestResult(const CommonParams& common, const string& sessionId, const Error& error, const string& msg, TopologyState&& topologyState, const std::string& rmsJobIDs, const std::unordered_set<std::string>& hosts)
 {
     StatusCode status = error.mCode ? StatusCode::error : StatusCode::ok;
-    return RequestResult(status, msg, common.mTimer.duration().count(), error, common.mPartitionID, common.mRunNr, sessionId, std::move(topologyState), hosts);
+    return RequestResult(status, msg, common.mTimer.duration().count(), error, common.mPartitionID, common.mRunNr, sessionId, std::move(topologyState), rmsJobIDs, hosts);
 }
 
 bool Controller::createDDSSession(const CommonParams& common, Session& session, Error& error)
@@ -697,6 +714,27 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
         }
     });
 
+    requestPtr->setResponseCallback([&common, &session, &params](const SSubmitResponseData& res) {
+        OLOG(info, common) << "Submission details:";
+
+        if (!res.m_jobIDs.empty()) {
+            auto agiIt = std::find_if(session.mAgentGroupInfo.begin(), session.mAgentGroupInfo.end(), [&params](const AgentGroupInfo& agi) {
+                return agi.name == params.mAgentGroup;
+            });
+            if (agiIt == session.mAgentGroupInfo.end()) {
+                OLOG(warning, common) << "Agent group info not found for " << params.mAgentGroup;
+            } else {
+                agiIt->rmsJobID = strVecToStr(res.m_jobIDs);
+            }
+        }
+
+        if (res.m_jobInfoAvailable) {
+            OLOG(info, common) << "Allocated nodes for " << params.mAgentGroup << " agent group: " << res.m_allocNodes;
+        } else {
+            OLOG(debug, common) << "Warning: Job information is not fully available";
+        }
+    });
+
     requestPtr->setDoneCallback([&mtx, &cv, &done]() {
         {
             lock_guard<mutex> lock(mtx);
@@ -788,7 +826,8 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
         if (res.m_activated) {
             // response callbacks can be called in parallel - protect session access with a lock
             lock_guard<mutex> lock(mtx);
-            session.mTaskDetails.emplace(res.m_taskID, TaskDetails{res.m_agentID, res.m_slotID, res.m_taskID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir});
+            std::string rmsJobId = session.mAgentGroupInfo.at(session.mAgentInfo.at(res.m_agentID).agentGroupInfoIndex).rmsJobID;
+            session.mTaskDetails.emplace(res.m_taskID, TaskDetails{res.m_agentID, res.m_slotID, res.m_taskID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir, rmsJobId});
 
             if (res.m_collectionID > 0) {
                 if (session.mCollectionDetails.find(res.m_collectionID) == session.mCollectionDetails.end()) {
@@ -797,7 +836,7 @@ bool Controller::activateDDSTopology(const CommonParams& common, Session& sessio
                     if (pos != string::npos) {
                         path.erase(pos);
                     }
-                    session.mCollectionDetails.emplace(res.m_collectionID, CollectionDetails{res.m_agentID, res.m_collectionID, path, res.m_host, res.m_wrkDir});
+                    session.mCollectionDetails.emplace(res.m_collectionID, CollectionDetails{res.m_agentID, res.m_collectionID, path, res.m_host, res.m_wrkDir, rmsJobId});
                     session.mRuntimeCollectionIndex.at(res.m_collectionID)->mRuntimeCollectionAgents[res.m_collectionID] = res.m_agentID;
                 }
             }
@@ -1006,15 +1045,17 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
             std::unordered_map<DDSCollectionId, uint64_t>(),
             std::unordered_set<DDSCollectionId>()};
 
-        auto agiIt = session.mAgentGroupInfo.find(agentGroup);
+        auto agiIt = std::find_if(session.mAgentGroupInfo.begin(), session.mAgentGroupInfo.end(), [agentGroup](const AgentGroupInfo& agi) {
+            return agi.name == agentGroup;
+        });
         if (agiIt == session.mAgentGroupInfo.end()) {
-            session.mAgentGroupInfo.emplace(agentGroup, AgentGroupInfo{ agentGroup, zone, n, nmin, numTasks, nCores });
+            session.mAgentGroupInfo.emplace_back(AgentGroupInfo{ agentGroup, zone, "unknown", n, nmin, numTasks, nCores });
         } else {
-            agiIt->second.numAgents += n;
-            agiIt->second.numSlots += numTasks;
-            agiIt->second.zone = zone;
-            agiIt->second.minAgents = nmin;
-            agiIt->second.numCores = nCores;
+            agiIt->numAgents += n;
+            agiIt->numSlots += numTasks;
+            agiIt->zone = zone;
+            agiIt->minAgents = nmin;
+            agiIt->numCores = nCores;
         }
 
         if (!agentGroup.empty()) {
@@ -1081,7 +1122,7 @@ void Controller::extractRequirements(const CommonParams& common, Session& sessio
     }
 
     OLOG(info, common) << "Agent groups:";
-    for (const auto& [groupName, agi] : session.mAgentGroupInfo) {
+    for (const auto& agi : session.mAgentGroupInfo) {
         OLOG(info, common) << "  " << agi;
     }
 }
@@ -1466,7 +1507,7 @@ void Controller::stateSummaryOnFailure(const CommonParams& common, Session& sess
 // {
 //     try {
 //         size_t currentSlotCount = session.mTotalSlots;
-//         size_t numSlotsToRemove = session.mAgentSlots.at(agentID);
+//         size_t numSlotsToRemove = session.mAgentIngo.at(agentID).numSlots;
 //         size_t expectedNumSlots = session.mTotalSlots - numSlotsToRemove;
 //         OLOG(info, common) << "Current number of slots: " << session.mTotalSlots << ", expecting to reduce to " << expectedNumSlots;
 
@@ -1650,7 +1691,7 @@ void Controller::setZoneCfgs(const std::vector<std::string>& zonesStr)
         std::vector<std::string> zoneCfg;
         boost::algorithm::split(zoneCfg, z, boost::algorithm::is_any_of(":"));
         if (zoneCfg.size() != 3) {
-            throw std::runtime_error(odc::core::toString("Provided zones configuration has incorrect format. Expected <name>:<cfgFilePath>:<cfgFilePath>. Received: ", z));
+            throw std::runtime_error(odc::core::toString("Provided zones configuration has incorrect format. Expected <name>:<cfgFilePath>:<envFilePath>. Received: ", z));
         }
         mZoneCfgs[zoneCfg.at(0)] = ZoneConfig{ zoneCfg.at(1), zoneCfg.at(2) };
     }
