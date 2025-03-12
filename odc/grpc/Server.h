@@ -366,6 +366,7 @@ class GrpcServer final : public odc::ODC::Service
         rep->set_sessionid(res.mDDSSessionID);
         rep->set_exectime(res.mExecTime);
         rep->set_state(GetAggregatedStateName(res.mTopologyState.aggregated));
+        rep->set_rmsjobids(res.mRMSJobIDs);
         for (const auto& host : res.mHosts) {
             rep->add_hosts(host);
         }
@@ -386,6 +387,8 @@ class GrpcServer final : public odc::ODC::Service
                 device->set_path(state.mPath);
                 device->set_ignored(state.mStatus.ignored);
                 device->set_host(state.mHost);
+                device->set_expendable(state.mStatus.expendable);
+                device->set_rmsjobid(state.mRMSJobID);
             }
         }
     }
@@ -440,7 +443,8 @@ class GrpcServer final : public odc::ODC::Service
            << "; sessionid: " << rep.sessionid()
            << "; state: "     << rep.state()
            << "; msg: "       << rep.msg()
-           << "; exectime: "  << rep.exectime() << "ms";
+           << "; exectime: "  << rep.exectime() << "ms"
+           << "; rmsjobids: " << rep.rmsjobids();
         if (!rep.hosts().empty()) {
             ss << "; hosts: ";
             for (int i = 0; i < rep.hosts().size(); ++i) {
@@ -472,7 +476,9 @@ class GrpcServer final : public odc::ODC::Service
                                    << "; state: "   << d.state()
                                    << "; path: "    << d.path()
                                    << "; ignored: " << d.ignored()
-                                   << "; host: "    << d.host();
+                                   << "; host: "    << d.host()
+                                   << "; expendable: " << d.expendable()
+                                   << "; RMS job ID: " << d.rmsjobid();
             }
         }
     }

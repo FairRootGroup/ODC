@@ -137,15 +137,17 @@ struct DeviceStatus
 struct DetailedTaskStatus
 {
     DetailedTaskStatus() {}
-    DetailedTaskStatus(const DeviceStatus& status, const std::string& path, const std::string& host)
+    DetailedTaskStatus(const DeviceStatus& status, const std::string& path, const std::string& host, const std::string& rmsJobID)
         : mStatus(status)
         , mPath(path)
         , mHost(host)
+        , mRMSJobID(rmsJobID)
     {}
 
     DeviceStatus mStatus;
     std::string mPath;
     std::string mHost;
+    std::string mRMSJobID;
 };
 
 using DetailedState = std::vector<DetailedTaskStatus>;
@@ -252,6 +254,7 @@ struct TaskDetails
     std::string mPath;           ///< Path in the topology
     std::string mHost;           ///< Hostname
     std::string mWrkDir;         ///< Wrk directory
+    std::string mRMSJobID;       ///< RMS job ID
 
     friend std::ostream& operator<<(std::ostream& os, const TaskDetails& td)
     {
@@ -261,7 +264,8 @@ struct TaskDetails
                   << "; collectionID: " << td.mCollectionID
                   << "; path: "         << td.mPath
                   << "; host: "         << td.mHost
-                  << "; wrkDir: "       << td.mWrkDir;
+                  << "; wrkDir: "       << td.mWrkDir
+                  << "; RMSjobID: "     << td.mRMSJobID;
     }
 };
 
@@ -272,6 +276,7 @@ struct CollectionDetails
     std::string mPath;           ///< Path in the topology
     std::string mHost;           ///< Hostname
     std::string mWrkDir;         ///< Wrk directory
+    std::string mRMSJobID;       ///< RMS job ID
 
     friend std::ostream& operator<<(std::ostream& os, const CollectionDetails& cd)
     {
@@ -279,7 +284,8 @@ struct CollectionDetails
                   << "; agentID: "    << cd.mAgentID
                   << "; path: "       << cd.mPath
                   << "; host: "       << cd.mHost
-                  << "; wrkDir: "     << cd.mWrkDir;
+                  << "; wrkDir: "     << cd.mWrkDir
+                  << "; RMSjobID: "   << cd.mRMSJobID;
     }
 };
 
@@ -353,6 +359,7 @@ struct AgentGroupInfo
 {
     std::string name;
     std::string zone;
+    std::string rmsJobID;
     int32_t numAgents;
     int32_t minAgents;
     int32_t numSlots;
@@ -362,11 +369,18 @@ struct AgentGroupInfo
     {
         return os << "name: "        << std::quoted(agi.name)
                   << "; zone: "      << std::quoted(agi.zone)
+                  << "; RMSJobID: "  << std::quoted(agi.rmsJobID)
                   << "; numAgents: " << agi.numAgents
                   << "; minAgents: " << agi.minAgents
                   << "; numSlots: "  << agi.numSlots
                   << "; numCores: "  << agi.numCores;
     }
+};
+
+struct AgentInfo
+{
+    uint32_t numSlots;
+    uint16_t agentGroupInfoIndex;
 };
 
 struct ZoneGroup

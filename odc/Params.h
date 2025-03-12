@@ -79,12 +79,14 @@ struct RequestResult : public BaseRequestResult
                   uint64_t runNr,
                   const std::string& sessionID,
                   TopologyState topologyState,
+                  const std::string& rmsJobIDs,
                   std::unordered_set<std::string> hosts)
         : BaseRequestResult(statusCode, msg, execTime, error)
         , mPartitionID(partitionID)
         , mRunNr(runNr)
         , mDDSSessionID(sessionID)
         , mTopologyState(std::move(topologyState))
+        , mRMSJobIDs(rmsJobIDs)
         , mHosts(std::move(hosts))
     {}
 
@@ -92,6 +94,7 @@ struct RequestResult : public BaseRequestResult
     uint64_t mRunNr = 0;          ///< Run number
     std::string mDDSSessionID;    ///< Session ID of DDS
     TopologyState mTopologyState; ///< Topology state (aggregated + optional detailed)
+    std::string mRMSJobIDs;       ///< RMS job IDs
 
     // Optional parameters
     std::unordered_set<std::string> mHosts; ///< List of used hosts

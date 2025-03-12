@@ -194,7 +194,8 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
                << "; Run Nr.: "        << rep.runnr()
                << "; DDS Session ID: " << rep.sessionid()
                << "; topology state: " << rep.state()
-               << "; execution time: " << rep.exectime() << "ms";
+               << "; execution time: " << rep.exectime() << "ms"
+               << "; RMS job IDs: "    << rep.rmsjobids();
             if (!rep.hosts().empty()) {
                 ss << "\n  Hosts:\n    ";
                 for (int i = 0; i < rep.hosts().size(); ++i) {
@@ -225,11 +226,13 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
             if (!rep.devices().empty()) {
                 ss << "  Devices:\n";
                 for (const auto& d : rep.devices()) {
-                    ss << "    id: " << d.id()
-                    << "; state: "   << d.state()
-                    << "; ignored: " << d.ignored()
-                    << "; host: "    << d.host()
-                    << "; path: "    << d.path() << "\n";
+                    ss << "    id: "    << d.id()
+                    << "; state: "      << d.state()
+                    << "; host: "       << d.host()
+                    << "; path: "       << d.path()
+                    << "; ignored: "    << d.ignored()
+                    << "; expendable: " << d.expendable()
+                    << "; RMS job ID: " << d.rmsjobid() << "\n";
                 }
             }
             return ss.str();

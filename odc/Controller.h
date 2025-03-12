@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <unordered_set>
+#include <utility> // std::pair
 
 namespace odc::core
 {
@@ -125,7 +126,7 @@ class Controller
     void updateRestore();
     void updateHistory(const CommonParams& common, const std::string& sessionId);
 
-    std::unordered_set<std::string> submit(const CommonParams& common, Session& session, Error& error, const std::string& plugin, const std::string& res, bool extractResources);
+    std::pair<std::unordered_set<std::string>, std::string> submit(const CommonParams& common, Session& session, Error& error, const std::string& plugin, const std::string& res, bool extractResources);
     void activate(const CommonParams& common, Partition& partition, Error& error);
 
     bool createDDSSession(           const CommonParams& common, Session& session, Error& error);
@@ -156,8 +157,8 @@ class Controller
     void logFatalLineByLine(            const CommonParams& common, const std::string& msg);
     void logLineWarningOrDetectedSev(   const CommonParams& common, const std::string& line);
 
-    RequestResult createRequestResult(const CommonParams& common, const Session& session, const Error& error, const std::string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts);
-    RequestResult createRequestResult(const CommonParams& common, const std::string& sessionId, const Error& error, const std::string& msg, TopologyState&& topologyState, const std::unordered_set<std::string>& hosts);
+    RequestResult createRequestResult(const CommonParams& common, const Session& session, const Error& error, const std::string& msg, TopologyState&& topologyState, const std::string& rmsJobIDs, const std::unordered_set<std::string>& hosts);
+    RequestResult createRequestResult(const CommonParams& common, const std::string& sessionId, const Error& error, const std::string& msg, TopologyState&& topologyState, const std::string& rmsJobIDs, const std::unordered_set<std::string>& hosts);
     AggregatedState aggregateStateForPath(const dds::topology_api::CTopology* ddsTopo, const TopoState& topoState, const std::string& path);
 
     Partition& acquirePartition(const CommonParams& common);
