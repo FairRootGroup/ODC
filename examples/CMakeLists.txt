@@ -50,6 +50,7 @@ odcConfigExampleTopo(0 ex-epn-2.xml                                      ex-epn-
 odcConfigExampleTopo(4 ex-topo-groupname-crashing-expendable-task.xml.in ex-topo-groupname-crashing-expendable-task.xml)
 odcConfigExampleTopo(4 ex-topo-groupname-crashing-no-calib.xml.in        ex-topo-groupname-crashing-no-calib.xml)
 odcConfigExampleTopo(4 ex-topo-groupname-crashing.xml.in                 ex-topo-groupname-crashing.xml)
+odcConfigExampleTopo(2 ex-topo-groupname-crashing-small.xml.in           ex-topo-groupname-crashing-small.xml)
 odcConfigExampleTopo(4 ex-topo-groupname-ncores.xml.in                   ex-topo-groupname-ncores.xml)
 odcConfigExampleTopo(4 ex-topo-groupname.xml.in                          ex-topo-groupname.xml)
 odcConfigExampleTopo(2 ex-topo-submit-failure-test.xml.in                ex-topo-submit-failure-test.xml)

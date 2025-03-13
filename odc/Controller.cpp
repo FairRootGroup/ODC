@@ -627,6 +627,7 @@ bool Controller::shutdownDDSSession(const CommonParams& common, Partition& parti
         partition.mSession->mAgentGroupInfo.clear();
         partition.mSession->mTopoFilePath.clear();
         partition.mSession->mExpendableTasks.clear();
+        partition.mSession->mAgentInfo.clear();
 
         if (partition.mSession->mDDSSession.getSessionID() != boost::uuids::nil_uuid()) {
             if (partition.mSession->mDDSOnTaskDoneRequest) {
@@ -681,9 +682,9 @@ bool Controller::submitDDSAgents(const CommonParams& common, Session& session, E
     requestInfo.m_submissionTag = common.mPartitionID;
     requestInfo.m_rms = params.mRMS;
     requestInfo.m_instances = params.mNumAgents;
-    // requestInfo.m_minInstances = params.mMinAgents;
-    requestInfo.m_minInstances = 0;
-    OLOG(debug, common) << "Ignoring params.mMinAgents for DDS submission to avoid nMin handling temporarily";
+    requestInfo.m_minInstances = params.mMinAgents;
+    // requestInfo.m_minInstances = 0;
+    // OLOG(debug, common) << "Ignoring params.mMinAgents for DDS submission to avoid nMin handling temporarily";
     requestInfo.m_slots = params.mNumSlots;
     requestInfo.m_config = params.mConfigFile;
     requestInfo.m_envCfgFilePath = params.mEnvFile;
