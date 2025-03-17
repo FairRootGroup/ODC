@@ -101,7 +101,9 @@ pair<unordered_set<string>, string> Controller::submit(const CommonParams& commo
         }
     }
 
+    // initial expected number of slots from the current total slots, which may have been updated by previous submissions
     size_t expectedNumSlots = session.mTotalSlots;
+    bool topologyChanged = false;
 
     if (!error.mCode) {
         OLOG(info, common) << "Preparing to submit " << ddsParams.size() << " configurations:";
@@ -111,15 +113,46 @@ pair<unordered_set<string>, string> Controller::submit(const CommonParams& commo
 
         for (unsigned int i = 0; i < ddsParams.size(); ++i) {
             OLOG(info, common) << "Submitting [" << i + 1 << "/" << ddsParams.size() << "]: " << ddsParams.at(i);
-            if (submitDDSAgents(common, session, error, ddsParams.at(i))) {
-                expectedNumSlots += ddsParams.at(i).mNumAgents * ddsParams.at(i).mNumSlots;
+            std::string groupName = ddsParams.at(i).mAgentGroup;
+            int32_t minCount = ddsParams.at(i).mMinAgents;
+            uint32_t numExpectedAgents = ddsParams.at(i).mNumAgents;
+            uint32_t numSubmittedAgents = submitDDSAgents(common, session, error, ddsParams.at(i));
+            if (numSubmittedAgents == numExpectedAgents) {
+                expectedNumSlots += numSubmittedAgents * ddsParams.at(i).mNumSlots;
             } else {
-                OLOG(error, common) << "Submission failed";
-                break;
+                OLOG(info, common) << "Submitted " << numSubmittedAgents << " agents instead of " << numExpectedAgents;
+                if (minCount == 0) { // nMin is not defined
+                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", numSubmittedAgents, ") for group ", groupName, " is less than requested (", numExpectedAgents, "), " , "and no nMin is defined"));
+                    break;
+                }
+                if (numSubmittedAgents < minCount) { // count is less than nMin
+                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", numSubmittedAgents, ") for group ", groupName, " is less than requested (", numExpectedAgents, "), " , "and nMin (", minCount, ") is not satisfied"));
+                    break;
+                }
+                OLOG(info, common) << "Number of agents (" << numSubmittedAgents << ") for group " << groupName << " is less than requested (" << numExpectedAgents << "), " << "but nMin (" << minCount << ") is satisfied";
+                expectedNumSlots += numSubmittedAgents * ddsParams.at(i).mNumSlots;
+
+                // update nCurrent for the agent group
+                auto ni =  std::find_if(session.mNinfo.begin(), session.mNinfo.end(), [&](const auto& ni) {
+                    return ni.second.agentGroup == groupName;
+                });
+                if (ni != session.mNinfo.end()) {
+                    ni->second.nCurrent = numSubmittedAgents;
+                } else {
+                    OLOG(error, common) << "Agent group info not found for group " << groupName;
+                }
+
+                // update topology
+                topologyChanged = true;
             }
         }
         if (!error.mCode) {
+            if (topologyChanged) {
+                updateTopology(common, session);
+            }
+
             OLOG(info, common) << "Waiting for " << expectedNumSlots << " slots...";
+            // TODO: wait not for total number of slots, but count each group individually
             if (waitForNumActiveSlots(common, session, error, expectedNumSlots)) {
                 session.mTotalSlots = expectedNumSlots;
                 OLOG(info, common) << "Done waiting for " << expectedNumSlots << " slots.";
@@ -188,11 +221,119 @@ pair<unordered_set<string>, string> Controller::submit(const CommonParams& commo
     return std::make_pair(hosts, rmsJobIDs);
 }
 
-void Controller::attemptSubmitRecovery(const CommonParams& common,
-                                       Session& session,
-                                       Error& error,
-                                       const vector<DDSSubmitParams>& ddsParams,
-                                       const map<string, uint32_t>& agentCounts)
+uint32_t Controller::submitDDSAgents(const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params)
+{
+    using namespace dds::tools_api;
+
+    uint32_t numSubmittedAgents = params.mNumAgents;
+
+    SSubmitRequest::request_t requestInfo;
+    requestInfo.m_submissionTag = common.mPartitionID;
+    requestInfo.m_rms = params.mRMS;
+    requestInfo.m_instances = params.mNumAgents;
+    requestInfo.m_minInstances = params.mMinAgents;
+    // requestInfo.m_minInstances = 0;
+    // OLOG(debug, common) << "Ignoring params.mMinAgents for DDS submission to avoid nMin handling temporarily";
+    requestInfo.m_slots = params.mNumSlots;
+    requestInfo.m_config = params.mConfigFile;
+    requestInfo.m_envCfgFilePath = params.mEnvFile;
+    requestInfo.m_groupName = params.mAgentGroup;
+
+    // DDS does not support ncores parameter directly, set it here through additional config in case of Slurm
+    if (params.mRMS == "slurm" && params.mNumCores > 0) {
+        // the following disables `#SBATCH --cpus-per-task=%DDS_NSLOTS%` of DDS for Slurm
+        requestInfo.setFlag(SSubmitRequestData::ESubmitRequestFlags::enable_overbooking, true);
+
+        requestInfo.m_inlineConfig = string("#SBATCH --cpus-per-task=" + to_string(params.mNumCores));
+    }
+
+    OLOG(info, common) << "Submitting: " << requestInfo;
+
+    bool done = false;
+    mutex mtx;
+    condition_variable cv;
+
+    SSubmitRequest::ptr_t requestPtr = SSubmitRequest::makeRequest(requestInfo);
+
+    requestPtr->setMessageCallback([&numSubmittedAgents, &error, &common, this](const SMessageResponseData& msg) {
+        if (msg.m_severity == dds::intercom_api::EMsgSeverity::error) {
+            numSubmittedAgents = 0;
+            fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit error: ", msg.m_msg));
+        } else {
+            OLOG(info, common) << "...Submit: " << msg.m_msg;
+        }
+    });
+
+    requestPtr->setResponseCallback([&numSubmittedAgents, &common, &session, &params](const SSubmitResponseData& res) {
+        OLOG(info, common) << "Submission details:";
+
+        if (!res.m_jobIDs.empty()) {
+            auto agiIt = std::find_if(session.mAgentGroupInfo.begin(), session.mAgentGroupInfo.end(), [&params](const AgentGroupInfo& agi) {
+                return agi.name == params.mAgentGroup;
+            });
+            if (agiIt == session.mAgentGroupInfo.end()) {
+                OLOG(warning, common) << "Agent group info not found for " << params.mAgentGroup;
+            } else {
+                agiIt->rmsJobID = strVecToStr(res.m_jobIDs);
+            }
+        }
+
+        if (res.m_jobInfoAvailable) {
+            OLOG(info, common) << "Allocated " << res.m_allocNodes << " nodes for " << params.mAgentGroup << " agent group";
+            // when not using core-based scheduling, number of allocated nodes equals number of agents
+            numSubmittedAgents = res.m_allocNodes;
+        } else {
+            OLOG(debug, common) << "Warning: Job information is not fully available";
+        }
+    });
+
+    requestPtr->setDoneCallback([&mtx, &cv, &done]() {
+        {
+            lock_guard<mutex> lock(mtx);
+            done = true;
+        }
+        cv.notify_all();
+    });
+
+    session.mDDSSession.sendRequest<SSubmitRequest>(requestPtr);
+
+    try {
+        unique_lock<mutex> lock(mtx);
+        cv.wait_for(lock, requestTimeout(common, "wait_for lock in submitDDSAgents"), [&done]{ return done; });
+
+        if (!done) {
+            numSubmittedAgents = 0;
+            fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission for agent group " + params.mAgentGroup);
+
+            requestPtr->unsubscribeAll();
+        } else {
+            // OLOG(info, common) << "Agent submission done successfully";
+        }
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Agent submission error: " << e;
+        numSubmittedAgents = 0;
+    }
+
+    return numSubmittedAgents;
+}
+
+bool Controller::waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots)
+{
+    try {
+        session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common, "waitForNumActiveSlots..waitForNumSlots<dds::tools_api::CSession::EAgentState::active>"));
+    } catch (Error& e) {
+        error = e;
+        OLOG(error, common) << "Error while waiting for DDS slots: " << e;
+        return false;
+    } catch (exception& e) {
+        fillAndLogError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS slots: ", e.what()));
+        return false;
+    }
+    return true;
+}
+
+void Controller::attemptSubmitRecovery(const CommonParams& common, Session& session, Error& error, const vector<DDSSubmitParams>& ddsParams, const map<string, uint32_t>& agentCounts)
 {
     error = Error();
     try {
@@ -671,114 +812,6 @@ std::string Controller::getActiveDDSTopology(const CommonParams& common, Session
         fillAndLogError(common, error, ErrorCode::DDSCommanderInfoFailed, toString("Error getting DDS commander info: ", e.what()));
         return "";
     }
-}
-
-bool Controller::submitDDSAgents(const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params)
-{
-    bool success = true;
-    using namespace dds::tools_api;
-
-    SSubmitRequest::request_t requestInfo;
-    requestInfo.m_submissionTag = common.mPartitionID;
-    requestInfo.m_rms = params.mRMS;
-    requestInfo.m_instances = params.mNumAgents;
-    requestInfo.m_minInstances = params.mMinAgents;
-    // requestInfo.m_minInstances = 0;
-    // OLOG(debug, common) << "Ignoring params.mMinAgents for DDS submission to avoid nMin handling temporarily";
-    requestInfo.m_slots = params.mNumSlots;
-    requestInfo.m_config = params.mConfigFile;
-    requestInfo.m_envCfgFilePath = params.mEnvFile;
-    requestInfo.m_groupName = params.mAgentGroup;
-
-    // DDS does not support ncores parameter directly, set it here through additional config in case of Slurm
-    if (params.mRMS == "slurm" && params.mNumCores > 0) {
-        // the following disables `#SBATCH --cpus-per-task=%DDS_NSLOTS%` of DDS for Slurm
-        requestInfo.setFlag(SSubmitRequestData::ESubmitRequestFlags::enable_overbooking, true);
-
-        requestInfo.m_inlineConfig = string("#SBATCH --cpus-per-task=" + to_string(params.mNumCores));
-    }
-
-    OLOG(info, common) << "Submitting: " << requestInfo;
-
-    bool done = false;
-    mutex mtx;
-    condition_variable cv;
-
-    SSubmitRequest::ptr_t requestPtr = SSubmitRequest::makeRequest(requestInfo);
-
-    requestPtr->setMessageCallback([&success, &error, &common, this](const SMessageResponseData& msg) {
-        if (msg.m_severity == dds::intercom_api::EMsgSeverity::error) {
-            success = false;
-            fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Submit error: ", msg.m_msg));
-        } else {
-            OLOG(info, common) << "...Submit: " << msg.m_msg;
-        }
-    });
-
-    requestPtr->setResponseCallback([&common, &session, &params](const SSubmitResponseData& res) {
-        OLOG(info, common) << "Submission details:";
-
-        if (!res.m_jobIDs.empty()) {
-            auto agiIt = std::find_if(session.mAgentGroupInfo.begin(), session.mAgentGroupInfo.end(), [&params](const AgentGroupInfo& agi) {
-                return agi.name == params.mAgentGroup;
-            });
-            if (agiIt == session.mAgentGroupInfo.end()) {
-                OLOG(warning, common) << "Agent group info not found for " << params.mAgentGroup;
-            } else {
-                agiIt->rmsJobID = strVecToStr(res.m_jobIDs);
-            }
-        }
-
-        if (res.m_jobInfoAvailable) {
-            OLOG(info, common) << "Allocated nodes for " << params.mAgentGroup << " agent group: " << res.m_allocNodes;
-        } else {
-            OLOG(debug, common) << "Warning: Job information is not fully available";
-        }
-    });
-
-    requestPtr->setDoneCallback([&mtx, &cv, &done]() {
-        {
-            lock_guard<mutex> lock(mtx);
-            done = true;
-        }
-        cv.notify_all();
-    });
-
-    session.mDDSSession.sendRequest<SSubmitRequest>(requestPtr);
-
-    try {
-        unique_lock<mutex> lock(mtx);
-        cv.wait_for(lock, requestTimeout(common, "wait_for lock in submitDDSAgents"), [&done]{ return done; });
-
-        if (!done) {
-            success = false;
-            fillAndLogError(common, error, ErrorCode::RequestTimeout, "Timed out waiting for agent submission");
-
-            requestPtr->unsubscribeAll();
-        } else {
-            // OLOG(info, common) << "Agent submission done successfully";
-        }
-    } catch (Error& e) {
-        error = e;
-        OLOG(error, common) << "Agent submission error: " << e;
-        success = false;
-    }
-    return success;
-}
-
-bool Controller::waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots)
-{
-    try {
-        session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common, "waitForNumActiveSlots..waitForNumSlots<dds::tools_api::CSession::EAgentState::active>"));
-    } catch (Error& e) {
-        error = e;
-        OLOG(error, common) << "Error while waiting for DDS slots: " << e;
-        return false;
-    } catch (exception& e) {
-        fillAndLogError(common, error, ErrorCode::RequestTimeout, toString("Timeout waiting for DDS slots: ", e.what()));
-        return false;
-    }
-    return true;
 }
 
 bool Controller::activateDDSTopology(const CommonParams& common, Session& session, Error& error, dds::tools_api::STopologyRequest::request_t::EUpdateType updateType)

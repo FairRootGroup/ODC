@@ -134,7 +134,7 @@ class Controller
     bool shutdownDDSSession(         const CommonParams& common, Partition& partition, Error& error);
     std::string getActiveDDSTopology(const CommonParams& common, Session& session, Error& error);
 
-    bool submitDDSAgents(      const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params);
+    uint32_t submitDDSAgents(      const CommonParams& common, Session& session, Error& error, const DDSSubmitParams& params);
     bool waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots);
     // void ShutdownDDSAgent(     const CommonParams& common, Session& session, uint64_t agentID);
 
