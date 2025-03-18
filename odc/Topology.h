@@ -840,7 +840,7 @@ class BasicTopology : public AsioBase<Executor, Allocator>
     {
         try {
             using namespace dds::tools_api;
-            OLOG(info, mPartitionID, mSession.mLastRunNr.load()) << "Sending shutdown signal to agent " << agentID;;
+            OLOG(info, mPartitionID, mSession.mLastRunNr.load()) << "Sending shutdown signal to agent " << agentID;
             SAgentCommandRequest::request_t agentCmd;
             agentCmd.m_commandType = SAgentCommandRequestData::EAgentCommandType::shutDownByID;
             agentCmd.m_arg1 = agentID;

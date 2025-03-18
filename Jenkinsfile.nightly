@@ -20,7 +20,7 @@ def jobMatrix(String type, List specs) {
       selector = 'fedora-39-x86_64'
       os = 'fedora'
       ver = '39'
-      dds = '3.11'
+      dds = '3.12'
     }
 
     def label = "${job}"
@@ -69,7 +69,7 @@ pipeline{
         script {
           def builds = jobMatrix('build', [
             // [os: 'fedora', ver: '36', arch: 'x86_64', compiler: 'gcc-11', dds: '3.7.22'],
-            [os: 'fedora', ver: '39', arch: 'x86_64', compiler: 'gcc-14', dds: '3.11'],
+            [os: 'fedora', ver: '39', arch: 'x86_64', compiler: 'gcc-14', dds: '3.12'],
           ])
 
           def checks = jobMatrix('check', [
