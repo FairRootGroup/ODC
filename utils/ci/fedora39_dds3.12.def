@@ -1,0 +1,48 @@
+Bootstrap: docker
+From: fedora:39
+
+%post
+    dnf -y update
+    dnf -y install abseil-cpp-devel \
+                   asio-devel \
+                   boost-devel \
+                   ca-certificates \
+                   clang-tools-extra \
+                   cmake \
+                   flatbuffers-devel \
+                   flatbuffers-compiler \
+                   fmt-devel \
+                   gcc-c++ \
+                   git \
+                   grpc-devel \
+                   grpc-plugins \
+                   libasan \
+                   liblsan \
+                   libubsan \
+                   libxml2 \
+                   ninja-build \
+                   patch \
+                   wget \
+                   zeromq-devel
+    dnf -y clean all
+
+    git clone https://github.com/FairRootGroup/FairCMakeModules
+    cmake -GNinja -S FairCMakeModules -B FairCMakeModules_build -DCMAKE_INSTALL_PREFIX=/usr
+    cmake --build FairCMakeModules_build --target install
+    rm -rf FairCMakeModules FairCMakeModules_build
+
+    git clone -b v2.1.0 https://github.com/FairRootGroup/FairLogger
+    cmake -GNinja -S FairLogger -B FairLogger_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+    cmake --build FairLogger_build --target install
+    rm -rf FairLogger FairLogger_build
+
+    git clone -b v1.9.2 https://github.com/FairRootGroup/FairMQ
+    cmake -GNinja -S FairMQ -B FairMQ_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+    cmake --build FairMQ_build --target install
+    rm -rf FairMQ FairMQ_build
+
+    git clone -b 3.12 https://github.com/FairRootGroup/DDS
+    cmake -GNinja -S DDS -B DDS_build -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_dds-tutorials=OFF
+    cmake --build DDS_build --target wn_bin
+    cmake --build DDS_build --target install
+    rm -rf DDS DDS_build
