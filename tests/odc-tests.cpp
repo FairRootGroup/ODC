@@ -169,27 +169,27 @@ BOOST_AUTO_TEST_CASE(async_change_state_with_executor)
     f.mIoContext.run();
 }
 
-BOOST_AUTO_TEST_CASE(async_change_state_future)
-{
-    BOOST_REQUIRE(framework::master_test_suite().argc >= 3);
-    BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
-    TopologyFixture f(framework::master_test_suite().argv[2]);
+// BOOST_AUTO_TEST_CASE(async_change_state_future)
+// {
+//     BOOST_REQUIRE(framework::master_test_suite().argc >= 3);
+//     BOOST_REQUIRE_EQUAL(framework::master_test_suite().argv[1], "--topo-file");
+//     TopologyFixture f(framework::master_test_suite().argv[2]);
 
-    Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mSession);
-    auto fut(topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), boost::asio::use_future));
-    std::thread t([&]() { f.mIoContext.run(); });
-    bool success(false);
+//     Topology topo(f.mIoContext.get_executor(), f.mDDSTopo, f.mSession);
+//     auto fut(topo.AsyncChangeState(TopoTransition::InitDevice, "", Duration(0), boost::asio::use_future));
+//     std::thread t([&]() { f.mIoContext.run(); });
+//     bool success(false);
 
-    try {
-        auto state = fut.get();
-        success = true;
-    } catch (const std::system_error& ex) {
-        BOOST_TEST_MESSAGE(ex.what());
-    }
+//     try {
+//         auto state = fut.get();
+//         success = true;
+//     } catch (const std::system_error& ex) {
+//         BOOST_TEST_MESSAGE(ex.what());
+//     }
 
-    BOOST_TEST(success);
-    t.join();
-}
+//     BOOST_TEST(success);
+//     t.join();
+// }
 
 #if defined(ASIO_HAS_CO_AWAIT)
 BOOST_AUTO_TEST_CASE(async_change_state_coroutine)

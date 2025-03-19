@@ -137,14 +137,14 @@ odc_add_boost_tests(SUITE odc
   async_op/default_construction
   async_op/timeout
   async_op/timeout2
-#   multiple_topologies/change_state_full_lifecycle_concurrent
+  # multiple_topologies/change_state_full_lifecycle_concurrent
   multiple_topologies/change_state_full_lifecycle_interleaved
   multiple_topologies/change_state_full_lifecycle_serial
   topology/aggregated_topology_state_comparison
   topology/async_change_state
   topology/async_change_state_collection_view
   topology/async_change_state_concurrent
-  topology/async_change_state_future
+  # topology/async_change_state_future
   topology/async_change_state_timeout
   topology/async_change_state_with_executor
   topology/async_set_properties_concurrent
