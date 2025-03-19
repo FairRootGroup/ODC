@@ -1707,7 +1707,15 @@ void Controller::restore(const string& id, const string& dir)
     mRestoreDir = dir;
 
     OLOG(info) << "Restoring sessions for " << quoted(id);
-    auto data{ RestoreFile(id, dir).read() };
+
+    RestoreData data;
+    {
+        lock_guard<mutex> lock(mPartitionMtx);
+        data = RestoreFile(id, dir).read();
+    }
+
+    OLOG(info) << "Found " << data.mPartitions.size() << " partitions to restore";
+
     for (const auto& v : data.mPartitions) {
         OLOG(info, v.mPartitionID, 0) << "Restoring (" << quoted(v.mPartitionID) << "/" << quoted(v.mDDSSessionId) << ")";
         auto result{ execInitialize(CommonParams(v.mPartitionID, 0, 0), InitializeParams(v.mDDSSessionId)) };
