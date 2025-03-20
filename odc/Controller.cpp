@@ -33,28 +33,33 @@ namespace bfs = boost::filesystem;
 RequestResult Controller::execInitialize(const CommonParams& common, const InitializeParams& params)
 {
     Error error;
-    auto& partition = acquirePartition(common);
+    try {
+        auto& partition = acquirePartition(common);
 
-    if (params.mDDSSessionID.empty()) {
-        // Create new DDS session
-        // Shutdown DDS session if it is running already
-        shutdownDDSSession(common, partition, error)
-            && createDDSSession(common, *(partition.mSession), error);
-    } else {
-        // Attach to an existing DDS session
-        bool success = attachToDDSSession(common, *(partition.mSession), error, params.mDDSSessionID);
-        if (success) {
-            // Request current active topology, if any
-            partition.mSession->mTopoFilePath = getActiveDDSTopology(common, *(partition.mSession), error);
-            // If a topology is active, create DDS and FairMQ topology objects
-            if (!partition.mSession->mTopoFilePath.empty()) {
-                createDDSTopology(common, *(partition.mSession), error)
-                    && createTopology(common, partition, error);
+        if (params.mDDSSessionID.empty()) {
+            // Create new DDS session
+            // Shutdown DDS session if it is running already
+            shutdownDDSSession(common, partition, error)
+                && createDDSSession(common, *(partition.mSession), error);
+        } else {
+            // Attach to an existing DDS session
+            bool success = attachToDDSSession(common, *(partition.mSession), error, params.mDDSSessionID);
+            if (success) {
+                // Request current active topology, if any
+                partition.mSession->mTopoFilePath = getActiveDDSTopology(common, *(partition.mSession), error);
+                // If a topology is active, create DDS and FairMQ topology objects
+                if (!partition.mSession->mTopoFilePath.empty()) {
+                    createDDSTopology(common, *(partition.mSession), error)
+                        && createTopology(common, partition, error);
+                }
             }
         }
+        updateRestore();
+        return createRequestResult(common, *(partition.mSession), error, "Initialize done", TopologyState(), "", {});
+    } catch (exception& e) {
+        fillAndLogFatalError(common, error, ErrorCode::RuntimeError, e.what());
+        return createRequestResult(common, "", error, "Initialize failed", TopologyState(), "", {});
     }
-    updateRestore();
-    return createRequestResult(common, *(partition.mSession), error, "Initialize done", TopologyState(), "", {});
 }
 
 RequestResult Controller::execSubmit(const CommonParams& common, const SubmitParams& params)
@@ -454,53 +459,58 @@ void Controller::activate(const CommonParams& common, Partition& partition, Erro
 RequestResult Controller::execRun(const CommonParams& common, const RunParams& params)
 {
     Error error;
-    auto& partition = acquirePartition(common);
-    std::unordered_set<std::string> hosts;
-    std::string rmsJobIDs;
+    try {
+        auto& partition = acquirePartition(common);
+        std::unordered_set<std::string> hosts;
+        std::string rmsJobIDs;
 
-    if (!partition.mSession->mRunAttempted) {
-        partition.mSession->mRunAttempted = true;
+        if (!partition.mSession->mRunAttempted) {
+            partition.mSession->mRunAttempted = true;
 
-        // Create new DDS session
-        // Shutdown DDS session if it is running already
-        shutdownDDSSession(common, partition, error)
-            && createDDSSession(common, *(partition.mSession), error);
+            // Create new DDS session
+            // Shutdown DDS session if it is running already
+            shutdownDDSSession(common, partition, error)
+                && createDDSSession(common, *(partition.mSession), error);
 
-        updateRestore();
-
-        if (!error.mCode) {
-            try {
-                partition.mSession->mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
-                extractRequirements(common, *(partition.mSession));
-            } catch (Error& e) {
-                error = e;
-                OLOG(error, common) << "Topology creation failed: " << e;
-            } catch (exception& e) {
-                fillAndLogFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
-            }
+            updateRestore();
 
             if (!error.mCode) {
-                if (!partition.mSession->mDDSSession.IsRunning()) {
-                    fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
-                }
-
-                std::tie(hosts, rmsJobIDs) = submit(common, *(partition.mSession), error, params.mPlugin, params.mResources, params.mExtractTopoResources);
-
-                if (!partition.mSession->mDDSSession.IsRunning()) {
-                    fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
+                try {
+                    partition.mSession->mTopoFilePath = topoFilepath(common, params.mTopoFile, params.mTopoContent, params.mTopoScript);
+                    extractRequirements(common, *(partition.mSession));
+                } catch (Error& e) {
+                    error = e;
+                    OLOG(error, common) << "Topology creation failed: " << e;
+                } catch (exception& e) {
+                    fillAndLogFatalError(common, error, ErrorCode::TopologyFailed, toString("Incorrect topology provided: ", e.what()));
                 }
 
                 if (!error.mCode) {
-                    activate(common, partition, error);
+                    if (!partition.mSession->mDDSSession.IsRunning()) {
+                        fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, "DDS session is not running. Use Init or Run to start the session.");
+                    }
+
+                    std::tie(hosts, rmsJobIDs) = submit(common, *(partition.mSession), error, params.mPlugin, params.mResources, params.mExtractTopoResources);
+
+                    if (!partition.mSession->mDDSSession.IsRunning()) {
+                        fillAndLogError(common, error, ErrorCode::DDSActivateTopologyFailed, "DDS session is not running. Use Init or Run to start the session.");
+                    }
+
+                    if (!error.mCode) {
+                        activate(common, partition, error);
+                    }
                 }
             }
+        } else {
+            error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Repeated Run request is not supported. Shutdown this partition to retry.");
         }
-    } else {
-        error = Error(MakeErrorCode(ErrorCode::RequestNotSupported), "Repeated Run request is not supported. Shutdown this partition to retry.");
-    }
 
-    TopologyState topologyState(error.mCode ? AggregatedState::Undefined : AggregatedState::Idle);
-    return createRequestResult(common, *(partition.mSession), error, "Run done", std::move(topologyState), rmsJobIDs, hosts);
+        TopologyState topologyState(error.mCode ? AggregatedState::Undefined : AggregatedState::Idle);
+        return createRequestResult(common, *(partition.mSession), error, "Run done", std::move(topologyState), rmsJobIDs, hosts);
+    } catch (exception& e) {
+        fillAndLogFatalError(common, error, ErrorCode::RuntimeError, e.what());
+        return createRequestResult(common, "", error, "Run failed", TopologyState(), "", {});
+    }
 }
 
 RequestResult Controller::execUpdate(const CommonParams& common, const UpdateParams& params)
@@ -1458,17 +1468,28 @@ void Controller::logFatalLineByLine(const CommonParams& common, const string& ms
 
 Partition& Controller::acquirePartition(const CommonParams& common)
 {
-    lock_guard<mutex> lock(mPartitionMtx);
-    auto it = mPartitions.find(common.mPartitionID);
-    if (it == mPartitions.end()) {
-        auto ret = mPartitions.try_emplace(common.mPartitionID, Partition(common.mPartitionID));
-        ret.first->second.mSession = make_unique<Session>();
-        ret.first->second.mSession->mPartitionID = common.mPartitionID;
-        // OLOG(debug, common) << "Created partition " << quoted(common.mPartitionID);
-        return ret.first->second;
+    try {
+        lock_guard<mutex> lock(mPartitionMtx);
+        auto it = mPartitions.find(common.mPartitionID);
+        if (it == mPartitions.end()) {
+            auto [partitionIt, inserted] = mPartitions.try_emplace(common.mPartitionID, Partition(common.mPartitionID));
+            try {
+                partitionIt->second.mSession = make_unique<Session>();
+                partitionIt->second.mSession->mPartitionID = common.mPartitionID;
+                // OLOG(debug, common) << "Created partition " << quoted(common.mPartitionID);
+                return partitionIt->second;
+            } catch (const exception& e) {
+                OLOG(error, common) << "Error creating session data for the partition: " << e.what();
+                mPartitions.erase(partitionIt);
+                throw;
+            }
+        }
+        // OLOG(debug, common) << "Found partition " << quoted(common.mPartitionID);
+        return it->second;
+    } catch (const exception& e) {
+        OLOG(error, common) << "Error acquiring partition: " << e.what();
+        throw;
     }
-    // OLOG(debug, common) << "Found partition " << quoted(common.mPartitionID);
-    return it->second;
 }
 
 void Controller::removePartition(const CommonParams& common)
