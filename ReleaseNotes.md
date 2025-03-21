@@ -1,5 +1,35 @@
 # ODC Release Notes
 
+# 0.84.2 (2025-03-21)
+
+- Bug fix: Extend error handling to account for inability to create directories during session creation.
+
+# 0.84.1 (2025-03-19)
+
+- Bug fix: add missing sync for partitions.
+
+# 0.84.0 (2025-03-18)
+
+- Require DDS 3.12 for the new submit features.
+- Add expendable & RMSJobIDs infos to logs and gRPC replies.
+- Reenable minAgents setting during submit.
+- Handle number of submitted agents info returned by DDS during submit.
+  - In case of Slurm, if the agent submit request returns with a number of hosts lower than requested but higher than nMin, the number of expected agents will be updated and ODC will wait only for the corresponding number of slots to be active.
+
+# 0.83.3 (2024-10-23)
+
+- Fix bug with current collection count going into negative when multiple devices from a single collection fail.
+
+# 0.83.2 (2024-09-12)
+
+- Temporarily disable nMin during DDS agent submission - this avoids setting minnodes in sbatch.
+
+# 0.83.1 (2024-09-04)
+
+- Potential workaround for hanging DDS Agent Info request: Make getAgentInfo use async DDS calls.
+- Potential workaround for hanging DDS Agent Info request: Unsubscribe from DDS request events on timeout.
+- Bugfix: avoid race condition in wait for async calls
+
 ## 0.83.0 (2024-04-23)
 
 - Log agent info in case of topology activation timeout
