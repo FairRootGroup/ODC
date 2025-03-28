@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+# 0.84.3 (2025-03-28)
+
+- Build: Update protobuf detection to work for newer versions
+
 # 0.84.2 (2025-03-21)
 
 - Bug fix: Extend error handling to account for inability to create directories during session creation.
