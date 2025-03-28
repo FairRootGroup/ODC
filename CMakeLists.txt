@@ -68,7 +68,10 @@ find_package(FairCMakeModules 1.0.0 REQUIRED QUIET)
 include(FairFindPackage2) # for find_package2
 
 if(BUILD_GRPC_CLIENT OR BUILD_GRPC_SERVER)
-  find_package2(PRIVATE Protobuf VERSION REQUIRED CONFIG)
+  find_package2(PRIVATE Protobuf CONFIG QUIET)
+  if(NOT Protobuf_FOUND)
+    find_package2(PRIVATE Protobuf REQUIRED)
+  endif()
   find_package2(PRIVATE gRPC VERSION 1.1 REQUIRED)
 endif()
 find_package2(PRIVATE DDS VERSION 3.12 REQUIRED)
