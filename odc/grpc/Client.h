@@ -235,6 +235,15 @@ class GrpcClient : public odc::core::CliControllerHelper<GrpcClient>
                     << "; RMS job ID: " << d.rmsjobid() << "\n";
                 }
             }
+            if (!rep.collections().empty()) {
+                ss << "  Collections:\n";
+                for (const auto& c : rep.collections()) {
+                    ss << "    id: "    << c.id()
+                    << "; state: "      << c.state()
+                    << "; path: "       << c.path()
+                    << "; host: "       << c.host() << "\n";
+                }
+            }
             return ss.str();
         } else {
             ss << "  RPC failed with error code " << status.error_code() << ": " << status.error_message() << std::endl;

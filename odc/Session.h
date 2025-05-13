@@ -45,19 +45,33 @@ struct Session
         return it->second;
     }
 
-    void fillDetailedState(const TopoState& topoState, DetailedState& detailedState)
+    void fillDetailedState(const TopoState& topoState, const TopoStateByCollection& collectionMap, DetailedState& detailedState)
     {
-        detailedState.clear();
-        detailedState.reserve(topoState.size());
+        detailedState.tasks.clear();
+        detailedState.tasks.reserve(topoState.size());
+
+        detailedState.collections.clear();
+        detailedState.collections.reserve(collectionMap.size());
 
         for (const auto& state : topoState) {
             auto it = mTaskDetails.find(state.taskId);
             if (it != mTaskDetails.end()) {
-                detailedState.emplace_back(DetailedTaskStatus(state, it->second.mPath, it->second.mHost, it->second.mRMSJobID));
+                detailedState.tasks.emplace_back(DetailedTaskStatus(state, it->second.mPath, it->second.mHost, it->second.mRMSJobID));
             } else {
-                detailedState.emplace_back(DetailedTaskStatus(state, "unknown", "unknown", "unknown"));
+                detailedState.tasks.emplace_back(DetailedTaskStatus(state, "unknown", "unknown", "unknown"));
             }
         }
+
+        for (const auto& [collectionId, states] : collectionMap) {
+            AggregatedState collectionState = AggregateState(states);
+            auto it = mCollectionDetails.find(collectionId);
+            if (it != mCollectionDetails.end()) {
+                detailedState.collections.emplace_back(DetailedCollectionStatus(collectionId, collectionState, it->second.mPath, it->second.mHost));
+            } else {
+                detailedState.collections.emplace_back(DetailedCollectionStatus(collectionId, collectionState, "unknown", "unknown"));
+            }
+        }
+
     }
 
     std::vector<odc::core::AgentGroupInfo>::iterator findAgentGroup(const std::string& agentGroupName)

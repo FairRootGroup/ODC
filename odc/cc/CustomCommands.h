@@ -11,6 +11,7 @@
 
 #include <fairmq/States.h>
 
+#include <cstdint> // uint64_t
 #include <memory>
 #include <stdexcept>
 #include <string>

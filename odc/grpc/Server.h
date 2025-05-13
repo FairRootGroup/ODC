@@ -380,15 +380,23 @@ class GrpcServer final : public odc::ODC::Service
         rep->set_allocated_reply(generalResponse);
 
         if (res.mTopologyState.detailed.has_value()) {
-            for (const auto& state : res.mTopologyState.detailed.value()) {
-                auto device{ rep->add_devices() };
-                device->set_id(state.mStatus.taskId);
-                device->set_state(fair::mq::GetStateName(state.mStatus.state));
-                device->set_path(state.mPath);
-                device->set_ignored(state.mStatus.ignored);
-                device->set_host(state.mHost);
-                device->set_expendable(state.mStatus.expendable);
-                device->set_rmsjobid(state.mRMSJobID);
+            for (const auto& task : res.mTopologyState.detailed.value().tasks) {
+                odc::Device* device = rep->add_devices();
+                device->set_id(task.mStatus.taskId);
+                device->set_state(fair::mq::GetStateName(task.mStatus.state));
+                device->set_path(task.mPath);
+                device->set_ignored(task.mStatus.ignored);
+                device->set_host(task.mHost);
+                device->set_expendable(task.mStatus.expendable);
+                device->set_rmsjobid(task.mRMSJobID);
+            }
+
+            for (const auto& collection : res.mTopologyState.detailed.value().collections) {
+                odc::Collection* col = rep->add_collections();
+                col->set_id(collection.mID);
+                col->set_state(GetAggregatedStateName(collection.mAggregatedState));
+                col->set_path(collection.mPath);
+                col->set_host(collection.mHost);
             }
         }
     }

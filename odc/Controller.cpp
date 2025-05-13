@@ -1235,8 +1235,9 @@ bool Controller::changeState(const CommonParams& common, Partition& partition, E
             }
         }
 
+        TopoStateByCollection collectionMap = GroupByCollectionId(topoState);
         if (topologyState.detailed.has_value()) {
-            partition.mSession->fillDetailedState(topoState, topologyState.detailed.value());
+            partition.mSession->fillDetailedState(topoState, collectionMap, topologyState.detailed.value());
         }
 
         topologyState.aggregated = AggregateState(topoState);
@@ -1244,7 +1245,7 @@ bool Controller::changeState(const CommonParams& common, Partition& partition, E
             OLOG(info, common) << "State changed to " << topologyState.aggregated << " via " << transition << " transition";
         }
 
-        printStateStats(common, topoState);
+        printStateStats(common, topoState, collectionMap, false);
     } catch (Error& e) {
         error = e;
         stateSummaryOnFailure(common, *(partition.mSession), partition.mTopology->GetCurrentState(), expState);
@@ -1328,11 +1329,12 @@ void Controller::getState(const CommonParams& common, Partition& partition, Erro
     } catch (exception& e) {
         fillAndLogError(common, error, ErrorCode::FairMQGetStateFailed, toString("Get state failed: ", e.what()));
     }
+    TopoStateByCollection collectionMap = GroupByCollectionId(topoState);
     if (topologyState.detailed.has_value()) {
-        partition.mSession->fillDetailedState(topoState, topologyState.detailed.value());
+        partition.mSession->fillDetailedState(topoState, collectionMap, topologyState.detailed.value());
     }
 
-    printStateStats(common, topoState, true);
+    printStateStats(common, topoState, collectionMap, true);
 }
 
 bool Controller::setProperties(const CommonParams& common, Partition& partition, Error& error, const string& path, const SetPropertiesParams::Props& props, TopologyState& topologyState)
@@ -1760,7 +1762,7 @@ void Controller::setZoneCfgs(const std::vector<std::string>& zonesStr)
     }
 }
 
-void Controller::printStateStats(const CommonParams& common, const TopoState& topoState, bool debugLog /* = false */)
+void Controller::printStateStats(const CommonParams& common, const TopoState& topoState, const TopoStateByCollection& collectionMap, bool debugLog)
 {
     std::map<DeviceState, uint64_t> taskStateCounts;
     std::map<AggregatedState, uint64_t> collectionStateCounts;
@@ -1772,7 +1774,6 @@ void Controller::printStateStats(const CommonParams& common, const TopoState& to
         taskStateCounts[ds.state]++;
     }
 
-    auto collectionMap{ GroupByCollectionId(topoState) };
     for (const auto& [collectionId, states] : collectionMap) {
         AggregatedState collectionState = AggregateState(states);
         if (collectionStateCounts.find(collectionState) == collectionStateCounts.end()) {

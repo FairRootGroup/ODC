@@ -188,7 +188,7 @@ class Controller
     uint32_t getNumSlots(const CommonParams& common, Session& session) const;
     dds::tools_api::SAgentInfoRequest::responseVector_t getAgentInfo(const CommonParams& common, Session& session) const;
 
-    void printStateStats(const CommonParams& common, const TopoState& topoState, bool debugLog = false);
+    void printStateStats(const CommonParams& common, const TopoState& topoState, const TopoStateByCollection& collectionMap, bool debugLog);
 };
 
 } // namespace odc::core

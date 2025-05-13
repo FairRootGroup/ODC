@@ -150,7 +150,27 @@ struct DetailedTaskStatus
     std::string mRMSJobID;
 };
 
-using DetailedState = std::vector<DetailedTaskStatus>;
+struct DetailedCollectionStatus
+{
+    DetailedCollectionStatus() {}
+    DetailedCollectionStatus(DDSCollectionId id, AggregatedState aggregatedState, const std::string& path, const std::string& host)
+        : mID(id)
+        , mAggregatedState(aggregatedState)
+        , mPath(path)
+        , mHost(host)
+    {}
+
+    DDSCollectionId mID;
+    AggregatedState mAggregatedState;
+    std::string mPath;
+    std::string mHost;
+};
+
+struct DetailedState
+{
+    std::vector<DetailedTaskStatus> tasks;
+    std::vector<DetailedCollectionStatus> collections;
+};
 
 struct TopologyState
 {
