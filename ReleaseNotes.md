@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+# 0.84.4
+
+- Include collection details in the state reply
+
 # 0.84.3 (2025-03-28)
 
 - Build: Update protobuf detection to work for newer versions
