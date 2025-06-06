@@ -38,6 +38,7 @@ int main(int argc, char** argv)
         bool batch;
         PluginManager::PluginMap plugins;
         vector<string> zonesStr;
+        string agentWaitTimeoutStr;
         string rms;
         string restoreId;
         string restoreDir;
@@ -50,6 +51,7 @@ int main(int argc, char** argv)
             ("timeout", bpo::value<size_t>(&timeout)->default_value(30), "Timeout of requests in sec")
             ("rp", bpo::value<std::vector<std::string>>()->multitoken(), "Register resource plugins ( name1:cmd1 name2:cmd2 )")
             ("zones", bpo::value<vector<string>>(&zonesStr)->multitoken()->composing(), "Zones in <name>:<cfgFilePath>:<envFilePath> format")
+            ("agent-wait-timeout", bpo::value<string>(&agentWaitTimeoutStr)->default_value(""), "Override timeout for waiting for active agents in seconds or percentage. If empty, default request timeout is taken. Format: with \% or 's' suffix, e.g.: '10s' or '10%'. When percentage is given, it is calculated from the request timeout.")
             ("rms", bpo::value<string>(&rms)->default_value("localhost"), "Resource management system to be used by DDS  (localhost/ssh/slurm)")
             ("restore", bpo::value<std::string>(&restoreId)->default_value(""), "If set ODC will restore the sessions from file with specified ID")
             ("restore-dir", bpo::value<std::string>(&restoreDir)->default_value(smart_path(toString("$HOME/.ODC/restore/"))), "Directory where restore files are kept")
@@ -85,6 +87,7 @@ int main(int argc, char** argv)
 
         odc::CliController controller;
         controller.setTimeout(chrono::seconds(timeout));
+        controller.setAgentWaitTimeout(agentWaitTimeoutStr);
         controller.setHistoryDir(historyDir);
         controller.setZoneCfgs(zonesStr);
         controller.setRMS(rms);
