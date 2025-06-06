@@ -20,11 +20,13 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+#include <chrono>
 #include <ctime>
 #include <initializer_list>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -77,6 +79,76 @@ inline bool strStartsWith(std::string const& str, std::string const& start)
         return (0 == str.compare(0, start.length(), start));
     } else {
         return false;
+    }
+}
+
+inline std::chrono::seconds parseTimeString(const std::string& timeStr, const std::chrono::seconds& baseTime) {
+    if (timeStr.empty()) {
+        throw std::invalid_argument("Empty time string");
+    }
+
+    // Check if it's a percentage
+    if (timeStr.back() == '%') {
+        std::string numStr = timeStr.substr(0, timeStr.length() - 1);
+        try {
+            double percentage = std::stod(numStr);
+            if (baseTime.count() == 0) {
+                throw std::invalid_argument("Base time required for percentage input");
+            }
+            auto result = std::chrono::duration_cast<std::chrono::seconds>(baseTime * (percentage / 100.0));
+            return result;
+        } catch (const std::invalid_argument&) {
+            throw std::invalid_argument("Invalid percentage format");
+        } catch (const std::out_of_range&) {
+            throw std::invalid_argument("Invalid percentage format");
+        }
+    }
+
+    // Check if it's seconds
+    if (timeStr.back() == 's') {
+        std::string numStr = timeStr.substr(0, timeStr.length() - 1);
+
+        // Check for invalid formats like decimals or negative numbers
+        if (numStr.find('.') != std::string::npos) {
+            throw std::invalid_argument("Invalid seconds format");
+        }
+        if (numStr.find('-') != std::string::npos) {
+            throw std::invalid_argument("Invalid seconds format");
+        }
+
+        try {
+            size_t pos;
+            int seconds = std::stoi(numStr, &pos);
+            // Check if entire string was consumed
+            if (pos != numStr.length()) {
+                throw std::invalid_argument("Invalid seconds format");
+            }
+            return std::chrono::seconds(seconds);
+        } catch (const std::invalid_argument&) {
+            throw std::invalid_argument("Invalid seconds format");
+        } catch (const std::out_of_range&) {
+            throw std::invalid_argument("Invalid seconds format");
+        }
+    }
+
+    // Try parsing as plain number (assume seconds)
+    // Check for negative numbers
+    if (timeStr.find('-') != std::string::npos) {
+        throw std::invalid_argument("Invalid time format");
+    }
+
+    try {
+        size_t pos;
+        int seconds = std::stoi(timeStr, &pos);
+        // Check if entire string was consumed
+        if (pos != timeStr.length()) {
+            throw std::invalid_argument("Invalid time format");
+        }
+        return std::chrono::seconds(seconds);
+    } catch (const std::invalid_argument&) {
+        throw std::invalid_argument("Invalid time format");
+    } catch (const std::out_of_range&) {
+        throw std::invalid_argument("Invalid time format");
     }
 }
 

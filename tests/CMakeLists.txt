@@ -179,6 +179,22 @@ odc_add_boost_tests(SUITE cc
   PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}"
 )
 
+odc_add_boost_tests(SUITE utils
+  TESTS
+  utils/test_seconds_parsing
+  utils/test_plain_number_parsing
+  utils/test_percentage_parsing
+  utils/test_percentage_with_decimals
+  utils/test_invalid_formats
+  utils/test_percentage_without_base_time
+  utils/test_negative_values
+  utils/test_edge_cases
+
+  DEPS ODC::odc
+
+  PROPERTIES TIMEOUT 60 ENVIRONMENT "${TEST_ENV}"
+)
+
 odc_add_boost_tests(SUITE parameters
   TESTS
   creation/odc_rp_same_simple

@@ -46,6 +46,7 @@ class GrpcServer final : public odc::ODC::Service
     }
 
     void setTimeout(const std::chrono::seconds& timeout) { mController.setTimeout(timeout); }
+    void setAgentWaitTimeout(const std::string& agentWaitTimeoutStr) { mController.setAgentWaitTimeout(agentWaitTimeoutStr); }
     void setHistoryDir(const std::string& dir) { mController.setHistoryDir(dir); }
     void setZoneCfgs(const std::vector<std::string>& zonesStr) { mController.setZoneCfgs(zonesStr); }
     void setRMS(const std::string& rms) { mController.setRMS(rms); }

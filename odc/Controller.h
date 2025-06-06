@@ -52,6 +52,10 @@ class Controller
     /// \param [in] timeout Timeout in seconds
     void setTimeout(const std::chrono::seconds& timeout) { mTimeout = timeout; }
 
+    /// \brief Set agent wait timeout override
+    /// \param [in] agentWaitTimeoutStr Agent wait timeout in seconds or percentage, if set to "" then default value is used
+    void setAgentWaitTimeout(const std::string& agentWaitTimeoutStr) { mAgentWaitTimeout = agentWaitTimeoutStr; }
+
     /// \brief Register resource plugins
     /// \param [in] pluginMap Map of plugin name to path
     void registerResourcePlugins(const PluginManager::PluginMap& pluginMap);
@@ -116,6 +120,7 @@ class Controller
     std::map<std::string, Partition> mPartitions; ///< Map of partition ID to Partition object
     std::mutex mPartitionMtx;                     ///< Mutex for the partition map
     std::chrono::seconds mTimeout{ 30 };          ///< Request timeout in sec
+    std::string mAgentWaitTimeout;                ///< Override for agent wait timeout in seconds or percentage, if set to "" then default value is used
     DDSSubmit mSubmit;                            ///< ODC to DDS submit resource converter
     std::string mRestoreId;                       ///< Restore ID
     std::string mRestoreDir;                      ///< Restore file directory

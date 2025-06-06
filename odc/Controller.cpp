@@ -326,7 +326,15 @@ uint32_t Controller::submitDDSAgents(const CommonParams& common, Session& sessio
 bool Controller::waitForNumActiveSlots(const CommonParams& common, Session& session, Error& error, size_t numSlots)
 {
     try {
-        session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common, "waitForNumActiveSlots..waitForNumSlots<dds::tools_api::CSession::EAgentState::active>"));
+        if (!mAgentWaitTimeout.empty()) {
+            std::chrono::seconds configuredTimeoutS = (common.mTimeout == 0 ? mTimeout : std::chrono::seconds(common.mTimeout));
+            std::chrono::seconds duration = parseTimeString(mAgentWaitTimeout, configuredTimeoutS);
+            OLOG(debug, common) << "waitForNumActiveSlots: Using --agent-wait-timeout timeout ('" << mAgentWaitTimeout << "') --> " << duration.count() << " seconds";
+            session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, duration);
+        } else {
+            OLOG(debug, common) << "waitForNumActiveSlots: Using default timeout";
+            session.mDDSSession.waitForNumSlots<dds::tools_api::CSession::EAgentState::active>(numSlots, requestTimeout(common, "waitForNumActiveSlots..waitForNumSlots<dds::tools_api::CSession::EAgentState::active>"));
+        }
     } catch (Error& e) {
         error = e;
         OLOG(error, common) << "Error while waiting for DDS slots: " << e;
