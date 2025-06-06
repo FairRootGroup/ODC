@@ -1,6 +1,10 @@
 # ODC Release Notes
 
-# 0.84.4
+# 0.85.0 (2025-06-06)
+
+- Add `--agent-wait-timeout` setting to servers. If provided, it overrides server's timeout value for the agent waiting step during submit. Can be either in seconds or percentage, e.g.: '10s' or '10%'. When percentage is given, it is calculated from the request timeout or global timeout (depending on which one is active).
+
+# 0.84.4 (2025-05-13)
 
 - Include collection details in the state reply
 
