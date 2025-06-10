@@ -1707,6 +1707,12 @@ string Controller::topoFilepath(const CommonParams& common, const string& topolo
             throw runtime_error(toString("Topology generation script failed with exit code: ", exitCode, ", stderr: ", quoted(err)));
         }
 
+        if (out.empty()) {
+            OLOG(fatal, common) << "Topology generation script produced no output. Check the script for errors:";
+            logFatalLineByLine(common, topologyScript);
+            throw runtime_error("Topology generation script produced no output. Check the script for errors.");
+        }
+
         OLOG(info, common) << "Topology generation script successfull. stderr: " << quoted(err) << ", stdout: " << quoted(shortOut) << shortSuffix;
 
         content = out;
