@@ -1,5 +1,9 @@
 # ODC Release Notes
 
+# 0.86.0 (2025-06-10)
+
+- Produce fatal error for topology generation failures (when generated topo is empty), including line by line output of the generation script.
+
 # 0.85.0 (2025-06-06)
 
 - Add `--agent-wait-timeout` setting to servers. If provided, it overrides server's timeout value for the agent waiting step during submit. Can be either in seconds or percentage, e.g.: '10s' or '10%'. When percentage is given, it is calculated from the request timeout or global timeout (depending on which one is active).
