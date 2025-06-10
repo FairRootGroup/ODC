@@ -105,7 +105,7 @@ struct TopologyFixture
             if (res.m_activated) {
                 // response callbacks can be called in parallel - protect session access with a lock
                 std::lock_guard<std::mutex> lock(mtx);
-                mSession.mTaskDetails.emplace(res.m_taskID, TaskDetails{res.m_agentID, res.m_slotID, res.m_taskID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir});
+                mSession.mTaskDetails.emplace(res.m_taskID, TaskDetails{res.m_agentID, res.m_slotID, res.m_taskID, res.m_collectionID, res.m_path, res.m_host, res.m_wrkDir, "unknown_job_id"});
 
                 if (res.m_collectionID > 0) {
                     if (mSession.mCollectionDetails.find(res.m_collectionID) == mSession.mCollectionDetails.end()) {
@@ -114,7 +114,7 @@ struct TopologyFixture
                         if (pos != std::string::npos) {
                             path.erase(pos);
                         }
-                        mSession.mCollectionDetails.emplace(res.m_collectionID, CollectionDetails{res.m_agentID, res.m_collectionID, path, res.m_host, res.m_wrkDir});
+                        mSession.mCollectionDetails.emplace(res.m_collectionID, CollectionDetails{res.m_agentID, res.m_collectionID, path, res.m_host, res.m_wrkDir, "unknown_job_id"});
                         mSession.mRuntimeCollectionIndex.at(res.m_collectionID)->mRuntimeCollectionAgents[res.m_collectionID] = res.m_agentID;
                     }
                 }

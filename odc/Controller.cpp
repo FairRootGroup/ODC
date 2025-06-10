@@ -138,8 +138,8 @@ pair<unordered_set<string>, string> Controller::submit(const CommonParams& commo
                 expectedNumSlots += numSubmittedAgents * ddsParams.at(i).mNumSlots;
 
                 // update nCurrent for the agent group
-                auto ni =  std::find_if(session.mNinfo.begin(), session.mNinfo.end(), [&](const auto& ni) {
-                    return ni.second.agentGroup == groupName;
+                auto ni =  std::find_if(session.mNinfo.begin(), session.mNinfo.end(), [&](const auto& _ni) {
+                    return _ni.second.agentGroup == groupName;
                 });
                 if (ni != session.mNinfo.end()) {
                     ni->second.nCurrent = numSubmittedAgents;
