@@ -1789,7 +1789,7 @@ void Controller::printStateStats(const CommonParams& common, const TopoState& to
     }
 
     for (const auto& [collectionId, states] : collectionMap) {
-        AggregatedState collectionState = AggregateState(states);
+        AggregatedState collectionState = AggregateState(states, true);
         if (collectionStateCounts.find(collectionState) == collectionStateCounts.end()) {
             collectionStateCounts[collectionState] = 0;
         }

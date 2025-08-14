@@ -596,6 +596,99 @@ BOOST_AUTO_TEST_CASE(aggregated_topology_state_comparison)
     BOOST_REQUIRE("MIXED" == GetAggregatedStateName(AggregatedState::Mixed));
 }
 
+BOOST_AUTO_TEST_CASE(aggregate_state_include_ignored_errors)
+{
+    // Test AggregateState function with includeIgnoredErrors parameter
+
+    // Test case 1: All devices in OK state (ignored flag doesn't matter)
+    DeviceStatus dev1, dev2;
+    dev1.state = DeviceState::Ok;
+    dev1.ignored = false;
+    dev1.taskId = 1;
+    dev2.state = DeviceState::Ok;
+    dev2.ignored = true;  // ignored
+    dev2.taskId = 2;
+
+    TopoState allOkState = {dev1, dev2};
+    BOOST_CHECK_EQUAL(AggregateState(allOkState), AggregatedState::Ok);
+    BOOST_CHECK_EQUAL(AggregateState(allOkState, true), AggregatedState::Ok);
+
+    // Test case 2: Mixed states with ignored error device
+    DeviceStatus dev3, dev4;
+    dev3.state = DeviceState::Ok;
+    dev3.ignored = false;
+    dev3.taskId = 3;
+    dev4.state = DeviceState::Error;
+    dev4.ignored = true;  // ignored error
+    dev4.taskId = 4;
+
+    TopoState mixedWithIgnoredError = {dev3, dev4};
+    // Without includeIgnoredErrors, should return Ok (ignores error device)
+    BOOST_CHECK_EQUAL(AggregateState(mixedWithIgnoredError), AggregatedState::Ok);
+    // With includeIgnoredErrors, should return Error (includes ignored error device)
+    BOOST_CHECK_EQUAL(AggregateState(mixedWithIgnoredError, true), AggregatedState::Error);
+
+    // Test case 3: All devices ignored with errors
+    DeviceStatus dev5, dev6;
+    dev5.state = DeviceState::Error;
+    dev5.ignored = true;
+    dev5.taskId = 5;
+    dev6.state = DeviceState::Error;
+    dev6.ignored = true;
+    dev6.taskId = 6;
+
+    TopoState allIgnoredErrors = {dev5, dev6};
+    // Without includeIgnoredErrors, should return Mixed (no non-ignored devices)
+    BOOST_CHECK_EQUAL(AggregateState(allIgnoredErrors), AggregatedState::Mixed);
+    // With includeIgnoredErrors, should return Error
+    BOOST_CHECK_EQUAL(AggregateState(allIgnoredErrors, true), AggregatedState::Error);
+
+    // Test case 4: Mix of ignored and non-ignored devices, some with errors
+    DeviceStatus dev7, dev8, dev9;
+    dev7.state = DeviceState::Ready;
+    dev7.ignored = false;
+    dev7.taskId = 7;
+    dev8.state = DeviceState::Error;
+    dev8.ignored = true;  // ignored error
+    dev8.taskId = 8;
+    dev9.state = DeviceState::Ready;
+    dev9.ignored = false;
+    dev9.taskId = 9;
+
+    TopoState complexMix = {dev7, dev8, dev9};
+    // Without includeIgnoredErrors, should return Ready (homogeneous non-ignored devices)
+    BOOST_CHECK_EQUAL(AggregateState(complexMix), AggregatedState::Ready);
+    // With includeIgnoredErrors, should return Error (includes ignored error)
+    BOOST_CHECK_EQUAL(AggregateState(complexMix, true), AggregatedState::Error);
+
+    // Test case 5: Non-ignored error device (should always return Error)
+    DeviceStatus dev10, dev11;
+    dev10.state = DeviceState::Ready;
+    dev10.ignored = false;
+    dev10.taskId = 10;
+    dev11.state = DeviceState::Error;
+    dev11.ignored = false;  // non-ignored error
+    dev11.taskId = 11;
+
+    TopoState nonIgnoredError = {dev10, dev11};
+    BOOST_CHECK_EQUAL(AggregateState(nonIgnoredError), AggregatedState::Error);
+    BOOST_CHECK_EQUAL(AggregateState(nonIgnoredError, true), AggregatedState::Error);
+
+    // Test case 6: Ignored non-error devices (should be handled normally)
+    DeviceStatus dev12, dev13;
+    dev12.state = DeviceState::Ready;
+    dev12.ignored = false;
+    dev12.taskId = 12;
+    dev13.state = DeviceState::Idle;
+    dev13.ignored = true;  // ignored non-error
+    dev13.taskId = 13;
+
+    TopoState ignoredNonError = {dev12, dev13};
+    // Both should return Ready (ignored non-error devices don't affect result)
+    BOOST_CHECK_EQUAL(AggregateState(ignoredNonError), AggregatedState::Ready);
+    BOOST_CHECK_EQUAL(AggregateState(ignoredNonError, true), AggregatedState::Ready);
+}
+
 BOOST_AUTO_TEST_CASE(device_crashed)
 {
     using namespace std::chrono_literals;

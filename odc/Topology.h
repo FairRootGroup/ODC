@@ -333,6 +333,11 @@ class BasicTopology : public AsioBase<Executor, Allocator>
             --mNumStateChangePublishers;
         }
         device.ignored = true;
+        // Update device state to reflect termination - agent will shutting down shall terminate the task
+        if (device.state != DeviceState::Error && device.state != DeviceState::Exiting) {
+            device.lastState = device.state;
+            device.state = DeviceState::Exiting;
+        }
         IgnoreTaskForAllOps(device.taskId);
     }
 

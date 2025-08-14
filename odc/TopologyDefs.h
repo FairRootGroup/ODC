@@ -211,19 +211,19 @@ using TopoStateByTask = std::unordered_map<DDSTaskId, DeviceStatus>;
 using TopoStateByCollection = std::unordered_map<DDSCollectionId, std::vector<DeviceStatus>>;
 using TopoTransition = fair::mq::Transition;
 
-inline AggregatedState AggregateState(const TopoState& topoState)
+inline AggregatedState AggregateState(const TopoState& topoState, bool includeIgnoredErrors = false)
 {
     AggregatedState state = AggregatedState::Mixed;
     bool homogeneous = true;
-    // get the state of a first not-ignored device
+    // get the state of devices (for collections, include ignored ERROR devices)
     for (const auto& ds : topoState) {
-        if (!ds.ignored) {
+        if (!ds.ignored || (includeIgnoredErrors && ds.state == DeviceState::Error)) {
             if (state == AggregatedState::Mixed) {
                 // first assignment
                 state = static_cast<AggregatedState>(ds.state);
             } else {
                 if (ds.state == DeviceState::Error) {
-                    // if any device is in error state and it is not ignored, the whole topology is in the error state
+                    // if any device is in error state, the whole topology/collection is in error state
                     return AggregatedState::Error;
                 } else if (static_cast<AggregatedState>(ds.state) != state) {
                     homogeneous = false;

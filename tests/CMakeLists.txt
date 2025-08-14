@@ -141,6 +141,7 @@ odc_add_boost_tests(SUITE odc
   multiple_topologies/change_state_full_lifecycle_interleaved
   multiple_topologies/change_state_full_lifecycle_serial
   topology/aggregated_topology_state_comparison
+  topology/aggregate_state_include_ignored_errors
   topology/async_change_state
   topology/async_change_state_collection_view
   topology/async_change_state_concurrent

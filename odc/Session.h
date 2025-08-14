@@ -63,7 +63,7 @@ struct Session
         }
 
         for (const auto& [collectionId, states] : collectionMap) {
-            AggregatedState collectionState = AggregateState(states);
+            AggregatedState collectionState = AggregateState(states, true);
             auto it = mCollectionDetails.find(collectionId);
             if (it != mCollectionDetails.end()) {
                 detailedState.collections.emplace_back(DetailedCollectionStatus(collectionId, collectionState, it->second.mPath, it->second.mHost));
