@@ -1,5 +1,11 @@
 # ODC Release Notes
 
+# 0.87.0
+
+- Improve handling of ignored devices/collections:
+    a. device state of ignored collections is now set to Exiting, prior to Agent shutdown (which would terminate any still alive tasks)
+    b. Collection state is set to Error if any non-expendable device is also in the Error state.
+
 # 0.86.0 (2025-06-10)
 
 - Produce fatal error for topology generation failures (when generated topo is empty), including line by line output of the generation script.
