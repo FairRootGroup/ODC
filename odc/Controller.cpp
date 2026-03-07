@@ -126,11 +126,11 @@ pair<unordered_set<string>, string> Controller::submit(const CommonParams& commo
                 expectedNumSlots += numSubmittedAgents * ddsParams.at(i).mNumSlots;
             } else {
                 OLOG(info, common) << "Submitted " << numSubmittedAgents << " agents instead of " << numExpectedAgents;
-                if (minCount == 0) { // nMin is not defined
+                if (minCount < 0) { // nMin is not defined
                     fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", numSubmittedAgents, ") for group ", groupName, " is less than requested (", numExpectedAgents, "), " , "and no nMin is defined"));
                     break;
                 }
-                if (numSubmittedAgents < minCount) { // count is less than nMin
+                if (numSubmittedAgents < static_cast<uint32_t>(minCount)) { // count is less than nMin
                     fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", numSubmittedAgents, ") for group ", groupName, " is less than requested (", numExpectedAgents, "), " , "and nMin (", minCount, ") is not satisfied"));
                     break;
                 }
@@ -236,7 +236,7 @@ uint32_t Controller::submitDDSAgents(const CommonParams& common, Session& sessio
     requestInfo.m_submissionTag = common.mPartitionID;
     requestInfo.m_rms = params.mRMS;
     requestInfo.m_instances = params.mNumAgents;
-    requestInfo.m_minInstances = params.mMinAgents;
+    requestInfo.m_minInstances = (params.mMinAgents >= 0) ? static_cast<uint32_t>(params.mMinAgents) : 0;
     // requestInfo.m_minInstances = 0;
     // OLOG(debug, common) << "Ignoring params.mMinAgents for DDS submission to avoid nMin handling temporarily";
     requestInfo.m_slots = params.mNumSlots;
@@ -353,16 +353,16 @@ void Controller::attemptSubmitRecovery(const CommonParams& common, Session& sess
         for (const auto& p : ddsParams) {
             uint32_t actualCount = agentCounts.at(p.mAgentGroup);
             uint32_t requestedCount = p.mNumAgents;
-            uint32_t minCount = p.mMinAgents;
+            int32_t minCount = p.mMinAgents;
 
             if (requestedCount != actualCount) {
                 // fail recovery if insufficient agents, and no nMin is defined
-                if (minCount == 0) {
+                if (minCount < 0) {
                     fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", actualCount, ") for group ", p.mAgentGroup, " is less than requested (", requestedCount, "), " , "and no nMin is defined"));
                     return;
                 }
                 // fail recovery if insufficient agents, and actual count is less than nMin
-                if (actualCount < minCount) {
+                if (actualCount < static_cast<uint32_t>(minCount)) {
                     fillAndLogError(common, error, ErrorCode::DDSSubmitAgentsFailed, toString("Number of agents (", actualCount, ") for group ", p.mAgentGroup, " is less than requested (", requestedCount, "), " , "and nMin (", minCount, ") is not satisfied"));
                     return;
                 }
