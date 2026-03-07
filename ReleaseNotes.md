@@ -1,5 +1,11 @@
 # ODC Release Notes
 
+# 0.87.1 (2026-03-07)
+
+- cmake: remove unused boost_system requirement
+- nMin: avoid type cast errors that lead to incorrect log output
+- Process: redirect stdin to null instead of closing it
+
 # 0.87.0
 
 - Improve handling of ignored devices/collections:
