@@ -24,7 +24,7 @@ target_include_directories(${plugin} PRIVATE
 )
 set_target_properties(${plugin} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 # set_target_properties(${plugin} PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/fairmq)
-if(BOOST_VERSION VERSION_LESS 1.76)
+if(Boost_VERSION VERSION_LESS 1.76)
   target_compile_definitions(${plugin} PRIVATE BOOST_BIND_GLOBAL_PLACEHOLDERS)
 endif()
 install(TARGETS ${plugin}

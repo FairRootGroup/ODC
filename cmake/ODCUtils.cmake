@@ -86,10 +86,10 @@ function(odc_add_boost_tests)
 
     add_executable(${suite_target} ${ARG_SOURCES})
     target_link_libraries(${suite_target} PRIVATE ${ARG_DEPS})
-    if(BOOST_VERSION VERSION_LESS 1.76)
+    if(Boost_VERSION VERSION_LESS 1.76)
       target_compile_definitions(${suite_target} PRIVATE BOOST_BIND_GLOBAL_PLACEHOLDERS)
     endif()
-    if(BOOST_VERSION VERSION_GREATER_EQUAL 1.89)
+    if(Boost_VERSION VERSION_GREATER_EQUAL 1.89)
       target_compile_definitions(${suite_target} PRIVATE ODC_BOOST_PROCESS_V1_HEADER)
     endif()
 

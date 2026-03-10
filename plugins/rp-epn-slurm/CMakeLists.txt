@@ -20,7 +20,7 @@ target_include_directories(${target} PUBLIC
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>"
   "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
 )
-if(BOOST_VERSION VERSION_LESS 1.76)
+if(Boost_VERSION VERSION_LESS 1.76)
   target_compile_definitions(${target} PRIVATE BOOST_BIND_GLOBAL_PLACEHOLDERS)
 endif()
 
