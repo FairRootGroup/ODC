@@ -89,6 +89,9 @@ function(odc_add_boost_tests)
     if(BOOST_VERSION VERSION_LESS 1.76)
       target_compile_definitions(${suite_target} PRIVATE BOOST_BIND_GLOBAL_PLACEHOLDERS)
     endif()
+    if(BOOST_VERSION VERSION_GREATER_EQUAL 1.89)
+      target_compile_definitions(${suite_target} PRIVATE ODC_BOOST_PROCESS_V1_HEADER)
+    endif()
 
     install(TARGETS ${suite_target} EXPORT ${PROJECT_NAME}Targets RUNTIME DESTINATION ${PROJECT_INSTALL_TESTS})
 

@@ -769,7 +769,7 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_serial)
     // schedule transitions serial
     for (int i = 0; i < num; ++i) {
         full_device_lifecycle([&](TopoTransition transition) {
-            ioContext.post([&f, &topos, i, transition]() {
+            boost::asio::post(ioContext, [&f, &topos, i, transition]() {
                 auto [ec, state] = topos[i].ChangeState(transition);
                 BOOST_REQUIRE_EQUAL(ec, std::error_code());
                 BOOST_TEST_MESSAGE(f[i].mSession.mDDSSession.getSessionID() << ": " << AggregateState(state) << " -> " << ec);
@@ -799,7 +799,7 @@ BOOST_AUTO_TEST_CASE(change_state_full_lifecycle_interleaved)
     // schedule transitions interleaved
     full_device_lifecycle([&](TopoTransition transition) {
         for (int i = 0; i < num; ++i) {
-            ioContext.post([&f, &topos, i, transition]() {
+            boost::asio::post(ioContext, [&f, &topos, i, transition]() {
                 auto [ec, state] = topos[i].ChangeState(transition);
                 BOOST_REQUIRE_EQUAL(ec, std::error_code());
                 BOOST_TEST_MESSAGE(f[i].mSession.mDDSSession.getSessionID() << ": " << AggregateState(state) << " -> " << ec);

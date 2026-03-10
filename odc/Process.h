@@ -11,7 +11,11 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#ifdef ODC_BOOST_PROCESS_V1_HEADER
+#include <boost/process/v1.hpp>
+#else
 #include <boost/process.hpp>
+#endif
 
 #include <chrono>
 #include <iterator>
@@ -21,7 +25,11 @@
 #include <vector>
 #include <utility> // pair
 
+#ifdef ODC_BOOST_PROCESS_V1_HEADER
+namespace bp = boost::process::v1;
+#else
 namespace bp = boost::process;
+#endif
 namespace ba = boost::asio;
 
 struct ExecuteResult
@@ -42,7 +50,7 @@ inline pid_t execute(const std::string& cmd,
                      const std::vector<std::pair<std::string, std::string>>& extraEnv = {})
 {
     try {
-        ba::io_service ios;
+        ba::io_context ios;
         bp::async_pipe outPipe(ios);
         bp::async_pipe errPipe(ios);
         ba::streambuf outBuf;

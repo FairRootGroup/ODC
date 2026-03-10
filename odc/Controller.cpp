@@ -18,7 +18,11 @@
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#ifdef ODC_BOOST_PROCESS_V1_HEADER
+#include <boost/process/v1.hpp>
+#else
 #include <boost/process.hpp>
+#endif
 
 #include <algorithm>
 #include <cctype> // std::tolower
