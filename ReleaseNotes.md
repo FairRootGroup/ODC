@@ -1,5 +1,10 @@
 # ODC Release Notes
 
+# 0.87.2 (2026-03-10)
+
+- cmake: fix version comparisons to use `Boost_VERSION` instead of `BOOST_VERSION`
+- Compatibility fixes for Boost 1.89+: include `<boost/process/v1.hpp>` and use `boost::process::v1` namespace; block Boost 1.88 (incompatible Boost.Process API); use `ba::io_context` instead of `ba::io_service`; use free `boost::asio::post()` instead of member `post()`
+
 # 0.87.1 (2026-03-07)
 
 - cmake: remove unused boost_system requirement
