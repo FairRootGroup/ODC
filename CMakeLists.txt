@@ -88,6 +88,14 @@ if(BUILD_INFOLOGGER)
 endif()
 find_package2_implicit_dependencies() # Always call last after latest find_package2
 
+foreach(_boost_stub IN ITEMS system process container)
+  if(NOT TARGET Boost::${_boost_stub})
+    message(STATUS "Workaround: defining stub Boost::${_boost_stub} (alias for Boost::headers)")
+    add_library(Boost::${_boost_stub} ALIAS Boost::headers)
+  endif()
+endforeach()
+unset(_boost_stub)
+
 # Install directory
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/ODC" CACHE PATH "Install prefix" FORCE)
