@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+env:
+  IMAGE_PREFIX: ghcr.io/fairrootgroup/odc-ci
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - fedora: fedora39
+            label: fedora-39-x86_64-gcc-13
+          - fedora: fedora40
+            label: fedora-40-x86_64-gcc-14
+          - fedora: fedora41
+            label: fedora-41-x86_64-gcc-14
+          - fedora: fedora42
+            label: fedora-42-x86_64-gcc-15
+          - fedora: fedora42-boost190
+            label: fedora-42-x86_64-gcc-15-boost-1.90
+          - fedora: fedora42
+            label: sanitizers
+            extra: -DENABLE_SANITIZERS=ON
+
+    container:
+      image: ${{ format('{0}:{1}', 'ghcr.io/fairrootgroup/odc-ci', matrix.fedora) }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and test
+        env:
+          LABEL: ${{ matrix.label }}
+        run: ctest -S ODCTest.cmake -VV --output-on-failure ${{ matrix.extra }}
