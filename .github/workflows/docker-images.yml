@@ -6,6 +6,9 @@ on:
       - master
     paths:
       - 'utils/ci/Dockerfile.*'
+  pull_request:
+    paths:
+      - 'utils/ci/Dockerfile.*'
   workflow_dispatch:
 
 env:
