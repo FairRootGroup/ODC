@@ -51,7 +51,7 @@ jobs:
         with:
           context: utils/ci
           file: utils/ci/Dockerfile.${{ matrix.fedora }}
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.IMAGE_PREFIX }}:${{ matrix.fedora }}
           cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}:${{ matrix.fedora }}-cache
           cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}:${{ matrix.fedora }}-cache,mode=max
