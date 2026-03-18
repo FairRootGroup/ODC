@@ -22,23 +22,29 @@ RUN dnf -y update && \
                    libxml2 \
                    ninja-build \
                    patch \
+                   wget \
                    zeromq-devel
 
 # Stage 2: Build custom dependencies from source into /usr/local.
 # Source and build trees are discarded with this stage.
 FROM buildenv AS build
 
-ARG BOOST_VERSION=90
+ARG BOOST_VERSION=
 ARG FAIRCMAKEMODULES_VERSION=v1.0.0
 ARG FAIRLOGGER_VERSION=v2.3.1
 ARG FAIRMQ_VERSION=v1.10.1
 ARG DDS_VERSION=3.18
 
-ADD https://archives.boost.io/release/1.${BOOST_VERSION}.0/source/boost_1_${BOOST_VERSION}_0.tar.gz /boost.tar.gz
-RUN tar xzf /boost.tar.gz && \
-    cd /boost_1_${BOOST_VERSION}_0 && \
-    ./bootstrap.sh --prefix=/usr/local && \
-    ./b2 install -j$(nproc) --without-python --without-mpi
+RUN if [ -n "${BOOST_VERSION}" ]; then \
+        wget -O /boost.tar.gz "https://archives.boost.io/release/1.${BOOST_VERSION}.0/source/boost_1_${BOOST_VERSION}_0.tar.gz" && \
+        tar xzf /boost.tar.gz && \
+        cd /boost_1_${BOOST_VERSION}_0 && \
+        ./bootstrap.sh --prefix=/usr/local && \
+        ./b2 install -j$(nproc) --without-python --without-mpi && \
+        cd / && rm -rf /boost.tar.gz /boost_1_${BOOST_VERSION}_0; \
+    else \
+        dnf -y install boost-devel; \
+    fi
 
 ADD --keep-git-dir=true https://github.com/FairRootGroup/FairCMakeModules.git#${FAIRCMAKEMODULES_VERSION} /FairCMakeModules
 RUN cmake -GNinja -S FairCMakeModules -B FairCMakeModules_build -DCMAKE_INSTALL_PREFIX=/usr/local && \
@@ -62,7 +68,9 @@ RUN echo "${DDS_VERSION}" > /DDS/version && \
 # and the install trees of the custom-built dependencies from stage 2.
 FROM buildenv AS final
 
-RUN dnf -y install clang-tools-extra \
+ARG BOOST_VERSION=
+RUN if [ -z "${BOOST_VERSION}" ]; then dnf -y install boost-devel; fi && \
+    dnf -y install clang-tools-extra \
                    libasan \
                    liblsan \
                    libubsan && \
