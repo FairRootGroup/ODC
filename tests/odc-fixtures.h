@@ -115,7 +115,10 @@ struct TopologyFixture
                             path.erase(pos);
                         }
                         mSession.mCollectionDetails.emplace(res.m_collectionID, CollectionDetails{res.m_agentID, res.m_collectionID, path, res.m_host, res.m_wrkDir, "unknown_job_id"});
-                        mSession.mRuntimeCollectionIndex.at(res.m_collectionID)->mRuntimeCollectionAgents[res.m_collectionID] = res.m_agentID;
+                        auto it = mSession.mRuntimeCollectionIndex.find(res.m_collectionID);
+                        if (it != mSession.mRuntimeCollectionIndex.end()) {
+                            it->second->mRuntimeCollectionAgents[res.m_collectionID] = res.m_agentID;
+                        }
                     }
                 }
             }
