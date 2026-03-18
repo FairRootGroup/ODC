@@ -26,11 +26,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - fedora: fedora39
-          - fedora: fedora40
-          - fedora: fedora41
-          - fedora: fedora42
-          - fedora: fedora42-boost190
+          - image: fedora39
+            build-args: FEDORA_VERSION=39
+          - image: fedora40
+            build-args: FEDORA_VERSION=40
+          - image: fedora41
+            build-args: FEDORA_VERSION=41
+          - image: fedora42
+            build-args: FEDORA_VERSION=42
+          - image: fedora42-boost190
+            build-args: |
+              FEDORA_VERSION=42
+              BOOST_VERSION=90
 
     steps:
       - name: Checkout
@@ -50,8 +57,9 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: utils/ci
-          file: utils/ci/Dockerfile.${{ matrix.fedora }}
+          file: utils/ci/Dockerfile.fedora
+          build-args: ${{ matrix.build-args }}
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.IMAGE_PREFIX }}:${{ matrix.fedora }}
-          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}:${{ matrix.fedora }}-cache
-          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}:${{ matrix.fedora }}-cache,mode=max
+          tags: ${{ env.IMAGE_PREFIX }}:${{ matrix.image }}
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}:${{ matrix.image }}-cache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}:${{ matrix.image }}-cache,mode=max
