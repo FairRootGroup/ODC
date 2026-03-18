@@ -51,14 +51,20 @@ jobs:
           LABEL: ${{ matrix.label }}
         run: ctest -S ODCTest.cmake -VV --output-on-failure ${{ matrix.extra }}
 
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          mkdir -p build/logs
+          cp -r ~/.ODC/ build/logs/ODC 2>/dev/null || true
+          cp -r ~/.DDS/ build/logs/DDS 2>/dev/null || true
+
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: logs-${{ matrix.label }}
           path: |
-            ~/.ODC/
-            ~/.DDS/
+            build/logs/
             build/tmp/
           if-no-files-found: ignore
           retention-days: 7
