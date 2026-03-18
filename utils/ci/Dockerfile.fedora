@@ -1,0 +1,79 @@
+# Usage:
+#   docker build -f Dockerfile.fedora .
+#   docker build -f Dockerfile.fedora --build-arg FEDORA_VERSION=41 --build-arg DDS_VERSION=3.17 .
+#   docker build -f Dockerfile.fedora --build-arg BOOST_VERSION=90 .
+
+# Stage 1: Common build environment with shared dnf packages.
+ARG FEDORA_VERSION=42
+FROM fedora:${FEDORA_VERSION} AS buildenv
+
+RUN dnf -y update && \
+    dnf -y install abseil-cpp-devel \
+                   asio-devel \
+                   ca-certificates \
+                   cmake \
+                   flatbuffers-devel \
+                   flatbuffers-compiler \
+                   fmt-devel \
+                   gcc-c++ \
+                   git \
+                   grpc-devel \
+                   grpc-plugins \
+                   libxml2 \
+                   ninja-build \
+                   patch \
+                   wget \
+                   zeromq-devel
+
+# Stage 2: Build custom dependencies from source into /usr/local.
+# Source and build trees are discarded with this stage.
+FROM buildenv AS build
+
+ARG BOOST_VERSION=
+ARG FAIRCMAKEMODULES_VERSION=v1.0.0
+ARG FAIRLOGGER_VERSION=v2.3.1
+ARG FAIRMQ_VERSION=v1.10.1
+ARG DDS_VERSION=3.18
+
+RUN if [ -n "${BOOST_VERSION}" ]; then \
+        wget -O /boost.tar.gz "https://archives.boost.io/release/1.${BOOST_VERSION}.0/source/boost_1_${BOOST_VERSION}_0.tar.gz" && \
+        tar xzf /boost.tar.gz && \
+        cd /boost_1_${BOOST_VERSION}_0 && \
+        ./bootstrap.sh --prefix=/usr/local && \
+        ./b2 install -j$(nproc) --without-python --without-mpi && \
+        cd / && rm -rf /boost.tar.gz /boost_1_${BOOST_VERSION}_0; \
+    else \
+        dnf -y install boost-devel; \
+    fi
+
+ADD --keep-git-dir=true https://github.com/FairRootGroup/FairCMakeModules.git#${FAIRCMAKEMODULES_VERSION} /FairCMakeModules
+RUN cmake -GNinja -S FairCMakeModules -B FairCMakeModules_build -DCMAKE_INSTALL_PREFIX=/usr/local && \
+    cmake --build FairCMakeModules_build --target install
+
+ADD --keep-git-dir=true https://github.com/FairRootGroup/FairLogger.git#${FAIRLOGGER_VERSION} /FairLogger
+RUN cmake -GNinja -S FairLogger -B FairLogger_build -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build FairLogger_build --target install
+
+ADD --keep-git-dir=true https://github.com/FairRootGroup/FairMQ.git#${FAIRMQ_VERSION} /FairMQ
+RUN cmake -GNinja -S FairMQ -B FairMQ_build -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build FairMQ_build --target install
+
+ADD https://github.com/FairRootGroup/DDS.git#${DDS_VERSION} /DDS
+RUN echo "${DDS_VERSION}" > /DDS/version && \
+    cmake -GNinja -S DDS -B DDS_build -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release -DBUILD_dds-tutorials=OFF && \
+    cmake --build DDS_build --target wn_bin && \
+    cmake --build DDS_build --target install
+
+# Stage 3: Final image with ODC-specific build dependencies
+# and the install trees of the custom-built dependencies from stage 2.
+FROM buildenv AS final
+
+ARG BOOST_VERSION=
+RUN if [ -z "${BOOST_VERSION}" ]; then dnf -y install boost-devel; fi && \
+    dnf -y install clang-tools-extra \
+                   libasan \
+                   liblsan \
+                   libubsan && \
+    dnf -y clean all
+
+COPY --from=build /usr/local /usr/local
