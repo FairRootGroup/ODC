@@ -68,3 +68,52 @@ jobs:
             build/tmp/
           if-no-files-found: ignore
           retention-days: 7
+
+  slurm-integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: GSI-HPC/sind-action@v1
+        with:
+          clusters: |
+            - kind: Cluster
+              name: odc
+              defaults:
+                image: ${{ env.IMAGE_PREFIX }}:fedora42-sind
+              nodes:
+                - controller
+                - worker: 2
+
+      - name: Build and test
+        run: |
+          sind exec odc -- bash -lc '\
+            cd /data && \
+            ctest -S ODCTest.cmake -VV --output-on-failure \
+              -DLABEL=slurm-integration \
+              -DDDS_RMS="<rms>slurm</rms><configFile>/data/tests/slurm.cfg</configFile><agents>2</agents><slots>18</slots>" \
+          '
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          mkdir -p build/logs
+          sind exec odc -- bash -c 'cp -r ~/.ODC/ /data/build/logs/ODC 2>/dev/null; cp -r ~/.DDS/ /data/build/logs/DDS 2>/dev/null' || true
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-slurm-integration
+          path: |
+            build/logs/
+            build/tmp/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - uses: GSI-HPC/sind-action/cleanup@v1
+        if: always()
