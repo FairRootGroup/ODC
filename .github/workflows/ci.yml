@@ -84,7 +84,7 @@ jobs:
               name: odc
               defaults:
                 image: ${{ env.IMAGE_PREFIX }}:fedora42-sind
-                cpus: 2
+                cpus: 4
                 memory: 4g
               nodes:
                 - controller
@@ -100,14 +100,14 @@ jobs:
             scontrol show node
             cat /etc/slurm/slurm.conf
             dds-session start
-            dds-submit -r slurm -n 2 --slots 18 -c /data/tests/slurm.cfg
+            dds-submit -r slurm -n 2 --slots 4 -c /data/tests/slurm.cfg
             for i in $(seq 1 24); do
               echo "=== Attempt $i/24 ==="
               dds-info -l
               dds-info -n
               idle=$(dds-info --idle-count)
               echo "Idle slots: $idle"
-              if [ "$idle" -ge 36 ] 2>/dev/null; then
+              if [ "$idle" -ge 8 ] 2>/dev/null; then
                 echo "All slots ready"
                 break
               fi
@@ -123,7 +123,7 @@ jobs:
         run: |
           sind exec odc -- bash -lc '\
             cd /data && \
-            DDS_RMS="<rms>slurm</rms><configFile>/data/tests/slurm.cfg</configFile><agents>2</agents><slots>18</slots>" \
+            DDS_RMS="<rms>slurm</rms><configFile>/data/tests/slurm.cfg</configFile><agents>2</agents><slots>4</slots>" \
             ctest -S ODCTest.cmake -VV --output-on-failure \
               -DLABEL=slurm-integration \
               -DNCPUS=2 \
