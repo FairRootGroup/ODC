@@ -100,8 +100,8 @@ jobs:
             scontrol show node
             cat /etc/slurm/slurm.conf
             dds-user-defaults -f --default
-            sed -i "s|sandbox_dir=.*|sandbox_dir=/data/.DDS|" $(dds-user-defaults --config)
-            cat $(dds-user-defaults --config)
+            sed -i "s|sandbox_dir=.*|sandbox_dir=/data/.DDS|" ~/.DDS/DDS.cfg
+            cat ~/.DDS/DDS.cfg
             dds-session start
             dds-submit -r slurm -n 2 --slots 4 -c /data/tests/slurm.cfg
             for i in $(seq 1 24); do
