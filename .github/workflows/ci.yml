@@ -84,6 +84,8 @@ jobs:
               name: odc
               defaults:
                 image: ${{ env.IMAGE_PREFIX }}:fedora42-sind
+                cpus: 2
+                memory: 4g
               nodes:
                 - controller
                 - worker: 2
@@ -94,6 +96,7 @@ jobs:
             cd /data && \
             ctest -S ODCTest.cmake -VV --output-on-failure \
               -DLABEL=slurm-integration \
+              -DNCPUS=2 \
               -DDDS_RMS="<rms>slurm</rms><configFile>/data/tests/slurm.cfg</configFile><agents>2</agents><slots>18</slots>" \
           '
 
