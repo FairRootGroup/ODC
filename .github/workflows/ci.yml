@@ -95,6 +95,10 @@ jobs:
           sind exec odc -- bash -lc '
             set -ex
             echo "HOME=$HOME"
+            sinfo -N -l
+            scontrol show partition
+            scontrol show node
+            cat /etc/slurm/slurm.conf
             dds-session start
             dds-submit -r slurm -n 2 --slots 18 -c /data/tests/slurm.cfg
             for i in $(seq 1 24); do
