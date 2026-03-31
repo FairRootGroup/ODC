@@ -93,11 +93,12 @@ jobs:
       - name: DDS smoke test
         run: |
           sind exec odc -- bash -lc '
-            set -x
+            set -ex
             echo "HOME=$HOME"
             dds-session start
             dds-submit -r slurm -n 2 --slots 18 -c /data/tests/slurm.cfg
-            sleep 5
+            echo "Waiting for 36 idle slots..."
+            dds-info --idle-count --wait 36
             dds-info -l
             dds-info -n
             dds-session stop
