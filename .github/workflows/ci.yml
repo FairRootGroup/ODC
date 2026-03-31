@@ -94,10 +94,10 @@ jobs:
         run: |
           sind exec odc -- bash -lc '\
             cd /data && \
+            DDS_RMS="<rms>slurm</rms><configFile>/data/tests/slurm.cfg</configFile><agents>2</agents><slots>18</slots>" \
             ctest -S ODCTest.cmake -VV --output-on-failure \
               -DLABEL=slurm-integration \
               -DNCPUS=2 \
-              -DDDS_RMS="<rms>slurm</rms><configFile>/data/tests/slurm.cfg</configFile><agents>2</agents><slots>18</slots>" \
           '
 
       - name: Collect logs on failure
