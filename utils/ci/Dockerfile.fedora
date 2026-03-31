@@ -66,7 +66,7 @@ RUN echo "${DDS_VERSION}" > /DDS/version && \
 
 # Stage 3: Final image with ODC-specific build dependencies
 # and the install trees of the custom-built dependencies from stage 2.
-FROM buildenv AS final
+FROM buildenv AS odc
 
 ARG BOOST_VERSION=
 RUN if [ -z "${BOOST_VERSION}" ]; then dnf -y install boost-devel; fi && \
@@ -77,3 +77,38 @@ RUN if [ -z "${BOOST_VERSION}" ]; then dnf -y install boost-devel; fi && \
     dnf -y clean all
 
 COPY --from=build /usr/local /usr/local
+
+# Stage 4: sind-compatible Slurm node image for integration testing.
+# Adds systemd, sshd, munge, and Slurm on top of the ODC build environment.
+FROM odc AS sind-node
+
+RUN dnf -y install \
+        systemd \
+        openssh-server \
+        munge \
+        slurm \
+        slurm-slurmctld \
+        slurm-slurmd \
+ && dnf -y clean all
+
+RUN systemctl enable sshd munge
+
+RUN systemctl mask \
+        dev-hugepages.mount \
+        sys-fs-fuse-connections.mount \
+        systemd-logind.service \
+        getty.target \
+        console-getty.service
+
+RUN mkdir -p /etc/munge /var/lib/munge /var/log/munge /run/munge \
+ && chown -R munge:munge /etc/munge /var/lib/munge /var/log/munge /run/munge \
+ && chmod 700 /etc/munge /var/lib/munge /var/log/munge /run/munge
+
+RUN ssh-keygen -A \
+ && sed -i 's/#PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config \
+ && sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config \
+ && mkdir -p /root/.ssh && chmod 700 /root/.ssh
+
+VOLUME ["/etc/slurm", "/etc/munge", "/data"]
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]

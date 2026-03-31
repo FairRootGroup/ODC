@@ -16,6 +16,10 @@ file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/tmp")
 list(APPEND TEST_ENV "TMPDIR=${CMAKE_BINARY_DIR}/tmp")
 
 set(ODC_DATADIR "${CMAKE_INSTALL_PREFIX}/${PROJECT_INSTALL_DATADIR}")
+
+if(NOT DDS_RMS)
+  set(DDS_RMS "<rms>localhost</rms><agents>1</agents><slots>36</slots>")
+endif()
 string(RANDOM LENGTH 8 TEST_SESSION1)
 string(RANDOM LENGTH 8 TEST_SESSION2)
 
