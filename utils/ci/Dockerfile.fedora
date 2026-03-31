@@ -78,20 +78,83 @@ RUN if [ -z "${BOOST_VERSION}" ]; then dnf -y install boost-devel; fi && \
 
 COPY --from=build /usr/local /usr/local
 
-# Stage 4: sind-compatible Slurm node image for integration testing.
-# Adds systemd, sshd, munge, and Slurm on top of the ODC build environment.
+# Stage 4: Build Slurm from source (matching sind's reference image)
+FROM buildenv AS slurm-builder
+
+ARG SLURM_VERSION=25.11.4
+
+RUN dnf -y install \
+        munge-devel \
+        pam-devel \
+        readline-devel \
+        perl-ExtUtils-MakeMaker \
+        python3 \
+        mariadb-devel \
+        dbus-devel \
+        libbpf-devel \
+        tar bzip2
+
+ADD --checksum=sha256:237f515adcb37b99ff6cb3e1fa81691a5f7188e94c3b6b495858b4eaecf6531d \
+    https://download.schedmd.com/slurm/slurm-${SLURM_VERSION}.tar.bz2 /tmp/slurm.tar.bz2
+
+WORKDIR /tmp
+RUN tar xf slurm.tar.bz2 && \
+    cd slurm-${SLURM_VERSION} && \
+    ./configure \
+        --prefix=/usr \
+        --sysconfdir=/etc/slurm \
+        --localstatedir=/var \
+        --runstatedir=/run \
+        --with-munge \
+        --with-pam_dir=/usr/lib64/security \
+        --with-systemdsystemunitdir=/usr/lib/systemd/system && \
+    make -j$(nproc) && \
+    DESTDIR=/slurm-install make install && \
+    mkdir -p /slurm-install/etc
+
+# Stage 5: sind-compatible Slurm node image for integration testing.
+# Combines the ODC build environment with a source-built Slurm.
 FROM odc AS sind-node
 
 RUN dnf -y install \
         systemd \
         openssh-server \
+        openssh-clients \
         munge \
-        slurm \
-        slurm-slurmctld \
-        slurm-slurmd \
+        readline \
+        pam \
+        procps-ng \
+        iproute \
+        hostname \
+        dbus-libs \
  && dnf -y clean all
 
-RUN systemctl enable sshd munge
+COPY --from=slurm-builder /slurm-install/usr /usr
+COPY --from=slurm-builder /slurm-install/etc /etc
+
+RUN useradd -r -s /sbin/nologin slurm
+
+RUN mkdir -p \
+        /var/log/slurm \
+        /var/spool/slurmctld \
+        /var/spool/slurmd \
+        /data && \
+    chown -R slurm:slurm \
+        /var/log/slurm \
+        /var/spool/slurmctld \
+        /var/spool/slurmd
+
+RUN mkdir -p /etc/munge /var/lib/munge /var/log/munge /run/munge && \
+    chown -R munge:munge /etc/munge /var/lib/munge /var/log/munge /run/munge && \
+    chmod 700 /etc/munge /var/lib/munge /var/log/munge /run/munge
+
+RUN ssh-keygen -A && \
+    mkdir -p /run/sshd && \
+    sed -i 's/#PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config && \
+    sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
+    mkdir -p /root/.ssh && chmod 700 /root/.ssh
+
+RUN systemctl enable munge sshd
 
 RUN systemctl mask \
         dev-hugepages.mount \
@@ -100,15 +163,7 @@ RUN systemctl mask \
         getty.target \
         console-getty.service
 
-RUN mkdir -p /etc/munge /var/lib/munge /var/log/munge /run/munge \
- && chown -R munge:munge /etc/munge /var/lib/munge /var/log/munge /run/munge \
- && chmod 700 /etc/munge /var/lib/munge /var/log/munge /run/munge
-
-RUN ssh-keygen -A \
- && sed -i 's/#PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config \
- && sed -i 's/#PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config \
- && mkdir -p /root/.ssh && chmod 700 /root/.ssh
-
 VOLUME ["/etc/slurm", "/etc/munge", "/data"]
+WORKDIR /data
 STOPSIGNAL SIGRTMIN+3
 CMD ["/sbin/init"]
