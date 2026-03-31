@@ -2,8 +2,6 @@ name: Docker Images
 
 on:
   push:
-    branches:
-      - master
     paths:
       - 'utils/ci/Dockerfile.*'
   pull_request:
