@@ -99,7 +99,7 @@ jobs:
             scontrol show partition
             scontrol show node
             cat /etc/slurm/slurm.conf
-            dds-user-defaults --default
+            dds-user-defaults -f --default
             sed -i "s|sandbox_dir=.*|sandbox_dir=/data/.DDS|" $(dds-user-defaults --config)
             cat $(dds-user-defaults --config)
             dds-session start
