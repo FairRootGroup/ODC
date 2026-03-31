@@ -97,8 +97,19 @@ jobs:
             echo "HOME=$HOME"
             dds-session start
             dds-submit -r slurm -n 2 --slots 18 -c /data/tests/slurm.cfg
-            echo "Waiting for 36 idle slots..."
-            dds-info --idle-count --wait 36
+            for i in $(seq 1 24); do
+              echo "=== Attempt $i/24 ==="
+              dds-info -l
+              dds-info -n
+              idle=$(dds-info --idle-count)
+              echo "Idle slots: $idle"
+              if [ "$idle" -ge 36 ] 2>/dev/null; then
+                echo "All slots ready"
+                break
+              fi
+              squeue || true
+              sleep 5
+            done
             dds-info -l
             dds-info -n
             dds-session stop
