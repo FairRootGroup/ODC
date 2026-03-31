@@ -110,7 +110,13 @@ RUN tar xf slurm.tar.bz2 && \
         --with-systemdsystemunitdir=/usr/lib/systemd/system && \
     make -j$(nproc) && \
     DESTDIR=/slurm-install make install && \
-    mkdir -p /slurm-install/etc
+    mkdir -p /slurm-install/etc && \
+    # Fedora uses merged-usr (/usr/sbin -> /usr/bin). Merge sbin into bin
+    # so COPY does not try to overwrite the symlink with a directory.
+    if [ -d /slurm-install/usr/sbin ]; then \
+        cp -a /slurm-install/usr/sbin/* /slurm-install/usr/bin/ && \
+        rm -rf /slurm-install/usr/sbin; \
+    fi
 
 # Stage 5: sind-compatible Slurm node image for integration testing.
 # Combines the ODC build environment with a source-built Slurm.
